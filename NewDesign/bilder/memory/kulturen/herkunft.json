@@ -1,0 +1,56 @@
+{
+  "satz": "kulturen",
+  "lizenz": "CC0",
+  "bilder": [
+    {
+      "datei": "maske-bueffel.jpg",
+      "id": "144495",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "maske-bwoom.jpg",
+      "id": "115157",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "maske-gesicht.jpg",
+      "id": "130743",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "vase-amphore.jpg",
+      "id": "123616",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "vase-fasan.jpg",
+      "id": "145937",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "teekanne.jpg",
+      "id": "119326",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "teekanne-begonien.jpg",
+      "id": "519488",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "teppich.jpg",
+      "id": "137340",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "kostuem-no.jpg",
+      "id": "147935",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "korb.jpg",
+      "id": "115635",
+      "quelle": "cleveland"
+    }
+  ]
+}

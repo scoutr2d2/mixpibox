@@ -1,0 +1,216 @@
+{
+  "_wozu": "Gekuerzte ECHTE Antwort von mediathekviewweb.de/api/query vom 20.09.2026. Suche: 'Sendung mit der Maus' (acht Treffer, darunter dieselbe Folge unter ZWEI Sendern und zwei Nebenfassungen), dazu SRF (nur HLS) und ZDF (Dateiname ohne lesbare Hoehe).",
+  "suche": {
+    "result": {
+      "results": [
+        {
+          "channel": "KiKA",
+          "topic": "Die Sendung mit der Maus",
+          "title": "Die Sendung vom 20.09.2026",
+          "description": "Lach- und Sachgeschichten, mit Tierfutter aus Larven, Nulli und Priesemut, die sich verlaufen, einer Delle im Flugzeug, einem sehr hohen Drohnenflug mit Bitzer - und natürlich mit der Maus, dem Elefanten und der Ente.",
+          "timestamp": 1789896600,
+          "duration": 1770,
+          "size": 284164096,
+          "url_website": "https://www.kika.de/die-sendung-mit-der-maus/videos/die-sendung-mit-der-maus-vom-zwanzigzwanzig-116",
+          "url_subtitle": "https://www.kika.de/ackley/v1/videos/die-sendung-mit-der-maus-vom-zwanzigzwanzig-116/subtitle",
+          "url_video": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/272d0494-2a6d-4144-8f96-c38534137540/272d0494-2a6d-4144-8f96-c38534137540_AVC-540.mp4",
+          "url_video_low": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/272d0494-2a6d-4144-8f96-c38534137540/272d0494-2a6d-4144-8f96-c38534137540_AVC-360.mp4",
+          "url_video_hd": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/272d0494-2a6d-4144-8f96-c38534137540/272d0494-2a6d-4144-8f96-c38534137540_AVC-1080.mp4",
+          "id": "nWJrBWfvEseMaoIxSw1TPHko8WXCfiLwJtCVaJ6mVC4="
+        },
+        {
+          "channel": "WDR",
+          "topic": "Die Sendung mit der Maus",
+          "title": "Die Sendung mit der Maus vom 20.09.2026 (Audiodeskription)",
+          "description": "In dieser Folge gibt es Lach- und Sachgeschichten mit Tierfutter aus Larven, Nulli und Priesemut, die sich verlaufen, einer Delle im Flugzeug, einem sehr hohen Drohnenflug mit Bitzer und natürlich mit der Maus, dem Elefanten und der Ente. Was fressen Fliegenlarven gern?...",
+          "timestamp": 1789889400,
+          "duration": 1770,
+          "size": 508559360,
+          "url_website": "https://www.ardmediathek.de/video/Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtZDVkMmJiM2MtOTM4MC00MWVlLWJiZmQtMjU2NzQ2ODYxMjcz",
+          "url_subtitle": "https://api.ardmediathek.de/player-service/subtitle/ebutt/urn:ard:subtitle:33ee5a86637fa38f",
+          "url_video": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/0da5b828-b839-49cc-932e-dc39a1753bae/0da5b828-b839-49cc-932e-dc39a1753bae_AVC-720.mp4",
+          "url_video_low": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/0da5b828-b839-49cc-932e-dc39a1753bae/0da5b828-b839-49cc-932e-dc39a1753bae_AVC-360.mp4",
+          "url_video_hd": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/0da5b828-b839-49cc-932e-dc39a1753bae/0da5b828-b839-49cc-932e-dc39a1753bae_AVC-1080.mp4",
+          "id": "y8+uLJhHs1yvy9p6I6wWwMAVmsojHPgTCpgPtSDSFPo="
+        },
+        {
+          "channel": "WDR",
+          "topic": "Die Sendung mit der Maus",
+          "title": "Die Sendung mit der Maus vom 20.09.2026",
+          "description": "In dieser Folge gibt es Lach- und Sachgeschichten mit Tierfutter aus Larven, Nulli und Priesemut, die sich verlaufen, einer Delle im Flugzeug, einem sehr hohen Drohnenflug mit Bitzer und natürlich mit der Maus, dem Elefanten und der Ente. Was fressen Fliegenlarven gern?...",
+          "timestamp": 1789889400,
+          "duration": 1770,
+          "size": 507510784,
+          "url_website": "https://www.ardmediathek.de/video/Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtZDVkMmJiM2MtOTM4MC00MWVlLWJiZmQtMjU2NzQ2ODYxMjcz",
+          "url_subtitle": "https://api.ardmediathek.de/player-service/subtitle/ebutt/urn:ard:subtitle:33ee5a86637fa38f",
+          "url_video": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/272d0494-2a6d-4144-8f96-c38534137540/272d0494-2a6d-4144-8f96-c38534137540_AVC-720.mp4",
+          "url_video_low": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/272d0494-2a6d-4144-8f96-c38534137540/272d0494-2a6d-4144-8f96-c38534137540_AVC-360.mp4",
+          "url_video_hd": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/272d0494-2a6d-4144-8f96-c38534137540/272d0494-2a6d-4144-8f96-c38534137540_AVC-1080.mp4",
+          "id": "6VTIfmKJa7hFwCBWh5uipvP8M4AKDu1UfXPKdS5hnCo="
+        },
+        {
+          "channel": "WDR",
+          "topic": "Die Sendung mit der Maus",
+          "title": "Die Sendung mit der Maus vom 20.09.2026 (Gebärdensprache)",
+          "description": "In dieser Folge gibt es Lach- und Sachgeschichten mit Tierfutter aus Larven, Nulli und Priesemut, die sich verlaufen, einer Delle im Flugzeug, einem sehr hohen Drohnenflug mit Bitzer und natürlich mit der Maus, dem Elefanten und der Ente. Was fressen Fliegenlarven gern?...",
+          "timestamp": 1789889400,
+          "duration": 1770,
+          "size": 429916160,
+          "url_website": "https://www.ardmediathek.de/video/Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtZDVkMmJiM2MtOTM4MC00MWVlLWJiZmQtMjU2NzQ2ODYxMjcz",
+          "url_subtitle": "https://api.ardmediathek.de/player-service/subtitle/ebutt/urn:ard:subtitle:33ee5a86637fa38f",
+          "url_video": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/be702424-dd60-44a4-8685-a77811e22e61/be702424-dd60-44a4-8685-a77811e22e61_AVC-720.mp4",
+          "url_video_low": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/be702424-dd60-44a4-8685-a77811e22e61/be702424-dd60-44a4-8685-a77811e22e61_AVC-360.mp4",
+          "url_video_hd": "https://wdr-progressive.ard-mcdn.de/media/p/public/deChAt/2026/09/19/be702424-dd60-44a4-8685-a77811e22e61/be702424-dd60-44a4-8685-a77811e22e61_AVC-1080.mp4",
+          "id": "uFpY9rNLEay/vyTHb/i77lAWnaKDhUJhuqKUMq2hOgQ="
+        },
+        {
+          "channel": "KiKA",
+          "topic": "Die Sendung mit der Maus",
+          "title": "Die Sendung vom 13.09.2026",
+          "description": "Lach- und Sachgeschichten, mit einem Schulstuhl aus Plastik, einem Jungen aus Holz, dem Geheimnis des Spinnennetzes, Shaun und der Nichte des Farmers - und natürlich mit der Maus, dem Elefanten und der Ente.",
+          "timestamp": 1789291800,
+          "duration": 1770,
+          "size": 285212672,
+          "url_website": "https://www.kika.de/die-sendung-mit-der-maus/videos/die-sendung-mit-der-maus-vom-dreizehnzweitausendsechsundzwanzig-102",
+          "url_subtitle": "https://www.kika.de/ackley/v1/videos/die-sendung-mit-der-maus-vom-dreizehnzweitausendsechsundzwanzig-102/subtitle",
+          "url_video": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/57a35627-e179-47be-9845-e6bd72f5d752/57a35627-e179-47be-9845-e6bd72f5d752_AVC-540.mp4",
+          "url_video_low": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/57a35627-e179-47be-9845-e6bd72f5d752/57a35627-e179-47be-9845-e6bd72f5d752_AVC-360.mp4",
+          "url_video_hd": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/57a35627-e179-47be-9845-e6bd72f5d752/57a35627-e179-47be-9845-e6bd72f5d752_AVC-1080.mp4",
+          "id": "xgXj/P889NDNQEcY1ULa6xRhhtAealqsKtk+I7m/HIs="
+        },
+        {
+          "channel": "WDR",
+          "topic": "Die Sendung mit der Maus",
+          "title": "Die Sendung mit der Maus vom 13.09.2026 (Gebärdensprache)",
+          "description": "Lach- und Sachgeschichten, heute mit einem Schulstuhl aus Plastik, einem Jungen aus Holz, dem Geheimnis des Spinnennetzes, Shaun und der Nichte des Farmers – und natürlich mit der Maus, dem Elefanten und der Ente. Wie werden Schul-Stühle hergestellt? Das hat Armin 2001 schon einmal gezeigt....",
+          "timestamp": 1789284600,
+          "duration": 1770,
+          "size": 446693376,
+          "url_website": "https://www.ardmediathek.de/video/Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtNmIwZWJiMzgtYmJiOC00NDI2LWE4YzUtN2M1MTNlZDNjZDNi",
+          "url_subtitle": "https://api.ardmediathek.de/player-service/subtitle/ebutt/urn:ard:subtitle:661bfd0f5120cc8d",
+          "url_video": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/75cf25f2-b153-445e-88ef-d7a81fe7c2ec/75cf25f2-b153-445e-88ef-d7a81fe7c2ec_AVC-720.mp4",
+          "url_video_low": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/75cf25f2-b153-445e-88ef-d7a81fe7c2ec/75cf25f2-b153-445e-88ef-d7a81fe7c2ec_AVC-360.mp4",
+          "url_video_hd": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/75cf25f2-b153-445e-88ef-d7a81fe7c2ec/75cf25f2-b153-445e-88ef-d7a81fe7c2ec_AVC-1080.mp4",
+          "id": "6lb2WSCuN7IQ/0ZhCOh+pprexqycWndZJfaeFkO8oqE="
+        },
+        {
+          "channel": "WDR",
+          "topic": "Die Sendung mit der Maus",
+          "title": "Die Sendung mit der Maus vom 13.09.2026 (Audiodeskription)",
+          "description": "Lach- und Sachgeschichten, heute mit einem Schulstuhl aus Plastik, einem Jungen aus Holz, dem Geheimnis des Spinnennetzes, Shaun und der Nichte des Farmers – und natürlich mit der Maus, dem Elefanten und der Ente. Wie werden Schul-Stühle hergestellt? Das hat Armin 2001 schon einmal gezeigt....",
+          "timestamp": 1789284600,
+          "duration": 1770,
+          "size": 501219328,
+          "url_website": "https://www.ardmediathek.de/video/Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtNmIwZWJiMzgtYmJiOC00NDI2LWE4YzUtN2M1MTNlZDNjZDNi",
+          "url_subtitle": "https://api.ardmediathek.de/player-service/subtitle/ebutt/urn:ard:subtitle:661bfd0f5120cc8d",
+          "url_video": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/4523dce4-e012-4b4b-8886-b39785569bf2/4523dce4-e012-4b4b-8886-b39785569bf2_AVC-720.mp4",
+          "url_video_low": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/4523dce4-e012-4b4b-8886-b39785569bf2/4523dce4-e012-4b4b-8886-b39785569bf2_AVC-360.mp4",
+          "url_video_hd": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/4523dce4-e012-4b4b-8886-b39785569bf2/4523dce4-e012-4b4b-8886-b39785569bf2_AVC-1080.mp4",
+          "id": "RpcMlrGesLMBmzDHCXZryzfeZ1LDyD+H46rFuzJ5PP4="
+        },
+        {
+          "channel": "WDR",
+          "topic": "Die Sendung mit der Maus",
+          "title": "Die Sendung mit der Maus vom 13.09.2026",
+          "description": "Lach- und Sachgeschichten, heute mit einem Schulstuhl aus Plastik, einem Jungen aus Holz, dem Geheimnis des Spinnennetzes, Shaun und der Nichte des Farmers – und natürlich mit der Maus, dem Elefanten und der Ente. Wie werden Schul-Stühle hergestellt? Das hat Armin 2001 schon einmal gezeigt....",
+          "timestamp": 1789284600,
+          "duration": 1770,
+          "size": 502267904,
+          "url_website": "https://www.ardmediathek.de/video/Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtNmIwZWJiMzgtYmJiOC00NDI2LWE4YzUtN2M1MTNlZDNjZDNi",
+          "url_subtitle": "https://api.ardmediathek.de/player-service/subtitle/ebutt/urn:ard:subtitle:661bfd0f5120cc8d",
+          "url_video": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/57a35627-e179-47be-9845-e6bd72f5d752/57a35627-e179-47be-9845-e6bd72f5d752_AVC-720.mp4",
+          "url_video_low": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/57a35627-e179-47be-9845-e6bd72f5d752/57a35627-e179-47be-9845-e6bd72f5d752_AVC-360.mp4",
+          "url_video_hd": "https://wdr-progressive.ard-mcdn.de/media/p/public/weltweit/2026/09/08/57a35627-e179-47be-9845-e6bd72f5d752/57a35627-e179-47be-9845-e6bd72f5d752_AVC-1080.mp4",
+          "id": "xX334LWwyYDWhJh+o4Z/C9bQbMMb2AOtO5xhSWrJzb4="
+        }
+      ]
+    }
+  },
+  "srf": {
+    "result": {
+      "results": [
+        {
+          "channel": "SRF",
+          "topic": "mitenand",
+          "title": "Für Tiere in Not: Mit dem Tierrettungsdienst unterwegs",
+          "description": "Igel in Not, verletzte Vögel, ausgesetzte Katzen: Für Tierrettungsfahrer Werner Hoke beginnt im Frühling die Hochsaison. Rund um die Uhr rettet die Stiftung Tierrettungsdienst verletzte Tiere – und schenkt ihnen eine zweite Chance. Ein Bericht von Elma Softic.",
+          "timestamp": 1789924500,
+          "duration": 234,
+          "size": null,
+          "url_website": "https://www.srf.ch/play/tv/mitenand/video/fuer-tiere-in-not-mit-dem-tierrettungsdienst-unterwegs?urn=urn:srf:video:9c7f41de-a6ad-448d-84bc-746a3ad9f671",
+          "url_subtitle": "https://subtitles.eai-general.aws.srf.ch/srf/450e7bb2-a4b9-4869-bba0-b776d6b4966f/episode/de/hbbtv/hbbtv.xml",
+          "url_video": "https://srf-vod-amd.akamaized.net/world/hls/mitenand/2026/09/mitenand_20260917_000304_19184999_v_webcast_h264_,q40,q10,q20,q30,q50,.mp4.csmil/index-f1-v1-a1.m3u8",
+          "url_video_low": "https://srf-vod-amd.akamaized.net/world/hls/mitenand/2026/09/mitenand_20260917_000304_19184999_v_webcast_h264_,q40,q10,q20,q30,q50,.mp4.csmil/index-f3-v1-a1.m3u8",
+          "url_video_hd": "https://srf-vod-amd.akamaized.net/world/hls/mitenand/2026/09/mitenand_20260917_000304_19184999_v_webcast_h264_,q40,q10,q20,q30,q50,.mp4.csmil/index-f5-v1-a1.m3u8",
+          "id": "HPePHpBAn/FSB6vxaQvrAO2OKbvc/cRDKABTGag+l7Q="
+        },
+        {
+          "channel": "SRF",
+          "topic": "Sportpanorama",
+          "title": "«Sportpanorama» mit Studiogast Christian Fassnacht",
+          "description": "Ausserdem: NHL-Star Jeff Skinner bei Biel, Armwrestler beim «Swiss Open» und die SM-Finals im Flag Football.",
+          "timestamp": 1789920000,
+          "duration": 3303,
+          "size": null,
+          "url_website": "https://www.srf.ch/play/tv/sportpanorama/video/sportpanorama-mit-studiogast-christian-fassnacht?urn=urn:srf:video:6d647d5f-4288-4b72-9f94-0176fa5123c2",
+          "url_subtitle": "https://subtitles.eai-general.aws.srf.ch/srf/324a1e4d-4a46-4ae4-9bd2-68eb0e0ea3ec/episode/de/hbbtv/hbbtv.xml",
+          "url_video": "https://srf-vod-amd.akamaized.net/world/hls/sportpanorama/2026/09/sportpanorama_20260920_175956_19288055_v_webcast_h264_,q40,q10,q20,q30,q50,q60,.mp4.csmil/index-f5-v1-a1.m3u8",
+          "url_video_low": "https://srf-vod-amd.akamaized.net/world/hls/sportpanorama/2026/09/sportpanorama_20260920_175956_19288055_v_webcast_h264_,q40,q10,q20,q30,q50,q60,.mp4.csmil/index-f4-v1-a1.m3u8",
+          "url_video_hd": "https://srf-vod-amd.akamaized.net/world/hls/sportpanorama/2026/09/sportpanorama_20260920_175956_19288055_v_webcast_h264_,q40,q10,q20,q30,q50,q60,.mp4.csmil/index-f6-v1-a1.m3u8",
+          "id": "OeoYDn5Sbky0e8XlOBzZIm182G0bVndofva2DOSEGZ8="
+        }
+      ]
+    }
+  },
+  "zdf": {
+    "result": {
+      "results": [
+        {
+          "channel": "ZDF",
+          "topic": "Inga Lindström",
+          "title": "Inga Lindström: Rezept für die Liebe - Darum geht's",
+          "description": "Sofia Lund will nur kurz in die Heimat zurückkehren, um ihr Haus zu verkaufen und sich dann wieder ins Ausland absetzen. Doch sie stößt im Haus auf zwei Mieter, von denen sie nichts wusste.",
+          "timestamp": 1789928100,
+          "duration": 70,
+          "size": 24117248,
+          "url_website": "https://www.zdf.de/serien/inga-lindstroem/lindstroem-rezeptfuerliebe-trailer-100.html",
+          "url_subtitle": "",
+          "url_video": "https://nrodlzdf-a.akamaihd.net/none/zdf/26/08/260821_trailer_rezept_liebe_ils/2/260821_trailer_rezept_liebe_ils_3360k_p36v17.mp4",
+          "url_video_low": "https://rodlzdf-a.akamaihd.net/none/zdf/26/08/260821_trailer_rezept_liebe_ils/2/260821_trailer_rezept_liebe_ils_808k_p11v17.mp4",
+          "url_video_hd": "https://nrodlzdf-a.akamaihd.net/none/zdf/26/08/260821_trailer_rezept_liebe_ils/2/260821_trailer_rezept_liebe_ils_6660k_p37v17.mp4",
+          "id": "Shp++r5cZBpmw+vxrnElTyv1Qi6KyO+JmYIRmcaO5yM="
+        },
+        {
+          "channel": "ZDF",
+          "topic": "Politik",
+          "title": "AfD in Kopf-an-Kopf-Rennen vor der SPD - CDU stürzt ab",
+          "description": "Bei der Wahl in Mecklenburg-Vorpommern liegt die AfD laut Hochrechnung knapp vor der SPD. Die CDU verliert deutlich und muss um den Einzug in den Landtag bangen.",
+          "timestamp": 1789926900,
+          "duration": 192,
+          "size": 67108864,
+          "url_website": "https://www.zdfheute.de/politik/deutschland/landtagswahl-mecklenburg-vorpommern-wahlergebnisse-afd-spd-holm-schwesig-100.html",
+          "url_subtitle": "",
+          "url_video": "https://nrodlzdf-a.akamaihd.net/none/zdf/26/09/260920_1900_clip_1_h19/1/260920_1900_clip_1_h19_3360k_p36v17.mp4",
+          "url_video_low": "https://rodlzdf-a.akamaihd.net/none/zdf/26/09/260920_1900_clip_1_h19/1/260920_1900_clip_1_h19_808k_p11v17.mp4",
+          "url_video_hd": "https://nrodlzdf-a.akamaihd.net/none/zdf/26/09/260920_1900_clip_1_h19/1/260920_1900_clip_1_h19_6660k_p37v17.mp4",
+          "id": "NvAqKjO/6VWLALmw0yQTojPLcWNrNuV0RddKyxm8H2E="
+        },
+        {
+          "channel": "ZDF",
+          "topic": "heute",
+          "title": "So wird das Wetter",
+          "description": "Die Wettervorhersage aus der 19 Uhr-heute-Sendung",
+          "timestamp": 1789926144,
+          "duration": 10,
+          "size": 3145728,
+          "url_website": "https://www.zdfheute.de/video/heute-nachrichten/so-wird-das-wetter-102.html",
+          "url_subtitle": "",
+          "url_video": "https://nrodlzdf-a.akamaihd.net/none/zdf/26/09/260920_1900_wet/1/260920_1900_wet_3360k_p36v17.mp4",
+          "url_video_low": "https://rodlzdf-a.akamaihd.net/none/zdf/26/09/260920_1900_wet/1/260920_1900_wet_808k_p11v17.mp4",
+          "url_video_hd": "https://nrodlzdf-a.akamaihd.net/none/zdf/26/09/260920_1900_wet/1/260920_1900_wet_6660k_p37v17.mp4",
+          "id": "XtwEa3SkkW6rf06Hxa+5+W8cffFunbz0XBJ65f1dhSE="
+        }
+      ]
+    }
+  }
+}

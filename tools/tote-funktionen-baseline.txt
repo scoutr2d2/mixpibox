@@ -1,0 +1,19 @@
+# TOTE-FUNKTIONEN-BASELINE — je Zeile: <zustand> <datei>:<funktion>
+#
+#   tot     kein Aufrufer, kein Gegengrund (Rang 0)
+#   unklar  kein Aufrufer, aber ein Grund, die Finger davonzulassen (Rang 1)
+#
+# Wer GERUFEN wird, steht hier gar nicht. Ein Name, der hier fehlt, gilt als
+# Rang 1 — eine neu tote Funktion blockt damit, ohne zweite Regel.
+# Die Ratsche blockt, wenn ein Rang SINKT. Der Bestand darf schlecht sein,
+# er darf nur nicht schlechter werden.
+# Eingefroren am 2026-09-19. Neu: node tools/tote-funktionen-schau.mjs --einfrieren
+unklar NewDesign/app.js:neuerPegel
+tot NewDesign/app.js:sprichImBrowser
+tot NewDesign/app.js:hinueberDurchsTor
+unklar NewDesign/app.js:onmessage
+unklar NewDesign/app.js:onerror
+tot NewDesign/app.js:coverFuerLokal
+unklar NewDesign/app.js:wischRaenderVon
+unklar NewDesign/app.js:wischBelegen
+unklar NewDesign/app.js:wischWort

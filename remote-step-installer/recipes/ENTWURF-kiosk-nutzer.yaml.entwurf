@@ -1,0 +1,59 @@
+  - id: kiosk-nutzer
+    name: "Kiosk laeuft als dietpi, nicht als root"
+    note: >-
+      AM GERAET GEFUNDEN (2026-07-29): die beiden Boxen liefen unterschiedlich
+      - Pi 4 startete Chromium als ROOT, Pi 5 als dietpi. Der Unterschied ist
+      EIN Wort in der Autologin-Ergaenzung:
+
+        ExecStart=-/sbin/agetty -a root   %I   ->  xinit  als root
+        ExecStart=-/sbin/agetty -a dietpi %I   ->  startx als dietpi
+
+      Der Autostart waehlt danach selbst (`[ "$USER" = root ] || STARTX=startx`).
+
+      WARUM ES ZAEHLT: Chromium sucht sein Widevine im HOME des laufenden
+      Nutzers. Liegt es unter /home/dietpi und laeuft der Browser als root,
+      bleibt das Spotify-Web-SDK auf "not_loaded" - das hat schon einmal Zeit
+      gekostet (llmwiki: widevine-gehoert-dem-kiosk-nutzer). Dazu: ein
+      Browser als root ist auf einer Kinderbox nicht noetig.
+
+      dietpi.txt taeuscht hier: dort stand auf BEIDEN Boxen
+      AUTO_SETUP_AUTOSTART_LOGIN_USER=root, gelebt wurde es trotzdem
+      verschieden. Die Wahrheit steht in der getty-Ergaenzung.
+    run: |
+      set -e
+      U=dietpi
+      D=/etc/systemd/system/getty@tty1.service.d
+      F=$D/dietpi-autologin.conf
+      echo "  vorher: $(grep -oE -- '-a [a-z]+' $F 2>/dev/null || echo '(keine Datei)')"
+      # IMMER schreiben, nicht erst pruefen. Die erste Fassung hatte eine
+      # Bedingung mit Variablen im grep-Muster - sie traf durch die
+      # Anfuehrungsebenen hindurch immer zu und meldete "steht schon richtig",
+      # waehrend die Datei unveraendert blieb. Am Geraet aufgeflogen.
+      # Schreiben ist ohnehin unschaedlich: die Datei hat genau einen Zweck.
+      mkdir -p "$D"
+      [ -f "$F" ] && [ ! -f "$F.vor-kiosknutzer" ] && cp "$F" "$F.vor-kiosknutzer" || true
+      printf '%s\n' '[Service]' 'ExecStart=' "ExecStart=-/sbin/agetty -a $U -J %I \$TERM" > "$F"
+      systemctl daemon-reload
+      echo "  nachher: $(grep -oE -- '-a [a-z]+' $F)"
+      grep -q -- "-a $U" "$F" || { echo "FEHLER: Autologin steht nicht auf $U"; exit 1; }
+
+      # ZWEI DINGE GEHOEREN DAZU - sonst startet der Kiosk gar nicht mehr.
+      # Am Geraet erlebt (Pi 4, 2026-07-29): Autologin auf dietpi umgestellt,
+      # danach kein X und kein Chromium mehr, Xorg.0.log 0 Byte. Der Pi 5,
+      # der schon als dietpi lief, hatte beides:
+      #
+      #   1. Xwrapper.config - ohne sie darf ein Nichtprivilegierter X gar
+      #      nicht starten.
+      #   2. die Gruppen tty und input - sonst fehlen Konsole und
+      #      Eingabegeraete (Touch!).
+      if [ ! -f /etc/X11/Xwrapper.config ]; then
+        mkdir -p /etc/X11
+        printf '%s\n' 'allowed_users=anybody' 'needs_root_rights=yes' > /etc/X11/Xwrapper.config
+        echo "  Xwrapper.config angelegt"
+      fi
+      usermod -aG tty,input,video,audio,render "$U" 2>/dev/null || true
+      echo "  Gruppen von $U: $(id -nG $U | tr ' ' ',')"
+      echo "  wirksam nach dem naechsten Neustart"
+    check: "grep -q -- '-a dietpi' /etc/systemd/system/getty@tty1.service.d/dietpi-autologin.conf"
+    optional: true
+

@@ -1,0 +1,11 @@
+{
+  "name": "mupibox-frontend-admin",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Verwaltungsoberflaeche der MuPiBox (loest den PHP-Admin ab)",
+  "scripts": {
+    "build": "ng build",
+    "serve": "ng serve",
+    "test": "ng test"
+  }
+}

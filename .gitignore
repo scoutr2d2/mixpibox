@@ -1,0 +1,66 @@
+# Config files.
+src/backend-api/config/*.json
+src/backend-player/config/*.json
+**/server/config/*.json
+# Der BEREICH je Profil (E18 Stufe 2) — ein ORDNER, kein `*.json`. Die Zeilen
+# darueber treffen ihn deshalb nicht, und ein Testlauf legte ihn prompt an.
+# Dieselbe Sorte Luecke wie bei den Mustern der Sicherung.
+src/backend-api/config/profile/
+**/server/config/profile/
+# Der SYSTEMVERLAUF endet auf `.jsonl` (eine Zeile je Messpunkt) und faellt
+# damit durch dieselbe Luecke wie der Profilordner darueber: `*.json` trifft
+# ihn NICHT. Ein laufender Entwicklungsserver legte ihn prompt an, und er
+# stand als „neue Datei" im Arbeitsbaum. Dritte Auflage derselben Lehre.
+src/backend-api/config/*.jsonl
+**/server/config/*.jsonl
+
+# Temporary deploy files.
+src/**/*.zip
+src/deploy.zip
+# Ausspiel-Pakete gehoeren nicht in die Ablage
+mupibox-frontend.zip
+src/deploy
+
+# npm / Angular / esbuild files.
+node_modules
+.angular
+*.esbuild-meta.json
+
+# Other files.
+*.bak
+
+
+# Dev-harness runtime state.
+harness/state/
+
+# Local Jellyfin API key for sim verification (never commit)
+harness/.jellyfin-key
+harness/.jellyfin-qc.json
+
+# Spotify metadata disk cache (runtime artifact)
+src/backend-api/cache/
+
+# Python-Zwischenspeicher der Werkzeuge
+__pycache__/
+*.pyc
+
+# Paketbuendel fuer die frische Karte (tools/paketbuendel-bauen.py).
+# 350 MB .deb-Zwischenspeicher, KEIN Quelltext: er wird aus den Debian-Indizes
+# geladen und jederzeit neu gebaut. Er lag unversioniert UND unignoriert im
+# Baum — ein `git add -A` haette ihn geschluckt. Die .json daneben ist sein
+# Beipackzettel (Suite, Arch, Anzahl, SHA256) und teilt sein Schicksal.
+remote-step-installer/dateien/paketbuendel.tgz
+remote-step-installer/dateien/paketbuendel.json
+
+# Geschnittene Fassungen (je ~14 MB). Sie gehoeren an ihren Ablageort,
+# nicht in den Index — genau diese Sorte hat .git auf 621 MB gebracht
+# (AUDIT-2026-08-26). tools/mixpi-fassung-schneiden.py legt sie hier ab.
+dev/fassungen/
+
+# Der gemerkte Fund von tools/box-finden.py (20.09.2026).
+#
+# Eine Adresse, die auf DIESEM Rechner in DIESEM Netz gilt — eingecheckt
+# waere sie genau die Sorte Zustandsangabe mit Verfallsdatum, gegen die das
+# Werkzeug gebaut wurde. Wer sie mitcommittet, liefert dem naechsten die IP
+# von gestern.
+.box-adresse.json

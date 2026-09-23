@@ -1,0 +1,17 @@
+{
+  "kennung": "mixpi-jellyfin",
+  "name": "Jellyfin",
+  "fassung": "0.1.0",
+  "haupt": "index.mjs",
+  "rechte": ["netz"],
+  "konfig": ["jellyfin"],
+  "sektion": "streaming/jellyfin",
+  "icon": "icon.svg",
+  "aktionen": [
+    {
+      "kennung": "pruefen",
+      "name": "Server prüfen",
+      "hinweis": "Fragt den Jellyfin-Server dreimal an und nennt die Antwortzeiten."
+    }
+  ]
+}

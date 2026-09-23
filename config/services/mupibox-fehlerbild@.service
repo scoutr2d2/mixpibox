@@ -1,0 +1,25 @@
+[Unit]
+# BACKLOG E11c/S3 — die Auffangloesung unter der Boot-Animation.
+#
+# VORLAGE, keine gewoehnliche Unit: %i traegt den Namen der Unit, die
+# gescheitert ist. Angehaengt wird sie NICHT hier, sondern von
+# /usr/local/bin/mupibox/fehlerbild-anhaengen.sh als Zusatzstueck (drop-in) —
+# weil die wichtigsten Units (mupibox-server, mupibox-player) gar nicht aus
+# diesem Repo kommen, sondern vom remote-step-installer.
+Description=MuPiBox Fehlerbild fuer %i
+# NICHT an network-online haengen: der haeufigste Anlass ist, dass das Netz
+# fehlt. Ein Fehlerbild, das auf das Netz wartet, kaeme nie.
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/mupibox/mupibox-fehlerbild.py %i
+StandardOutput=null
+StandardError=journal
+# Das Bild steht, solange dieser Prozess lebt (das Skript koppelt dafuer die
+# Framebuffer-Konsole ab und gibt sie beim Ende zurueck). Es beendet sich von
+# selbst, sobald Chromium doch noch kommt, spaetestens nach 15 Minuten — die
+# 16 hier sind die Notbremse darueber, nicht die eigentliche Frist.
+TimeoutStartSec=0
+RuntimeMaxSec=16min
+Restart=no

@@ -1,0 +1,7 @@
+{
+  "kennung": "mupibox-podcast",
+  "name": "Podcast",
+  "fassung": "1.0.0",
+  "haupt": "index.mjs",
+  "rechte": ["medienquelle", "netz"]
+}

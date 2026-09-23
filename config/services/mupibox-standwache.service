@@ -1,0 +1,36 @@
+[Unit]
+# DER TOTMANNSCHALTER FUER DIE AUSLIEFERUNG.
+#
+# `tools/ausliefern.py` tauscht server.js, spotify-control.js, www und
+# www-admin und legt unter ….zurueck GENAU EINEN Rueckweg an. Den Rueckweg
+# ging bisher nur ein Mensch, der ihn tippt — und genau der ist im Zweifel
+# nicht da: nachts, nach einer Auslieferung, die den Server zerlegt hat, oder
+# wenn die Verbindung MITTEN im Lauf abriss und niemand weiss, dass die Box
+# gerade in einem ungeprueften Stand steht.
+#
+# Diese Wache sieht jede Minute nach, ob eine Auslieferung schwebt, und dreht
+# nach Ablauf der Frist ohne jedes Zutun zurueck. Die ganze Herleitung samt der
+# drei Faelle, in denen ein solcher Automat SCHADEN wuerde, steht im Kopf von
+# /opt/mupibox-tools/mupibox-standwache.py.
+Description=MuPiBox Standwache (haelt eine Auslieferung noch, oder dreht zurueck?)
+After=local-fs.target network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/mupibox-tools/mupibox-standwache.py --nachsehen
+# Sie misst zwei Dienstblicke im Abstand von 5 s und ruft im Ernstfall den
+# Tauscher. Ein Wachhund, der selbst haengt, ist schlimmer als keiner.
+TimeoutStartSec=900
+
+# HIER STEHT ABSICHTLICH KEIN `SuccessExitStatus=0 1 3 4`.
+#
+# Die Kioskwache hat eins, weil ihr Fehlschlag nichts bedeutet — sie ist ein
+# Netz. Diese hier ist umgekehrt: Rueckgabe 3 heisst „ich habe den
+# Betriebsstand zurueckgedreht", Rueckgabe 4 heisst „das Zurueckdrehen ist
+# misslungen, hier braucht es einen Menschen". Beides SOLL in
+# `systemctl --failed` auftauchen. Ein Automat, der am Betriebsstand dreht und
+# dabei still bleibt, ist genau das, was man hinterher nicht erklaeren kann.
+#
+# Der Zeitgeber laeuft davon unbeeindruckt weiter; sobald die Frist verbraucht
+# ist, endet der naechste Lauf wieder mit 0 und die Unit ist nicht mehr rot.
+RemainAfterExit=no

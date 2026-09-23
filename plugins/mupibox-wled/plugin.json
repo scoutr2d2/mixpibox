@@ -1,0 +1,35 @@
+{
+  "kennung": "mupibox-wled",
+  "name": "WLED-Licht",
+  "fassung": "1.0.0",
+  "haupt": "index.mjs",
+  "rechte": ["ereignisse", "netz"],
+  "felder": [
+    {
+      "schluessel": "adresse",
+      "art": "text",
+      "name": "Adresse des Lichts",
+      "hinweis": "IP oder Name des WLED-Geraets, z. B. 192.168.178.42 oder wled.local. Leer lassen schaltet das Plugin ab."
+    },
+    {
+      "schluessel": "helligkeit",
+      "art": "zahl",
+      "name": "Helligkeit beim Spielen",
+      "hinweis": "0 bis 255.",
+      "vorgabe": 128
+    },
+    {
+      "schluessel": "ausBeimAnhalten",
+      "art": "schalter",
+      "name": "Licht aus, wenn die Musik anhaelt",
+      "vorgabe": true
+    },
+    {
+      "schluessel": "helligkeitFolgtLautstaerke",
+      "art": "schalter",
+      "name": "Helligkeit folgt der Lautstaerke",
+      "hinweis": "Leiser wird dunkler. Praktisch am Abend.",
+      "vorgabe": false
+    }
+  ]
+}

@@ -1,0 +1,345 @@
+{
+ "widgets": [
+  {
+   "warum": "Gekuerzte echte Antwort der ARD vom 20.09.2026 zu „Kommissar Wisting\" (Das Erste). Sie steht neben ard.fixture.json, weil sie zwei Dinge zeigt, die jene NICHT zeigt: isGeoBlocked=true bei einer Folge, die aus Deutschland spielt, und drei Tonsaetze in derselben Gruppe, deren audios[].kind VERTAUSCHT ist.",
+   "id": "Y3JpZDovL2Rhc2Vyc3RlLmRlL2tvbW1pc3Nhci13aXN0aW5nLTEvMjAyMi0xMi0yNl8yMi0zMC1NRVo",
+   "title": "Der Atem der Angst (2) (S02/E02)",
+   "geoblocked": false,
+   "mediaCollection": {
+    "embedded": {
+     "isGeoBlocked": true,
+     "meta": {
+      "title": "Der Atem der Angst (2)",
+      "durationSeconds": 2689
+     },
+     "streams": [
+      {
+       "media": [
+        {
+         "url": "https://universal-vod.daserste.de/i/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/,JOB_519245__audiodeskription_480x270-50p-700kbit.mp4,JOB_519245__audiodeskription_640x360-50p-1200kbit.mp4,JOB_519245__audiodeskription_960x540-50p-1600kbit.mp4,JOB_519245__audiodeskription_1280x720-50p-3200kbit.mp4,JOB_519245__audiodeskription_1920x1080-50p-5000kbit.mp4,.csmil/master.m3u8",
+         "mimeType": "application/vnd.apple.mpegurl",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "nor"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 1920,
+         "maxVResolutionPx": 1080,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "Auto",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519245__audiodeskription_1280x720-50p-3200kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "nor"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 1280,
+         "maxVResolutionPx": 720,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "HD 720p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519245__audiodeskription_1920x1080-50p-5000kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "nor"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 1920,
+         "maxVResolutionPx": 1080,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "HD 1080p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519245__audiodeskription_960x540-50p-1600kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "nor"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 960,
+         "maxVResolutionPx": 540,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "SD 540p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519245__audiodeskription_640x360-50p-1200kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "nor"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 640,
+         "maxVResolutionPx": 360,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "SD 360p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519244__internationalerton_960x540-50p-1600kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "audio-description",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 960,
+         "maxVResolutionPx": 540,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "SD 540p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://universal-vod.daserste.de/i/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/,JOB_519244__internationalerton_480x270-50p-700kbit.mp4,JOB_519244__internationalerton_640x360-50p-1200kbit.mp4,JOB_519244__internationalerton_960x540-50p-1600kbit.mp4,JOB_519244__internationalerton_1280x720-50p-3200kbit.mp4,JOB_519244__internationalerton_1920x1080-50p-5000kbit.mp4,.csmil/master.m3u8",
+         "mimeType": "application/vnd.apple.mpegurl",
+         "audios": [
+          {
+           "kind": "audio-description",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 1920,
+         "maxVResolutionPx": 1080,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "Auto",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519244__internationalerton_1920x1080-50p-5000kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "audio-description",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 1920,
+         "maxVResolutionPx": 1080,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "HD 1080p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519244__internationalerton_640x360-50p-1200kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "audio-description",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 640,
+         "maxVResolutionPx": 360,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "SD 360p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519244__internationalerton_1280x720-50p-3200kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "audio-description",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 1280,
+         "maxVResolutionPx": 720,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "HD 720p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519243__sendeton_960x540-50p-1600kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 960,
+         "maxVResolutionPx": 540,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "SD 540p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519243__sendeton_640x360-50p-1200kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 640,
+         "maxVResolutionPx": 360,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "SD 360p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519243__sendeton_1280x720-50p-3200kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 1280,
+         "maxVResolutionPx": 720,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "HD 720p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://ctv-videos.daserste.de/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/JOB_519243__sendeton_1920x1080-50p-5000kbit.mp4",
+         "mimeType": "video/mp4",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 1920,
+         "maxVResolutionPx": 1080,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "HD 1080p",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        },
+        {
+         "url": "https://universal-vod.daserste.de/i/dach/2022/12/13/46d462b1-2b3a-444c-866c-93e5e7e40d7d/,JOB_519243__sendeton_480x270-50p-700kbit.mp4,JOB_519243__sendeton_640x360-50p-1200kbit.mp4,JOB_519243__sendeton_960x540-50p-1600kbit.mp4,JOB_519243__sendeton_1280x720-50p-3200kbit.mp4,JOB_519243__sendeton_1920x1080-50p-5000kbit.mp4,.csmil/master.m3u8",
+         "mimeType": "application/vnd.apple.mpegurl",
+         "audios": [
+          {
+           "kind": "standard",
+           "languageCode": "deu"
+          }
+         ],
+         "isAdaptiveQualitySelectable": false,
+         "maxHResolutionPx": 1920,
+         "maxVResolutionPx": 1080,
+         "isHighDynamicRange": false,
+         "videoCodec": "H.264",
+         "aspectRatio": "16:9",
+         "forcedLabel": "Auto",
+         "isProtocolRelative": false,
+         "isHbbtv": false,
+         "hasEmbeddedSubtitles": false,
+         "subtitles": []
+        }
+       ],
+       "kind": "main",
+       "kindName": "Normal",
+       "videoLanguageCode": ""
+      }
+     ]
+    }
+   }
+  }
+ ],
+ "id": "player_ondemand-page-ard",
+ "title": "Der Atem der Angst (2) (S02/E02)"
+}

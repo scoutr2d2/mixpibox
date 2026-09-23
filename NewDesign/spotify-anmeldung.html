@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spotify verbinden — MuPiBox</title>
+<!--
+  Die EIGENSTAENDIGE Spotify-Anmeldeseite (E118/1a).
+
+  WARUM ES SIE GIBT: Die Anmeldung lebte als Angular-Seite in der alten
+  Box-Oberflaeche (src/frontend-box, Route /spotify). Die alte Oberflaeche
+  faellt (eine Oberflaeche, keine Doppelwartung) — aber der PFAD /spotify darf
+  nicht fallen: er ist bei Spotify als redirect_uri registriert
+  (http://127.0.0.1:8200/spotify), und Spotify vergleicht zeichengenau.
+  Diese Seite wird vom Backend unter GENAU diesem Pfad ausgeliefert
+  (server.ts, vor dem Catch-all) und kommt ohne Angular, Ionic oder app.js aus.
+
+  WAS SIE TRAEGT: die Web-API-Anmeldung (PKCE, geheimnislos) mit allen teuer
+  erkauften E22-Wegen (fester Rueckweg, Einfuegefeld, HTTPS-Wechsel auf 8443,
+  Verwerfen-Ausgang) und die TON-Anmeldung (librespot) ueber die Box
+  (/api/spotify/ton/...), weil der QR der Einrichtung Handys genau hierher
+  schickt.
+
+  WAS SIE ABSICHTLICH NICHT TRAEGT: das Blaettern im Konto (Playlists, Alben,
+  Suche, Abspielen, Hinzufuegen). Das ist Medienverwaltung und lebt in der
+  Verwaltung unter /admin (streaming.ts); eine zweite Abschrift hier liefe
+  nur auseinander.
+
+  SPEICHER-SCHLUESSEL: dieselben wie in der alten Seite (mupibox_spotify_*).
+  Ein konfigurierter Rueckweg und eine bestehende Browser-Anmeldung
+  ueberleben den Umstieg dadurch unveraendert.
+-->
+<style>
+  :root {
+    --bg: #f4efe7; --karte: #fffdf9; --schrift: #23201b; --blass: #6f675c;
+    --linie: #e2d9cc; --gruen: #1d9e55; --blau: #1B6EF3; --rot: #c23a2b;
+    --akzent: #1db954; /* Spotifys Gruen nur als Wiedererkennung des Dienstes */
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #17150f; --karte: #221f18; --schrift: #f0ece4; --blass: #a49c8e; --linie: #3a352b; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--schrift);
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.45;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 48px; }
+  h1 { font-size: 26px; margin: 8px 0 2px; }
+  .unter { color: var(--blass); margin: 0 0 18px; }
+  section {
+    background: var(--karte); border: 1px solid var(--linie); border-radius: 14px;
+    padding: 16px; margin: 0 0 14px;
+  }
+  h2 { font-size: 17px; margin: 0 0 10px; }
+  label { display: block; font-size: 14px; color: var(--blass); margin: 10px 0 4px; }
+  input[type=text] {
+    width: 100%; font-size: 16px; padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--linie); background: var(--bg); color: var(--schrift);
+  }
+  button {
+    font-size: 16px; padding: 12px 16px; border-radius: 12px; border: 0;
+    background: var(--schrift); color: var(--bg); cursor: pointer; margin: 10px 8px 0 0;
+    min-height: 44px;
+  }
+  button.still { background: transparent; color: var(--schrift); border: 1px solid var(--linie); }
+  button.gruen { background: var(--gruen); color: #fff; }
+  button:disabled { opacity: .5; cursor: default; }
+  .meldung { margin: 10px 0 0; font-size: 15px; }
+  .meldung.fehler { color: var(--rot); }
+  .meldung.gut { color: var(--gruen); }
+  .hinweis { font-size: 14px; color: var(--blass); margin: 8px 0 0; }
+  .code-gross {
+    font-size: 34px; letter-spacing: .18em; font-weight: 700; text-align: center;
+    padding: 14px 0; user-select: all;
+  }
+  .zeile { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .punkt { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+  .punkt.an { background: var(--gruen); }
+  .punkt.aus { background: var(--blass); }
+  a { color: var(--blau); }
+  .token {
+    font-family: ui-monospace, monospace; font-size: 12px; word-break: break-all;
+    background: var(--bg); border: 1px dashed var(--linie); border-radius: 8px; padding: 8px;
+    user-select: all;
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <!-- Der Rueckweg zur Box — OHNE ihn waere diese Seite auf dem Kiosk eine
+       Sackgasse (kein Adressfeld, keine Tabs; dieselbe Fehlerklasse wie
+       BACKLOG #61). Fest auf /neu/: die eine Oberflaeche. -->
+  <p><a href="/neu/">← Zurück zur Box</a></p>
+  <h1>Spotify verbinden</h1>
+  <p class="unter">Zwei Anmeldungen, beide ohne Geheimnis: die Web-API für Blättern und Steuern, der Ton für die Wiedergabe auf der Box.</p>
+
+  <!-- ══ 1. WEB-API (PKCE) ═══════════════════════════════════════════════ -->
+  <section id="k-web">
+    <h2><span id="web-punkt" class="punkt aus"></span> Web-API der Box</h2>
+    <p id="web-stand" class="hinweis">Frage die Box …</p>
+
+    <div id="web-form">
+      <label for="client-id">Client-ID aus dem <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">Spotify-Dashboard</a> (kein Secret — PKCE braucht keins)</label>
+      <input type="text" id="client-id" autocomplete="off" spellcheck="false">
+
+      <label for="rueckweg">Redirect-URI — muss ZEICHENGENAU so im Dashboard stehen</label>
+      <input type="text" id="rueckweg" autocomplete="off" spellcheck="false">
+
+      <div class="zeile">
+        <button id="b-verbinden" class="gruen">Mit Spotify verbinden</button>
+        <button id="b-https" class="still" hidden>Über die Box-Adresse (HTTPS&nbsp;8443) anmelden</button>
+      </div>
+      <p class="hinweis">Nach der Freigabe landest du auf einer <b>Fehlerseite</b> — das ist der vorgesehene Weg: dort die ganze Adresszeile kopieren und unten einfügen. (Nur auf der Box selbst geht es ohne diesen Schritt nicht — der Kiosk läuft unter localhost, die Rückleitung unter 127.0.0.1, das sind zwei getrennte Speicher.)</p>
+    </div>
+
+    <div id="web-einloesen" hidden>
+      <label for="adresse">Adresse der Fehlerseite (…?code=…&amp;state=…)</label>
+      <input type="text" id="adresse" autocomplete="off" spellcheck="false">
+      <div class="zeile">
+        <button id="b-einloesen" class="gruen">Adresse einlösen</button>
+        <button id="b-verwerfen" class="still">Angefangene Anmeldung verwerfen</button>
+      </div>
+    </div>
+
+    <div id="web-verbunden" hidden>
+      <div class="zeile">
+        <button id="b-token" class="still">Refresh-Token kopieren</button>
+        <button id="b-neu" class="still">Neu anmelden</button>
+      </div>
+      <p class="hinweis" id="token-zeile" hidden>Falls Kopieren nicht geht — von Hand markieren:</p>
+      <p class="token" id="token-text" hidden></p>
+    </div>
+
+    <p id="web-meldung" class="meldung" hidden></p>
+  </section>
+
+  <!-- ══ 2. TON (librespot) ══════════════════════════════════════════════ -->
+  <section id="k-ton">
+    <h2><span id="ton-punkt" class="punkt aus"></span> Ton auf der Box</h2>
+    <p id="ton-stand" class="hinweis">Frage die Box …</p>
+
+    <div id="ton-wege">
+      <div class="zeile">
+        <button id="b-ton-code" class="gruen">Code holen (spotify.com/pair)</button>
+        <button id="b-ton-start" class="still">Anmeldeseite von Spotify öffnen</button>
+      </div>
+      <p class="hinweis">Der Code-Weg ist der einfachste: sechs Zeichen auf einem beliebigen Gerät bei <a href="https://spotify.com/pair" target="_blank" rel="noopener">spotify.com/pair</a> eintippen — die Box holt sich den Rest selbst.</p>
+    </div>
+
+    <div id="ton-code-karte" hidden>
+      <div class="code-gross" id="ton-code-wert"></div>
+      <p class="hinweis" id="ton-code-rest"></p>
+      <div class="zeile">
+        <a id="ton-code-link" href="https://spotify.com/pair" target="_blank" rel="noopener">Bei spotify.com/pair eintragen</a>
+        <button id="b-ton-code-weg" class="still">Abbrechen</button>
+      </div>
+    </div>
+
+    <div id="ton-start-karte" hidden>
+      <p class="hinweis" id="ton-start-text"></p>
+      <div class="zeile">
+        <a id="ton-start-link" href="#" rel="noopener" hidden>Zur Spotify-Anmeldung</a>
+        <button id="b-ton-hin" class="gruen" hidden>Auf dieser Box anmelden</button>
+      </div>
+      <label for="ton-adresse">Danach: Adresse der Fehlerseite hier einfügen</label>
+      <input type="text" id="ton-adresse" autocomplete="off" spellcheck="false">
+      <button id="b-ton-einloesen" class="gruen">Adresse einlösen</button>
+    </div>
+
+    <p id="ton-meldung" class="meldung" hidden></p>
+  </section>
+
+  <p class="hinweis">Blättern, Suchen und Hinzufügen von Spotify-Inhalten: in der <a href="/admin">Verwaltung</a> unter „Streaming".</p>
+</main>
+
+<script type="module">
+import {
+  SPOTIFY_RUECKWEG_VORGABE,
+  SPOTIFY_TOKEN_URL,
+  fehlerText,
+  parseSpotifyCallback,
+  pkcePair,
+  randomState,
+  spotifyAuthUrl,
+  sucheAusAdresse,
+  tokenExchangeBody,
+} from '/neu/spotify-anmeldung-logik.mjs'
+
+/* Dieselben Schluessel wie die alte Angular-Seite — ein angefangener Zustand
+ * und ein konfigurierter Rueckweg ueberleben den Umstieg. */
+const K_CFG = 'mupibox_spotify_cfg'
+const K_VERIFIER = 'mupibox_spotify_pkce_verifier'
+const K_STATE = 'mupibox_spotify_pkce_state'
+const K_CLIENT = 'mupibox_spotify_pkce_client'
+const K_RUECKWEG = 'mupibox_spotify_rueckweg'
+const K_PKCE_RUECKWEG = 'mupibox_spotify_pkce_rueckweg'
+
+const $ = (id) => document.getElementById(id)
+const zeig = (el, an) => { el.hidden = !an }
+
+function meldung(id, text, art) {
+  const el = $(id)
+  el.textContent = text || ''
+  el.className = 'meldung' + (art ? ' ' + art : '')
+  zeig(el, !!text)
+}
+
+/* ── Speicher-Handgriffe (jeder Zugriff gekapselt: kein Speicher = Vorgabe) ── */
+function cfgLesen() {
+  try { const s = localStorage.getItem(K_CFG); return s ? JSON.parse(s) : null } catch { return null }
+}
+function cfgSchreiben(cfg) {
+  try { localStorage.setItem(K_CFG, JSON.stringify(cfg)) } catch { /* voll — dann eben nicht */ }
+}
+function rueckwegLesen() {
+  try { const w = (localStorage.getItem(K_RUECKWEG) || '').trim(); if (w) return w } catch { /* Vorgabe */ }
+  return SPOTIFY_RUECKWEG_VORGABE
+}
+function rueckwegSchreiben(wert) {
+  const w = (wert || '').trim()
+  try {
+    if (!w || w === SPOTIFY_RUECKWEG_VORGABE) localStorage.removeItem(K_RUECKWEG)
+    else localStorage.setItem(K_RUECKWEG, w)
+  } catch { /* dann gilt die Vorgabe weiter */ }
+}
+function anmeldungLaeuft() {
+  try { return !!sessionStorage.getItem(K_VERIFIER) } catch { return false }
+}
+function anmeldungWegraeumen() {
+  try {
+    sessionStorage.removeItem(K_VERIFIER)
+    sessionStorage.removeItem(K_STATE)
+    sessionStorage.removeItem(K_CLIENT)
+    sessionStorage.removeItem(K_PKCE_RUECKWEG)
+  } catch { /* dann lag auch nichts da */ }
+}
+
+/* ── Wo laeuft diese Seite? ────────────────────────────────────────────── */
+function aufDerBox() {
+  const h = location.hostname
+  return h === 'localhost' || h === '127.0.0.1' || h === '::1'
+}
+function schonAufHttps() { return location.protocol === 'https:' && location.port === '8443' }
+function httpsRueckweg() { return 'https://' + location.hostname + ':8443/spotify' }
+
+/* ── Web-API: Anmeldung ────────────────────────────────────────────────── */
+async function tokenTausch(body) {
+  const a = await fetch(SPOTIFY_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  })
+  const d = await a.json().catch(() => null)
+  if (!a.ok) throw { status: a.status, error: d }
+  return d || {}
+}
+
+async function anBoxGeben(cfg) {
+  try {
+    const a = await fetch('/api/spotify/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId: cfg.clientId, refreshToken: cfg.refreshToken, accessToken: cfg.accessToken || '' }),
+    })
+    return a.ok
+  } catch { return false }
+}
+
+async function kontoName() {
+  try {
+    const a = await fetch('/api/spotify/web/me')
+    const d = await a.json().catch(() => null)
+    return (d && (d.display_name || d.id)) || undefined
+  } catch { return undefined }
+}
+
+async function verbinden() {
+  const clientId = $('client-id').value.trim()
+  if (!clientId) { meldung('web-meldung', 'Bitte zuerst die Client-ID eingeben.', 'fehler'); return }
+  rueckwegSchreiben($('rueckweg').value)
+  const rueckweg = rueckwegLesen()
+  meldung('web-meldung', 'Weiterleitung zu Spotify …')
+  const { verifier, challenge } = await pkcePair()
+  const state = randomState()
+  /* Der Rueckweg wird MITGELEGT (E22/R3): Spotify vergleicht ihn beim Tausch
+   * ein zweites Mal — es muss dieselbe Zeichenkette sein wie jetzt. */
+  try {
+    sessionStorage.setItem(K_VERIFIER, verifier)
+    sessionStorage.setItem(K_STATE, state)
+    sessionStorage.setItem(K_CLIENT, clientId)
+    sessionStorage.setItem(K_PKCE_RUECKWEG, rueckweg)
+  } catch {
+    meldung('web-meldung', 'Dieser Browser hat keinen Sitzungs-Speicher — ohne ihn kann die Anmeldung nicht abgeschlossen werden.', 'fehler')
+    return
+  }
+  location.assign(spotifyAuthUrl(clientId, challenge, state, rueckweg))
+}
+
+async function abschliessen(eingefuegt) {
+  meldung('web-meldung', 'Anmeldung wird abgeschlossen …')
+  try {
+    const cb = parseSpotifyCallback(eingefuegt ? sucheAusAdresse(eingefuegt) : location.search)
+    if (cb.error) throw new Error(cb.error)
+    if (!cb.code) throw new Error('no_code')
+    let verifier = '', state = '', clientId = '', rueckweg = ''
+    try {
+      verifier = sessionStorage.getItem(K_VERIFIER) || ''
+      state = sessionStorage.getItem(K_STATE) || ''
+      clientId = sessionStorage.getItem(K_CLIENT) || ''
+      rueckweg = sessionStorage.getItem(K_PKCE_RUECKWEG) || ''
+    } catch { /* wird gleich als no_pkce_state gemeldet */ }
+    if (!verifier || !clientId) throw new Error('no_pkce_state')
+    if (cb.state !== state) throw new Error('state_mismatch')
+    const tokens = await tokenTausch(tokenExchangeBody(cb.code, verifier, clientId, rueckweg || rueckwegLesen()))
+    if (!tokens.access_token || !tokens.refresh_token) throw new Error('no_tokens')
+    const cfg = {
+      clientId,
+      refreshToken: tokens.refresh_token,
+      accessToken: tokens.access_token,
+      expiresAt: Date.now() + (tokens.expires_in || 3600) * 1000,
+    }
+    cfgSchreiben(cfg)
+    /* ERST der Box die Zugangsdaten geben, DANN nach dem Namen fragen — die
+     * Frage laeuft ueber die Box, und die braucht dafuer den Token. */
+    const gespeichert = await anBoxGeben(cfg)
+    cfg.userName = await kontoName()
+    cfgSchreiben(cfg)
+    anmeldungWegraeumen()
+    try { history.replaceState({}, '', location.pathname) } catch { /* Anzeige-Kosmetik */ }
+    const wer = cfg.userName ? ' als ' + cfg.userName : ''
+    meldung('web-meldung', gespeichert
+      ? 'Verbunden' + wer + '. In der Box-Konfiguration gespeichert.'
+      : 'Verbunden' + wer + '. Speichern in der Box fehlgeschlagen — Token unten kopieren.', gespeichert ? 'gut' : 'fehler')
+    aufbau()
+  } catch (e) {
+    meldung('web-meldung', 'Anmeldung fehlgeschlagen: ' + fehlerText(e), 'fehler')
+  }
+}
+
+/* ── Web-API: Aufbau der Karte ─────────────────────────────────────────── */
+async function boxEingerichtet() {
+  try {
+    const a = await fetch('/api/spotify/config')
+    const d = await a.json().catch(() => null)
+    return !!(d && d.eingerichtet)
+  } catch { return false }
+}
+
+async function aufbau() {
+  /* Auf 8443 ist die EIGENE Adresse der Rueckweg: der localStorage gilt je
+   * Herkunft — was die 8200-Seite gesetzt hat, ist hier nicht sichtbar. */
+  if (schonAufHttps() && rueckwegLesen() !== httpsRueckweg()) rueckwegSchreiben(httpsRueckweg())
+  $('rueckweg').value = rueckwegLesen()
+  const c = cfgLesen()
+  if (c && c.clientId) $('client-id').value = c.clientId
+  zeig($('b-https'), !schonAufHttps() && !aufDerBox())
+
+  const offen = anmeldungLaeuft()
+  zeig($('web-einloesen'), offen)
+  if (offen) {
+    /* Eine LAUFENDE Anmeldung schlaegt die Auskunft der Box: wer nach dem
+     * Trennen neu anmeldet, haelt den Code in der Zwischenablage — die Karte
+     * "Verbunden" ohne Einfuegefeld waere eine Sackgasse. */
+    $('web-punkt').className = 'punkt aus'
+    $('web-stand').textContent = 'Eine Anmeldung läuft in diesem Tab — unten die Adresse der Fehlerseite einfügen.'
+    zeig($('web-verbunden'), false)
+    return
+  }
+  const eingerichtet = (c && c.refreshToken) ? true : await boxEingerichtet()
+  $('web-punkt').className = 'punkt ' + (eingerichtet ? 'an' : 'aus')
+  $('web-stand').textContent = eingerichtet
+    ? 'Die Box ist mit Spotify verbunden' + (c && c.userName ? ' (' + c.userName + ')' : '') + '.'
+    : 'Die Box ist noch nicht mit der Spotify-Web-API verbunden.'
+  zeig($('web-verbunden'), eingerichtet)
+  zeig($('token-zeile'), false)
+  zeig($('token-text'), false)
+}
+
+/* ── Ton (librespot) — alles ueber die Box ─────────────────────────────── */
+async function tonRuf(weg, koerper) {
+  const a = await fetch('/api/spotify/ton' + weg, {
+    method: koerper === undefined ? 'GET' : 'POST',
+    headers: { 'Content-Type': 'application/json', accept: 'application/json' },
+    body: koerper === undefined ? undefined : JSON.stringify(koerper),
+  })
+  return a.json().catch(() => null)
+}
+
+let tonUhr = null
+let tonCodeOffen = false
+
+function tonTaktAus() { if (tonUhr !== null) { clearInterval(tonUhr); tonUhr = null } }
+
+async function tonStand() {
+  let d = null
+  try { d = await tonRuf('') } catch { /* Box still — Anzeige bleibt stehen */ }
+  if (!d) { $('ton-stand').textContent = 'Die Box antwortet nicht.'; return null }
+  const an = !!d.angemeldet
+  $('ton-punkt').className = 'punkt ' + (an ? 'an' : 'aus')
+  $('ton-stand').textContent = an
+    ? 'Der Ton ist bei Spotify angemeldet' + (d.laeuft ? ' und läuft.' : '.')
+    : 'Der Ton ist noch nicht angemeldet.'
+  const g = d.geraet || null
+  if (g && g.meldung) meldung('ton-meldung', String(g.meldung))
+  if (tonCodeOffen && g && typeof g.restSekunden === 'number') {
+    $('ton-code-rest').textContent = 'Noch etwa ' + Math.max(1, Math.round(g.restSekunden / 60)) + ' Minuten gültig.'
+  }
+  /* Aufhoeren, wenn es nichts mehr zu holen gibt — sonst fragt eine
+   * vergessene Seite bis zum Schliessen im Vier-Sekunden-Takt. */
+  if (an || (tonCodeOffen && (!g || !g.wartet))) {
+    tonTaktAus()
+    if (an) { tonCodeOffen = false; zeig($('ton-code-karte'), false) }
+  }
+  return d
+}
+
+async function tonCodeHolen() {
+  meldung('ton-meldung', '')
+  $('b-ton-code').disabled = true
+  try {
+    const d = await tonRuf('/geraetecode', {})
+    if (d && d.code) {
+      tonCodeOffen = true
+      $('ton-code-wert').textContent = String(d.code)
+      $('ton-code-link').href = String(d.adresseFertig || d.adresse || 'https://spotify.com/pair')
+      $('ton-code-rest').textContent = 'Noch etwa ' + Math.max(1, Math.round((d.restSekunden || 0) / 60)) + ' Minuten gültig.'
+      zeig($('ton-code-karte'), true)
+      zeig($('ton-start-karte'), false)
+      tonTaktAus()
+      tonUhr = setInterval(() => { void tonStand() }, 4000)
+    } else {
+      meldung('ton-meldung', String((d && d.grund) || 'Spotify hat keinen Code herausgegeben.'), 'fehler')
+    }
+  } catch {
+    meldung('ton-meldung', 'Die Box antwortet nicht.', 'fehler')
+  }
+  $('b-ton-code').disabled = false
+}
+
+async function tonCodeWeg() {
+  tonCodeOffen = false
+  zeig($('ton-code-karte'), false)
+  tonTaktAus()
+  try { await fetch('/api/spotify/ton/geraetecode', { method: 'DELETE' }) } catch { /* verfaellt von selbst */ }
+  void tonStand()
+}
+
+async function tonStart() {
+  meldung('ton-meldung', '')
+  $('b-ton-start').disabled = true
+  try {
+    const d = await tonRuf('/start', {})
+    const url = String((d && d.url) || '')
+    if (!url) {
+      meldung('ton-meldung', 'Die Box hat keine Adresse geliefert.', 'fehler')
+    } else {
+      zeig($('ton-start-karte'), true)
+      zeig($('ton-code-karte'), false)
+      /* Auf der Box: hingehen, nicht in einen neuen Tab — der Kiosk hat keine
+       * Tabs, ein Blank-Fenster waere eine Sackgasse. Spotify fuehrt die Box
+       * danach selbst auf 127.0.0.1:5588 zurueck, dort horcht der Server. */
+      if (aufDerBox()) {
+        $('ton-start-text').textContent = 'Weiter zu Spotify — die Box kommt danach von selbst zurück.'
+        zeig($('b-ton-hin'), true)
+        zeig($('ton-start-link'), false)
+        $('b-ton-hin').onclick = () => location.assign(url)
+      } else {
+        $('ton-start-text').textContent = 'Den Link öffnen, anmelden — und die Adresse der Fehlerseite unten einfügen.'
+        const l = $('ton-start-link')
+        l.href = url
+        zeig(l, true)
+        zeig($('b-ton-hin'), false)
+      }
+    }
+  } catch {
+    meldung('ton-meldung', 'Die Box antwortet nicht.', 'fehler')
+  }
+  $('b-ton-start').disabled = false
+}
+
+async function tonEinloesen() {
+  const eingabe = $('ton-adresse').value.trim()
+  if (!eingabe) { meldung('ton-meldung', 'Bitte die Adresse von der Fehlerseite einfügen.', 'fehler'); return }
+  $('b-ton-einloesen').disabled = true
+  meldung('ton-meldung', 'Wird eingelöst — das dauert bis zu einer Minute …')
+  try {
+    const d = await tonRuf('/code', { eingabe })
+    meldung('ton-meldung', String((d && d.grund) || 'Unklarer Ausgang.'), d && d.ok ? 'gut' : 'fehler')
+    if (d && d.ok) { $('ton-adresse').value = ''; zeig($('ton-start-karte'), false) }
+  } catch (e) {
+    meldung('ton-meldung', 'Es hat nicht geklappt: ' + String(e).slice(0, 60), 'fehler')
+  }
+  $('b-ton-einloesen').disabled = false
+  void tonStand()
+}
+
+/* ── Verdrahtung ───────────────────────────────────────────────────────── */
+$('b-verbinden').onclick = () => void verbinden()
+$('b-https').onclick = () => {
+  /* Rueckweg ZUERST setzen — der localStorage gehoert der Herkunft, nach dem
+   * Wechsel waere die Eingabe weg. Die Zielseite setzt ihn beim Aufbau selbst
+   * noch einmal aus ihrer eigenen Adresse. */
+  rueckwegSchreiben(httpsRueckweg())
+  location.assign(httpsRueckweg())
+}
+$('b-einloesen').onclick = () => {
+  const text = $('adresse').value.trim()
+  if (!text) { meldung('web-meldung', 'Bitte zuerst die Adresse aus dem Browser einfügen.', 'fehler'); return }
+  void abschliessen(text)
+}
+$('b-verwerfen').onclick = () => {
+  anmeldungWegraeumen()
+  $('adresse').value = ''
+  meldung('web-meldung', 'Die angefangene Anmeldung wurde verworfen.')
+  void aufbau()
+}
+$('b-token').onclick = () => {
+  const t = (cfgLesen() || {}).refreshToken || ''
+  if (!t) { meldung('web-meldung', 'In diesem Browser liegt kein Token — die Anmeldung lief in einem anderen.', 'fehler'); return }
+  const zeigen = () => { $('token-text').textContent = t; zeig($('token-zeile'), true); zeig($('token-text'), true) }
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => meldung('web-meldung', 'Refresh-Token kopiert.', 'gut'), zeigen)
+  else zeigen()
+}
+$('b-neu').onclick = () => {
+  try { localStorage.removeItem(K_CFG) } catch { /* dann bleibt eben die Kopie */ }
+  meldung('web-meldung', 'Browser-Anmeldung verworfen — jetzt neu verbinden. (Die Box behält ihren Zugang, bis ein neuer gespeichert wird.)')
+  void aufbau()
+}
+$('b-ton-code').onclick = () => void tonCodeHolen()
+$('b-ton-code-weg').onclick = () => void tonCodeWeg()
+$('b-ton-start').onclick = () => void tonStart()
+$('b-ton-einloesen').onclick = () => void tonEinloesen()
+
+/* ── Start: Rueckleitung zuerst, dann normaler Aufbau ──────────────────── */
+const cb = parseSpotifyCallback(location.search)
+if (cb.code || cb.error) {
+  void abschliessen().then(() => void tonStand())
+} else {
+  void aufbau().then(() => void tonStand())
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="ARD Sounds">
+  <!-- Klangwellen, neutral gehalten: kein Sender-Logo, keine Marke. Das Icon
+       gehoert dem Plugin und reist mit ihm (E77). -->
+  <style>
+    /* Tinte im Zeichen, nicht aus der Seite: als img geladen sieht dieses SVG
+       die color der Verwaltung nicht, und currentColor waere Schwarz auf
+       #121212. Siehe tools/plugin-icon-kontrast.py. */
+    svg { color: #f2f2f7; }
+  </style>
+  <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+    <path d="M12 5v14" />
+    <path d="M8 8v8" />
+    <path d="M16 8v8" />
+    <path d="M4 10.5v3" />
+    <path d="M20 10.5v3" />
+  </g>
+</svg>

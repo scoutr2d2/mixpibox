@@ -1,0 +1,64 @@
+# Perf-Tuning als einzeln anwendbare Schritte (alle optional -> gezielt auswählen).
+# Nach `perf.py`/`rsi.py perf` weißt du, was auf DEINER Box präsent ist; hier sind
+# die passenden Aktionen. Jeder Schritt ist reversibel; die note nennt den Trade-off.
+name: Perf-Tuning (Pi/DietPi-Kiosk)
+version: 1
+
+steps:
+  - id: no-wait-online
+    name: "Boot nicht auf 'network online' warten"
+    note: "spart oft mehrere Sekunden Boot; unkritisch, solange kein Dienst zwingend Netz beim Start braucht"
+    run: "systemctl disable NetworkManager-wait-online systemd-networkd-wait-online 2>/dev/null; echo ok"
+    optional: true
+
+  - id: drop-modemmanager
+    name: "ModemManager entfernen"
+    note: "Mobilfunk-Modem-Verwaltung — auf WLAN/LAN-Box unnötig"
+    run: "systemctl disable --now ModemManager 2>/dev/null; echo ok"
+    optional: true
+
+  - id: drop-apt-timers
+    name: "Auto-apt-Timer aus"
+    note: "verhindert I/O-Spikes + apt-Sperren im Betrieb; du updatest dann bewusst"
+    run: "systemctl disable --now apt-daily.timer apt-daily-upgrade.timer 2>/dev/null; echo ok"
+    optional: true
+
+  - id: drop-man-db
+    name: "man-db-Timer aus"
+    note: "man-Index unnötig auf einer Appliance, frisst Boot/IO"
+    run: "systemctl disable --now man-db.timer 2>/dev/null; echo ok"
+    optional: true
+
+  - id: drop-e2scrub
+    name: "e2scrub-Timer aus"
+    note: "ext4-Scrub — auf SD/kleiner Box unnötig"
+    run: "systemctl disable e2scrub_all.timer e2scrub_reap.service 2>/dev/null; echo ok"
+    optional: true
+
+  - id: consider-avahi
+    name: "avahi (mDNS/.local) aus"
+    note: "NUR wenn du die Box nicht per <name>.local ansprichst"
+    run: "systemctl disable --now avahi-daemon 2>/dev/null; echo ok"
+    optional: true
+
+  - id: swap-zram
+    name: "Swap: dphys-swapfile → zram (Swap im RAM, komprimiert)"
+    note: "kein SD-Wear mehr durch Swap, schneller. Braucht zram-tools/dietpi-config"
+    run: "systemctl disable --now dphys-swapfile 2>/dev/null; dphys-swapfile swapoff 2>/dev/null; echo 'zram über dietpi-config aktivieren (RAM-Swap)'"
+    optional: true
+    workarounds:
+      - id: zram-tools
+        name: "zram-tools installieren + aktivieren"
+        run: "apt-get install -y zram-tools && echo 'ALGO=zstd\\nPERCENT=50' >> /etc/default/zramswap && systemctl restart zramswap && echo ok"
+
+  - id: drop-rsyslog
+    name: "rsyslog entfernen (journald/RAMlog reicht)"
+    note: "weniger SD-Writes; Logs bleiben über journald/DietPi-RAMlog"
+    run: "systemctl disable --now rsyslog 2>/dev/null; apt-get -y purge rsyslog 2>/dev/null; echo ok"
+    optional: true
+
+  - id: chromium-ramcache
+    name: "Chromium-Disk-Cache in RAM (tmpfs)"
+    note: "schnellerer Kiosk-Start + weniger SD-Writes; Cache ist nach Reboot leer"
+    run: "echo 'Kiosk-Startzeile um  --disk-cache-dir=/tmp/cef  ergänzen (chromium-autostart)'"
+    optional: true

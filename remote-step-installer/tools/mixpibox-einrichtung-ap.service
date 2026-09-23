@@ -1,0 +1,27 @@
+[Unit]
+Description=MixPiBox: eigenes WLAN aufmachen, wenn nach dem Start keines da ist
+# NICHT auf network-online warten — das waere genau der Fall, der hier nie
+# eintritt. `wait-online` liefe in seinen eigenen Zeitablauf (bis 2 min), und
+# der Rueckfall kaeme erst danach.
+After=network.target
+# Der Zugangspunkt ist der Rueckweg zum Assistenten; ohne den Agenten waere er
+# ein Netz, hinter dem nichts steht.
+After=step-agent.service
+
+[Service]
+Type=oneshot
+# 45 s: DHCP braucht auf dem Pi 4 bis zu 9 s (llmwiki kiosk-wartet-auf-dhcp),
+# WLAN laenger als Kabel. Wer zu frueh aufmacht, nimmt der Box die Verbindung,
+# die gleich da gewesen waere — ein Funkbaustein kann nur eine Rolle.
+ExecStart=/usr/bin/python3 /opt/mixpibox-einrichtung/einrichtung-ap.py wenn-kein-netz --warten 45
+RemainAfterExit=yes
+# Findet sich doch ein Netz, endet es mit 0 und hat NICHTS getan. Das ist der
+# Normalfall und kein Fehler.
+StandardOutput=journal
+StandardError=journal
+# Ein misslungener Rueckfall darf den Start nie aufhalten: die Box soll auch
+# ohne ihn hochkommen und spielen.
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

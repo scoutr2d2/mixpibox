@@ -1,0 +1,1167 @@
+# MuPiBox install as controllable steps.
+# Mirrors autosetup/autosetup.sh but each step is watchable / abortable / has
+# workarounds. WIP: some `run` lines are simplified placeholders to be ported
+# 1:1 from the autosetup — the STRUCTURE + the hard-won workarounds are real.
+#
+# Version-agnostic: the controller injects $BOOT_DIR / $DIETPI_DIR from sysinfo
+# (works across DietPi/Debian versions); the tarball is found via glob.
+name: MixPiBox (System)
+# NUR die System-Seite: Pakete, Audio, Bluetooth, Webserver, Chromium, Display.
+# Die APP (Frontend/Backend/Admin aus deinem Fork) installiert `mupibox-app.yaml`
+# per put: — hier bewusst NICHT mehr, denn das setzte ein auf die SD gebackenes
+# Tarball voraus (echter Lauf: tar auf "/MuPiBox-*.tgz" => Fehler).
+version: 1
+
+# ── Die Verwaltung ───────────────────────────────────────────────────────────
+# Sie kommt von der Node-API mit (http://<box>:8200/admin) und braucht keinen
+# eigenen Webserver. Bis zum 19.08.2026 gab es hier die Wahl MUPI_ADMIN =
+# node | php | aus; der klassische PHP-Admin (lighttpd + PHP + www.zip) ist
+# mit E47 ausgebaut. Er kostete rund 115 MB Arbeitsspeicher (gemessen:
+# php-fpm, 7 Prozesse) und brachte die Zeile "www-data ALL=(ALL:ALL)
+# NOPASSWD: ALL" mit.
+#
+# Eine ALTBOX, die noch mit php aufgesetzt wurde, raeumt der Schritt
+# "PHP-Verwaltung abschalten" in mupibox-app.yaml auf — der bleibt.
+
+# ── SCHRITTE JE ZIELHARDWARE ─────────────────────────────────────────────────
+# Ein Schritt darf ein `when:` tragen; ohne eines laeuft er ueberall (der
+# Normalfall). Die Erkennung kommt aus sysinfo, die Auswertung aus
+# controller/hardware.py — die TUI markiert unpassende Schritte schon beim
+# Verbinden als uebersprungen und sagt, WARUM.
+#
+#     when: pi5          nur Pi 5
+#     when: pi4 pi5      Pi 4 oder Pi 5
+#     when: "!pi5"       ueberall ausser Pi 5
+#     when: bcm2711      nach SoC (trifft Pi 4 UND CM4)
+#     when: trixie       nach Debian-Codename
+#
+# Gemeint ist das fuer echte Hardware-Unterschiede — nicht als Schalter fuer
+# Geschmacksfragen. Und lieber ein `when:` als eine Verzweigung IM Schritt:
+# ein Schritt, der laeuft und nichts tut, verschleiert, was passiert ist.
+
+steps:
+  - id: hardware
+    name: "Zielhardware festhalten"
+    note: >-
+      Steht am ANFANG des Protokolls, damit jeder Lauf sagt, worauf er lief.
+      Ohne das ist bei einem gescheiterten Schritt nicht mehr zu klaeren, ob
+      es an der Hardware lag - und genau diese Frage kommt jedes Mal, wenn
+      eine andere Platine ausprobiert wird (Pi 4 vs. Pi 5).
+      Der Schritt AENDERT NICHTS; er darf nie fehlschlagen und nie aufhalten.
+    run: |
+      # Ueberall `cat … | tr`, NICHT `tr < datei`: bei einer Umleitung auf eine
+      # fehlende Datei meldet die Shell den Fehler, BEVOR ein nachgestelltes
+      # 2>/dev/null greift - dann steht eine rote Zeile im Protokoll, obwohl
+      # nichts kaputt ist. Und ein `||`-Rueckfall hinter einer Pipe greift nie:
+      # es zaehlt der letzte Befehl der Pipe, und der gelingt.
+      M=$(cat /proc/device-tree/model 2>/dev/null | tr -d '\0')
+      V=$(cat /boot/dietpi/.version 2>/dev/null | tr '\n' ' ')
+      echo "Modell:   ${M:-unbekannt}"
+      echo "Kern:     $(uname -srm)"
+      echo "System:   $(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME")"
+      echo "DietPi:   ${V:--}"
+      echo "Speicher: $(awk '/MemTotal/{printf "%d MB", $2/1024}' /proc/meminfo 2>/dev/null)"
+      echo "Boot:     ${BOOT_DIR:-?}"
+    timeout: 30
+    optional: true
+
+  - id: dietpi-firstrun
+    name: "DietPi-Erstinstallation abschliessen (sonst blockiert alles)"
+    note: "Ist sie unfertig (.install_stage < 2), VERWEIGERT dietpi-software jede Installation und fragt endlos nach — das ist der klassische 69%-Haenger. Am Geraet belegt 2026-07-25."
+    timeout: 2400
+    run: |
+      set -e
+      S=$(cat /boot/dietpi/.install_stage 2>/dev/null || echo -1)
+      echo "Installationsstufe: $S"
+      if [ "$S" = "2" ]; then echo "bereits abgeschlossen"; exit 0; fi
+      sed -i 's/^AUTO_SETUP_AUTOMATED=.*/AUTO_SETUP_AUTOMATED=1/' /boot/dietpi.txt
+      [ -f $BOOT_DIR/dietpi.txt ] && sed -i 's/^AUTO_SETUP_AUTOMATED=.*/AUTO_SETUP_AUTOMATED=1/' $BOOT_DIR/dietpi.txt
+      echo "starte die Erstinstallation nicht-interaktiv (dauert einige Minuten) …"
+      G_INTERACTIVE=0 /boot/dietpi/dietpi-login < /dev/null 2>&1 | tail -25
+      echo "Stufe danach: $(cat /boot/dietpi/.install_stage 2>/dev/null)"
+    check: "[ \"$(cat /boot/dietpi/.install_stage 2>/dev/null)\" = 2 ]"
+
+  # ── HIER STAND `skip-rpi-eeprom` — GESTRICHEN, NICHT GEFUELLT ────────────────
+  # Der Schritt trug `when: pi5`, `optional: true` und `run: "true"`. Das ist die
+  # schaedlichste Sorte Schritt: er steht GRUEN im Protokoll, ohne je etwas getan
+  # zu haben — genau die stille Erfolgsmeldung, wegen der die beiden Boxen
+  # auseinandergelaufen sind. Gefuellt wurde er trotzdem nicht, aus drei Gruenden:
+  #
+  #   1. ER STAND ZU SPAET. Seine Notiz beschrieb den DietPi-Haenger beim
+  #      ERSTAUFSETZEN (DietPi zieht auf Pi 5 rpi-eeprom nach, auf Trixie fehlt
+  #      das Paket). Er lief aber HINTER `dietpi-firstrun` — da war die
+  #      Erstinstallation laengst durch. Abwenden konnte er nichts.
+  #   2. WAS BLEIBT, TUT SCHON JEMAND. `schneller-starten` schaltet
+  #      rpi-eeprom-update auf JEDER Platine ab; die Box aktualisiert ihr EEPROM
+  #      nicht im Betrieb. Ein zweiter Schritt daneben waere Doppelung.
+  #   3. Es gab keinen belegten Eingriff, den man haette hinschreiben koennen —
+  #      nur die Absicht. Eine erfundene Zeile waere schlimmer als keine.
+  #
+  # Kommt der Haenger wieder, gehoert die Gegenmassnahme VOR `dietpi-firstrun` —
+  # nicht hierher.
+
+  - id: apt-update
+    name: "Paketlisten aktualisieren"
+    run: "apt-get update"
+
+  - id: deps
+    name: "System-Abhängigkeiten"
+    run: "DEBIAN_FRONTEND=noninteractive apt-get install -y git zip unzip build-essential python3-dev i2c-tools alsa-utils mplayer pulseaudio python3-rpi-lgpio python3-lgpio python3-alsaaudio python3-flask python3-requests wireless-tools wireguard-tools cifs-utils davfs2 speech-dispatcher espeak-ng jq x11vnc xinput libwidevinecdm0"
+    note: "libasound2 heisst seit Debians time_t-Umstellung libasound2t64 - der alte Name loest auf Trixie ins Leere (apt-cache policy: Candidate (none)). Er wird deshalb unten SEPARAT mit Rueckfall installiert, statt die ganze Zeile scheitern zu lassen. python3-rpi-lgpio statt RPi.GPIO -> läuft auf Pi 4 UND 5. jq braucht das Kiosk-Skript, libwidevinecdm0 das Spotify-Web-SDK, alsa-utils den Master-Regler. python3-requests braucht check_network.py (ohne das Modul stirbt es mit ImportError und active_data.json bleibt leer). wireless-tools liefert iwconfig, ohne das bleiben WLAN-Signal und -Qualitaet in der Oberflaeche leer. wireguard-tools (wg, wg-quick) traegt den VPN-Heimweg der Verwaltung (BACKLOG E30): ohne das Paket zeigt die VPN-Seite NUR die Karte 'Das Werkzeug fehlt' und schickt den Betreiber per SSH auf die Box - auf einer frisch bespielten Karte, die gerade behauptet, fertig zu sein. Das Kernmodul bringt der Pi-Kern selbst mit; resolvconf braucht es NICHT, weil die Verwaltung DNS-Zeilen beim Uebernehmen streicht. NACHGETRAGEN 19.09.2026: autosetup.sh:104 trug es schon, der Update-Weg bekam es am selben Tag (f97fcbce) - dieses Rezept war die DRITTE, uebersehene Liste, und es ist der Weg, ueber den frische Karten heute wirklich entstehen. tools/rezept-deckung.py haelt die drei ab jetzt zusammen. cifs-utils (mount.cifs) und davfs2 (mount.davfs) tragen das Netzlaufwerk der Verwaltung (BACKLOG E28/N6-N9, E29/B4): ohne sie zeigt die Netzlaufwerk-Seite NUR die Karte 'Das Werkzeug fehlt' - am 20.09.2026 an Box .62 genau so gemessen, /api/netzlaufwerk meldete werkzeuge {smb:false,webdav:false}. Beide sind KLIENT-Pakete: sie binden eine fremde Freigabe ein und oeffnen selbst nichts, kein horchender Dienst kommt dazu. davfs2 stellt beim Einrichten eine debconf-Frage (setuid root) - hier harmlos, weil diese Zeile ohnehin DEBIAN_FRONTEND=noninteractive traegt und die Vorgabe (kein setuid) genau die richtige ist: eingehaengt wird ueber eine systemd-Einheit als root. In autosetup.sh und dem Update-Weg mussten dafuer die apt-Aufrufe erst noninteractive werden. speech-dispatcher+espeak-ng braucht die Vorlese-Funktion (langer Druck auf einen Titel): Chromium meldet speechSynthesis als VORHANDEN, auch wenn keine Stimme installiert ist - dann bleibt es einfach still und der Rueckfall auf die Box-Ausgabe greift nie. xinput braucht force-dsi-output.sh, um den Touch auf den DSI-Ausgang zu legen: fehlt es, ueberspringt das Skript die Zuordnung STILL (kein Fehler im Log) - am Geraet belegt. i2c-tools liefert i2cget fuer die Touch-Diagnose."
+
+  - id: libasound
+    name: "ALSA-Bibliothek (Name je nach Debian-Fassung)"
+    note: >-
+      Auf Trixie heisst das Paket `libasound2t64` (time_t-Umstellung), davor
+      `libasound2`. Ein fester Name laesst die Installation auf der jeweils
+      anderen Fassung auflaufen - also erst den neuen versuchen, dann den
+      alten. Am Geraet belegt: auf Trixie meldet `apt-cache policy libasound2`
+      "Candidate: (none)".
+    run: |
+      DEBIAN_FRONTEND=noninteractive apt-get install -y libasound2t64 \
+        || DEBIAN_FRONTEND=noninteractive apt-get install -y libasound2
+      dpkg -l | grep -E '^ii  libasound2' | awk '{print "  "$2" "$3}'
+    check: "dpkg -l | grep -qE '^ii  libasound2(t64)?[: ]'"
+    optional: true
+
+  - id: node
+    name: "Node.js 26 (nodesource)"
+    note: >-
+      Die Box lief zuletzt auf 22, waehrend die bestehende Box bewusst auf 26
+      gehoben wurde - das Rezept war der einzige Ort, der nicht nachgezogen
+      hat, und jede frische Installation landete wieder auf 22. Der Bau der
+      App zielt auf dieselbe Fassung (--target=node26 in beiden Backends);
+      Ziel und Laufzeit muessen zusammenpassen, sonst uebersetzt esbuild
+      Sprachmittel herunter, die die Box koennte, oder - schlimmer - herauf.
+      PRUEFUNG: die Fassung wird nach der Installation ausgelesen und muss
+      mit 26 beginnen. `node --version` allein genuegt nicht - das gelingt
+      auch, wenn apt die alte Fassung behalten hat.
+    run: "curl -fsSL https://deb.nodesource.com/setup_26.x | bash - && DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs && node --version"
+    check: "node --version | grep -q '^v26\\.'"
+    timeout: 900
+    workarounds:
+      # HIER STAND `nodesource-bookworm` — GESTRICHEN (2026-08-02).
+      # Er schrieb eine Repo-Zeile mit dem Codenamen `bookworm`, weil nodesource
+      # frueher je Distribution eine eigene Suite hatte und Trixie fehlte.
+      # Das gilt nicht mehr: nodesource benutzt inzwischen die
+      # distributionsunabhaengige Suite `nodistro` (llmwiki
+      # mupi-node-major-wechsel). Der Codename ist damit gegenstandslos.
+      # SCHLIMMER: die Zeile holte `node_22.x`. Der Workaround haette also
+      # genau die Fassung installiert, an der der `check` (^v26\.) scheitert —
+      # ein Ausweg, der in eine Sackgasse fuehrt.
+      - id: nvm
+        name: "Node 26 über nvm (nur dietpi-Benutzer!)"
+        note: >-
+          LETZTE ZUFLUCHT, und mit einem Haken: nvm installiert Node NUR fuer
+          den Benutzer dietpi, nicht systemweit. Der `check` dieses Schritts
+          ruft `node --version` als root und sieht es NICHT — er wird also
+          weiter fehlschlagen. Die Dienste laufen als dietpi und kaemen damit
+          zurecht; wer diesen Weg geht, muss den Schritt bewusst uebergehen.
+          Fassung 26, damit sie zum Bauziel (--target=node26) passt.
+        run: "su - dietpi -c 'curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash && . ~/.nvm/nvm.sh && nvm install 26 && node --version'"
+
+  # ── HIER STAND `npm-globals` — GESTRICHEN, NICHT GEFUELLT (2026-08-02) ──────
+  # Er lief als `npm install -g pm2 @ionic/cli` mit `check: pm2 -v`. Beides ist
+  # auf der Box unnoetig, und pm2 war sogar widerspruechlich:
+  #
+  #   pm2   Die Dienste laufen seit 'dienste-systemd' als systemd-Units. Das
+  #         App-Rezept RAEUMT pm2 dort ausdruecklich ab (pm2 delete all,
+  #         pm2-dietpi abschalten). Dieses Rezept baute also auf, was das
+  #         naechste wieder einriss — und kostete dabei die Zeit, die die
+  #         Messung gerade eingespart hatte (App bereit 23,5 s -> 3,3 s,
+  #         llmwiki mupi-startzeiten-gemessen).
+  #   ionic Wird nur zum BAUEN von src/frontend-box gebraucht, und gebaut wird
+  #         am Entwicklungsrechner. Die Box bekommt fertige Dateien
+  #         (bin/nodejs/deploy.zip). Auf der Box hat der CLI nie etwas getan.
+  #
+  # NICHT DEINSTALLIERT, und das ist Absicht: auf einer AELTEREN Box laeuft
+  # womoeglich noch ein pm2, und genau dessen Binaer braucht der Schritt
+  # 'dienste-systemd' im App-Rezept, um die Prozesse abzuraeumen. Waere pm2
+  # hier schon weg, blieben sie als Waisen laufen und hielten die Ports 8200
+  # und 5005 — die EADDRINUSE-Schleife aus mupi-startzeiten-gemessen.
+  # Auf einer frischen Box entsteht pm2 damit gar nicht erst.
+
+  - id: audio
+    name: "Audio (MuPiHAT MAX98357A, I2S)"
+    run: |
+      set -e
+      CFG=$BOOT_DIR/config.txt
+      # MuPiHAT = MAX98357A (I2S) auf GPIO16 — NICHT hifiberry (llmwiki: mupi-max98357a-audio)
+      grep -q '^dtoverlay=max98357a' "$CFG" || echo 'dtoverlay=max98357a,sdmode-pin=16' >> "$CFG"
+      grep -q '^dtoverlay=i2s-mmap'  "$CFG" || echo 'dtoverlay=i2s-mmap' >> "$CFG"
+      # I2C fuer den BQ25792-Batterieleser des HAT
+      grep -q '^dtparam=i2c_arm=on'  "$CFG" || echo 'dtparam=i2c_arm=on' >> "$CFG"
+      # Trixie+Pi5-Regression: Onboard-Audio MUSS aus sein, sonst bleibt der Amp stumm
+      sed -i 's/^dtparam=audio=on/#dtparam=audio=on/' "$CFG"
+      # DAS `#?` WAR EIN FEHLER: die Pruefung traf die Zeile, die eine Zeile
+      # vorher selbst auskommentiert wurde - `dtparam=audio=off` wurde also NIE
+      # angehaengt. Uebrig blieb die Firmware-Vorgabe, und die ist auf dem Pi 4
+      # "an". Folge am Geraet (2026-07-29): `card 0: Headphones`, Vorgabesenke
+      # `mailbox.stereo-fallback` - der Ton ging an die Onboard-Klinke statt an
+      # den MuPiHAT-Verstaerker. Also ausdruecklich auf `=off` pruefen.
+      grep -qE '^dtparam=audio=off' "$CFG" || echo 'dtparam=audio=off' >> "$CFG"
+      echo "--- Audio-Zeilen jetzt ---"; grep -nE 'max98357a|i2s-mmap|i2c_arm|dtparam=audio' "$CFG"
+      # config.txt ist bootkritisch: erst pruefen, dann auf den Datentraeger
+      # zwingen. Bleibt sie im Zwischenspeicher und die Box haengt danach,
+      # startet sie nach dem Stromausfall gar nicht mehr (am Geraet passiert).
+      [ -s "$CFG" ] || { echo "FEHLER: $CFG ist leer!"; exit 1; }
+      sync
+      # Der Kiosk-Nutzer MUSS in die Gruppe audio: sonst sieht er keine Soundkarte,
+      # `amixer sget Master` scheitert und der Player-Dienst stirbt in einer
+      # Neustartschleife (am Geraet: spotify-control 7x abgestuerzt beim Booten,
+      # ohne dass irgendwo "keine Berechtigung" stand). video/render gleich mit,
+      # sonst fehlt dem Browser die Hardwarebeschleunigung.
+      usermod -aG audio,video,render "${MUPI_USER:-dietpi}" 2>/dev/null || true
+      echo "--- Gruppen von ${MUPI_USER:-dietpi} ---"; id "${MUPI_USER:-dietpi}"
+    optional: true
+
+  - id: schneller-starten
+    name: "Schneller hochfahren (DHCP-Rueckfall, unnoetige Dienste)"
+    note: >-
+      AM GERAET GEMESSEN (Pi 4, 2026-07-29): 31,8 s -> 13,2 s.
+      Der ganze Start hing am WLAN: ifup@wlan0 brauchte 23 der 30 Sekunden.
+      Nicht weil das Funknetz langsam waere - es stand nach 8,5 s -, sondern
+      weil dhclient schon 2,4 s VOR der Assoziation losfragt. Seine ersten
+      Anfragen gehen ins Leere, danach greift die Rueckfallstaffel mit 8 und
+      11 Sekunden, und die Adresse kam erst bei 28,3 s. Kurze Abstaende holen
+      die Anfrage direkt nach der Assoziation nach: ifup@wlan0 faellt auf 5 s.
+      Dazu drei Dienste, die diese Box nicht braucht - rpi-eeprom-update (die
+      Box aktualisiert ihr EEPROM nicht im Betrieb), keyboard-setup und
+      console-setup (es haengt keine Tastatur dran, bedient wird per Touch).
+      NICHT gemacht - pm2 vom Netz loesen. Der Versuch, After= in einer
+      Ergaenzung zurueckzusetzen, hat NICHT gewirkt; die kritische Kette blieb
+      unveraendert. Lieber nichts als eine wirkungslose Datei, die spaeter
+      jemand fuer die Loesung haelt.
+
+      DIE WACHE WAR FALSCH (2026-07-30): sie suchte `initial-interval`
+      IRGENDWO in der Datei. Debians mitgelieferte dhclient.conf fuehrt die
+      Zeile aber AUSKOMMENTIERT (`#initial-interval 2;`) - auf einer frischen
+      Box traf das Muster also sofort, der Schritt schrieb NIE etwas und meldete
+      trotzdem Erfolg. Dasselbe Muster stand im `check:`, der Fehler bestaetigte
+      sich also selbst. Jetzt zaehlt nur eine Zeile, die am Zeilenanfang steht
+      (fuehrende Leerzeichen erlaubt, ein `#` davor nicht).
+    run: |
+      set -e
+      CONF=/etc/dhcp/dhclient.conf
+      if [ -f "$CONF" ] && ! grep -qE '^[[:space:]]*initial-interval' "$CONF"; then
+        cp "$CONF" "$CONF.vor-boottuning"
+        {
+          echo ""
+          echo "# Schneller hochfahren: dhclient startet vor der WLAN-Assoziation,"
+          echo "# seine ersten Anfragen gehen ins Leere. Ohne kurze Abstaende"
+          echo "# wartet er danach 8 und 11 Sekunden, obwohl das Netz laengst steht."
+          echo "initial-interval 1;"
+          echo "backoff-cutoff 2;"
+          echo "retry 5;"
+        } >> "$CONF"
+        echo "  DHCP-Rueckfallzeit gekuerzt"
+      else
+        echo "  DHCP-Rueckfallzeit: schon gesetzt oder keine dhclient.conf"
+      fi
+      for u in rpi-eeprom-update keyboard-setup console-setup; do
+        systemctl disable "$u" >/dev/null 2>&1 && echo "  $u abgeschaltet" || true
+      done
+      echo "  fertig - Wirkung nach dem naechsten Start: systemd-analyze"
+    check: "grep -qE '^[[:space:]]*initial-interval' /etc/dhcp/dhclient.conf"
+    optional: true
+
+  - id: bluetooth
+    name: "Bluetooth-Support"
+    note: "DER 69%-Hänger. dietpi-set_hardware bluetooth enable wartet ewig auf den BT-Dienst -> harter Timeout. BT braucht die Box beim Setup nicht (Kopfhörer koppeln wir danach)."
+    run: "$DIETPI_DIR/dietpi-software install 5 && $DIETPI_DIR/func/dietpi-set_hardware bluetooth enable"
+    timeout: 90
+    optional: true
+    workarounds:
+      - id: mask-and-skip
+        name: "BT temporär maskieren + überspringen (danach unmask + koppeln)"
+        run: "systemctl mask bluetooth hciuart 2>/dev/null; echo 'BT skipped'"
+
+  - id: chromium
+    name: "Chromium-Kiosk"
+    note: "Widevine (DRM) legt das Paket im Home des INSTALLIERENDEN Nutzers ab (hier root) — der Kiosk läuft als dietpi und fände es sonst nie (am Gerät belegt: Spotify-SDK blieb 'not_loaded')."
+    run: |
+      echo | $DIETPI_DIR/dietpi-software install 113
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends libwidevinecdm0 || true
+      # Widevine dem Kiosk-Nutzer zugänglich machen
+      for SRC in /root/.config/chromium/WidevineCdm /opt/WidevineCdm/gmp-widevinecdm/latest; do
+        [ -e "$SRC" ] || continue
+        install -d -o dietpi -g dietpi /home/dietpi/.config/chromium
+        cp -a "$SRC" /home/dietpi/.config/chromium/WidevineCdm 2>/dev/null && break
+      done
+      chown -R dietpi:dietpi /home/dietpi/.config/chromium 2>/dev/null
+      ls -d /home/dietpi/.config/chromium/WidevineCdm 2>/dev/null \
+        && echo "  Widevine für den Kiosk-Nutzer bereit" \
+        || echo "  WARNUNG: kein Widevine — Spotify-Wiedergabe im Browser wird scheitern"
+    timeout: 600
+
+  - id: mupihat-abhaengigkeit
+    name: "MuPiHAT: smbus2 fuer den Ladebaustein"
+    note: >-
+      AM GERAET BELEGT (2026-07-29, Pi 5 auf Akku): der HAT-Dienst
+      `mupi_hat.service` war FAILED, `/tmp/mupihat.json` leer `[]` - und damit
+      hatte die Box keinerlei Akkuwerte, obwohl der Ladebaustein BQ25792 auf
+      I2C 0x6b sauber antwortete. Grund: `mupihat_bq25792.py` importiert
+      `smbus2`, und das Modul war nirgends installiert - in keinem Rezept, auf
+      keiner Box. Eine frische SD haette denselben toten HAT.
+
+      Debian liefert es als `python3-smbus2` (kein pip - Trixie ist
+      "externally managed", ein `pip install` braeuchte
+      `--break-system-packages` und liefe an der Paketverwaltung vorbei).
+      `i2c-tools` kommt mit, damit `i2cdetect` zum Nachsehen da ist.
+    run: |
+      set -e
+      DEBIAN_FRONTEND=noninteractive apt-get install -y python3-smbus2 i2c-tools
+      systemctl reset-failed mupi_hat mupi_hat_control 2>/dev/null || true
+    check: "python3 -c 'import smbus2' && echo OK"
+    optional: true
+    timeout: 300
+
+  - id: mupihat-stopp-reparieren
+    name: "MuPiHAT: Stopp-Befehl des Steuerdienstes reparieren"
+    note: >-
+      Die mitgelieferte Unit hat
+      `ExecStop=/bin/kill -TERM $(cat /run/mupi_hat_control.pid)`.
+      systemd macht KEINE Befehlsersetzung - es liest `$(cat` als
+      Variablennamen und scheitert bei JEDEM Stopp mit
+      "Invalid environment variable name evaluates to an empty string: (cat".
+      Der Dienst geht dadurch bei jedem Neustart durch `failed`.
+
+      Eine Ergaenzung statt einer Aenderung an der Originaldatei: die leere
+      erste Zeile loescht den geerbten Befehl, die zweite setzt ihn mit einer
+      Shell richtig. Bei `Type=simple` raeumt systemd den Hauptprozess ohnehin
+      selbst ab - der Stopp-Befehl ist Hoeflichkeit, kein Muss.
+    run: |
+      set -e
+      mkdir -p /etc/systemd/system/mupi_hat_control.service.d
+      cat > /etc/systemd/system/mupi_hat_control.service.d/stop.conf <<'ENDE'
+      [Service]
+      ExecStop=
+      ExecStop=/bin/bash -c '/bin/kill -TERM $(cat /run/mupi_hat_control.pid) 2>/dev/null || true'
+      ENDE
+      sed -i 's/^      //' /etc/systemd/system/mupi_hat_control.service.d/stop.conf
+      systemctl daemon-reload
+    check: "grep -q 'kill -TERM' /etc/systemd/system/mupi_hat_control.service.d/stop.conf && echo OK"
+    optional: true
+    timeout: 60
+
+  - id: mupihat-zugriff
+    name: "MuPiHAT: I2C-Zugriff fuer den Server und das Eingangs-Werkzeug"
+    note: >-
+      ZWEI Nachtraege, beide am Geraet aufgefallen (2026-07-30):
+
+      1. Der Server liest die Statusregister des Ladereglers fuer die
+         Diagnoseseite. Dafuer braucht der Dienstbenutzer die Gruppe `i2c` -
+         `/dev/i2c-1` gehoert `root:i2c`. Ohne sie meldet die Seite nur
+         "Statusregister nicht lesbar". Die Gruppe greift erst bei einem
+         NEUSTART des Dienstes (systemd holt die Gruppen beim Start).
+
+      2. `mupihat-eingang.py` misst Netzteil und Kabel (Innenwiderstand aus
+         dem Spannungseinbruch bei definierter Last) und kann die
+         Eingangsgrenze von Hand setzen. Es entschied den Streitfall
+         "Laptop laedt doch damit" in zehn Sekunden.
+
+      ZWEI FEHLER IM `put:` (2026-07-30 gefunden): die Schluessel hiessen
+      `von:/nach:/modus:`. Die kennt der Runner nicht - er liest `src`/`dest`
+      und haette mit "put: braucht src und dest" abgebrochen. Und die Quelle
+      zeigte auf `tools/mupihat-eingang.py` IM INSTALLER; dort liegt sie gar
+      nicht, sie gehoert zum Fork. Also derselbe ${MUPI_REPO}-Weg wie in
+      mupibox-app.yaml.
+    run: |
+      set -e
+      DEBIAN_FRONTEND=noninteractive apt-get install -y i2c-tools python3-smbus2
+      usermod -aG i2c dietpi
+      systemctl restart mupibox-server 2>/dev/null || true
+    check: "id -nG dietpi | grep -qw i2c && command -v i2cget >/dev/null && echo OK"
+    optional: true
+    timeout: 300
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/tools/mupihat-eingang.py
+        dest: /usr/local/bin/mupibox/mupihat-eingang.py
+        mode: "755"
+
+  - id: mupihat-ohne-akku-still
+    name: "MuPiHAT: Dienst nicht scheitern lassen, wenn kein Ladeteil antwortet"
+    note: >-
+      Der BQ25792 wird aus dem HOEHEREN von USB-Eingang oder Akku gespeist.
+      Haengt weder das eine noch das andere am HAT (Akku ausgebaut, Strom
+      direkt in den Pi), ist der Chip stromlos - und `mupi_hat.service`
+      scheitert im Sekundentakt, bis systemd aufgibt. Am Geraet genau so
+      gesehen.
+
+      Das ist keine Stoerung, sondern eine falsche Erwartung. `ExecCondition`
+      prueft vorher, ob 0x6b ueberhaupt antwortet; scheitert sie, gilt der
+      Dienst als UEBERSPRUNGEN statt als fehlgeschlagen - dieselbe
+      Unterscheidung wie bei `mqtt-reparieren`. `Restart=on-failure` mit 30 s
+      Abstand faengt den Fall ab, dass jemand den Akku spaeter ansteckt.
+    run: |
+      set -e
+      # DIE PRUEFUNG ALS EIGENES SKRIPT, nicht als Einzeiler in der Unit.
+      # In einer systemd-Unit expandiert systemd SELBST `$b` und `${b##*-}` —
+      # ein literales Dollar muesste `$$` heissen, und eine Schleife wird so
+      # unlesbar. Ausserdem kann man ein Skript von Hand aufrufen, wenn
+      # jemand wissen will, WARUM der Dienst uebersprungen wurde.
+      #
+      # ALLE BUSSE, NICHT NUR BUS 1: hier stand `-y 1` fest. Auf dem Pi 5
+      # traegt schon die Touch-Bruecke ihren Baustein auf /dev/i2c-11 — eine
+      # feste Busnummer ist eine Annahme ueber die Verdrahtung, keine Messung.
+      cat > /usr/local/bin/mupihat-da <<'ENDE'
+      #!/bin/sh
+      # Antwortet der Ladebaustein BQ25792 (0x6b) auf IRGENDEINEM I2C-Bus?
+      # Rueckgabe 0 = ja (Dienst darf laufen), 1 = nein (Dienst wird
+      # UEBERSPRUNGEN, nicht als gescheitert gefuehrt).
+      for b in /dev/i2c-*; do
+        [ -e "$b" ] || continue
+        if /usr/sbin/i2cdetect -y "${b##*-}" 2>/dev/null | grep -q " 6b "; then
+          [ -n "$MUPIHAT_LAUT" ] && echo "0x6b antwortet auf ${b##*/}"
+          exit 0
+        fi
+      done
+      [ -n "$MUPIHAT_LAUT" ] && echo "0x6b antwortet auf keinem Bus: $(ls -d /dev/i2c-* 2>/dev/null | tr '\n' ' ')"
+      exit 1
+      ENDE
+      sed -i 's/^      //' /usr/local/bin/mupihat-da
+      chmod 755 /usr/local/bin/mupihat-da
+      MUPIHAT_LAUT=1 /usr/local/bin/mupihat-da || true
+      mkdir -p /etc/systemd/system/mupi_hat.service.d
+      cat > /etc/systemd/system/mupi_hat.service.d/nur-wenn-da.conf <<'ENDE'
+      [Service]
+      ExecCondition=/usr/local/bin/mupihat-da
+      Restart=on-failure
+      RestartSec=30
+      ENDE
+      sed -i 's/^      //' /etc/systemd/system/mupi_hat.service.d/nur-wenn-da.conf
+      systemctl daemon-reload
+      systemctl reset-failed mupi_hat || true
+      systemctl restart mupi_hat || true
+    check: "test \"$(systemctl is-failed mupi_hat)\" != failed && echo OK"
+    optional: true
+    timeout: 120
+
+  - id: mupihat-akkuprofil
+    name: "MuPiHAT: Akkuprofil auf den verbauten Pack stellen"
+    note: >-
+      HARDWAREABHAENGIG - vor dem Ausfuehren pruefen, welcher Pack verbaut ist.
+
+      Am Geraet stand `selected_battery: "USB-C mode"`, waehrend die Liste
+      `"USB-C mode (no battery)"` fuehrt. Der Treiber fand den Namen NICHT und
+      fiel still auf seine eingebauten Schwellen zurueck (Ansmann-Werte:
+      Abschaltung 6800 mV). Fuer den verbauten ENERpower 2S2P (7,2 V / 10 Ah /
+      72 Wh) ist das zu vorsichtig - sein eigenes Profil schaltet erst bei
+      6150 mV ab, das sind gut zwei Zehntel der Kapazitaet, die sonst
+      ungenutzt bleiben.
+
+      Der Name muss EXAKT einem Eintrag aus `battery_types` entsprechen; ein
+      Vertipper faellt still durch, genau wie oben. Der Schritt prueft das
+      deshalb hinterher.
+
+      MIT EINEM ANDEREN PACK: `MUPI_AKKU` setzen (Teilzeichenkette des
+      Profilnamens) oder den Schritt ueberspringen.
+    run: |
+      set -e
+      python3 - "${MUPI_AKKU:-ENERpower}" <<'ENDE'
+      import json, sys
+      p = '/etc/mupibox/mupiboxconfig.json'
+      c = json.load(open(p))
+      m = c.get('mupihat') or {}
+      namen = [b.get('name', '') for b in m.get('battery_types', [])]
+      treffer = [n for n in namen if sys.argv[1].lower() in n.lower()]
+      if not treffer:
+          raise SystemExit(f"Kein Profil passt zu {sys.argv[1]!r}. Vorhanden: {namen}")
+      m['selected_battery'] = treffer[0]
+      json.dump(c, open(p, 'w'), indent=2)
+      print(f"Akkuprofil: {treffer[0]}")
+      ENDE
+      systemctl restart mupi_hat || true
+    check: |
+      python3 -c "
+      import json
+      c=json.load(open('/etc/mupibox/mupiboxconfig.json'))['mupihat']
+      s=c['selected_battery']
+      assert s in [b['name'] for b in c['battery_types']], f'Profil {s!r} steht in keiner Liste'
+      print('OK', s)"
+    optional: true
+    timeout: 120
+
+  - id: system-werte
+    name: "Systemwerte angleichen (Grafikspeicher, Drosselgrenze)"
+    note: >-
+      Damit BEIDE Boxen aus demselben Rezept gleich herauskommen. Verglichen
+      am Geraet (2026-07-29, Pi 4 gegen Pi 5):
+      `gpu_mem_*` stand auf 76 statt 16 - unter vollem KMS verwaltet der
+      vc4-Treiber den Speicher selbst, die 76 MB waren schlicht verschenkt
+      (auf einer 1844-MB-Box spuerbar).
+      `temp_limit` stand auf 75 statt 65 - die Box sitzt im Kinderzimmer in
+      einem geschlossenen Gehaeuse; frueher drosseln ist dort richtig.
+      NICHT angeglichen und auch nicht angleichbar: `root=PARTUUID` (eigene
+      Karte) und die serielle Konsole (Pi 4 ttyS0, Pi 5 ttyAMA0 - anderer
+      UART). Wer die kopiert, macht die Box unbootbar.
+    run: |
+      set -e
+      CFG=$BOOT_DIR/config.txt
+      sed -i 's/^\(gpu_mem_[0-9]*\)=[0-9]*/\1=16/' "$CFG"
+      grep -q '^temp_limit=' "$CFG" && sed -i 's/^temp_limit=.*/temp_limit=65/' "$CFG" \
+        || echo 'temp_limit=65' >> "$CFG"
+      [ -s "$CFG" ] || { echo "FEHLER: $CFG ist leer!"; exit 1; }
+      sync
+      grep -E '^gpu_mem|^temp_limit' "$CFG" | sed 's/^/  /'
+    check: "grep -q '^temp_limit=65' $BOOT_DIR/config.txt"
+    optional: true
+
+  - id: luefter-kennlinie
+    name: "Luefter: leise Pi-5-Kennlinie (E101)"
+    note: >-
+      Die Firmware-Vorgabe laesst die Box bis kurz vor temp_limit=65 treiben,
+      die Drossel traf dann das WLAN (E101). Die erste Kennlinie vom
+      30.08.2026 (Stufe 150 ab 52 C) war fuer eine Kinder-Hoerbox zu LAUT —
+      und die im Geraetebaum fest verdrahtete 5-C-Hysterese laesst eine
+      erklommene Stufe erst unter (Schwelle-5 C) wieder los; der Luefter
+      rastete hoerbar auf 5900 U/min ein. Leise Fassung: Grundstufe 90 ab
+      42 C, 110/220/255 erst ab 59/62/64 C — Vollgas genau VOR dem
+      temp_limit. Auf Nicht-Pi5 sind fan_temp-dtparams wirkungslos.
+    run: |
+      set -e
+      CFG=$BOOT_DIR/config.txt
+      if ! grep -q '^dtparam=fan_temp0=' "$CFG"; then
+        {
+          echo ''
+          echo '# mixpi-luefter-kennlinie (E101, leise Fassung 30.08.2026)'
+          echo 'dtparam=fan_temp0=42000'
+          echo 'dtparam=fan_temp0_speed=90'
+          echo 'dtparam=fan_temp1=59000'
+          echo 'dtparam=fan_temp1_speed=110'
+          echo 'dtparam=fan_temp2=62000'
+          echo 'dtparam=fan_temp2_speed=220'
+          echo 'dtparam=fan_temp3=64000'
+          echo 'dtparam=fan_temp3_speed=255'
+        } >> "$CFG"
+      fi
+      grep -nE '^dtparam=fan_temp' "$CFG" | sed 's/^/  /'
+      sync
+    check: "grep -q '^dtparam=fan_temp3_speed=255' $BOOT_DIR/config.txt"
+    optional: true
+
+  - id: display-waveshare
+    name: "Display: 5\" DSI 800x480 (volles KMS)"
+    note: >-
+      Legacy-fkms/framebuffer raus, KMS + Panel-Overlay rein. Der Schritt hiess
+      frueher "(Pi 5)" - das war irrefuehrend: der Pi 5 KANN nur KMS, der Pi 4
+      kann es auch, und geschrieben wird auf beiden dasselbe. Am Geraet
+      gegengeprueft (Pi 5, 2026-07-29): genau diese beiden Overlays stehen in
+      der config.txt, OHNE einen dsi0/dsi1-Zusatz.
+    run: |
+      CFG=$BOOT_DIR/config.txt
+      sed -i -E '/vc4-fkms-v3d/d; /vc4-kms-dsi-7inch/d; /^framebuffer_width=/d; /^framebuffer_height=/d' "$CFG"
+      grep -q '^dtoverlay=vc4-kms-v3d' "$CFG" || echo 'dtoverlay=vc4-kms-v3d' >> "$CFG"
+      # 800x480-DSI-Panel: das 7-Zoll-Overlay ist das richtige. Der Waveshare-
+      # Parameter 5_0_inch waere 720x1280 -> Schirm bleibt schwarz (am Geraet belegt).
+      grep -q '^dtoverlay=vc4-kms-dsi-7inch' "$CFG" || echo 'dtoverlay=vc4-kms-dsi-7inch' >> "$CFG"
+      # Konsole nicht nach 600 s abschalten (sieht sonst aus wie ein totes Display)
+      grep -q 'consoleblank=' "$BOOT_DIR/cmdline.txt" || sed -i '1s/$/ consoleblank=0/' "$BOOT_DIR/cmdline.txt"
+      # RUHIGER START: der Kernel schreibt sonst auf DENSELBEN Framebuffer wie
+      # die Boot-Animation — es flackert, und Meldungszeilen laufen quer durchs
+      # Bild (am Geraet gesehen). console=tty1 bleibt aber ABSICHTLICH stehen,
+      # damit echte Fehler weiterhin sichtbar sind: quiet+loglevel=3 blendet nur
+      # das Uebliche aus, KERN_ERR und schlimmer kommt durch.
+      for OPT in quiet loglevel=3 logo.nologo vt.global_cursor_default=0 systemd.show_status=false; do
+        grep -qw -- "$OPT" "$BOOT_DIR/cmdline.txt" || sed -i "1s|\$| $OPT|" "$BOOT_DIR/cmdline.txt"
+      done
+      # Beide Dateien sind bootkritisch — leer heisst: Box startet nicht mehr.
+      for f in "$CFG" "$BOOT_DIR/cmdline.txt"; do
+        [ -s "$f" ] || { echo "FEHLER: $f ist leer!"; exit 1; }
+      done
+      grep -q '^dtoverlay=vc4-kms-v3d' "$CFG" \
+        || { echo "FEHLER: KMS-Treiber fehlt — das Panel-Overlay setzt ihn voraus"; exit 1; }
+      sync
+      echo display configured
+    optional: true
+
+  - id: touch-bruecke
+    name: "Touch-Brücke (Bildschirm reagiert sonst nicht)"
+    note: >-
+      Am Geraet gemessen: der Kerneltreiber edt_ft5x06 bindet sauber an den
+      Controller (11-0038, Chip-ID 0x54, keine Uebertragungsfehler), bekommt
+      aber NIE eine Unterbrechung — in /proc/interrupts steht keine Zeile fuer
+      ihn, und 20 s durchgehendes Tippen erzeugen 0 Rohbytes auf
+      /dev/input/event*. Derselbe Controller direkt per I2C abgefragt meldet
+      dagegen zuverlaessig Beruehrungen (190 Meldungen in 20 s, Koordinaten
+      sauber 0..800 x 0..480). edt_ft5x06 hat keinen Abfragemodus, kann ohne
+      Interrupt also prinzipbedingt nichts liefern. Symptom vorher: "reagiert
+      nicht auf Druck" bzw. "geht manchmal, aber sehr traege". Die Bruecke
+      fragt den Controller im Benutzerraum ab und meldet die Beruehrungen als
+      echtes Mehrfinger-Eingabegeraet (uinput, INPUT_PROP_DIRECT) — nur so
+      erzeugt Chromium Touch-Ereignisse und Wischen funktioniert. Sie startet
+      mit --auto und haelt sich RAUS, wenn der Kerneltreiber eine
+      Unterbrechungsleitung hat: auf Hardware, wo der Kernel seine Arbeit tut,
+      aendert dieser Schritt nichts.
+    optional: true
+    put:
+      - src: tools/mupibox-touch-bridge.py
+        dest: /opt/mupibox-tools/touch-bridge.py
+        mode: "755"
+      - src: tools/mupibox-touch-bridge.service
+        dest: /etc/systemd/system/mupibox-touch-bridge.service
+        mode: "644"
+    run: |
+      set -e
+      python3 -c 'import py_compile; py_compile.compile("/opt/mupibox-tools/touch-bridge.py", doraise=True)'
+      # Beide Module braucht die Bruecke: i2c-dev fuer /dev/i2c-11 (ohne das gibt
+      # es die Geraetedatei gar nicht), uinput fuer das eigene Eingabegeraet.
+      for m in i2c-dev uinput; do
+        grep -qx "$m" /etc/modules-load.d/mupibox-touch.conf 2>/dev/null || echo "$m" >> /etc/modules-load.d/mupibox-touch.conf
+        modprobe "$m" 2>/dev/null || true
+      done
+      # Eine 0-Byte-Unit gilt systemd als MASKIERT und laeuft nie wieder an —
+      # am Geraet genau so passiert (wifi-powersave-off.service, 0 Bytes).
+      [ -s /etc/systemd/system/mupibox-touch-bridge.service ] \
+        || { echo "FEHLER: Dienstdatei ist leer"; exit 1; }
+      sync
+      systemctl daemon-reload
+      # GETRENNT EIN- UND ANSCHALTEN, und das Anschalten OHNE WARTEN.
+      # `enable --now` wartet, bis systemd den Auftrag erledigt hat. Laeuft
+      # dieses Rezept selbst als systemd-Dienst (Selbstlauf), genuegt EIN
+      # falsches After= im Ziel, damit beide aufeinander warten — am
+      # 09.08.2026 genau so geschehen, neun Minuten Stillstand bei Last 0,01.
+      # Die Ursache steckte in der Unit und ist dort behoben; --no-block ist
+      # der Gurt dazu: ein Dienst, der nicht hochkommt, haelt nie wieder den
+      # ganzen Lauf auf.
+      systemctl enable mupibox-touch-bridge >/dev/null 2>&1 || true
+      systemctl start --no-block mupibox-touch-bridge >/dev/null 2>&1 || true
+      sleep 2
+      # Sitzt der Touch verdreht zum Bild, in der Dienstdatei --drehung setzen
+      # (0/90/180/270) und neu starten. AUSMESSEN, nicht raten:
+      #   systemctl stop mupibox-touch-bridge
+      #   /opt/mupibox-tools/touch-bridge.py --probe 15   # dabei OBEN LINKS tippen
+      # Meldet er dort Werte nahe dem Maximum, sind es 180 Grad. Gleiche
+      # WERTEBEREICHE beweisen die Ausrichtung NICHT — nur eine bekannte Ecke.
+      systemctl is-active --quiet mupibox-touch-bridge \
+        && echo "  Bruecke laeuft: $(grep -A6 'MuPiBox Touch' /proc/bus/input/devices | grep -o 'event[0-9]*' | head -1)" \
+        || echo "  Bruecke inaktiv — entweder nicht noetig (Kernel liefert selbst) oder Fehler: $(systemctl show -p Result --value mupibox-touch-bridge)"
+    check: "test -x /opt/mupibox-tools/touch-bridge.py"
+
+  - id: wlan-stabil
+    name: "WLAN-Energiesparmodus abschalten"
+    note: "Mit 'power_save on' schlaeft das Funkmodul ein: SSH stirbt, die Box wirkt abgestuerzt und ist Minuten spaeter wieder da. Am Geraet 2026-07-25 DREIMAL erlebt, bis es gefunden war."
+    optional: true
+    put:
+      - src: tools/wifi-powersave-off.service
+        dest: /etc/systemd/system/wifi-powersave-off.service
+        mode: "644"
+    run: |
+      set -e
+      command -v iw >/dev/null || DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends iw
+      for w in $(ls /sys/class/net | grep -E '^wl' || true); do
+        iw dev "$w" set power_save off 2>/dev/null && echo "$w: power_save aus"
+      done
+      [ -s /etc/systemd/system/wifi-powersave-off.service ] \
+        || { echo "FEHLER: Dienstdatei ist leer"; exit 1; }
+      sync
+      systemctl daemon-reload
+      systemctl enable --now wifi-powersave-off >/dev/null 2>&1
+      for w in $(ls /sys/class/net | grep -E '^wl' || true); do
+        echo "$w: $(iw dev "$w" get power_save 2>/dev/null)"
+      done
+
+  - id: zram
+    name: "zram-Swap einschalten (2-GB-Boxen brauchen ihn)"
+    note: >-
+      Ohne Swap wird eine 2-GB-Box unter Chromium erst zaeh und dann
+      unerreichbar; zram ist komprimierter Swap im RAM - kein SD-Verschleiss.
+      Am Geraet wurde die Box dreimal unerreichbar.
+
+      DIE WACHE WAR FALSCH (Pi 4, 2026-07-30): sie fragte `free -m` nach
+      IRGENDEINEM Swap und stieg bei >0 aus. DietPi legt aber von sich aus eine
+      AuslagerungsDATEI an - auf dem Pi 4 gemessene 153 MB. Der Schritt sprang
+      also sofort heraus und meldete ERFOLG, ohne zram je installiert zu haben;
+      der `check:` fragte dasselbe und bestaetigte den Irrtum. Gefragt ist das
+      GERAET, nicht die Summe: /proc/swaps muss eine /dev/zram-Zeile fuehren.
+
+      UND DIE DATEI MUSS WEG. Zwei Auslagerungen nebeneinander heben sich
+      gegenseitig teilweise auf: der Kern verteilt nach Prioritaet, kalte Seiten
+      landen doch wieder auf der SD - genau das, was zram vermeiden soll. Erst
+      zram hochfahren, DANN die Datei abschalten; umgekehrt stuende die Box
+      einen Augenblick ganz ohne Auslagerung da.
+    optional: true
+    run: |
+      set -e
+      TOTAL=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+      echo "Arbeitsspeicher: ${TOTAL} MB, Swap aktuell: $(free -m | awk '/Swap/{print $2}') MB"
+      echo "--- /proc/swaps vorher ---"; cat /proc/swaps
+      if ! grep -q '^/dev/zram' /proc/swaps; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends zram-tools
+        sed -i "s/^#\?ALGO=.*/ALGO=zstd/; s/^#\?PERCENT=.*/PERCENT=50/" /etc/default/zramswap 2>/dev/null || \
+          printf 'ALGO=zstd\nPERCENT=50\n' > /etc/default/zramswap
+        systemctl enable --now zramswap 2>/dev/null || systemctl restart zramswap
+        sleep 2
+      else
+        echo "zram-Geraet laeuft schon"
+      fi
+      # Den Datei-Swap dauerhaft abbestellen - sonst legt ihn der naechste Start
+      # wieder an. DietPi hat dafuer sein eigenes Werkzeug (0 = aus, raeumt auch
+      # /etc/fstab auf); auf einem reinen Raspberry OS ist es dphys-swapfile.
+      if [ -x "${DIETPI_DIR:-/boot/dietpi}/func/dietpi-set_swapfile" ]; then
+        "${DIETPI_DIR:-/boot/dietpi}/func/dietpi-set_swapfile" 0 2>&1 | tail -3 || true
+      elif command -v dphys-swapfile >/dev/null 2>&1; then
+        systemctl disable --now dphys-swapfile 2>/dev/null || true
+        dphys-swapfile swapoff 2>/dev/null || true
+      fi
+      # Was JETZT noch als Datei/Partition ausgelagert wird, sofort abhaengen -
+      # das Werkzeug oben wirkt sonst erst nach dem Neustart.
+      for S in $(awk 'NR>1 && $1 !~ /^\/dev\/zram/ {print $1}' /proc/swaps); do
+        echo "  haenge Datei-Swap ab: $S"
+        swapoff "$S" 2>/dev/null || true
+      done
+      echo "--- /proc/swaps jetzt ---"; cat /proc/swaps
+      free -m | awk '/Swap/{print "Swap gesamt: "$2" MB"}'
+    check: "grep -q '^/dev/zram' /proc/swaps"
+
+  # ── KIOSK-BENUTZER UND TONSTAPEL — PFLICHT, NICHT MEHR OPT-IN ────────────────
+  # Am Geraet erarbeitet 2026-07-27, seither auf dem Pi 5 in Betrieb.
+  # Ausfuehrliche Begruendung samt Messungen: Wiki mupi-pipewire-umstieg /
+  # mupi-wireplumber-kein-bluetooth-ohne-seat / mupi-kiosk-als-dietpi.
+  #
+  # HIER STAND "opt-in, MUPI_AUDIO=pipewire". GENAU DAS war der Grund, warum die
+  # beiden Boxen auseinandergelaufen sind: `env:` setzt MUPI_AUDIO nirgends, der
+  # Rueckfall im Wachposten war 'alsa' — beide Schritte sind also NIE gelaufen,
+  # in keinem einzigen Lauf. Der Pi 5 wurde von Hand grossgezogen, der Pi 4 blieb
+  # der reine Rezept-Stand: kein PipeWire, kein Kiosk-Benutzer, halber Ton. Ein
+  # Wahlschalter, den niemand umlegt, ist kein Wahlschalter, sondern ein Loch.
+  #
+  # WAS DER UMSTIEG LOEST
+  #   * kein softvol-Startbehelf mehr (der Regler entsteht sonst nur, wenn
+  #     beim Booten etwas durch das Geraet spielt — bei ausgeschaltetem
+  #     Bluetooth-Lautsprecher also nie, und der Player starb daran)
+  #   * ein ausgeschalteter Lautsprecher ist keine stumme Box mehr, sondern
+  #     einfach keine Senke
+  #   * der Lautsprecher wird beim Verbinden von selbst Standard-Senke
+  #   * die pactl-Aufrufe in chromium-autostart.sh wirken wieder
+  #
+  # DIE REIHENFOLGE IST KEINE GESCHMACKSFRAGE:
+  #     kiosk-als-benutzer  ->  pipewire  ->  mpv  ->  finalize
+  # und erst danach, aus mupibox-app.yaml, der Schritt `kiosk`.
+  # PipeWire ist ein BENUTZERdienst — es braucht zuerst den Benutzer, unter dem
+  # es laufen soll, sonst richtet `systemctl --global enable` die Sockets fuer
+  # eine Sitzung ein, die der Kiosk nie oeffnet. Dieselbe Kette haengt an
+  # librespot: seine Unit laeuft mit User=dietpi und
+  # XDG_RUNTIME_DIR=/run/user/1000; steht der Autologin noch auf root, zeigt sie
+  # auf eine Sitzung, die es nicht gibt.
+  - id: kiosk-als-benutzer
+    name: "Kiosk laeuft als dietpi, nicht als root"
+    note: >-
+      PFLICHTSCHRITT. AM GERAET GEFUNDEN (2026-07-29): die beiden Boxen liefen
+      unterschiedlich - Pi 4 startete Chromium als ROOT, Pi 5 als dietpi. Der
+      Unterschied ist EIN Wort in der Autologin-Ergaenzung:
+
+        ExecStart=-/sbin/agetty -a root   %I   ->  xinit  als root
+        ExecStart=-/sbin/agetty -a dietpi %I   ->  startx als dietpi
+
+      Der Autostart waehlt danach selbst (`[ "$USER" = root ] || STARTX=startx`).
+
+      WARUM ES ZAEHLT: Chromium sucht sein Widevine im HOME des laufenden
+      Nutzers. Liegt es unter /home/dietpi und laeuft der Browser als root,
+      bleibt das Spotify-Web-SDK auf "not_loaded" - das hat schon einmal Zeit
+      gekostet (llmwiki: widevine-gehoert-dem-kiosk-nutzer). Dazu: ein Browser
+      als root ist auf einer Kinderbox nicht noetig. Und PipeWire, der naechste
+      Schritt, ist ein Benutzerdienst - solange Chromium als root und der Player
+      als dietpi laeuft, brauechte es zwei Instanzen fuer eine Soundkarte.
+
+      dietpi.txt taeuscht hier: dort stand auf BEIDEN Boxen
+      AUTO_SETUP_AUTOSTART_LOGIN_USER=root, gelebt wurde es trotzdem
+      verschieden. Die Wahrheit steht in der getty-Ergaenzung.
+
+      WIRKT ERST NACH EINEM NEUSTART. Der Autologin greift beim Start von
+      getty@tty1; vorher aendert sich am laufenden Kiosk nichts. Wer direkt
+      danach nachsieht, sieht noch den alten Zustand - das ist kein Fehler.
+
+      FRUEHER stand hier ein `[ "${MUPI_AUDIO:-alsa}" = "pipewire" ]` als erste
+      Zeile. Da MUPI_AUDIO nirgends gesetzt wird, ist der Schritt NIE ueber
+      diese Zeile hinausgekommen und hat trotzdem Erfolg gemeldet.
+    timeout: 900
+    run: |
+      set -e
+      U=dietpi
+      D=/etc/systemd/system/getty@tty1.service.d
+      F=$D/dietpi-autologin.conf
+      echo "  vorher: $(grep -oE -- '-a [a-z]+' $F 2>/dev/null || echo '(keine Datei)')"
+      # IMMER schreiben, nicht erst pruefen. Die erste Fassung hatte eine
+      # Bedingung mit Variablen im grep-Muster - sie traf durch die
+      # Anfuehrungsebenen hindurch immer zu und meldete "steht schon richtig",
+      # waehrend die Datei unveraendert blieb. Am Geraet aufgeflogen.
+      # Schreiben ist ohnehin unschaedlich: die Datei hat genau einen Zweck.
+      mkdir -p "$D"
+      [ -f "$F" ] && [ ! -f "$F.vor-kiosknutzer" ] && cp "$F" "$F.vor-kiosknutzer" || true
+      printf '%s\n' '[Service]' 'ExecStart=' "ExecStart=-/sbin/agetty -a $U -J %I \$TERM" > "$F"
+      systemctl daemon-reload
+      echo "  nachher: $(grep -oE -- '-a [a-z]+' $F)"
+      grep -q -- "-a $U" "$F" || { echo "FEHLER: Autologin steht nicht auf $U"; exit 1; }
+
+      # ZWEI DINGE GEHOEREN DAZU - sonst startet der Kiosk gar nicht mehr.
+      # Am Geraet erlebt (Pi 4, 2026-07-29): Autologin auf dietpi umgestellt,
+      # danach kein X und kein Chromium mehr, Xorg.0.log 0 Byte. Der Pi 5,
+      # der schon als dietpi lief, hatte beides:
+      #
+      #   1. xserver-xorg-legacy + Xwrapper.config - ohne das Paket gibt es den
+      #      setuid-Wrapper gar nicht, und X scheitert mit
+      #      'parse_vt_settings: Cannot open /dev/tty0'. /dev/tty0 ist
+      #      0600 root:tty, die Gruppe allein hilft NICHT.
+      #   2. die Gruppen tty und input - sonst fehlen Konsole und
+      #      Eingabegeraete (Touch!).
+      DEBIAN_FRONTEND=noninteractive apt-get install -y xserver-xorg-legacy
+      # UNBEDINGT schreiben, nicht nur anlegen wenn die Datei fehlt: eine
+      # vorhandene Datei mit `allowed_users=console` waere genau der stille
+      # Unterschied zwischen den Boxen, den wir hier abstellen.
+      mkdir -p /etc/X11
+      printf '%s\n' 'allowed_users=anybody' 'needs_root_rights=yes' > /etc/X11/Xwrapper.config
+      # `if` statt `getent … && usermod …`. Die Gruppe `bluetooth` gibt es
+      # nicht, wenn der BT-Schritt uebersprungen oder maskiert wurde - dann
+      # liefert die UND-Verkettung einen Fehlerwert. Mitten im Skript ist das
+      # unter `set -e` folgenlos (nachgemessen), als LETZTE Zeile waere es der
+      # Fehlschlag des ganzen Schritts (nachgemessen: exit 2, getent "nicht
+      # gefunden"). Die if-Form ueberlebt auch ein spaeteres Umsortieren.
+      for g in tty input bluetooth audio video render; do
+        if getent group "$g" >/dev/null; then usermod -aG "$g" "$U"; fi
+      done
+      echo "  Gruppen von $U: $(id -nG $U | tr ' ' ',')"
+
+      # DAUERSITZUNG (linger) — ohne die gibt es keinen stabilen Ton.
+      #
+      # `systemd --user` von $U laeuft ohne Linger nur, solange eine Sitzung
+      # offen ist. Mit ihr sterben PipeWire und WirePlumber, und beim naechsten
+      # Login starten sie neu. Fuer eine Box heisst das: die Audio-Geraete sind
+      # an die Anwesenheit einer Anmeldung gekoppelt.
+      #
+      # AM GERAET GEMESSEN (31.08.2026), Pi 5 gegen frisch installierten Pi 4:
+      #     loginctl show-user dietpi -p Linger  ->  yes  (Pi 5)  /  no (Pi 4)
+      # Auf dem Pi 4 zeigte `wpctl status` nur "Dummy Output", KEINE ALSA- und
+      # keine bluez-Geraete — weder der interne Lautsprecher noch der
+      # Bluetooth-Kasten bekamen Ton, obwohl `speaker-test -D plughw:1,0`
+      # hoerbar spielte. Die Hardware war nie das Problem.
+      #
+      # WARUM ES BISHER NIEMANDEM AUFFIEL: `autosetup.sh` (Zeile 985) und
+      # `update/start_mupibox_update.sh` setzen es, KEIN Rezept tat es. Der
+      # Pi 5 trug es also aus seiner Erstinstallation mit dem alten Weg — wer
+      # nur die gewachsene Box ansieht, haelt es fuer vorhanden. Dieselbe
+      # Fehlerklasse wie die vier Bluetooth-Skripte, die nie im Baum lagen.
+      # ZWEI WEGE, WEIL DER ERSTE IM INSTALLER NICHT GEHT.
+      # `loginctl enable-linger` spricht logind ueber D-Bus an. Waehrend eines
+      # Rezeptlaufs ist das nicht verlaesslich da — am 31.08.2026 am frisch
+      # aufgesetzten Pi 4 gemessen:
+      #     Could not enable linger: Unit dbus-org.freedesktop.login1.service
+      #     failed to load properly
+      # Der Schritt starb daran, und mit ihm der GANZE Lauf: 21 Schritte
+      # fertig, Abbruch bei 22 von 56. Ein Fix fuer den Ton hatte damit die
+      # Installation schlimmer gemacht als vorher.
+      #
+      # Was `enable-linger` intern tut, ist eine leere Datei anzulegen —
+      # `/var/lib/systemd/linger/<benutzer>`. Das geht ohne D-Bus und ohne
+      # laufendes logind, und systemd liest es beim naechsten Start. Also:
+      # erst den sauberen Weg versuchen, sonst die Datei selbst anlegen.
+      # KEIN `|| true` ueber allem: scheitern beide, soll es auffallen.
+      if loginctl enable-linger "$U" 2>/dev/null; then
+        echo "  Dauersitzung ueber logind gesetzt"
+      else
+        mkdir -p /var/lib/systemd/linger
+        touch "/var/lib/systemd/linger/$U"
+        echo "  logind nicht ansprechbar — Dauersitzung direkt gesetzt (/var/lib/systemd/linger/$U)"
+      fi
+      [ -e "/var/lib/systemd/linger/$U" ] || { echo "  FEHLER: Dauersitzung nicht gesetzt"; exit 1; }
+      echo "  wirksam nach dem naechsten Neustart"
+    check: "grep -q -- '-a dietpi' /etc/systemd/system/getty@tty1.service.d/dietpi-autologin.conf && grep -q '^allowed_users=anybody' /etc/X11/Xwrapper.config && id -nG dietpi | grep -qw tty && [ -e /var/lib/systemd/linger/dietpi ]"
+
+  - id: pipewire
+    name: "Tonstapel auf PipeWire umstellen"
+    note: >-
+      PFLICHTSCHRITT. Schaltet bluealsa und den softvol-Startbehelf ab und legt
+      /etc/asound.conf beiseite, damit 99-pipewire-default.conf greift. Die
+      seat-monitoring-Zeile ist NICHT verzichtbar: ohne sie registriert
+      WirePlumber keinen A2DP-Endpunkt, und bluetoothctl meldet
+      'br-connection-profile-unavailable', obwohl alles installiert ist.
+
+      DER WACHPOSTEN IST RAUS - und zwar nicht nur, weil MUPI_AUDIO nie gesetzt
+      war. Er stand ohnehin an der falschen Stelle: der Runner schiebt die
+      `put:`-Dateien HOCH, BEVOR `run:` ueberhaupt anlaeuft (controller/core.py,
+      step_puts). Auf dem Pi 4 lag deshalb 80-bluez-ohne-seat.conf sauber unter
+      /etc/wireplumber/, waehrend WirePlumber gar nicht installiert war - eine
+      Datei ohne Leser, die beim Nachsehen aussieht, als sei alles getan. Ein
+      Guard im `run:` kann die puts nicht zurueckhalten; entweder gehoert der
+      ganze Schritt uebersprungen (`when:`) oder gar nicht. Er gehoert nicht
+      uebersprungen, also Pflicht - und damit passen puts und run wieder
+      zusammen.
+
+      `pipewire-bin` NICHT vergessen: dort steckt `wpctl`. Ohne dieses Werkzeug
+      faellt mupi-lautstaerke.sh in seiner Erkennung DAUERHAFT auf ALSA zurueck
+      (`command -v wpctl … || echo alsa`) - der Ton laeuft dann zwar ueber
+      PipeWire, geregelt wird aber ein softvol-Regler, den es nach diesem
+      Schritt gar nicht mehr gibt. Still, wie immer.
+    timeout: 900
+    put:
+      # AUS DEM FORK-BAUM, NICHT MEHR AUS tools/ — die Kopie dort stand am
+      # 13.08.2026 wieder einen Fix zurueck (der 0->100-Boden: maxVolume 0
+      # ergab die LAUTESTE Box, Audit 2026-08-13, 2.1.3). Es ist dieselbe
+      # Zwillingsfalle wie am 05.08., und sie kommt wieder, solange es zwei
+      # Fassungen gibt. Deshalb gibt es jetzt nur noch EINE:
+      # scripts/mupibox/ im Fork, wie bei der Standwache (mupibox-app.yaml).
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/mupibox/mupi-lautstaerke.sh
+        dest: /usr/local/bin/mupibox/mupi-lautstaerke.sh
+        mode: "755"
+      - src: tools/wireplumber/80-bluez-ohne-seat.conf
+        dest: /etc/wireplumber/wireplumber.conf.d/80-bluez-ohne-seat.conf
+        mode: "644"
+      # AUS DEM FORK-BAUM, wie mupi-lautstaerke.sh eins drueber — die
+      # Zwillingsfalle (Kommentar dort) gilt fuer Vorlagen genauso. Die
+      # beiden Dateien existieren NUR in config/templates/.
+      #
+      # 81: nimmt Bluetooth-Geraeten das Mikrofon-Profil weg (nur A2DP) —
+      #     lag auf der Box, stand aber in KEINEM Rezept: ein Neuaufsetzen
+      #     haette sie verloren (gefunden 05.09.2026 beim Nachziehen).
+      # 82: die Tonkarte regelt in SOFTWARE. Ohne diese Datei glaubt
+      #     PipeWire an einen Hardware-Regler, den der MAX98357A nicht hat —
+      #     der Lautstaerkeregler wird zur Attrappe (Anzeige stimmt, Ton
+      #     nicht; die "wetterwendische" Senke des Sommers 2026).
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/81-bluez-nur-a2dp.conf
+        dest: /etc/wireplumber/wireplumber.conf.d/81-bluez-nur-a2dp.conf
+        mode: "644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/82-karte-software-regler.conf
+        dest: /etc/wireplumber/wireplumber.conf.d/82-karte-software-regler.conf
+        mode: "644"
+    run: |
+      set -e
+      mkdir -p /root/ton-vor-pipewire
+      # `if` statt `[ -f … ] && cp …`. Dieses Rezept laeuft VOR mupibox-app.yaml,
+      # /etc/asound.conf gibt es hier auf einer frischen Box also noch gar nicht -
+      # die UND-Verkettung liefert dann 1. Mitten im Skript ist das unter
+      # `set -e` folgenlos (nachgemessen), als LETZTE Zeile waere es der
+      # Fehlschlag des ganzen Schritts. Die if-Form haelt beides aus.
+      if [ -f /etc/asound.conf ]; then cp -a /etc/asound.conf /root/ton-vor-pipewire/; fi
+      DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        pipewire pipewire-bin pipewire-pulse wireplumber libspa-0.2-bluetooth pipewire-alsa
+      systemctl disable --now bluealsa bluealsa-aplay 2>/dev/null || true
+      systemctl disable --now mupibox-alsa-init 2>/dev/null || true
+      if [ -f /etc/asound.conf ]; then mv /etc/asound.conf /etc/asound.conf.vor-pipewire; fi
+      systemctl --global enable pipewire.socket pipewire-pulse.socket wireplumber.service
+      command -v wpctl >/dev/null || { echo "FEHLER: wpctl fehlt — pipewire-bin nicht installiert"; exit 1; }
+      echo "PipeWire eingerichtet. Wirkt nach dem naechsten Neustart."
+      echo "Rueckweg: bluealsa wieder enablen + asound.conf zurueckkopieren."
+    check: "command -v wpctl >/dev/null && test -f /etc/wireplumber/wireplumber.conf.d/80-bluez-ohne-seat.conf && test -f /etc/wireplumber/wireplumber.conf.d/81-bluez-nur-a2dp.conf && test -f /etc/wireplumber/wireplumber.conf.d/82-karte-software-regler.conf && ! systemctl is-enabled bluealsa 2>/dev/null"
+
+  - id: mpv
+    name: "mpv (der Player, den die Konfiguration nennt)"
+    note: >-
+      AM GERAET BELEGT (2026-07-30): BEIDE Boxen tragen `playerEngine: "mpv"` in
+      /etc/mupibox/mupiboxconfig.json - aber KEIN Rezeptschritt hat mpv je
+      installiert. Der Pi 5 wurde von Hand nachgeruestet, dem Pi 4 fehlte es
+      schlicht. Fehlt mpv, faellt die Wiedergabe STILL auf mplayer zurueck (der
+      steht in `deps`): kein Fehler im Protokoll, nur anderes Verhalten bei
+      Titelwechsel und Position - und genau so laufen zwei Boxen auseinander,
+      die aus demselben Rezept kommen sollen.
+
+      Deshalb PFLICHT und nicht optional: was die Konfiguration als Player
+      nennt, muss auf der Box auch liegen.
+    run: "DEBIAN_FRONTEND=noninteractive apt-get install -y mpv"
+    check: "command -v mpv"
+    timeout: 600
+
+  - id: finalize
+    name: "Dienste + Abschluss"
+    run: "systemctl daemon-reload; echo 'MixPiBox ready — reboot to start the kiosk'"
+
+  - id: bluetooth-headphones
+    name: "(nach Reboot) Bluetooth für Kopfhörer aktivieren"
+    note: "nur wenn oben maskiert wurde"
+    run: "systemctl unmask bluetooth hciuart 2>/dev/null; systemctl enable --now bluetooth; echo 'dann: bluetoothctl -> scan on / pair / connect / trust'"
+    optional: true
+
+  - id: bt-reconnect
+    name: "Bluetooth-Lautsprecher selbsttaetig wieder verbinden"
+    note: >-
+      BlueZ verbindet ein bekanntes Geraet NICHT von sich aus, wenn es beim
+      Booten aus war — es reagiert nur auf einen Abriss oder darauf, dass das
+      Geraet selbst sucht. Der getestete Xiaomi tut Letzteres nicht, also muss
+      die Box die Sache anfangen. MuPiBox bringt dafuer zwar
+      autoconnect_bt.sh mit, aber das ist ausgeliefert-abgeschaltet und waere
+      auf dieser Box auch aktiviert wirkungslos: es wartet auf einen Prozess
+      namens 'chromium-browser' (heisst hier 'chromium') und ruft
+      'bluetoothctl paired-devices', das BlueZ 5.82 nicht mehr kennt. Beides
+      an der Box nachgemessen. Deshalb ein eigenes Werkzeug statt einer
+      Flickschusterei am fremden Skript.
+    optional: true
+    timeout: 300
+    put:
+      - src: tools/mupibox-bt-reconnect.py
+        dest: /opt/mupibox-tools/bt-reconnect.py
+        mode: "755"
+      - src: tools/mupibox-bt-reconnect.service
+        dest: /etc/systemd/system/mupibox-bt-reconnect.service
+        mode: "644"
+      - src: tools/mupibox-bt-reconnect.timer
+        dest: /etc/systemd/system/mupibox-bt-reconnect.timer
+        mode: "644"
+    run: |
+      set -e
+      python3 -c 'import py_compile; py_compile.compile("/opt/mupibox-tools/bt-reconnect.py", doraise=True)'
+      # Das kaputte Original aus dem Weg raeumen, damit nicht beide gegen
+      # dasselbe Geraet arbeiten, falls es jemand aktiviert.
+      systemctl disable --now mupi_autoconnect_bt.service 2>/dev/null || true
+      systemctl daemon-reload
+      systemctl enable --now mupibox-bt-reconnect.timer
+      /opt/mupibox-tools/bt-reconnect.py --trocken
+      echo "Zeitgeber laeuft: 25 s nach dem Start, danach alle 30 s."
+    check: "systemctl is-active mupibox-bt-reconnect.timer >/dev/null && test -x /opt/mupibox-tools/bt-reconnect.py"
+
+  - id: netz-watchdog
+    name: "Totmannschalter fuer WLAN-Aenderungen"
+    note: >-
+      Wer das WLAN einer Box aendert, auf die er nur ueber genau dieses WLAN
+      zugreift, saegt an dem Ast, auf dem er sitzt. Der Watchdog sichert die
+      Konfiguration und stellt einen Wecker; ohne Entwarnung rollt er zurueck.
+      Die Entwarnung kann nur ueber eine FUNKTIONIERENDE Verbindung kommen —
+      sie ist damit kein Knopf, sondern ein Beweis. Die Boot-Einheit faengt
+      den Fall ab, dass jemand die Box neu startet, bevor der fluechtige
+      Zeitgeber feuert.
+    optional: true
+    timeout: 300
+    put:
+      - src: tools/mupibox-netz-watchdog.py
+        dest: /opt/mupibox-tools/netz-watchdog.py
+        mode: "755"
+      - src: tools/mupibox-netz-watchdog-boot.service
+        dest: /etc/systemd/system/mupibox-netz-watchdog-boot.service
+        mode: "644"
+    run: |
+      set -e
+      python3 -c 'import py_compile; py_compile.compile("/opt/mupibox-tools/netz-watchdog.py", doraise=True)'
+      systemctl daemon-reload
+      systemctl enable mupibox-netz-watchdog-boot.service
+      /opt/mupibox-tools/netz-watchdog.py stand
+      echo "Bedienung: scharf <sek> | entwarnung | rollback | stand"
+    check: "test -x /opt/mupibox-tools/netz-watchdog.py && systemctl is-enabled mupibox-netz-watchdog-boot.service >/dev/null"
+
+  - id: bootwache
+    name: "Bootwache: unbestaetigte config.txt zuruecknehmen"
+    note: >-
+      Dasselbe Muster wie der Netz-Watchdog, nur fuer den Bildschirm. Ein
+      falscher Drehwert in /boot/config.txt ist ein SCHWARZER BILDSCHIRM nach
+      dem Neustart, und der Rueckweg fuehrt sonst ueber Karte ausbauen und
+      fremden Rechner. Die Feinheit: ein schwarzer Bildschirm BOOTET SAUBER —
+      Netz, SSH und Dienste laufen. Eine Wache, die nur fragt "ist das System
+      hochgekommen?", nickt also genau den Fehler ab, den sie verhindern soll.
+      Deshalb entscheidet hier eine BESTAETIGUNG, nicht der Bootvorgang; ohne
+      sie stellt die Wache die gesicherte Fassung wieder her.
+      PFLICHTSCHRITT, weil die Verwaltung sich darauf verlaesst: die
+      Systemaktion `drehung-zurueck` (backend-api system.ts) ruft genau
+      `/opt/mupibox-tools/bootwache.py --zuruecknehmen`. Ohne diesen Schritt
+      zeigt der Knopf ins Leere — gemessen 2026-07-30: auf dem Pi 5 fehlte die
+      Datei, kein Rezept hat sie je ausgerollt.
+    timeout: 300
+    put:
+      - src: tools/mupibox-bootwache.py
+        dest: /opt/mupibox-tools/bootwache.py
+        mode: "755"
+      - src: tools/mupibox-bootwache.service
+        dest: /etc/systemd/system/mupibox-bootwache.service
+        mode: "644"
+      - src: tools/mupibox-bootwache.timer
+        dest: /etc/systemd/system/mupibox-bootwache.timer
+        mode: "644"
+    run: |
+      set -e
+      python3 -c 'import py_compile; py_compile.compile("/opt/mupibox-tools/bootwache.py", doraise=True)'
+      systemctl daemon-reload
+      systemctl enable mupibox-bootwache.service mupibox-bootwache.timer
+      systemctl start mupibox-bootwache.timer
+      # Zeigt den aktuellen Stand an (keine offene Aenderung = alles in Ordnung).
+      /opt/mupibox-tools/bootwache.py || true
+      echo "Rettungsweg von Hand: /opt/mupibox-tools/bootwache.py --zuruecknehmen"
+    check: "test -x /opt/mupibox-tools/bootwache.py && systemctl is-enabled mupibox-bootwache.timer >/dev/null"
+
+  - id: einrichtungsschirm
+    name: "Einrichtung per Handy: Schirm, QR und eigenes WLAN"
+    note: >-
+      DER WEG OHNE LAPTOP. Beim ersten Start zeigt die Box auf ihrem eigenen
+      Schirm einen QR-Code; das Handy oeffnet ihn und bringt die Box ins WLAN.
+      Bis hierher lag das alles NUR IM REPO: die Teile waren seit dem
+      02.08.2026 gebaut und getestet, aber kein Rezept hat sie je auf eine Box
+      kopiert und keine Unit hat sie je gestartet — geschrieben ist nicht
+      ausgerollt, und ausgerollt ist nicht aufgerufen.
+      ALLES FLACH IN EINEN ORDNER: einrichtung-schirm.py laedt seine Nachbarn
+      (Boot-Animation wegen Framebuffer, Farben und Schriften; qr.py;
+      einrichtung-ap.py) ueber den EIGENEN Verzeichnispfad, nicht ueber
+      Systempfade. Liegt einer davon woanders, faellt der Schirm STILL aus.
+      HOSTAPD UND DNSMASQ SIND KOMFORT, KEINE VORAUSSETZUNG. Der Rueckfall
+      laeuft auch ohne sie: `wpa_supplicant` (auf jeder Box mit WLAN vorhanden)
+      macht mit `mode=2` selbst ein Netz auf, und `kleiner-dhcp.py` spricht
+      DHCP und DNS in reiner Standardbibliothek. Genau deshalb funktioniert der
+      Weg jetzt auch auf einer FRISCHEN Karte — vorher hing er an zwei Paketen,
+      die erst das Netz gebracht haette, das er ersetzen sollte.
+      Wo sie da sind, haben sie Vorrang (ausgereifter). Sie werden hier
+      installiert UND SOFORT STILLGELEGT: sie sind Werkzeug, kein Dienst —
+      `einrichtung-ap.py` startet sie mit EIGENER Konfiguration als eigene
+      Prozesse. Wer sie laufen laesst, hat auf einer Kinderbox einen
+      DNS-Server auf Port 53 und einen Zugangspunkt, die niemand bestellt hat.
+      Genau deshalb stehen sie auch NICHT in der grossen Paketzeile:
+      `apt-get install dnsmasq` startet ihn beim Installieren.
+      DIE ZWEITE UNIT (`-ap`) IST DIE, DIE DEN RUECKFALL UEBERHAUPT AUSLOEST:
+      sie wartet nach dem Start 45 s auf eine Adresse und macht nur dann das
+      eigene Netz auf. Ohne sie laege alles bereit und niemand riefe es je auf.
+    timeout: 600
+    put:
+      - src: tools/einrichtung-schirm.py
+        dest: /opt/mixpibox-einrichtung/einrichtung-schirm.py
+        mode: "755"
+      - src: tools/einrichtung-ap.py
+        dest: /opt/mixpibox-einrichtung/einrichtung-ap.py
+        mode: "755"
+      - src: tools/kleiner-dhcp.py
+        dest: /opt/mixpibox-einrichtung/kleiner-dhcp.py
+        mode: "755"
+      - src: tools/qr.py
+        dest: /opt/mixpibox-einrichtung/qr.py
+        mode: "755"
+      - src: tools/mupibox-boot-splash.py
+        dest: /opt/mixpibox-einrichtung/mupibox-boot-splash.py
+        mode: "755"
+      - src: dateien/mixpi-hoert.png
+        dest: /opt/mixpibox-einrichtung/mixpi-hoert.png
+        mode: "644"
+      - src: tools/mixpibox-einrichtung.service
+        dest: /etc/systemd/system/mixpibox-einrichtung.service
+        mode: "644"
+      - src: tools/mixpibox-einrichtung-ap.service
+        dest: /etc/systemd/system/mixpibox-einrichtung-ap.service
+        mode: "644"
+    run: |
+      set -e
+      DEBIAN_FRONTEND=noninteractive apt-get install -y hostapd dnsmasq iw
+      # Stilllegen, nicht entfernen: der AP braucht die Programme, aber NIE
+      # deren mitgelieferte Dienste. `mask` haelt auch den Fall ab, dass ein
+      # anderes Paket sie als Abhaengigkeit wieder anschaltet.
+      systemctl disable --now hostapd dnsmasq 2>/dev/null || true
+      systemctl mask hostapd dnsmasq 2>/dev/null || true
+      # Uebersetzen heisst hier: laedt der Schirm seine Nachbarn wirklich? Ein
+      # Syntaxfehler in einem der vier faellt sonst erst am dunklen Schirm auf.
+      for f in einrichtung-schirm.py einrichtung-ap.py qr.py mupibox-boot-splash.py; do
+        python3 -c "import py_compile,sys; py_compile.compile('/opt/mixpibox-einrichtung/$f', doraise=True)"
+      done
+      python3 /opt/mixpibox-einrichtung/einrichtung-ap.py bereit || true
+      systemctl daemon-reload
+      # AUF DER FERTIGEN BOX BLEIBT DER EINRICHTUNGSSCHIRM AUS.
+      #
+      # Hier stand `systemctl enable` — und genau das war der Grund, warum der
+      # QR-Schirm bei JEDEM normalen Boot durchkam (09.08.2026 am Geraet:
+      # "der qr screen kommt immer noch durch beim normalen boot"). Der Schirm
+      # zeichnet auf /dev/fb0, die MuPiBox-Oberflaeche auch; wer zuletzt malt,
+      # gewinnt. Zwei Zeichner auf einem Bildspeicher.
+      #
+      # Gebraucht wird er dort auch nicht mehr: waehrend der Installation kommt
+      # er von der KARTE (Vorstart), und danach ist seine Arbeit getan. Was
+      # danach noch einzustellen ist, gehoert in den Ersteinrichtungs-
+      # Assistenten der Box selbst — auf dem Touchscreen, ohne Handy.
+      #
+      # Die DATEIEN bleiben liegen, nur eingeschaltet wird nichts: wer einer
+      # Box das eigene WLAN wieder aufspannen will, hat damit alles zur Hand
+      # und schaltet es bewusst an.
+      systemctl disable mixpibox-einrichtung.service mixpibox-einrichtung-ap.service 2>/dev/null || true
+      echo "Einrichtungsschirm liegt bereit, ist aber AUS — die fertige Box"
+      echo "gehoert der MixPiBox-Oberflaeche allein."
+      echo "Von Hand ansehen:  python3 /opt/mixpibox-einrichtung/einrichtung-schirm.py --einmal"
+      echo "Eigenes WLAN von Hand: einrichtung-ap.py starten | stoppen"
+    check: "test -x /opt/mixpibox-einrichtung/einrichtung-schirm.py && test -x /opt/mixpibox-einrichtung/kleiner-dhcp.py && test -f /opt/mixpibox-einrichtung/mixpi-hoert.png && ! systemctl is-enabled mixpibox-einrichtung.service 2>/dev/null | grep -q '^enabled$'"

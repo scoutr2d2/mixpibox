@@ -1,0 +1,19 @@
+{
+  "zuordnungen": [
+    {
+      "schluessel": "jellyfin:7d9a37e2732ca78bc68eacb3232960c0",
+      "auch": [
+        "spotify:0l0nQidfDmC4SiTdrpHr4v"
+      ],
+      "stufe": "locker"
+    },
+    {
+      "schluessel": "spotify:0PyuOAMz1lv0z737JcQNOg",
+      "auch": [
+        "jellyfin:e131865d504a657a93533722fc88bc90"
+      ],
+      "stufe": "locker"
+    }
+  ],
+  "getrennt": []
+}

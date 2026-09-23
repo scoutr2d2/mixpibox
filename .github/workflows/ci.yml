@@ -1,0 +1,51 @@
+name: CI
+
+# Lint (Biome, per workspace), backend unit tests + type-check, and a full
+# build of all workspaces. See MODERNIZATION.md (B0 — foundation).
+#
+# The frontend Karma test (`ng test`) is intentionally NOT run here yet — it
+# needs a headless browser. The production `ng build` in the "build" job already
+# exercises the whole frontend compile, so regressions are still caught.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint (Biome)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    name: Backend tests + types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run check-types --workspace=mupibox-backend-player
+      - run: npm run test --workspace=mupibox-backend-api
+      - run: npm run test --workspace=mupibox-backend-player
+
+  build:
+    name: Build all workspaces
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run build

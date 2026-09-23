@@ -1,0 +1,150 @@
+# MuPiBox local dev harness (Tier A — see MODERNIZATION.md §5).
+#
+# Runs the two Node backends + a MuPiHAT hardware MOCK on an x86 dev machine,
+# no Raspberry Pi and no MuPiHAT hardware needed.  Everything else about the
+# box (Spotify Connect, mplayer streaming) works with real credentials.
+#
+# Start with:  ./mupictl up        (seeds ./harness/state first, then compose up)
+# Frontend:    ./mupictl up --frontend   (adds the Angular dev server on :4200)
+#
+# Ports: 8200 backend-api (+ serves the built UI in prod) · 5005 backend-player
+#        4200 Angular dev server (frontend profile only)
+name: mupibox-sim
+
+services:
+  # --- MuPiHAT hardware mock: writes the shared /tmp/mupihat.json contract ----
+  mupihat-mock:
+    image: node:22-bookworm-slim
+    command: node /mock/mupihat-mock.mjs
+    environment:
+      MUPIHAT_OUT: /state/mupihat.json
+      MUPIHAT_START_SOC: "87"
+    volumes:
+      - ./mupihat-mock.mjs:/mock/mupihat-mock.mjs:ro
+      - ./state/mupihat.json:/state/mupihat.json
+    restart: unless-stopped
+
+  # --- backend-api (Express 5 / TS, dev mode via tsx watch) ------------------
+  backend-api:
+    image: node:22-bookworm-slim
+    working_dir: /app/src/backend-api
+    command: sh -c "npm install --no-audit --no-fund --no-save && exec npx tsx watch src/server.ts"
+    environment:
+      NODE_ENV: development
+      # The backend-api reverse-proxies /player -> backend-player. On the box both
+      # run on localhost (default 127.0.0.1); in this split-container harness the
+      # player is another service.
+      PLAYER_PROXY_HOST: backend-player
+    ports:
+      - "8200:8200"
+    volumes:
+      - ../:/app
+      - api_node_modules:/app/src/backend-api/node_modules
+      - ./state/config-api.json:/app/src/backend-api/config/config.json
+      - ./state/data.json:/app/src/backend-api/config/data.json
+      - ./state/data.json:/app/src/backend-api/config/active_data.json
+      - ./seed/monitor.json:/app/src/backend-api/config/monitor.json:ro
+      - ./seed/albumstop.json:/app/src/backend-api/config/albumstop.json:ro
+      # On the box a script writes network.json periodically; the sim is simply
+      # always online — without this file /api/network 404s and the frontend
+      # stays "offline" forever (which blocks the Spotify Web Playback SDK).
+      - ./seed/network.json:/app/src/backend-api/config/network.json:ro
+      - ./state/resume.json:/app/src/backend-api/config/resume.json
+      - ./state/active_resume.json:/app/src/backend-api/config/active_resume.json
+      - ./state/mupiboxconfig.json:/etc/mupibox/mupiboxconfig.json
+      - ./state/mupihat.json:/tmp/mupihat.json:ro
+      # Opt-in HTTPS: put a cert here (./mupictl … or scripts/gen-selfsigned-cert.sh
+      # harness/state/tls) and the backend serves https; empty → http.
+      - ./state/tls:/etc/mupibox/tls:ro
+    depends_on:
+      - mupihat-mock
+    restart: unless-stopped
+
+  # --- backend-player (Express 4 / TS + mplayer) -----------------------------
+  backend-player:
+    build:
+      context: .
+      dockerfile: player.Dockerfile
+    working_dir: /app/src/backend-player
+    # Runs via tsx (TypeScript runtime). B2 ist durch: 20 `.ts`, null `.js` unter
+    # src/backend-player/src (nachgemessen 26.08.2026 — hier stand bis dahin
+    # "migration in progress"). The boot-time Spotify token refresh now catches
+    # its own failure (fixed in spotify-control.ts), so the old
+    # --unhandled-rejections workaround is gone; local/radio/rss still work with
+    # no Spotify credentials.
+    command: sh -c "npm install --no-audit --no-fund --no-save && exec npx tsx src/spotify-control.ts"
+    environment:
+      NODE_ENV: development
+    ports:
+      - "5005:5005"
+    volumes:
+      - ../:/app
+      - player_node_modules:/app/src/backend-player/node_modules
+      - ./seed/config-player.json:/app/src/backend-player/config/config.json:ro
+      - ./seed/mupiboxconfig.json:/app/src/backend-player/config/mupiboxconfig.json:ro
+      # The LIVE box config (the /spotify PKCE login saves the refresh token here
+      # via backend-api) — the player reads Spotify credentials FRESH from this
+      # canonical path on every token refresh (see freshSpotifyCreds), so a
+      # reconnect works without recreating the container. Same writable state
+      # file backend-api mounts.
+      - ./state/mupiboxconfig.json:/etc/mupibox/mupiboxconfig.json
+      # Mock local media (see mock-media.mjs / `./mupictl mock`): the recordings
+      # are mounted read-only at the fixed path the generated playlists use, and
+      # the generated MuPiBox media layout is mounted where the player expects it.
+      - ./state/media:/home/dietpi/MuPiBox/media:ro
+      - ./mplayer.conf:/etc/mplayer/mplayer.conf:ro
+      - ./state/tls:/etc/mupibox/tls:ro # opt-in HTTPS (see backend-api note)
+    restart: unless-stopped
+
+  # --- frontend (Angular dev server) — opt-in via `--profile frontend` -------
+  frontend:
+    profiles: ["frontend"]
+    image: node:22-bookworm-slim
+    working_dir: /app/src/frontend-box
+    # Opt-in HTTPS: if a cert is mounted at /certs, ng serve runs with --ssl (https),
+    # else plain http — matches the backends' cert-presence gate.
+    command: sh -c "npm install --no-audit --no-fund --no-save && SSL=''; [ -f /certs/cert.pem ] && SSL='--ssl --ssl-cert /certs/cert.pem --ssl-key /certs/key.pem'; exec npx ng serve --host 0.0.0.0 --port 4200 --disable-host-check $$SSL"
+    ports:
+      - "4200:4200"
+    volumes:
+      - ../:/app
+      - frontend_node_modules:/app/src/frontend-box/node_modules
+      - ./state/tls:/certs:ro # opt-in HTTPS (see backend-api note)
+    depends_on:
+      - backend-api
+      - backend-player
+
+  # TOT SEIT E47 (19.08.2026) — NICHT MEHR STARTBAR, hier nur noch als Leiche.
+  # Der Mount `../AdminInterface/www` unten zeigt auf einen Ordner, der nicht
+  # mehr im Baum liegt (null versionierte Dateien, null `.php` im ganzen Baum);
+  # `--profile admin up` scheitert daran. Gemeldet als AUDIT-2026-08-25.md §10,
+  # dort mit dem Vorschlag, Profil + admin-entrypoint.sh + MUPI_ADMIN_DEBUG zu
+  # streichen. Bis das entschieden ist, sagt dieser Kopf, was Sache ist —
+  # `harness/README.md` behauptete vier Wochen lang "no PHP admin" und deckte
+  # das Profil damit zu.
+  #
+  # Was es einmal war: AdminInterface (the box's PHP admin pages) — opt-in dev
+  # view. On the box these were served by lighttpd; here a plain `php -S` served
+  # them against sandboxed copies of the sim config.
+  # Start war:   docker compose -f harness/docker-compose.yml --profile admin up -d admin
+  # Dann:        http://localhost:8300
+  admin:
+    profiles: ["admin"]
+    image: php:8.3-cli
+    command: ["sh", "/admin-entrypoint.sh"]
+    environment:
+      # Set MUPI_ADMIN_DEBUG=1 in the shell before `up` to surface the PHP 8.3
+      # warnings (for modernizing the pages); default off = box-treu.
+      MUPI_ADMIN_DEBUG: "${MUPI_ADMIN_DEBUG:-0}"
+    ports:
+      - "8300:8300"
+    volumes:
+      - ../AdminInterface/www:/var/www/admin:ro
+      - ./admin-entrypoint.sh:/admin-entrypoint.sh:ro
+      - ./state:/seed:ro
+    restart: unless-stopped
+
+volumes:
+  api_node_modules:
+  player_node_modules:
+  frontend_node_modules:

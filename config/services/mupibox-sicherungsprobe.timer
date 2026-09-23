@@ -1,0 +1,28 @@
+[Unit]
+# BACKLOG E29/B3 — „eine Probe, die ihn REGELMAESSIG faehrt".
+#
+# WARUM WOECHENTLICH UND NICHT TAEGLICH
+# Was die Probe findet, aendert sich langsam: ein Archiv, das sich nicht mehr
+# oeffnen laesst, wird davon nicht besser, dass man es taeglich feststellt.
+# Woechentlich reicht, um den Fehler zu finden, bevor er gebraucht wird — und
+# es schont die Karte, auf die das Urteil geschrieben wird.
+Description=MuPiBox: den Rueckweg woechentlich proben (E29/B3)
+
+[Timer]
+# Sonntag frueh, NACH dem taeglichen Stand um 4:17 (mupibox-sicherung.timer).
+# Die Probe soll den frischen Stand pruefen, nicht den von gestern.
+OnCalendar=Sun *-*-* 05:30:00
+RandomizedDelaySec=30m
+# Ein Pi ohne Echtzeituhr und eine Box, die abends ausgeht: ohne Persistent
+# faende die Probe nie statt, weil sonntags um 5:30 niemand Musik hoert und
+# die Box laengst aus ist. Persistent=true holt den verpassten Lauf beim
+# naechsten Einschalten nach — und DAS ist hier der Normalfall, nicht die
+# Ausnahme.
+Persistent=true
+AccuracySec=5m
+# Nicht sofort beim Start: da hat die Box genug zu tun, und der nachgeholte
+# Lauf aus Persistent=true kaeme sonst mitten in den Bootvorgang.
+OnBootSec=25min
+
+[Install]
+WantedBy=timers.target

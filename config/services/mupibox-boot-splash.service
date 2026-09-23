@@ -1,0 +1,38 @@
+[Unit]
+# BACKLOG E11c/S2 — „die Box bleibt nie schwarz".
+#
+# Loest mupi_splash.service ab. Das Alte rief `fbv <bild>` auf und zeigte EIN
+# stehendes Bild; diese Unit zeigt eine Animation, deren Balken aus ERREICHTEN
+# Meilensteinen waechst (Netz, :8200, Bibliotheksdienst, Xorg, Chromium).
+# Beide zugleich waere ein Streit um /dev/fb0 — die Ausrollwege schalten
+# mupi_splash deshalb ab, wenn sie diese hier einschalten.
+Description=MuPiBox Boot-Animation (Framebuffer, echter Fortschritt)
+# Frueh starten, aber erst wenn das Dateisystem steht. BEWUSST NICHT an
+# network-online haengen: gerade das Warten auf DHCP (gemessen 4 bis 9 s,
+# tools/grundmessung.py 04.08.2026) soll die Animation ja ueberbruecken.
+After=local-fs.target
+Before=getty@tty1.service
+Conflicts=plymouth-quit.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/mupibox/mupibox-boot-splash.py
+# Das Bild gehoert der Konsole tty1; ohne das schreibt systemd dazwischen.
+StandardOutput=null
+StandardError=journal
+# WAS DEN START WIRKLICH FREIHAELT, IST `Type=simple` ZWEI ZEILEN HOEHER —
+# nicht diese Frist. Bei Type=simple gilt die Unit systemd als gestartet, sobald
+# der Prozess da ist; ein Start-Zeitlimit kann danach gar nicht mehr greifen.
+# Richtiggestellt am 04.08.2026 beim Gegenlesen (E11c): der Satz stand hier als
+# „eine kaputte Animation darf den Start NIE aufhalten" und las sich wie eine
+# Sicherung. Wer das glaubt, streicht spaeter Type=simple und meint, gedeckt zu
+# sein. Die Zeile bleibt trotzdem stehen — sie schadet nichts und haelt diese
+# Datei deckungsgleich mit der Unit, die auf den Boxen liegt (04.08. gelesen).
+#
+# Was den Start TATSAECHLICH freihaelt, ist ausserdem `WantedBy=` statt
+# `RequiredBy=`: scheitert die Animation, faellt basic.target nicht mit.
+TimeoutStartSec=5
+Restart=no
+
+[Install]
+WantedBy=basic.target

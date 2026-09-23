@@ -1,0 +1,46 @@
+{
+  "satz": "menschen",
+  "lizenz": "CC0",
+  "bilder": [
+    {
+      "datei": "dame-mit-kind.jpg",
+      "id": "131819",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "ezra.jpg",
+      "id": "171154",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "koenig.jpg",
+      "id": "162623",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "mann.jpg",
+      "id": "119701",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "musiker.jpg",
+      "id": "169651",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "nathaniel.jpg",
+      "id": "155822",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "taenzerin-mantel.jpg",
+      "id": "172659",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "zwei-kinder.jpg",
+      "id": "122346",
+      "quelle": "cleveland"
+    }
+  ]
+}

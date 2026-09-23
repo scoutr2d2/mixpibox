@@ -1,0 +1,39 @@
+{
+  "name": "mupibox-backend-api",
+  "version": "1.0.0",
+  "author": "Mupi Team",
+  "homepage": "https://github.com/splitti/mupibox",
+  "scripts": {
+    "serve": "cross-env NODE_ENV=development tsx watch src/server.ts",
+    "build": "npm run check-types && esbuild src/server.ts --bundle --minify --platform=node --target=node22 --log-level=error --metafile=backend-api.esbuild-meta.json --outfile=../deploy/server.js && npm run build:plugin-laufwerk",
+    "_kommentar:build:plugin-laufwerk": "ZWEITER AUSGANG, ABSICHTLICH GETRENNT. Der Worker-Einstieg darf NICHT in server.js hineingebuendelt werden - ein Worker braucht eine eigene Datei auf der Platte. Wer diese Zeile streicht, baut ein server.js, das startet, aber jedes Plugin still liegen laesst: plugin-wirt.ts findet das Laufwerk nicht und meldet es nur im Journal.",
+    "build:plugin-laufwerk": "esbuild src/plugin-laufwerk.ts --bundle --minify --platform=node --target=node22 --log-level=error --outfile=../deploy/plugin-laufwerk.js",
+    "test": "cross-env NODE_ENV=test tsx --test src/*.spec.ts",
+    "lint": "npx @biomejs/biome check .",
+    "lint:fix": "npx @biomejs/biome check --fix .",
+    "check-types": "npx tsc --noEmit"
+  },
+  "dependencies": {
+    "@spotify/web-api-ts-sdk": "^1.2.0",
+    "bcryptjs": "^3.0.3",
+    "compression": "1.8.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "jsonfile": "^6.2.0"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.8.1",
+    "@types/express": "5.0.3",
+    "@types/jsonfile": "6.1.4",
+    "@types/node": "24.5.2",
+    "@types/supertest": "6.0.3",
+    "esbuild": "0.28.2",
+    "nock": "^14.0.10",
+    "supertest": "7.1.4",
+    "tsx": "4.20.5",
+    "typescript": "5.8.3"
+  },
+  "description": "API backend server for the MupiBox.",
+  "private": true,
+  "type": "module"
+}

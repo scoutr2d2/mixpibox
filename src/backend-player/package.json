@@ -1,0 +1,30 @@
+{
+  "name": "mupibox-backend-player",
+  "version": "1.0.0",
+  "author": "Mupi Team",
+  "homepage": "https://github.com/splitti/mupibox",
+  "scripts": {
+    "serve": "cross-env NODE_ENV=development tsx watch src/spotify-control.ts",
+    "build": "esbuild src/spotify-control.ts --bundle --minify --platform=node --target=node22 --log-level=error --outfile=../deploy/spotify-control.js",
+    "test": "cross-env NODE_ENV=test tsx --test src/*.spec.ts",
+    "check-types": "tsc --noEmit",
+    "lint": "npx @biomejs/biome check .",
+    "lint:fix": "npx @biomejs/biome check --fix ."
+  },
+  "dependencies": {
+    "byline": "^5.0.0",
+    "console-log-level": "^1.4.1",
+    "debug": "^4.3.4",
+    "express": "^4.17.1",
+    "js-string-escape": "^1.0.1",
+    "spotify-web-api-node": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.5.2",
+    "esbuild": "*",
+    "tsx": "4.20.5",
+    "typescript": "5.8.3"
+  },
+  "description": "Playback backend for the MupiBox.",
+  "private": true
+}

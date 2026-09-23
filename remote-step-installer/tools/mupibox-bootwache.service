@@ -1,0 +1,18 @@
+[Unit]
+# Nimmt eine unbestaetigte Aenderung an /boot/config.txt zurueck (Herleitung im
+# Kopf von mupibox-bootwache.py). Laeuft frueh, aber NICHT als Bedingung fuer
+# irgendetwas: schlaegt sie fehl, soll die Box trotzdem hochkommen.
+Description=MuPiBox Bootwache (unbestaetigte config.txt zuruecknehmen)
+DefaultDependencies=no
+After=local-fs.target
+Before=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/mupibox-tools/bootwache.py
+# Ein Fehler hier darf den Start nicht aufhalten — sie ist ein Netz, kein Tor.
+SuccessExitStatus=0 1
+RemainAfterExit=no
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,136 @@
+<!--
+  Google-TV-Fernbedienung, schematisch — Vorlage des Betreibers (06.09.2026),
+  hier um das ergaenzt, was die spaetere Zuordnungsseite braucht.
+
+  ══ WAS HINZUGEKOMMEN IST UND WARUM ═════════════════════════════════════════
+
+  `data-taste` an jeder bedienbaren Flaeche. Das ist die ganze Schnittstelle
+  zwischen Bild und Belegung: Die Seite sucht `[data-taste]`, haengt einen
+  Klickhorcher an und schlaegt den Wert in der Zuordnung nach. Ein Bild ohne
+  diese Kennungen waere Dekoration — man saehe die Fernbedienung, koennte
+  aber keine Taste damit belegen.
+
+  Der Wert ist der KERNELCODE, wo es einen gibt (`28`, `158`, `172`, `113`,
+  `115`/`114`), sonst ein sprechender Name mit Vorsilbe `x-` fuer „sendet
+  nichts". Die Seite kann daran ohne weitere Liste erkennen, was ueberhaupt
+  belegbar ist: alles, was nicht mit `x-` beginnt.
+
+  ══ WELCHE TASTEN DIE BOX NIE ERREICHEN ═════════════════════════════════════
+
+  Assistent, Ein/Aus, Eingang, YouTube und Netflix erzeugen auf dem Pi keinen
+  Tastencode — sie sprechen mit dem Fernseher oder mit Google. Sie sind hier
+  ABSICHTLICH trotzdem gezeichnet: Wer die Fernbedienung in der Hand haelt und
+  eine Taste im Schema vermisst, haelt das Schema fuer falsch. Besser sichtbar
+  und als tot gekennzeichnet.
+
+  ══ ZU DEN LOGOS ════════════════════════════════════════════════════════════
+
+  YouTube- und Netflix-Zeichen sowie die vier Assistent-Punkte sind fremde
+  Marken. Sie stehen hier zur WIEDERERKENNUNG der Taste, wie in einer
+  Bedienungsanleitung — nicht als Herkunftsangabe. Wer diesen Baum weitergibt,
+  sieht sich das noch einmal an (BACKLOG E134, Punkt Bild-/Grafiklizenz); ein
+  neutrales Dreieck und ein neutraler Buchstabe taeten es zur Not auch.
+
+  Der Kopf der Fernbedienung bleibt hell, auch im Dunkelmodus: Das Geraet IST
+  weiss. Nur die Beschriftung drumherum gehoert dem Thema der Seite.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 680" width="100%" height="100%" role="img" aria-labelledby="gtv-titel gtv-text">
+  <title id="gtv-titel">Google-TV-Fernbedienung</title>
+  <desc id="gtv-text">Steuerkreuz mit Auswahltaste, darunter acht runde Tasten in vier Reihen, seitlich eine Lautstaerkewippe.</desc>
+  <defs>
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#E1E3E5" />
+      <stop offset="15%" stop-color="#F4F5F6" />
+      <stop offset="85%" stop-color="#F4F5F6" />
+      <stop offset="100%" stop-color="#D5D8DC" />
+    </linearGradient>
+    <filter id="dropShadow" x="-10%" y="-5%" width="130%" height="115%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.18" />
+    </filter>
+    <linearGradient id="btnGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#E2E5E8" />
+    </linearGradient>
+    <linearGradient id="dpadGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ECEFF1" />
+      <stop offset="100%" stop-color="#D7DCDE" />
+    </linearGradient>
+    <filter id="btnShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.08" />
+    </filter>
+  </defs>
+
+  <rect x="30" y="20" width="180" height="640" rx="90" fill="url(#bodyGrad)" filter="url(#dropShadow)" />
+
+  <g data-taste="115" data-name="Lauter (seitlich)">
+    <rect x="207" y="270" width="6" height="42" rx="3" fill="#D3D7DB" />
+  </g>
+  <g data-taste="114" data-name="Leiser (seitlich)">
+    <rect x="207" y="312" width="6" height="42" rx="3" fill="#D3D7DB" />
+  </g>
+  <line x1="207" y1="312" x2="213" y2="312" stroke="#B0B5BA" stroke-width="1.5" />
+
+  <g transform="translate(120, 140)">
+    <g data-taste="ring" data-name="Steuerkreuz">
+      <circle cx="0" cy="0" r="62" fill="url(#dpadGrad)" stroke="#CAD0D4" stroke-width="1.5" filter="url(#btnShadow)" />
+    </g>
+    <g data-taste="28" data-name="Auswählen (Mitte)">
+      <circle cx="0" cy="0" r="32" fill="url(#btnGrad)" stroke="#D0D5D9" stroke-width="1.2" />
+    </g>
+    <path d="M 0,-48 L 4,-43 L -4,-43 Z" fill="#9AA0A6" />
+    <path d="M 0,48 L 4,43 L -4,43 Z" fill="#9AA0A6" />
+    <path d="M -48,0 L -43,4 L -43,-4 Z" fill="#9AA0A6" />
+    <path d="M 48,0 L 43,4 L 43,-4 Z" fill="#9AA0A6" />
+  </g>
+
+  <g transform="translate(74, 256)" data-taste="158" data-name="Zurück">
+    <circle cx="0" cy="0" r="22" fill="url(#btnGrad)" stroke="#D8DCDE" stroke-width="1" filter="url(#btnShadow)" />
+    <path d="M 5,0 L -5,0 M -1,-5 L -6,0 L -1,5" fill="none" stroke="#5F6368" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <g transform="translate(166, 256)" data-taste="x-assistent" data-name="Google Assistent">
+    <circle cx="0" cy="0" r="22" fill="url(#btnGrad)" stroke="#D8DCDE" stroke-width="1" filter="url(#btnShadow)" />
+    <circle cx="-6" cy="0" r="2.5" fill="#4285F4" />
+    <circle cx="-1" cy="-4" r="2.2" fill="#EA4335" />
+    <circle cx="-1" cy="4" r="2.2" fill="#34A853" />
+    <circle cx="4.5" cy="0" r="1.8" fill="#FBBC05" />
+  </g>
+
+  <g transform="translate(74, 322)" data-taste="172" data-name="Home">
+    <circle cx="0" cy="0" r="22" fill="url(#btnGrad)" stroke="#D8DCDE" stroke-width="1" filter="url(#btnShadow)" />
+    <path d="M -7,2 L -7,6 L 7,6 L 7,2 L 0,-5 Z" fill="none" stroke="#5F6368" stroke-width="2.3" stroke-linejoin="round" />
+    <path d="M -2,6 L -2,2 L 2,2 L 2,6" fill="none" stroke="#5F6368" stroke-width="2" />
+  </g>
+
+  <g transform="translate(166, 322)" data-taste="113" data-name="Ton aus">
+    <circle cx="0" cy="0" r="22" fill="url(#btnGrad)" stroke="#D8DCDE" stroke-width="1" filter="url(#btnShadow)" />
+    <path d="M -6,-3 L -3,-3 L 2,-7 L 2,7 L -3,3 L -6,3 Z" fill="#5F6368" />
+    <line x1="4" y1="-4" x2="8" y2="4" stroke="#5F6368" stroke-width="2" stroke-linecap="round" />
+    <line x1="8" y1="-4" x2="4" y2="4" stroke="#5F6368" stroke-width="2" stroke-linecap="round" />
+  </g>
+
+  <g transform="translate(74, 388)" data-taste="x-youtube" data-name="YouTube">
+    <circle cx="0" cy="0" r="22" fill="url(#btnGrad)" stroke="#D8DCDE" stroke-width="1" filter="url(#btnShadow)" />
+    <rect x="-8" y="-5.5" width="16" height="11" rx="3.5" fill="#FF0000" />
+    <polygon points="-2,-3 4,0 -2,3" fill="#FFFFFF" />
+  </g>
+
+  <g transform="translate(166, 388)" data-taste="x-netflix" data-name="Netflix">
+    <circle cx="0" cy="0" r="22" fill="url(#btnGrad)" stroke="#D8DCDE" stroke-width="1" filter="url(#btnShadow)" />
+    <text x="0" y="6.5" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="18" fill="#E50914" text-anchor="middle">N</text>
+  </g>
+
+  <g transform="translate(74, 454)" data-taste="x-power" data-name="Ein / Aus">
+    <circle cx="0" cy="0" r="22" fill="url(#btnGrad)" stroke="#D8DCDE" stroke-width="1" filter="url(#btnShadow)" />
+    <path d="M -4,-3.5 A 6 6 0 1 0 4,-3.5" fill="none" stroke="#5F6368" stroke-width="2.2" stroke-linecap="round" />
+    <line x1="0" y1="-6.5" x2="0" y2="0.5" stroke="#5F6368" stroke-width="2.2" stroke-linecap="round" />
+  </g>
+
+  <g transform="translate(166, 454)" data-taste="x-eingang" data-name="Eingang">
+    <circle cx="0" cy="0" r="22" fill="url(#btnGrad)" stroke="#D8DCDE" stroke-width="1" filter="url(#btnShadow)" />
+    <rect x="-6" y="-4.5" width="12" height="9" rx="1.5" fill="none" stroke="#5F6368" stroke-width="2" />
+    <path d="M -2,7 L 2,7 M 0,4.5 L 0,7" stroke="#5F6368" stroke-width="2" stroke-linecap="round" />
+  </g>
+
+  <circle cx="120" cy="520" r="2.2" fill="#B0B5B9" />
+</svg>

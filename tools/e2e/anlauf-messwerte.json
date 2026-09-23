@@ -1,0 +1,31 @@
+{
+  "geraete": {
+    "Raspberry Pi 5 Model B Rev 1.1": {
+      "gemessen": "von Hand festgehalten",
+      "messwerte": {
+        "klein": {
+          "Bild": 2,
+          "Titel": 6,
+          "Leiste": 7,
+          "Knopf": 8
+        },
+        "gross": {
+          "Titel": 143,
+          "Leiste": 144,
+          "Knopf": 145,
+          "Bild": 402
+        },
+        "weg": {
+          "Startseite": 292,
+          "Medienliste": 52,
+          "Titelliste": 3656,
+          "Player offen": 57,
+          "Bild steht": 0,
+          "Leiste laeuft": 1
+        }
+      }
+    }
+  },
+  "toleranzMs": 700,
+  "hinweis": "Anlaufzeiten in Millisekunden, JE GERAET. Ein Pi 4 liefert andere Werte als ein Pi 5 - eine Grundlage vom staerkeren Geraet wuerde auf dem schwaecheren dauernd Alarm schlagen. Neu anlegen: node tools/e2e/player-anlauf.mjs <url> --neu (bewusste Handlung, sonst misst man gegen den Schneckengang von gestern)."
+}

@@ -1,0 +1,20 @@
+[Unit]
+Description=MuPiBox Boot-Animation (Framebuffer, echter Fortschritt)
+# Frueh starten, aber erst wenn das Dateisystem steht. Nicht an network-online
+# haengen: gerade das WARTEN darauf soll die Animation ja ueberbruecken.
+After=local-fs.target
+Before=getty@tty1.service
+Conflicts=plymouth-quit.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/mupibox-boot-splash.py
+# Das Bild gehoert der Konsole tty1; ohne das schreibt systemd dazwischen.
+StandardOutput=null
+StandardError=journal
+# Eine kaputte Animation darf den Start NIE aufhalten.
+TimeoutStartSec=5
+Restart=no
+
+[Install]
+WantedBy=basic.target

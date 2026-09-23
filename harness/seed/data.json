@@ -1,0 +1,38 @@
+[
+  {
+    "type": "radio",
+    "category": "music",
+    "id": "http://swr-swr3-live.cast.addradio.de/swr/swr3/live/mp3/128/stream.mp3",
+    "artist": "SWR3",
+    "title": "Live-Radio (Demo)",
+    "cover": "assets/images/default.png",
+    "index": 0
+  },
+  {
+    "type": "rss",
+    "category": "music",
+    "id": "https://example.com/podcast.xml",
+    "artist": "Demo-Podcast",
+    "title": "Folgen (Demo)",
+    "cover": "assets/images/default.png",
+    "index": 1
+  },
+  {
+    "type": "library",
+    "category": "audiobook",
+    "artist": "Beispiel",
+    "title": "Lokales Hoerspiel (Demo)",
+    "cover": "assets/images/default.png",
+    "index": 2
+  },
+  {
+    "type": "spotify",
+    "category": "music",
+    "id": "4aawyAB9vmqN3uQ7FjRGTy",
+    "artist": "Global Sounds",
+    "title": "Spotify-Album (Demo, braucht Credentials)",
+    "cover": "assets/images/default.png",
+    "index": 3,
+    "shuffle": false
+  }
+]

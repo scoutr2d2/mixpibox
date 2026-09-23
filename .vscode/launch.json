@@ -1,0 +1,43 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Launch: backend-api",
+      "program": "${workspaceFolder}/src/backend-api/src/server.ts",
+      "request": "launch",
+      "type": "node",
+      "runtimeExecutable": "tsx",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "cwd": "${workspaceFolder}/src/backend-api/"
+    },
+    {
+      "name": "Launch: backend-player",
+      "program": "${workspaceFolder}/src/backend-player/src/spotify-control.ts",
+      "request": "launch",
+      "type": "node",
+      "runtimeExecutable": "tsx",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "cwd": "${workspaceFolder}/src/backend-player/"
+    },
+    {
+      "name": "Launch: Edge",
+      "request": "launch",
+      "type": "msedge",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}/src/frontend-box"
+    },
+    {
+      "name": "Launch: Chrome",
+      "request": "launch",
+      "type": "chrome",
+      "url": "http://localhost:4200",
+      "webRoot": "${workspaceFolder}/src/frontend-box"
+    }
+  ]
+}

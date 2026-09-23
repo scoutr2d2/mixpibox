@@ -1,0 +1,74 @@
+[Unit]
+# DER BACKEND-DIENST DER BOX (Port 8200).
+#
+# WARUM DIESE DATEI HIER LIEGT (seit 14.08.2026): sie lag bis dahin NUR im
+# remote-step-installer, der sie im Schritt `dienste-systemd` per Heredoc
+# schrieb. `config/services/` kannte sie nicht — nachzulesen in BACKLOG
+# E12/X13(b), wo genau das als Grund steht, warum eine Zeile nicht
+# herausgenommen werden konnte. Folge: `autosetup.sh` (der Weg fuer eine
+# FRISCH GEFLASHTE Karte) startete die App stattdessen ueber pm2, waehrend
+# jede laufende Box sie unter systemd faehrt. Zwei Wege, zwei Zustaende.
+#
+# Der Inhalt ist von der laufenden Box .57 abgelesen (14.08.2026), nicht aus
+# dem Rezept abgeschrieben — damit die frische Karte GENAU das bekommt, was
+# im Haus laeuft.
+Description=MuPiBox Backend (server.js)
+# BEWUSST KEIN After=network.target. Die App bedient localhost; haengt man sie
+# ans Netz, wartet der ganze Start wieder auf das WLAN (am Geraet gemessen,
+# 2026-07-29: App bereit 6,1 s statt 23,5 s unter pm2 — rund 11 s frueher am
+# Bild, weil der Kiosk in seinem Autostart auf localhost:8200 wartet, BEVOR
+# er X startet).
+After=local-fs.target mupibox-alsa-init.service
+# `mupibox-alsa-init` GIBT ES AUF EINER autosetup-BOX NICHT — die Unit kommt
+# aus dem remote-step-installer und legt auf einem Pi 4 ohne PipeWire den
+# softvol-Regler an. Die Zeile bleibt trotzdem stehen, damit beide Wege
+# dieselbe Datei haben. Sie kostet nichts: gemessen am 14.08.2026 mit einer
+# Probe-Unit auf ein absichtlich nicht vorhandenes Ziel — `systemctl start`
+# endet mit rc=0, die Unit laeuft, `is-failed` sagt `inactive`, im Journal
+# steht kein Fehler. Ein fehlendes `Wants=`-Ziel ist wirkungslos, nicht
+# schaedlich (dieselbe Begruendung wie in mupibox-wiederherstellung.service).
+Wants=mupibox-alsa-init.service
+
+[Service]
+Type=simple
+User=dietpi
+# ══ DER TONWEG BRAUCHT XDG_RUNTIME_DIR (19.09.2026) ═══════════════════════
+#
+# BETREIBER, am Geraet: "wenn ich vorlesen aktiviert habe klappt das vorlesen
+# dennoch nicht beim klick auf das vorlese icon."
+#
+# GEMESSEN, nicht vermutet: Die Ansage WIRD erzeugt — GET /api/vorlesen/sprich
+# liefert 200 und 32 kB audio/wav. Erst das Abspielen scheitert. Im Journal:
+#     Failed to create secure directory (/home/dietpi/.config/pulse): Permission denied
+#     pa_context_connect() failed: Connection refused
+#
+# DIE URSACHE IST NICHT DIE RECHTE-MELDUNG, die ist nur die Folge.
+# `ansageAbspielen` startet `pw-play`, und PipeWire-Klienten finden ihren
+# Socket ueber XDG_RUNTIME_DIR ($XDG_RUNTIME_DIR/pipewire-0). Diese Unit
+# setzte GAR KEINE Umgebung ("systemctl show -p Environment" gab
+# "Environment=" leer zurueck), also sucht pw-play den Server nicht dort,
+# faellt auf Pulse zurueck, will sich sein ~/.config/pulse anlegen — und
+# /home/dietpi/.config gehoert root (11.08.2026, Einrichtungstag). Daher die
+# irrefuehrende Rechte-Zeile im Journal.
+#
+# WARUM MUSIK TROTZDEM SPIELT: mpv haengt am Abspieldienst, und DESSEN Unit
+# traegt die Zeile seit je (mupibox-player.service, ebenso librespot.service).
+# Am Geraet abgelesen: mpv hat XDG_RUNTIME_DIR=/run/user/1000, der Server nur
+# HOME. Diese Unit war der einzige Ausreisser der drei.
+#
+# DASS /run/user/1000 AUCH OHNE SITZUNG DASTEHT, ist geprueft und kein
+# Zufall: `loginctl show-user dietpi -p Linger` meldet "Linger=yes", und
+# /var/lib/systemd/linger/dietpi liegt. Ohne das zeigte die Variable ins
+# Leere, sobald sich niemand angemeldet hat.
+#
+# 1000 UND NICHT %U: die beiden Geschwister-Units schreiben es ebenso aus;
+# drei Fassungen derselben Zahl waeren schlimmer als eine. `id -u dietpi`
+# ist 1000 (nachgesehen).
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+WorkingDirectory=/home/dietpi/.mupibox/Sonos-Kids-Controller-master
+ExecStart=/usr/bin/node /home/dietpi/.mupibox/Sonos-Kids-Controller-master/server.js
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

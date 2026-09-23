@@ -1,0 +1,88 @@
+{
+  "kennung": "mixpi-mitschnitt",
+  "name": "MixPi Mitschnitt (Testfunktion)",
+  "fassung": "0.5.0",
+  "haupt": "index.mjs",
+  "rechte": [
+    "ereignisse",
+    "aufnahme",
+    "netz"
+  ],
+  "felder": [
+    {
+      "schluessel": "verstanden",
+      "art": "schalter",
+      "name": "Ich habe die Rechtslage gelesen und bestaetige sie",
+      "hinweis": "TESTFUNKTION. Ein Mitschnitt aus einem Streamingdienst ist in Deutschland als Privatkopie nach §53 UrhG eng begrenzt; anderswo gilt anderes. Unabhaengig davon verbieten die Nutzungsbedingungen der Dienste es meist ausdruecklich — die von Spotify tun das. Es kann zum Verlust des Zugangs kommen. Das hier ist das FAMILIENKONTO: eine Sperrung naehme nicht das Archiv, sondern das Abspielen ueberhaupt. Das gilt auch dann, wenn der Zweck nur Puffer heisst. Ohne diesen Haken schneidet nichts mit, egal was unten steht.",
+      "vorgabe": false
+    },
+    {
+      "schluessel": "spotify",
+      "art": "schalter",
+      "name": "Spotify mitschneiden (Testfunktion)",
+      "hinweis": "Gilt nur fuer Spotify. Jeder weitere Dienst braucht seinen eigenen Haken — einen Schalter fuer alle gibt es absichtlich nicht.",
+      "vorgabe": false
+    },
+    {
+      "schluessel": "ablage",
+      "art": "text",
+      "name": "Wohin (Medienordner der Box)",
+      "hinweis": "Basis fuer lokale Alben. Der Abspieldienst sucht hier nach <kategorie>/<kuenstler>/<album>/playlist.m3u — wer das aendert, legt die Mitschnitte an einen Ort, den die Box nicht abspielt.",
+      "vorgabe": "/home/dietpi/MuPiBox/media"
+    },
+    {
+      "schluessel": "kategorie",
+      "art": "text",
+      "name": "Rueckfall-Kategorie (nur fuer unbekannte Originale)",
+      "hinweis": "Kennt die Box das aufgenommene Werk, kommt die Kategorie VOM ORIGINAL (sonst verschmoelzen Original und Mitschnitt nie - die E105-Wurzel). Diese Einstellung greift NUR noch, wenn kein Original bekannt ist: Mitschnitte fremder Wiedergabe, etwa vom Telefon zugespielt. Betreiber-Frage vom 31.08.2026 ('ist das hinfaellig?'): fast - fuer alles Vorgemerkte ja, fuer den Ad-hoc-Fall bleibt sie die einzige Stellschraube.",
+      "vorgabe": "music"
+    },
+    {
+      "schluessel": "hoechstensMinuten",
+      "art": "zahl",
+      "name": "Notbremse nach ... Minuten",
+      "hinweis": "Laeuft ein Mitschnitt laenger als das, wird er beendet. Gegen den Fall, dass ein Ende nie gemeldet wird und die Karte still vollaeuft.",
+      "vorgabe": 90
+    },
+    {
+      "schluessel": "albumKomplett",
+      "art": "schalter",
+      "name": "Alben komplett aufnehmen",
+      "hinweis": "Wird ein Titel aufgenommen, merkt die Box gleich alle FEHLENDEN Titel desselben Albums mit vor. Ohne den Schalter kommt nur, was wirklich gespielt wurde — mit ihm wandert ein angespieltes Album Stueck fuer Stueck in den Bestand.",
+      "vorgabe": false
+    },
+    {
+      "schluessel": "nachtmodus",
+      "art": "schalter",
+      "name": "Nachtmodus (schneller aufnehmen, Spotify schweigt)",
+      "hinweis": "Im Nachtfenster geben ALLE Stroeme dem Mitschnitt Platz: mehrere Aufnahmen laufen parallel. Der Preis ist ehrlich — solange er laeuft, spielt Spotify NICHT. Alles andere (lokale Dateien, ARD, Jellyfin, Podcasts) spielt weiter, und der Modus endet sofort, wenn jemand die Box benutzt.",
+      "vorgabe": false
+    },
+    {
+      "schluessel": "nachtVon",
+      "art": "text",
+      "name": "Nachtmodus ab (Uhrzeit)",
+      "hinweis": "Zum Beispiel 22:00. Leer heisst: der Schalter oben gilt sofort und dauerhaft.",
+      "vorgabe": "22:00"
+    },
+    {
+      "schluessel": "nachtBis",
+      "art": "text",
+      "name": "Nachtmodus bis (Uhrzeit)",
+      "hinweis": "Zum Beispiel 06:00. Ueber Mitternacht hinweg ist erlaubt.",
+      "vorgabe": "06:00"
+    }
+  ],
+  "aktionen": [
+    {
+      "kennung": "bestand_pruefen",
+      "name": "Mitschnitte nachmessen",
+      "hinweis": "Misst jeden abgelegten Mitschnitt nach und nennt die stummen und die, die mittendrin abbrechen. Fasst nichts an."
+    },
+    {
+      "kennung": "kaputte_neu_aufnehmen",
+      "name": "Kaputte neu aufnehmen",
+      "hinweis": "Loescht die kaputten Mitschnitte und merkt sie wieder vor. Der Leerlauf-Arbeiter nimmt sie dann neu auf."
+    }
+  ]
+}

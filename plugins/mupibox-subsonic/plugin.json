@@ -1,0 +1,33 @@
+{
+  "kennung": "mupibox-subsonic",
+  "name": "Subsonic / Navidrome",
+  "fassung": "1.0.0",
+  "haupt": "index.mjs",
+  "rechte": ["medienquelle", "netz"],
+  "felder": [
+    {
+      "schluessel": "adresse",
+      "art": "text",
+      "name": "Adresse des Servers",
+      "hinweis": "Mit http:// oder https://, z. B. https://musik.example.org. Leer lassen schaltet das Plugin ab."
+    },
+    {
+      "schluessel": "benutzer",
+      "art": "text",
+      "name": "Benutzername"
+    },
+    {
+      "schluessel": "passwort",
+      "art": "geheim",
+      "name": "Passwort",
+      "hinweis": "Wird nie im Klartext geschickt und nie wieder angezeigt. Leer lassen behaelt das bisherige."
+    },
+    {
+      "schluessel": "treffer",
+      "art": "zahl",
+      "name": "Treffer je Suche",
+      "hinweis": "Wie viele Titel eine Suche hoechstens liefert.",
+      "vorgabe": 20
+    }
+  ]
+}

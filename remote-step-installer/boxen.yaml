@@ -1,0 +1,68 @@
+# Inventar: WELCHE Boxen gibt es, und was ist an ihnen anders?
+#
+# WOFUER: die beiden Adressen lebten bisher nur im Kopf und in der
+# Shell-History — im Repo stand keine von beiden. Hier stehen sie EINMAL,
+# zusammen mit dem Wenigen, worin sich die Boxen wirklich unterscheiden.
+# Alles andere (Rezepte, Dateien, Dienste) ist fuer beide gleich; ein
+# Unterschied gehoert hierher, nicht in ein zweites Rezept.
+#
+# WER LIEST DAS:
+#   * `controller/sysinfo.py` (recipe_prefix) — sucht anhand des ERKANNTEN
+#     Modells (pi4/pi5) den passenden Eintrag und haengt dessen `env:` als
+#     `export …` vor jeden Schritt. So bekommt der Pi 4 seinen Namen
+#     MuPiBox2, ohne dass es ein eigenes Rezept dafuer braucht.
+#   * `controller/core.py` — `boxen()`, `box_finden()`, `box_env()`.
+#
+# WELCHER EINTRAG GILT: normalerweise entscheidet `modell:` (die beiden
+# Boxen unterscheiden sich genau darin). Gibt es einmal zwei Boxen
+# desselben Modells, ist das nicht mehr eindeutig — dann den Namen
+# ausdruecklich setzen:
+#
+#     RSI_BOX=MuPiBox2 ./tui
+#
+# Passt kein Eintrag eindeutig, wird NICHTS eingespeist und alles laeuft wie
+# ohne diese Datei — ein Inventar ist eine Erleichterung, keine Vorbedingung.
+#
+# `adresse:` und `benutzer:` sind fuer den Menschen und fuer ./connect:
+#
+#     ./connect 192.168.178.99          # Pi 4
+#     ./connect 192.168.178.62          # Pi 5
+#
+# Die Adressen kommen per DHCP — steht eine Box woanders, hier nachziehen
+# (oder `./connect --find` suchen lassen, das findet sie am Schluessel).
+#
+# WIE OFT DAS NOETIG IST: oefter als gedacht. Der Pi 5 stand binnen dreier
+# Wochen auf .169, .78, .81 und .62 — jedes Mal lief `tools/welche-box.sh`
+# ins Leere und die Box musste ueber `--suchen` wiedergefunden werden. Wer
+# das abstellen will, vergibt im Router eine feste Zuordnung fuer die MAC;
+# solange das nicht passiert ist, ist diese Datei eine Momentaufnahme und
+# `--suchen` der verlaessliche Weg.
+
+boxen:
+  - name: MuPiBox
+    adresse: 192.168.178.62     # zuletzt geprueft 11.09.2026; davor .169/.78/.81
+    benutzer: dietpi
+    modell: pi5                 # erwartet; erkannt wird es trotzdem selbst
+    notiz: >-
+      Die aeltere Box, von Hand grossgezogen. Sie ist der Zustand, an dem
+      gemessen wird, was der reine Rezeptstand noch nicht kann. Sie haengt
+      seit der Stick-Einrichtung am USB-Adapter wlan1, nicht am eingebauten
+      wlan0 — wer dort eine Adresse sucht, findet keine.
+    env:
+      MUPI_HOST: MixPiBox       # Rechner- und Spotify-Name
+      # HIESS BIS 09/2026 MuPiBox. Am Geraet steht seit dem Umbau MixPiBox
+      # (`hostname` gegengelesen, 11.09.2026) — hier stand weiter der alte
+      # Name. Ein Rezeptlauf haette die Box also still zurueckbenannt und
+      # damit ihren Spotify-Namen gewechselt, mitten im Betrieb. Das
+      # Inventar sagt, was IST, nicht was einmal war.
+
+  - name: MuPiBox2
+    adresse: 192.168.178.99
+    benutzer: dietpi
+    modell: pi4
+    notiz: >-
+      Der reine Rezeptstand — was hier fehlt, fehlt im Rezept. Sie heisst
+      bewusst ANDERS: zwei Spotify-Geraete gleichen Namens im selben Netz
+      sind im Handy nicht auseinanderzuhalten.
+    env:
+      MUPI_HOST: MuPiBox2

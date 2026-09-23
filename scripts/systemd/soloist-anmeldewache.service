@@ -1,0 +1,8 @@
+# E104: die Anmeldewache — heilt den nach Boot-Anmeldefehler stummen Soloist.
+# Einmal-Lauf; den Takt gibt soloist-anmeldewache.timer.
+[Unit]
+Description=Soloist-Anmeldung pruefen, stummen Client neu anbauen (E104)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mupibox/soloist-anmeldewache.sh

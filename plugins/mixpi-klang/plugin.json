@@ -1,0 +1,67 @@
+{
+  "kennung": "mixpi-klang",
+  "name": "Klang (Stereobasis und Entzerrung)",
+  "fassung": "1.1.0",
+  "haupt": "index.mjs",
+  "rechte": [
+    "klang"
+  ],
+  "felder": [
+    {
+      "schluessel": "basis",
+      "art": "zahl",
+      "name": "Stereobasis",
+      "hinweis": "100 = unveraendert, 0 = Mono. DER WICHTIGSTE REGLER, wenn die Lautsprecher seitlich abstrahlen: sitzt man direkt davor, hoert jedes Ohr fast nur seinen Lautsprecher, und die Mitte (Gesang) zerfaellt nach links und rechts. 50 ist ein guter erster Schritt; fuer eine Kinderbox ist 0 (Mono) oft das Beste, weil es aus JEDEM Winkel gleich klingt.",
+      "vorgabe": 100
+    },
+    {
+      "schluessel": "hochpass",
+      "art": "zahl",
+      "name": "Hochpass (Hz)",
+      "hinweis": "0 schaltet ihn ab. Kleine Chassis geben unterhalb von etwa 120 Hz nichts ausser Hub und Verzerrung — sie abzuschneiden macht den Rest sauberer, nicht duenner. Sinnvoll sind 100 bis 150.",
+      "vorgabe": 0
+    },
+    {
+      "schluessel": "hoehen",
+      "art": "zahl",
+      "name": "Hoehen (dB)",
+      "hinweis": "Kuhschwanz ab 4000 Hz, -12 bis +12. Gegen den Hochtonabfall, wenn man neben der Achse sitzt. ACHTUNG: Das hebt auch die Raumreflexionen an — es wird lauter, nicht zwangslaeufig klarer. Mehr als +6 ist selten richtig; die Chassis nach vorne zu kippen wirkt besser als jeder Regler hier.",
+      "vorgabe": 0
+    },
+    {
+      "schluessel": "bass",
+      "art": "zahl",
+      "name": "Bass (dB)",
+      "hinweis": "Kuhschwanz bis 100 Hz, -12 bis +12. Bei Zimmerlautstaerke fehlt dem Ohr Bass (Fletcher-Munson) — ein paar dB holen ihn zurueck. Zusammen mit dem Hochpass anheben, nicht allein: sonst geht die Anhebung in Hub unterhalb dessen, was die Chassis koennen.",
+      "vorgabe": 0
+    },
+    {
+      "schluessel": "vorpegel",
+      "art": "zahl",
+      "name": "Vorpegel (dB)",
+      "hinweis": "0 bis -12, nur daempfend. Wer Bass oder Hoehen anhebt, braucht Luft nach oben, sonst uebersteuert die Kette. Faustregel: soviel daempfen wie die groesste Anhebung betraegt.",
+      "vorgabe": 0
+    },
+    {
+      "schluessel": "kompressor",
+      "art": "zahl",
+      "name": "Kompressor",
+      "hinweis": "0 = aus, sonst das Verhaeltnis (2 bis 8). GEGEN DEN SPRUNG VOM FLUESTERN ZUM KNALL: Hoerspiele haben leise Dialoge und laute Musik. Das Kind dreht wegen der Dialoge auf, und die naechste Szene knallt. Der Kompressor holt die Spitzen herunter und hebt das Ganze wieder an — die leisen Stellen kommen naeher heran, ohne dass die lauten lauter werden. 3 ist ein guter Anfang; ueber 8 wird es hoerbar gepresst.",
+      "vorgabe": 0
+    },
+    {
+      "schluessel": "kompSchwelle",
+      "art": "zahl",
+      "name": "Kompressor: ab wann (dB)",
+      "hinweis": "-30 bis 0. Ab welchem Pegel er arbeitet. Tiefer heisst: er greift frueher und damit oefter. -18 passt fuer die meisten Hoerspiele. Wirkt nur, wenn der Kompressor ueberhaupt an ist.",
+      "vorgabe": -18
+    },
+    {
+      "schluessel": "begrenzer",
+      "art": "zahl",
+      "name": "Begrenzer (dB)",
+      "hinweis": "0 = aus, sonst die Decke (-1 bis -6). SCHUETZT DIE CHASSIS und ist etwas anderes als der Vorpegel: der daempft immer, der Begrenzer nur, wenn es zu laut wird — mit Vorausschau, also ohne das Knacken eines harten Anschlags. -2 ist ueblich.",
+      "vorgabe": 0
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+MUPIBOX_CONFIG="/etc/mupibox/mupiboxconfig.json"
+
+export LIBRESPOT_CACHE=$(/usr/bin/jq -r .spotify.cachepath ${MUPIBOX_CONFIG})
+export LIBRESPOT_CACHE_SIZE_LIMIT="$(/usr/bin/jq -r .spotify.maxcachesize ${MUPIBOX_CONFIG})G"
+export LIBRESPOT_NAME=$(/usr/bin/jq -r .mupibox.host ${MUPIBOX_CONFIG})
+export LIBRESPOT_ONEVENT="/usr/bin/python3 /usr/local/bin/mupibox/telegram_Track_Spotify.py"
+export LIBRESPOT_BITRATE=160
+export LIBRESPOT_INITIAL_VOLUME=100
+export LIBRESPOT_ENABLE_VOLUME_NORMALISATION=1
+export LIBRESPOT_NORMALISATION_PREGAIN=0
+# DAS ALSA-BACKEND OEFFNET DAS GERAET ERST BEIM SPIELEN (15.08.2026, am
+# Geraet gemessen). Der Standard (rodio) haelt ab dem Start einen offenen,
+# nie pausierten Strom auf der Standard-Senke - damit schlaeft KEINE Senke
+# je ein (RUNNING rund um die Uhr, ein Bluetooth-Lautsprecher bleibt ewig
+# wach), und die Spielsperre von bt-reconnect.py bliebe dauerhaft zu.
+# NICHT "pulseaudio" eintragen: das Backend ist in dieser Uebersetzung
+# nicht eingebaut, librespot geht damit in eine Neustartschleife
+# ("Invalid --backend", Restart=always).
+export LIBRESPOT_BACKEND=alsa
+cachestate=$(/usr/bin/jq -r .spotify.cachestate ${MUPIBOX_CONFIG})
+if ! $cachestate ; then
+    export LIBRESPOT_NAME_DISABLE_AUDIO_CACHE=1
+fi
+# ══ KEINE ANMELDUNG PER APP-TOKEN — DAS WAR DIE FALLE ═════════════════════
+#
+# Hier stand bis zum 11.08.2026:
+#
+#     access_token=$(jq -r .spotify.accessToken ${MUPIBOX_CONFIG})
+#     if [ ! -z "$access_token" ] && [ ! -f "$credentials" ]; then
+#       export LIBRESPOT_ACCESS_TOKEN=${access_token}
+#     fi
+#
+# Der Token sollte die "Ansaat" fuer die erste Anmeldung sein. Am 28.07.2026
+# wurde gemessen, dass das funktioniert - damals aber mit einer ANDEREN
+# Client-ID. Seit die Box die selbst angelegte ID aus dem Spotify-Dashboard
+# benutzt, weist Spotify die Anmeldung ab:
+#
+#     could not initialize spirc: Login request was denied: INVALID_CREDENTIALS
+#
+# Ausgeschlossen wurde am Geraet: Token zu alt (frischer geholt, gleiche
+# Absage), fehlendes Streaming-Recht (wird angefordert), fremdes Konto
+# (dasselbe), kein Premium (product=premium). librespots eigener OAuth-Weg
+# benutzt client_id=65b708073fc0480ea92a077233ca87bd - Spotifys eigenen
+# Client. Ein Token aus einer fremden App wird am Connect-Netz nicht
+# angenommen; das deckt sich mit den Berichten im librespot-Projekt.
+#
+# ══ WARUM DAS SCHLIMMER IST ALS "HILFT NICHT" ═════════════════════════════
+# Eine gescheiterte Token-Anmeldung BEENDET librespot. Mit Restart=always
+# ergibt das einen Neustartkreis (21 Neustarts gemessen) - und in jedem
+# Durchlauf ist die Box fuer die Spotify-App unsichtbar.
+#
+# OHNE Token laeuft librespot dagegen im Entdeckungs-Modus: gemessen am
+# 11.08.2026, 25 Sekunden ohne Absturz, UDP 5353 selbst belegt (es bringt
+# seine Netzansage mit, avahi wird nicht gebraucht). Dann steht die Box als
+# Geraet in der Spotify-App, die Wiedergabe wird einmal daraufgeworfen, und
+# librespot legt credentials.json dabei selbst an. Ab dann meldet es sich
+# allein an - auch ohne Handy, auch nach einem Neustart.
+#
+# Genau dieser Weg steht im Wiki (mupi-librespot-login5) und ist der, mit dem
+# die Box vor der Neuinstallation lief.
+#
+# DIE CLIENT-ID DER BOX BLEIBT UNANGETASTET. Sie ist fuer den anderen Zugang
+# zustaendig - Blaettern, Cover, Steuern - und dort ist sie richtig.

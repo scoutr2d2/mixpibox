@@ -1,0 +1,91 @@
+{
+  "tiere": {
+    "wort": "Tiere",
+    "vorschau": "papagei.jpg",
+    "bilder": [
+      "elefant.jpg",
+      "fisch.jpg",
+      "hahn.jpg",
+      "hund.jpg",
+      "katze.jpg",
+      "kuh.jpg",
+      "papagei.jpg",
+      "pferd.jpg",
+      "schaf.jpg",
+      "schmetterling.jpg",
+      "tiger.jpg",
+      "vogel.jpg"
+    ]
+  },
+  "kulturen": {
+    "wort": "Kulturen",
+    "vorschau": "maske-bwoom.jpg",
+    "bilder": [
+      "korb.jpg",
+      "kostuem-no.jpg",
+      "maske-bueffel.jpg",
+      "maske-bwoom.jpg",
+      "maske-gesicht.jpg",
+      "teekanne-begonien.jpg",
+      "teekanne.jpg",
+      "teppich.jpg",
+      "vase-amphore.jpg",
+      "vase-fasan.jpg"
+    ]
+  },
+  "kunst": {
+    "wort": "Kunst",
+    "vorschau": "adeline.jpg",
+    "bilder": [
+      "adeline.jpg",
+      "fruehlingsblumen.jpg",
+      "gaertnerhaus.jpg",
+      "kaschmir.jpg",
+      "niedrigwasser.jpg",
+      "pappeln.jpg",
+      "platanen.jpg",
+      "prater.jpg",
+      "rotes-tuch.jpg",
+      "seerosen.jpg"
+    ]
+  },
+  "menschen": {
+    "wort": "Menschen",
+    "vorschau": "koenig.jpg",
+    "bilder": [
+      "dame-mit-kind.jpg",
+      "ezra.jpg",
+      "koenig.jpg",
+      "mann.jpg",
+      "musiker.jpg",
+      "nathaniel.jpg",
+      "taenzerin-mantel.jpg",
+      "zwei-kinder.jpg"
+    ]
+  },
+  "technik": {
+    "wort": "Technik",
+    "vorschau": "auto.jpg",
+    "bilder": [
+      "auto.jpg",
+      "gitarre.jpg",
+      "lokomotive.jpg",
+      "standuhr.jpg",
+      "trommel.jpg",
+      "turmuhr.jpg",
+      "uhr.jpg"
+    ]
+  },
+  "wissenschaft": {
+    "wort": "Wissenschaft",
+    "vorschau": "himmelsglobus.jpg",
+    "bilder": [
+      "globus-keramik.jpg",
+      "globus.jpg",
+      "himmelsglobus.jpg",
+      "mikroskop.jpg",
+      "sonnenuhr-tragbar.jpg",
+      "sonnenuhr.jpg"
+    ]
+  }
+}

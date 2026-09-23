@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Internet Archive">
+  <!-- Ein Tempelgiebel: das Archiv als Bibliothek, nicht als Marke. Keine
+       zwei Bindestriche in diesem Kommentar, die machen die Datei zum
+       Parserfehler. -->
+  <style>
+    /* DAS ZEICHEN BRINGT SEINE TINTE SELBST MIT (05.09.2026).
+       Die Verwaltung laedt es ueber ein img-Element, und ein SVG im
+       img-Element ist ein EIGENES Dokument: es sieht die color der Seite
+       nicht, currentColor faellt auf den Anfangswert Schwarz zurueck, und auf
+       dem Untergrund der Verwaltung (#121212) war das Zeichen unsichtbar.
+       Gemessen am 05.09.2026: Kontrast 1,12:1. Der Wert ist die Schriftfarbe
+       der Verwaltung, styles.css: schrift. Bewacht von
+       tools/plugin-icon-kontrast.py. */
+    svg { color: #f2f2f7; }
+  </style>
+  <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 9l9-5 9 5" />
+    <path d="M6 9v8" />
+    <path d="M10 9v8" />
+    <path d="M14 9v8" />
+    <path d="M18 9v8" />
+    <path d="M3.5 20h17" />
+  </g>
+</svg>

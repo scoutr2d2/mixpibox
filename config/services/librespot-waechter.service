@@ -1,0 +1,7 @@
+[Unit]
+Description=MuPiBox: prueft, ob die Box noch ein Spotify-Geraet ist
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mupibox/librespot-waechter.sh

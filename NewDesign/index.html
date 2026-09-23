@@ -1,0 +1,1830 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<!--
+  HELL ODER DUNKEL — VOR dem ersten Malen.
+
+  Das muss hier stehen und nicht in app.js. Die Datei wird am Seitenende
+  geladen; bis dahin ist die Seite bereits hell gezeichnet, und das Umstellen
+  waere ein sichtbares Aufblitzen bei JEDEM Laden. Ein Kiosk laedt oft — beim
+  Start, nach jedem Ausrollen — und ein weisser 800x480-Schirm im dunklen
+  Kinderzimmer ist genau das, was der Umschalter verhindern soll.
+
+  Bewusst ohne Fehlerbehandlung als Einzeiler: Faellt der Speicher aus, bleibt
+  es hell, und app.js richtet es spaeter. Der Schluessel ist derselbe, den
+  app.js schreibt (mupibox_neu_licht_v1).
+-->
+<script>
+  // NAMENSRAUM-AUSNAHME: hell/dunkel traegt mit Absicht KEINEN Besitzer.
+  // Abends ist es fuer alle dunkel — das ist eine Eigenschaft des Raums, nicht
+  // des Kindes. Ausserdem laeuft diese Zeile VOR app.js und ohne Netz; die
+  // aktive Kennung kommt aber aus /api/profile und ist hier noch unbekannt.
+  // Deshalb steht der Schluessel hier UND in app.js. Geprueft von
+  // tools/namensraum-schau.mjs.
+  try {
+    // DIESELBE VORGABE WIE IN app.js, und sie MUSS hier mit: diese Zeile
+    // laeuft VOR app.js und verhindert das Aufblitzen. Stuende hier weiter
+    // „nur bei 'dunkel' umschalten", blitzte eine frische Box beim Start hell
+    // auf und wuerde erst von app.js dunkel — genau das, was diese Zeile
+    // verhindern soll. `!== 'hell'` statt `=== 'dunkel'`: leer heisst dunkel,
+    // nur eine ausdrueckliche Wahl fuer hell bleibt hell.
+    if (localStorage.getItem('mupibox_neu_licht_v1') !== 'hell')
+      document.documentElement.setAttribute('data-licht', 'dunkel')
+    // ── UND DER FARBSATZ, AUS DEMSELBEN GRUND UND AUS DEMSELBEN SPEICHER ──
+    // Er gehoert seit dem 07.08.2026 in dieselbe Zeile: Ein Kiosk, der erst
+    // cremefarben aufblitzt und dann blau wird, sieht bei jedem Neuladen
+    // kaputt aus. `farbeSetzen` in app.js schreibt denselben Schluessel.
+    //
+    // DIE PRUEFUNG STEHT HIER UND NICHT NUR DRUEBEN: `data-farbe` faehrt in
+    // einen CSS-Wahler, und ein Wert aus einem fremden localStorage waere ein
+    // Wahler, den es nicht gibt — dann faellt die ganze Palette auf die
+    // Vorgabe zurueck, und zwar STILL.
+    //
+    // ES IST EINE ABSCHRIFT VON `FARB_SAETZE` IN app.js, UND SIE IST SCHON
+    // EINMAL ZURUECKGEBLIEBEN: Am 08.08.2026 standen hier noch vier Namen,
+    // waehrend drueben schon neun standen. Wer Lila, Pink, Gelb, Orange oder
+    // Super-Rosa eingestellt hatte, sah beim Neuladen erst Creme und dann
+    // seine Farbe — genau das Aufblitzen, das diese Zeile verhindern soll.
+    // Gefunden hat es eine Sichtung des ganzen Baums, nicht die Oberflaeche:
+    // am Schirm ist ein Aufblitzen von 200 Millisekunden leicht zu uebersehen.
+    //
+    // `creme` GEHOERT NICHT IN DIE LISTE. Die Vorgabe setzt kein Attribut
+    // (dieselbe Regel wie in `farbeSetzen`), und ein `data-farbe='creme'`
+    // waere hier ueberfluessig — den Block dafuer gibt es zwar, aber ohne
+    // Attribut steht die Vorgabe ohnehin schon da.
+    var ERLAUBT = ['blau', 'rot', 'rosa', 'gruen', 'superrosa', 'pink', 'gelb', 'orange', 'kittypink', 'classic']
+    var f = localStorage.getItem('mupibox_neu_farbe_v1')
+    if (ERLAUBT.indexOf(f) >= 0) document.documentElement.setAttribute('data-farbe', f)
+  } catch (e) { /* ohne Speicher bleibt es hell und cremefarben */ }
+</script>
+<!--
+  Diese Zeile gilt NICHT fuer den Kiosk: Chromium am Schreibtisch (und der
+  Kiosk ist genau das, nur ohne Fensterrahmen) ignoriert die
+  Ansichtsfeld-Angabe und nimmt die Fenstergroesse - gesetzt ueber
+  `--window-size=${RES_X},${RES_Y}` aus der Konfiguration
+  (scripts/chromium-autostart.sh:47), OHNE Skalierungsfaktor. Ein
+  CSS-Bildpunkt ist dort also ein echter Bildpunkt.
+
+  Sie gilt fuer den ANDEREN Fall: wer die Box vom Telefon aus ansieht.
+  800 statt `device-width`, damit dieselbe Anordnung herauskommt (verkleinert)
+  statt einer auf 390 Punkte gequetschten, in der Seitenleiste und Raster
+  uebereinanderfallen.
+
+  Deshalb steht in app.css KEINE feste Bildpunktzahl fuer die Anordnung:
+  800x480 ist der Entwurfspunkt und die Grundlage der Millimeter-Rechnung,
+  aber resX/resY sind einstellbar - das Raster rechnet sich seine Spalten
+  selbst aus.
+-->
+<meta name="viewport" content="width=800, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>MixPiBox</title>
+
+<!--
+  DAS REITERSYMBOL — Betreiber, 08.08.2026: „wir brauchen ein favicon mixpi".
+
+  AUF DER BOX SIEHT ES NIEMAND. Der Kiosk laeuft im Vollbild, und ein Vollbild
+  hat keinen Reiter. Gebraucht wird es dort, wo ein Mensch diese Seite an
+  einem Rechner aufmacht: im Reiter, im Verlauf, im Lesezeichen — und genau
+  dort stand bisher das leere Blatt, das Chromium fuer Seiten ohne Symbol
+  zeichnet.
+
+  ES IST JETZT DIE KACHEL — Betreiber, 10.08.2026: „das fav icon ist auch
+  fuer die software auf der box."
+
+  HIER STAND DAS SVG ZUERST, und mit ihm eine gezeichnete Figur OHNE Grund.
+  Solange nur diese Seite ein Symbol hatte, war das stimmig. Seit der
+  Karteninstaller die lila Kachel des Betreibers traegt, waeren es zwei
+  Zeichen fuer dasselbe Geraet gewesen — und weil sie nie nebeneinander
+  stehen, haette es niemand bemerkt.
+
+  DAS SVG IST DESHALB HIER RAUS, nicht aus dem Baum: NewDesign/bilder/
+  favicon.svg liegt weiter da, samt ihrer Herleitung. Stuende die Zeile noch
+  hier, naehme ein moderner Browser SIE und nicht die Kachel — die Vorrangregel
+  von unten waere gegen die Entscheidung von oben gelaufen.
+
+  ZWEI ZEILEN, WEIL SIE VERSCHIEDENE FRAGEN BEANTWORTEN:
+    * Die PNG-Groessen fuer den Reiter. 32 und 48 gehoeren dazu: ein feiner
+      Schirm zieht sich die groessere und rechnet sie selbst herunter — nimmt
+      er die 16er, sieht sie dort ausgefranst aus.
+    * Die Kachel fuer ein Telefon, das die Seite auf den Startbildschirm legt.
+      Sie ist dieselbe Quelle in 180 px.
+
+  WAS ES BEI 16 PX KOSTET, und das ist der ehrliche Teil: Das Gesicht auf der
+  Kachel zerfaellt dort. Ein Reiter wird aber nicht GELESEN, er wird GEFUNDEN,
+  und ein lila Block faellt zwischen zwanzig weissen Reitern auf, wo eine
+  blasse Strichzeichnung untergeht. Beide Fassungen standen am 10.08.2026 bei
+  16, 32 und 48 px nebeneinander; bei 32 und 48 gewinnt die Kachel deutlich.
+-->
+<link rel="icon" type="image/png" sizes="48x48" href="bilder/favicon-48.png">
+<link rel="icon" type="image/png" sizes="32x32" href="bilder/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="bilder/favicon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="bilder/mixpi-kachel.png">
+
+<!--
+  FUEHRENDER SCHRAEGSTRICH, mit Absicht: /farben.css liefert der Server aus
+  der festen Datei mixpi-farben.css (E118/1c) - fuer jede Seite dieselbe
+  Adresse, egal wo sie liegt.
+
+  Es MUSS VOR app.css stehen: der Waehler-Block arbeitet mit !important
+  unter :root:not([data-licht='dunkel']), die ganze Begruendung steht in
+  src/backend-api/src/farbthema.ts. Bis E118/1c hing hier
+  /active_theme.css, der Symlink des alten Themen-Systems - der Weg ist
+  ersetzt, die Regeln im Blatt sind dieselben geblieben.
+-->
+<link rel="stylesheet" href="/farben.css">
+<link rel="stylesheet" href="app.css">
+<!-- DIE VIDEO-REGELN LIEGEN NEBEN app.css, nicht darin: app.css stand beim
+     Bau der Belohnungs-Videos bei 99 % ihres Deckels, und eine eigene Datei
+     ist derselbe Schnitt, den apps.js fuer das JS gemacht hat. Die Regeln
+     sind am Praefix `video-` sauber abgegrenzt. -->
+<link rel="stylesheet" href="video.css">
+
+<!--
+  Die beiden Schriftschnitte, die SOFORT gebraucht werden, vorziehen. Ohne das
+  malt der Pi die Seite erst in der Ersatzschrift und dann noch einmal neu -
+  auf einem Raspberry sichtbar als Zucken beim Start.
+  KEIN Verweis auf Google Fonts: die Box hat kein Netz.
+-->
+<link rel="preload" href="schriften/nunito-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="schriften/baloo2-latin.woff2" as="font" type="font/woff2" crossorigin>
+</head>
+
+<body>
+<div class="rahmen">
+
+  <!-- ── DER EINE RUECKWEG ───
+       „an die freie stelle soll ein systemweiter zurueck button hin"
+       (Benutzer, 03.08.2026).
+
+       ER STEHT HIER OBEN IM BAUM, als Geschwister der Vollbild-Ansichten, und
+       nicht in der Kopfzeile: Der grosse Player (z-index 6) und das grosse
+       Cover (8) legen sich UEBER die Kopfzeile. Ein Knopf, der dort drin
+       haengt, waere unter ihnen unsichtbar — und ein unsichtbarer Ausgang ist
+       keiner. Mit `position: fixed` und z-index 9 ist es EIN Element fuer
+       ALLE Ebenen.
+
+       WAS ER ERSETZT (und zwar ersetzt, nicht ergaenzt): den Pfeil der Lane,
+       den der Titelliste, den der Interpretenseite, den der grossen
+       Albumansicht, das Kreuz des grossen Players und den Rueckweg des
+       Regals. Sechs Ausgaenge an sechs Stellen waren sechs Dinge zu finden;
+       jetzt ist es einer, immer an derselben Ecke.
+
+       AUF DER STARTSEITE IST ER AUSGEGRAUT, nicht weg. Dort gibt es nichts,
+       wohin — aber ein Knopf, der kommt und geht, ist eine Stelle, die man
+       jedes Mal neu suchen muss. `disabled` sagt es auch einer Sprachausgabe.
+       Die Regel dahinter steht in app.js (`naechsterRueckweg`) und wird
+       geprueft: node tools/pruef-neu-regeln.js -->
+  <button class="zurueck" id="zurueck" type="button" aria-label="Zurück" disabled>
+    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12H4M10 6l-6 6 6 6"/></svg>
+  </button>
+
+  <!-- ── DAS ZEICHEN OBEN LINKS: WER HOERT GERADE ───
+       „mir fehlt noch ein kleines benutzr icon oben links um per klick den
+       beutzer zu wechslen" (Betreiber, 05.08.2026).
+
+       ES STEHT VOR DEM RUECKWEG, nicht dahinter, und beide sind `fixed`: das
+       Zeichen bei x 8..74, der Rueckweg bei 96..162. Dazwischen 22 px
+       (3,08 mm) — ueber den 2 mm, die ISO 9241-411 zwischen zwei Zielen
+       verlangt. Die Reihenfolge im Baum ist damit auch die auf dem Schirm
+       und die, in der eine Tastatur sie durchlaeuft.
+
+       ES ZEIGT DIE FIGUR DES KINDES, DAS DRAN IST — und wenn keines gewaehlt
+       ist, DAS MixPi. Diese Ecke ist der Platz des Bildes: „ich wollte
+       niemals die mixpi figur unten links, ich wollte sie oben links, schon
+       vorbereitend fuer den platz des bildes" (Betreiber, 05.08.2026).
+       `mixpi-hoert.png` ist laut maskottchen.json „das Standardbild"; die
+       Regel steht in app.js (`ichBildPfad`) und wird geprueft:
+       node tools/pruef-neu-regeln.js
+
+       „KEIN BILD GEWAEHLT" HEISST NICHT „KEIN BILD ZEIGEN", und die Trennung
+       ist Absicht: Der Server sagt weiter LEER (`OHNE_FIGUR` in
+       src/backend-api/src/profile.ts) — er weiss nicht, WELCHE Bilder es
+       gibt, sondern nur, was in `bilder/figuren/` liegt. Was bei „leer" zu
+       sehen ist, entscheidet die Oberflaeche, denn sie hat das Standardbild
+       mit ausgeliefert. Ein Vorgabewert im Backend zeigte ausserdem auf
+       `bilder/figuren/mixpi-hoert.png` — ins Leere (llmwiki
+       [[vorgabewert-ueberlebt-den-umzug-seines-ordners]]).
+
+       DIE SILHOUETTE IST DER NOTFALL, nicht mehr der Normalfall: das SVG
+       steht IM Element, das <img> legt sich nur darueber, wenn es LAEDT.
+       Kommt das Bild nicht, bleibt eine gezeichnete Figur stehen statt eines
+       zerbrochenen Bildzeichens (`onerror` in app.js).
+
+       WANN DAS UEBERHAUPT NOCH VORKOMMT, und die Liste ist kuerzer, als sie
+       aussieht: EINE GELOESCHTE FIGUR GEHOERT NICHT DAZU. `GET /api/profile`
+       nennt seit dem 05.08.2026 nur Figuren, zu denen es eine Datei GIBT
+       (server.ts, „Eine Figur, die es nicht gibt, wird nicht genannt") — wer
+       seine Datei verliert, bekommt LEER und damit das MixPi, nicht die
+       Silhouette. Uebrig bleiben die Faelle, in denen Verzeichnis und
+       ausgelieferte Datei AUSEINANDERGEHEN: das Bild wird geloescht, waehrend
+       diese Seite schon offen ist (die Liste kam vor dem Loeschen); eine
+       halbe Auslieferung; oder `bilder/mixpi-hoert.png` selbst fehlt — dann
+       steht die Silhouette bei JEDEM Kind. Sie ist also kein „hat sich nichts
+       ausgesucht", sondern immer ein Hinweis auf eine fehlende Datei.
+
+       WARUM z-index 5 UND NICHT 9 WIE DER RUECKWEG (app.css, `.ich`): Der
+       Rueckweg MUSS ueber die Vollbild-Ansichten reichen, sonst haetten sie
+       keinen Ausgang. Dieses Zeichen darf es gerade NICHT — im grossen Player
+       und im Eltern-Bereich hat „wer hoert" nichts zu suchen, und im
+       Eltern-Bereich laege es genau auf der Ueberschrift. Mit 5 legen die
+       Ebenen sich von selbst darueber; es braucht keine Zeile, an die jemand
+       denken muss.
+
+       „DARUEBER" HEISST NICHT UEBERALL „WEG" — nachgemessen am 06.08.2026
+       (tools/maskottchen-zaehlen.mjs), weil hier vorher schlicht „verdecken"
+       stand und das fuer eine von drei Ebenen nicht stimmt:
+         `.eltern`       `background: var(--bg)` — undurchsichtig, WEG
+         `.album-gross`  `background: var(--bg)` — undurchsichtig, WEG
+         `.gross`        `rgba(46,42,59,0.42)` — ABGEDUNKELT, nicht weg
+       Dasselbe gilt fuer `.ich-fenster` (ebenfalls 42 %). Der Finger kommt
+       dort nicht mehr durch, das Auge sehr wohl. Fuer den Zweck reicht das
+       (auf der Ueberschrift des Eltern-Bereichs liegt es wirklich nicht),
+       ABER: Wer sich hier merkt „ein Kissen deckt es schon zu" und danach
+       etwas plant, plant falsch. Wer eine Ebene braucht, unter der dieses
+       Zeichen WIRKLICH verschwindet, gibt ihr einen deckenden Grund. -->
+  <button class="ich" id="ich" type="button" aria-label="Wer hört? Bild aussuchen">
+    <span class="ich-rund">
+      <!-- Die Silhouette. `stroke` statt Fuellung, damit sie in Hell und
+           Dunkel dieselbe Zeichnung ist und nicht als Klecks erscheint. -->
+      <svg class="ich-schatten" viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8.5" r="3.8"/><path d="M4.6 20c0-3.6 3.3-6 7.4-6s7.4 2.4 7.4 6"/></svg>
+      <img class="ich-bild" id="ich-bild" alt="" hidden>
+    </span>
+  </button>
+
+  <!-- ── DIE AUSWAHL ───
+       EIN SCHWEBENDES FENSTER, wie das Favoritenfenster der klassischen
+       Oberflaeche (llmwiki `schwebende-fenster-favoriten-resume`): ein
+       zentriertes Quadrat `min(100vh - 16px, 100vw - 32px)`, 24 px Radius.
+       „Es soll DASSELBE Fenster sein, nicht ein aehnliches."
+
+       ZWEI TEILE, und der zweite ist der, den es heute schon gibt:
+         „Wer hört?"  die Profile — NUR wenn es mehr als eines gibt. Bei
+                      einem Profil waere die Reihe eine Kachel, die nichts
+                      tut, und ein Kind lernte, dass Tippen hier nichts
+                      bewirkt.
+         „Dein Bild"  die Figuren aus `bilder/figuren/`. Das ist der Teil,
+                      der auch mit EINEM Profil etwas kann: „das sich das
+                      kind einen persoenlichen auswaehlen kann" (Betreiber).
+
+       DER RUECKWEG SCHLIESST ES. Es liegt bei z-index 8, der Rueckweg bei 9
+       und in derselben Ecke wie immer — kein eigenes Kreuz, keine siebte
+       Stelle, an der man den Ausgang suchen muss. -->
+  <div class="ich-fenster" id="ich-fenster" hidden role="dialog" aria-label="Wer hört? Und welches Bild?">
+    <div class="ich-blatt" id="ich-blatt">
+      <!-- ── WER DU BIST, UND DER EINE GRIFF DARAN ───
+           GEWUENSCHT (Betreiber, 07.08.2026): „wenn man auf das eigene bild
+           klickt kann man zum einen das profil bearbeiten in dem geöffneten
+           menü oder das profil wechseln."
+
+           DIESE ZEILE IST DAS „BEARBEITEN". Sie steht GANZ OBEN und IMMER —
+           auch wenn es nur EIN Profil gibt (dann fehlt die Reihe darunter,
+           siehe dort). Sie sagt zuerst, wer gemeint ist, und bietet daneben
+           das einzige an, was sich hier ausser dem Bild aendern laesst: den
+           NAMEN. Alles Weitere — anlegen, loeschen, ein anderes Kind
+           bearbeiten — liegt im Admin-Menue hinter dem Tor. Dieses Fenster
+           steht VOR jeder Sperre, jedes Kind kommt hinein; es darf deshalb
+           nur das Kind anfassen, das gerade dran ist.
+
+           EINE ZEILE STATT UEBERSCHRIFT PLUS KNOPF: Der Knopf muss 66 px hoch
+           sein (9-mm-Marke). Stuende er unter einer eigenen Ueberschrift,
+           kostete das 90 px der 436, die das Blatt hat — und die fehlten dem
+           Bilderraster. So kostet es 66. -->
+      <div class="ich-kopf">
+        <h2 class="ich-ueber ich-ueber-du" id="ich-ueber-du">Du</h2>
+        <button class="ich-tat" id="ich-umbenennen" type="button">Namen ändern</button>
+      </div>
+
+      <!-- ── PASSWORT UND ABMELDEN (14.08.2026) ───
+           GEWUENSCHT: „ein passwort aus zeichen, farb punkten, stichmuster,
+           zahlen festlegen können. auch das ausloggen soll möglich sein dann
+           landet man im gast account."
+           DIE REIHE GIBT ES NUR MIT EIGENEM PROFIL — der Gast kann kein
+           Schloss haben (der Server streift es ab) und nichts, wovon man
+           sich abmeldet. app.js blendet sie darum beim Gast GANZ aus; auf
+           der heutigen Ein-Profil-Box kostet sie also keinen Platz. -->
+      <div class="ich-kopf ich-taten" id="ich-taten" hidden>
+        <button class="ich-tat" id="ich-passwort" type="button">Passwort</button>
+        <button class="ich-tat" id="ich-abmelden" type="button">Abmelden</button>
+      </div>
+
+      <div class="ich-teil" id="ich-teil-wer" hidden>
+        <h2 class="ich-ueber">Wer hört?</h2>
+        <div class="ich-reihe" id="ich-leute"></div>
+      </div>
+      <div class="ich-teil ich-teil-bilder">
+        <h2 class="ich-ueber" id="ich-ueber-bild">Dein Bild</h2>
+        <div class="ich-gitter" id="ich-bilder"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Seitenleiste: Kategorien und das Wappen ───
+       Waagerecht waere sie ein zweiter Balken UEBER dem Raster und kostete
+       ~60 der 480 Bildpunkte Hoehe. Senkrecht kostet sie Breite, von der bei
+       800 genug da ist - so bleiben zwei volle Kachelreihen sichtbar.
+
+       UNTEN STEHT SEIT 03.08.2026 DAS WAPPEN DER BOX — SEIT DEM 05.08.2026
+       NUR NOCH NAME UND FASSUNG, ohne Bild (siehe dort). Es stand vorher in
+       der Kopfzeile und nahm dort die ganze linke Haelfte ein — genau die
+       Stelle, an der jetzt der Rueckweg sitzt. Hier unten kostet es NICHTS:
+       die vier Kategorien (4 * 66 + 18 = 282 px) standen in einer 460 px
+       hohen Spalte mittig, oben und unten blieben je rund 90 px leer. — Oben
+       haelt die Leiste `--griff + 16` px fuer das Zeichen „wer hoert" frei
+       (`.ich`, ganz oben in dieser Datei). Ohne das 44-px-Bild ist das
+       Wappen nur noch 54 statt 100 px hoch, und den Kategorien bleiben 328
+       statt 282 px — 46 px Reserve. Die Rechnung steht bei `.leiste` in
+       app.css; sie darf NICHT als „hier ist wieder Platz" gelesen werden:
+       `.kat-liste` richtet seitdem mit `flex-start` aus, damit die Reserve
+       UNTEN liegt und die Kategorien stehen bleiben, wo sie stehen.
+
+       ES HEISST WAPPEN UND NICHT MARKE, und das ist keine Wortklauberei: die
+       Klasse `.marke` ist seit dem 02.08.2026 VERGEBEN — sie ist die runde
+       Dienst-Plakette auf jeder Kachel (app.css, `.marke-spotify` und
+       Geschwister). Der erste Anlauf hiess hier ebenfalls `.marke`, und beide
+       Regelsaetze trafen dasselbe Element: `width: clamp(22px, …, 34px)`
+       quetschte das Bild auf 27 px und den Namen auf eine Spalte von 29 px.
+       Am Bildschirm gesehen, nicht an den Zahlen. -->
+  <nav class="leiste" id="leiste" aria-label="Kategorien">
+    <!-- ── DIE FLAECHE DER SCHUBLADE (03.09.2026) ───
+         Betreiber: „baue ein menu wie bei android slidern das man von links
+         das kliene menu ziehen kann und weitere apps zum vorschein kommen
+         können wie bspw spiele, lernen, lesen" und „das soll optional sein.
+         ich möchte immer die möglichkeit ahben die box auf einfach zu
+         schalten".
+
+         SIE IST EIN EIGENES ELEMENT UND NICHT DIE BREITE DER `.leiste`, und
+         das ist der ganze Trick: Die Leiste ist ein Flex-Kind mit
+         `flex: 0 0 88px`. Wer SIE breiter macht, nimmt die Breite der Buehne
+         weg — und die Buehne traegt das Album-Raster. Das haette bei JEDEM
+         Bild des Zuges ein neues Raster gerechnet, auf einem Pi 5 mit
+         hundert Kacheln. Diese Flaeche liegt `absolute` und damit AUSSERHALB
+         der Flex-Rechnung: sie waechst UEBER die Buehne, und dahinter bewegt
+         sich nichts. Gemessen mit tools/schublade-messen.mjs.
+
+         SIE TRAEGT NUR GRUND UND SCHATTEN, KEINEN INHALT. Der Inhalt bleibt
+         in `.kat-liste` (die Kategorien wie bisher, die Apps darunter) und
+         steht darueber. Zwei Gruende: die Liste rollt schon, und ein zweiter
+         Ort fuer dieselben vier Knoepfe waere eine Doppelung, die beim
+         naechsten Umbau auseinanderlaeuft. -->
+    <div class="sch-flaeche" id="sch-flaeche" aria-hidden="true"></div>
+
+    <!-- Die Knoepfe baut app.js (`leisteBauen`) HIER hinein, nicht mehr
+         unmittelbar in die Leiste: sonst stuende das Wappen zwischen ihnen und
+         wuerde beim Rollen einer flachen Leiste mit weggeschoben.
+         SEIT DEM 03.09.2026 haengt `schubladeBauen` die Apps in DIESELBE
+         Liste — sie rollt bereits (`overflow-y: auto`), und die Leiste hat
+         keine 19 px Reserve mehr fuer eine zweite (die Rechnung steht bei
+         `.leiste` in app.css). Geschlossen stehen die Apps auf
+         `display: none`, damit die schmale Leiste aussieht wie immer. -->
+    <div class="kat-liste" id="kat-liste"></div>
+    <!-- DIE ZWEITE SPALTE. Sie steht NEBEN der Kategorienliste, nicht darin:
+         Die Leiste soll beim Aufziehen bleiben, was sie ist — eine Spalte mit
+         Zeichen — und die Apps kommen dahinter zum Vorschein. Lagen sie in
+         derselben Liste, waeren sie eine Fortsetzung nach UNTEN, und genau das
+         war der erste, falsche Anlauf (Betreiber, 03.09.2026: „die icons sind
+         alle untereinander … ich habe mir eher 2 reihen vorgestellt"). -->
+    <div class="sch-apps" id="sch-apps" aria-label="Apps"></div>
+
+    <!-- ── DER GRIFF — DIE GESTE IST SICHTBAR ───
+         WARUM ER UEBERHAUPT DA IST: Eine Wischgeste ist eine Bedienung, die
+         man nicht SIEHT. Das Haus behandelt solche Gesten als etwas, das man
+         eingeschaltet haben muss, bevor es greift (siehe der Kopf von
+         „WISCHGESTEN VOM RAND" in app.js). Die Schublade ist ebenfalls
+         abschaltbar — aber wer sie EINgeschaltet hat, soll sie auch finden,
+         ohne die Anleitung gelesen zu haben. Der Griff ist der Unterschied
+         zwischen einem Menue und einem Geheimnis.
+
+         ER IST BEIDES: ein Knopf (ein Tipp schaltet um) und der Anfasser
+         (ziehen folgt dem Finger). Der Tipp ist der Weg fuer die Maus und
+         fuer jeden, dessen Zug der Browser fuer ein Rollen haelt — und genau
+         das tut Blink am Finger regelmaessig (siehe „MIT DEM FINGER HAT DIESE
+         GESTE NOCH NIE FUNKTIONIERT" bei `randwisch` in app.js). Ein Menue,
+         das nur auf einen Zug aufgeht, waere auf dieser Box eines, das
+         manchmal gar nicht aufgeht. -->
+    <button class="sch-griff" id="sch-griff" type="button" hidden
+            aria-expanded="false" aria-controls="kat-liste"
+            aria-label="Apps und Kategorien — ziehen oder tippen">
+      <span class="sch-griff-strich" aria-hidden="true"></span>
+    </button>
+
+    <!-- ── DER SCHRIFTZUG IST DER MENUEKNOPF (06.08.2026 abends) ───
+         Betreiber: „mach den schriftuig mixpi box zu menü knopf dann räumen
+         wir das zahnrad auf mit 2sec drück verzögerung mit einer animation".
+
+         DAS BRICHT DIE REGEL, DIE ZWANZIG ZEILEN TIEFER STEHT — „Es ist
+         Auskunft, keine Bedienung" — und deshalb wird sie hier ENGER GEFASST
+         statt uebergangen: Die Leiste traegt keine Bedienung, die zur
+         NAVIGATION der Oberflaeche gehoert; der Rueckweg liegt aus genau dem
+         Grund ausserhalb. Das Wappen ist aber keine Navigation, sondern die
+         IDENTITAET der Box — und „das eigene Zeichen halten, um die eigenen
+         Einstellungen zu oeffnen" ist derselbe Gedanke, nicht sein Gegenteil.
+
+         WARUM UEBERHAUPT: Das Zahnrad war das einzige Zeichen in der
+         Kopfzeile, das an einen Ort fuehrt, an den ein Kind nicht soll. Es ist
+         ersatzlos entfallen; der Platz gehoert den Statusanzeigen.
+
+         DIE FRIST IST SICHTBAR, und das ist der Kern. Am Morgen des
+         06.08.2026 lautete die Meldung „es öffnet einfach den alten bereich",
+         Ursache: zwei UNSICHTBARE Gesten auf einem Knopf. Der naheliegende
+         Griff (Frist von 700 auf 400 ms) wurde damals verworfen — eine
+         unsichtbare Grenze bleibt eine unsichtbare Grenze. Der fuellende Ring
+         ist die fehlende Haelfte: man sieht, wie lange noch. -->
+    <button class="wappen" id="wappen" type="button"
+            aria-label="Admin-Menü öffnen — gedrückt halten">
+      <!-- HIER STAND BIS ZUM 05.08.2026 DAS MixPi — 44x44, `mixpi-hoert.png`.
+           ES IST NICHT VERGESSEN WORDEN. SETZ ES NICHT WIEDER HINEIN.
+           Es ist oben links, im Zeichen „wer hoert" (`#ich`, ganz oben in
+           dieser Datei).
+
+           WARUM, woertlich (Betreiber, 05.08.2026): „ich wollte niemals die
+           mixpi figur unten links, ich wollte sie oben links, schon
+           vorbereitend fuer den platz des bildes. damals ging was schief :)"
+
+           WAS SCHIEFGING: Der Wunsch vom 03.08.2026 nannte ZWEI Zielorte in
+           EINEM Satz — „das mixpi bild soll … GANS LINKS IN DIE ECKE
+           rutschen. MixPiBox soll geteilt werden zu MixPi und Box und
+           untereinander stehen LINKS UNTEN". Gebaut wurde es, als meinten
+           beide dieselbe Stelle: das Bild wanderte mit dem Namen nach unten.
+           Gemeint war die Ecke OBEN links — und zwar ausdruecklich als
+           Vorbereitung fuer den Platz, an dem heute `#ich` steht.
+
+           NAME UND FASSUNG BLEIBEN HIER. Sie sind der zweite Zielort
+           desselben Satzes und ausdruecklich gewuenscht.
+
+           DER WUNSCH „nicht mehr wechseln beim spielen" GILT WEITER und ist
+           erfuellt: `ichBildPfad` in app.js kennt nur die gewaehlte Figur und
+           das Standardbild, keinen Spielzustand. Was gerade laeuft, sagen der
+           Mini-Player, die tanzende Marke auf der Kachel und das Symbol im
+           Player. -->
+      <!-- DER NAME KOMMT AUS `mupibox.host`, NIE AUS EINER KONSTANTEN.
+           Diese beiden Zeilen sind nur der Rueckfall, falls /api/config nicht
+           antwortet. Geteilt wird am Wortende „Box" — und NUR dort: eine feste
+           Teilung nach sechs Zeichen ergaebe bei „MixPiZwei" ein „MixPiZ" und
+           ein „wei". Die Regel steht in app.js (`boxnameTeilen`) und wird
+           geprueft: node tools/pruef-neu-regeln.js -->
+      <!-- DER SCHRIFTZUG UND SEIN RING LIEGEN JETZT ZUSAMMEN IN EINER HUELLE.
+           Betreiber, 08.08.2026: „der press indikator macht noch eine weite
+           umrandung mit der versions nummer das kann man noch korrigieren
+           unten links bei mixpi box."
+           GEMESSEN, woher die Weite kam: Der Schriftzug ist 73x35, der Ring
+           war 85x78 — er umrandete die TREFFERFLAECHE, nicht die Schrift. Der
+           Knopf haelt `min-height: var(--griff)` (66 px, die 9-mm-Marke), und
+           bis heute frueh fuellte die Fassungszeile den Rest davon aus. Seit
+           sie ins Admin-Menue gezogen ist, umrandete der Ring sichtbar leeren
+           Platz.
+           DIE TREFFERFLAECHE BLEIBT 66 PX. Nur der Ring haengt jetzt an dieser
+           Huelle statt am Knopf und legt sich damit um das, was man sieht. -->
+      <span class="wappen-halt">
+        <div class="wappen-name">
+          <span class="wappen-oben" id="wappen-oben">MixPi</span>
+          <span class="wappen-unten" id="wappen-unten">Box</span>
+        </div>
+        <!-- DER RING, DER SICH FUELLT. Er liegt UEBER dem Schriftzug und nicht
+             daneben: ein Fortschritt, den man suchen muss, sagt nichts.
+             `hidden` bis zum ersten Griff, damit er im Ruhezustand keine
+             Flaeche kostet und niemanden zum Tippen einlaedt. -->
+        <div class="wappen-ring" id="wappen-ring" hidden aria-hidden="true"></div>
+      </span>
+      <!-- HIER STAND DIE LAUFENDE FASSUNG (`#wappen-fassung`). Sie ist am
+           08.08.2026 ins Admin-Menue gewandert, unten links — auf Wunsch des
+           Betreibers: „ich möchte die versions nr vom der normalen oberflache
+           ins admin menü unten links".
+           ES IST DER RICHTIGE ORT: Auf der Startseite steht sie unter dem
+           Namen der Box und wird von einem Kind gelesen, das nichts damit
+           anfangen kann. Gebraucht wird sie genau dann, wenn jemand wissen
+           will, was auf dieser Box laeuft — und das ist im Admin-Menue.
+           WAS DAMIT AUCH VERSCHWINDET: die 11 px Hoehe unter dem Schriftzug.
+           Sie standen dort, damit beim Nachladen nichts springt; ohne die
+           Zeile springt auch nichts mehr. -->
+    </button>
+  </nav>
+
+  <div class="spalte">
+
+    <!-- ── Kopf ───
+         LINKS IST HIER PLATZ FUER DEN RUECKWEG, und zwar buchstaeblich: Das
+         Maskottchen und der Name der Box standen bis 03.08.2026 an dieser
+         Stelle und sind in die Seitenleiste gezogen. Das Loch, das sie
+         hinterlassen, ist kein Versehen — dort liegt der eine Rueckweg
+         (`.zurueck`, ganz oben in dieser Datei). Er ist `position: fixed` und
+         steht deshalb NICHT in dieser Zeile; die Kopfzeile laesst ihm den
+         Platz nur frei (`padding-left` in app.css). -->
+    <header class="kopf">
+      <!-- Wie viele Eintraege stehen gerade zur Wahl. Das ist alles, was von
+           der alten Kopfzeile hier geblieben ist — und es gehoert hierher,
+           weil es sich mit der Kategorie aendert und nicht mit der Box. -->
+      <!-- HIER STAND `#kopf-unter` mit „27 von 27 Eintraegen". Entfallen am
+           08.08.2026 auf Wunsch des Betreibers: „das gibt keinen mehrwert".
+           Die Begruendung in voller Laenge steht in app.js an der Stelle, die
+           es geschrieben hat. -->
+
+      <!-- ── OBEN IN DER MITTE: UHRZEIT UND RESTZEIT (07.08.2026) ───
+           DER WUNSCH (Betreiber): „uhrzeit oben in der mitte anzeigen lassen
+           und auch rest zeit beides einzelne indicatoren zum ein und
+           ausschalten."
+
+           BEIDE SIND AB WERK AUS. Wer die Box heute anschaltet, soll sehen,
+           was er gestern gesehen hat; die Schalter stehen im Admin-Menue unter
+           Darstellung -> Indikatoren, neben den drei, die es schon gab.
+
+           WAS „RESTZEIT" HEISST — und hier gab es zwei Kandidaten:
+             * die Restdauer des laufenden TITELS. Die steht schon da, im
+               Player und im Kissen, gleich neben dem Balken.
+             * die Restzeit der KINDERZEIT. Die steht nirgends — bis die Box
+               mitten im Hoerspiel aufhoert.
+           Es ist die zweite. Der Betreiber nennt sie im selben Atemzug mit
+           dem Filter „welche Titel noch komplett in die kinderzeit passen";
+           beide Male geht es um dieselbe Zahl.
+
+           WARUM SIE ABSOLUT ZENTRIERT IST UND NICHT IM FLUSS: Die Kopfzeile
+           ist eine Flex-Reihe mit einer Auskunft links (`kopf-unter`) und
+           einer rechts (`kopf-status`), und ihr linkes Polster wird aus zwei
+           Variablen gerechnet, damit der stillstehende Rueckweg nicht auf dem
+           Text liegt. Ein drittes Element IM Fluss laege je nach Laenge der
+           beiden anderen woanders — und „in der Mitte" waere dann eine Zahl,
+           die bei jedem Kategoriewechsel wandert. Absolut zentriert steht sie
+           still.
+
+           `aria-live="off"`: Die Uhr aendert sich jede Minute. Eine
+           Sprachausgabe, die das jedes Mal ansagt, unterbricht das Hoerspiel
+           genau einmal pro Minute. -->
+      <div class="kopf-mitte" id="kopf-mitte" aria-live="off">
+        <span class="km-stueck km-uhr" id="km-uhr" hidden></span>
+        <span class="km-stueck km-rest" id="km-rest" hidden></span>
+        <!-- E121/4a, aus dem Alten uebernommen (ALT-UEBERNAHMEN.md):
+             Titel-Restzeit und Schlummer-Rest — beide leer statt "0:00",
+             wenn nichts laeuft; die Regel stammt aus zeitanzeige.ts. -->
+        <span class="km-stueck km-titelrest" id="km-titelrest" hidden></span>
+        <span class="km-stueck km-schlummer" id="km-schlummer" hidden></span>
+      </div>
+
+      <!-- AUSKUNFT, KEINE KNOEPFE.
+           Netz, Internet und Ladezustand sagen etwas — man tippt sie nicht an.
+           Deshalb gilt die 9-mm-Regel hier NICHT: sie ist die Mindestgroesse
+           fuer TREFFERFLAECHEN. Waeren diese drei ebenfalls 64 px breit, blieben
+           von 800 px kaum 200 fuer den Namen der Box uebrig — und der Kopf
+           saehe aus wie eine Werkzeugleiste statt wie eine Musikbox.
+           aria-live="polite": Aendert sich der Zustand, sagt es eine
+           Sprachausgabe beilaeufig an, ohne zu unterbrechen. -->
+      <div class="kopf-status" id="kopf-status" aria-live="polite">
+        <!-- ══ VIER ANZEIGEN, VON RECHTS: AKKU, INTERNET, WLAN, BLUETOOTH ══
+             So hat der Betreiber sie am 08.08.2026 bestellt. Im Fluss steht
+             die Reihe also VERKEHRT HERUM (links Bluetooth), und das ist kein
+             Versehen: „von rechts" ist die Leserichtung dieser Ecke — ganz
+             rechts steht, was am haeufigsten gebraucht wird.
+
+             JEDE EINZELN ABSCHALTBAR (`stBluetooth`, `stWlan`, `stInternet`,
+             `stAkku` in ANZEIGE_SCHALTER). Bis dahin gab es EINEN Schalter
+             fuer die ganze Leiste; wer die Uhr wollte, aber keinen Akku,
+             musste alles nehmen.
+
+             ALLE VIER SIND 24x24 UND WERDEN 20x20 GEZEICHNET. Der Akku hatte
+             bis zum 08.08.2026 eine viewBox von 30x24 und rief damit 26 px
+             Breite ab — gemessen mit tools/statusleiste-messen.mjs: „SVG-
+             Breiten ungleich (Spanne 6.0 px)". Am Schirm sah das aus wie ein
+             groesseres Zeichen, und die Luecken davor und dahinter waren zwar
+             gleich, wirkten aber nicht so. -->
+
+        <!-- BLUETOOTH. Nur da, wenn ein Geraet WIRKLICH verbunden ist — nicht
+             schon, wenn der Adapter an ist. „Gekoppelt" heisst nicht „spielt
+             darueber"; genau der Unterschied ist die Lage, in der die Box
+             stumm bleibt und niemand weiss warum. -->
+        <!-- ══ LAUTSTAERKE — GRAFISCH, NICHT ALS ZAHL ═══
+             Betreiber, 08.08.2026: „bau noch einen volume indikator der
+             grafisch passt."
+             DREI BOEGEN, VON DENEN SO VIELE LEUCHTEN WIE ES LAUT IST — dieselbe
+             Bauart wie das WLAN-Zeichen daneben (drei Balken nach Staerke).
+             Das ist der Grund fuer die Boegen und nicht fuer eine Saeule: die
+             Reihe hat schon eine Sprache fuer „wie viel davon", und eine
+             zweite waere eine zweite Sprache.
+             BEI STUMM EIN KREUZ statt null Boegen: „aus" und „ganz leise"
+             sehen sonst gleich aus, und der Unterschied ist genau der, wegen
+             dem jemand hinsieht.
+             ES IST KEIN KNOPF. Der Regler sitzt im Mini-Player (66 px, mit
+             Fenster); ein zweiter Weg an einer 20-px-Flaeche waere ein Ziel,
+             das die 9-mm-Marke reisst — und ein Kind, das die Lautstaerke
+             beim Danebengreifen verstellt. -->
+        <span class="st st-vol" id="st-vol" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 9.5h3.2L12 5.6v12.8L7.2 14.5H4z" fill="currentColor" stroke-linejoin="round"/>
+            <path class="vol-b1" d="M15 9.6a3.4 3.4 0 0 1 0 4.8"/>
+            <path class="vol-b2" d="M17.6 7.3a6.8 6.8 0 0 1 0 9.4"/>
+            <path class="vol-b3" d="M20.2 5a10.2 10.2 0 0 1 0 14"/>
+            <path class="vol-still" d="M15.5 9.8l5 4.4M20.5 9.8l-5 4.4"/>
+          </svg>
+        </span>
+
+        <!-- BLUETOOTH. ES WAR BIS ZUM 08.08.2026 EIN KNOPF (`#bt-knopf`,
+             66 px, fuehrte ins Bluetooth-Fach) und stand ganz RECHTS. Der
+             Betreiber wollte die Reihenfolge „von rechts batterie internet
+             wlan bluetooth" UND vier gleich grosse Zeichen; beides zugleich
+             geht mit einem Tippziel nicht — 66 px neben 20 px sind nicht
+             gleich gross, und alle vier auf 66 px liessen von 800 px kaum
+             200 fuer den Namen der Box.
+             AUF NACHFRAGE ENTSCHIEDEN: gleich gross, nicht antippbar. Der Weg
+             ins Bluetooth-Fach fuehrt weiter ueber das Admin-Menue
+             (Verbindung -> Bluetooth).
+             DIE DREI ZUSTAENDE DES KNOPFES GEHEN MIT, denn sie waren die
+             eigentliche Auskunft: verbunden (blau), gekoppelt-aber-getrennt
+             (blass, der Fall, in dem die Box stumm bleibt und niemand weiss
+             warum) und aus. -->
+        <button class="st st-bt" id="st-bt" type="button" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8.25 8.25L15.75 15.75L12 19.5V4.5L15.75 8.25L8.25 15.75"/>
+          </svg>
+          <!-- DIE ZAHL: wie viele Geraete verbunden sind.
+               Betreiber, 08.08.2026: „mit einer kleinen zahl soll mit dem
+               indikator die verbundenen und verfügbaren geräten anzeigen."
+               SIE KOMMT ERST AB ZWEI. Eine „1" an einem Zeichen, das ohnehin
+               nur bei einer Verbindung leuchtet, sagt nichts — und eine Zahl,
+               die immer dasteht, wird zum Muster statt zur Auskunft. -->
+          <span class="st-zahlmarke" id="st-bt-zahl" hidden></span>
+          <!-- E121/4c: Ladestand des KOPFHOERERS (nicht der Box), nur wenn
+               das Geraet ihn meldet und btAkku='prozent' gewaehlt ist. -->
+          <span class="st-bt-akku" id="st-bt-akku" hidden></span>
+        </button>
+
+        <!-- ══ CONTROLLER UND FERNBEDIENUNG (06.09.2026) ═══
+             Betreiber: „das könnte man als kleines Icon verwenden, wenn der
+             Controller angemeldet ist" — und, weil zwei Leute spielen
+             koennen sollen: „ein zweites Icon waere nicht schlecht … und
+             Fernbedienung, da braucht es nur 1."
+
+             ZWEI ZEICHEN, NICHT VIER. Der Controller traegt die ZAHL wie das
+             Bluetooth-Zeichen (ab zwei, aus demselben Grund: eine „1" an
+             einem Zeichen, das ohnehin nur bei Verbindung erscheint, sagt
+             nichts). Die Fernbedienung braucht keine — mehr als eine steuert
+             die Box nicht, `fernbedienung.py` greift genau ein Geraet.
+
+             ES SIND `span`, KEINE KNOEPFE. Wie Wolke, WLAN und Akku: reine
+             Auskunft. Ein Tippziel braeuchte 66 px, und die Reihe hat ihren
+             Rhythmus (siehe die Begruendung am Bluetooth-Zeichen oben).
+
+             SIE ERSCHEINEN NUR, WENN DAS GERAET WIRKLICH DA IST — gemessen am
+             Eingabe-Bus, nicht an der Kopplung. Gekoppelt und trotzdem
+             unbedienbar ist genau der Fall, den ein Zeichen nicht
+             beschoenigen darf. -->
+        <span class="st st-pad" id="st-pad" hidden>
+          <!-- Zeichen: svgrepo (game-controller), Public Domain. Der Pfad ist
+               fuer viewBox 0 0 20 20 gezeichnet; die Leiste verlangt 24x24 bei
+               allen Zeichen (app.css, „ALLE VIER ZEICHEN SIND GLEICH GROSS"),
+               deshalb 2 px Rand statt einer neuen viewBox. -->
+          <svg viewBox="-2 -2 24 24" width="20" height="20" fill="currentColor">
+            <path d="M19.444 9.361c-.882-4.926-2.854-6.379-3.903-6.379-1.637 0-2.057 1.217-5.541 1.258-3.484-.041-3.904-1.258-5.541-1.258-1.049 0-3.022 1.453-3.904 6.379-.503 2.812-1.049 7.01.252 7.514 1.619.627 2.168-.941 3.946-2.266C6.558 13.266 7.424 12.95 10 12.95s3.442.316 5.247 1.659c1.778 1.324 2.327 2.893 3.946 2.266 1.301-.504.755-4.701.251-7.514zM6 10a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm7 0a1 1 0 1 1 0-2 1 1 0 1 1 0 2zm2-2a1 1 0 1 1 0-2 1 1 0 1 1 0 2z"/>
+          </svg>
+          <span class="st-zahlmarke" id="st-pad-zahl" hidden></span>
+        </span>
+
+        <span class="st st-fb" id="st-fb" hidden>
+          <!-- Fernbedienung: laenglicher Umriss mit Ring und zwei Tastenreihen
+               — dieselbe Anmutung wie die Schemata unter
+               config/fernbedienungen/bilder/, nur auf 20 px eingedampft. -->
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="7" y="2" width="10" height="20" rx="4"/>
+            <circle cx="12" cy="8" r="2.2"/>
+            <path d="M10 14h.01M14 14h.01M10 18h.01M14 18h.01"/>
+          </svg>
+        </span>
+
+        <!-- ══ WLAN UND WOLKE — EINE KETTE, WIE IM ALTEN MENUE ═══
+             Der Betreiber: „ein kombi icon wlan mit wolke bitte nehmen wenn
+             vorhanden im alten gab es das." Es gab es: `ns-kette` in
+             netzstatus.component.ts — die Balken, und die Wolke als kleines
+             Zeichen oben rechts darauf, NUR wenn es wirklich hinausgeht.
+
+             SIE BLEIBEN TROTZDEM ZWEI SCHALTER. Der Auftrag „jeden indikator
+             einzeln ein und ausblenden" und der Wunsch nach dem Kombi-Zeichen
+             widersprechen sich nur scheinbar: Sind BEIDE an, ruecken sie
+             zusammen und die Wolke reitet auf den Balken (Klasse `kombi`).
+             Ist nur eine an, steht sie fuer sich. So kostet das Kombi-Zeichen
+             keinen Schalter.
+
+             „Verbunden" und „kommt hinaus" bleiben zwei Aussagen. Die Balken
+             zeigen die VERBINDUNG, die Wolke den WEG NACH DRAUSSEN. -->
+        <span class="st st-kette" id="st-kette" hidden>
+          <!-- NETZ. Drei Balken = Funk mit Staerke, Stecker = Kabel, blass = aus. -->
+          <span class="st-teil st-netz" id="st-netz" hidden>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <path class="netz-funk" d="M12 19h.01"/>
+              <path class="netz-b1" d="M8.5 15.5a5 5 0 0 1 7 0"/>
+              <path class="netz-b2" d="M5.5 12.3a9.5 9.5 0 0 1 13 0"/>
+              <path class="netz-b3" d="M2.5 9.1a14 14 0 0 1 19 0"/>
+              <path class="netz-kabel" d="M4 7h16v7H4z M9 17h6 M12 14v3"/>
+            </svg>
+          </span>
+          <!-- INTERNET. Die Wolke ist nur da, wenn es wirklich hinausgeht —
+               die Box probiert es (Leitung + Namensaufloesung), sie zaehlt nicht
+               bloss Schnittstellen. Genau der Fall „Netz da, Internet weg" soll
+               sichtbar sein. -->
+          <span class="st-teil st-wolke" id="st-wolke" hidden>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6.5 18a4 4 0 0 1-.4-8 5.6 5.6 0 0 1 10.8-1.2A3.9 3.9 0 0 1 18 18z"/>
+              <path class="wolke-strich" d="M4 20L20 4"/>
+            </svg>
+          </span>
+        </span>
+
+        <!-- AKKU. Nur da, wenn die Box einen MuPiHAT mit Batterie hat.
+             Der Fuellstand ist ein Rechteck, dessen Breite der Ladung folgt;
+             der Blitz erscheint beim Laden.
+             DIE viewBox IST 24x24 WIE BEI DEN ANDEREN DREIEN (vorher 30x24).
+             Wer hier etwas verschiebt, muss `AKKU_FUELL_VOLL` in app.js
+             mitnehmen — dort steht die volle Breite der Fuellung als Zahl. -->
+        <span class="st st-akku" id="st-akku" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round">
+            <rect x="2" y="6" width="16.5" height="12" rx="3"/>
+            <path d="M20.4 10.5v3" stroke-linecap="round" stroke-width="3"/>
+            <rect class="akku-fuellung" id="akku-fuellung" x="4" y="8.3" width="12.5" height="7.4" rx="1.3" fill="currentColor" stroke="none"/>
+            <path class="akku-blitz" d="M11.9 7.8l-2.5 4h2.3l-0.8 3.2 2.8-4.2h-2.3z" fill="currentColor" stroke="none"/>
+          </svg>
+          <span class="st-zahl" id="st-akku-zahl"></span>
+        </span>
+      </div>
+
+      <!-- RECHTS: was von den drei Knoepfen uebrig ist.
+           Sie waren alle 64 px — die Analyse des alten Menues hat
+           ausgerechnet, dass dort KEIN einziger Knopf die 9 mm erreicht
+           (Zurueck 6,72 mm, Ausschalt-Dialog 5,60 mm). Das soll sich hier
+           nicht fortsetzen. Es ist noch EINER: das Bluetooth-Zeichen.
+
+           HIER STAND DER MOND (`#licht-knopf`, hell/dunkel). Er ist am
+           07.08.2026 entfallen — Betreiber: „was wir auch rausnehmen könen ist
+           hell dunkel aus dem band oben".
+
+           HELL/DUNKEL IST NICHT WEG. Es steht im Admin-Menue unter
+           Darstellung -> Farbe und Form, zuoberst auf der Seite, und ist
+           seither der EINZIGE Weg dorthin. Deshalb wurde er VOR dem Wegnehmen
+           wirklich gegangen und gemessen (tools/licht-weg-probe.mjs): Menue
+           auf, umschalten, Farbe wechselt (rgb(255,247,236) ->
+           rgb(26,23,38)), wird gemerkt, ueberlebt das Neuladen, geht zurueck.
+           Ein Schalter, der nur DASTEHT, waere kein Ersatz gewesen — die
+           Oberflaeche waere dann dauerhaft hell.
+
+           SETZ IHN NICHT WIEDER HINEIN, ohne den anderen Weg zu entfernen.
+           Genau wie beim Zahnrad einen Tag vorher: zwei Wege zum selben Ort
+           waren das Problem, nicht die Loesung. -->
+      <!-- HIER STAND DAS ZAHNRAD (`#einst-knopf`). Es ist am 06.08.2026 abends
+           ersatzlos entfallen: der Weg ins Admin-Menue fuehrt jetzt ueber den
+           Schriftzug unten links in der Leiste, gedrueckt gehalten (siehe
+           dort). Zwei Wege zum selben Ort waren am Morgen desselben Tages
+           genau das Problem — „es öffnet einfach den alten bereich".
+           SETZ ES NICHT WIEDER HINEIN, ohne den anderen Weg zu entfernen. -->
+    </header>
+
+    <!-- ── Startseite: das Album-Raster ─── -->
+    <main class="buehne" id="buehne">
+      <!-- KOPF DES REGALS. Er erscheint nur, wenn man in einem steht, und
+           sagt seit 03.08.2026 nur noch, WO man ist.
+
+           HIER WAR ER DER RUECKWEG: die ganze Zeile war ein Knopf, weil es im
+           Kiosk keinen Zurueck-Knopf des Browsers gibt. Den Ausgang gibt es
+           weiterhin, nur nicht mehr hier — er steht oben links in der Ecke und
+           gilt fuer alle Ebenen. Zwei Ausgaenge nebeneinander waeren einer zu
+           viel, und der obere ist der, den man auch in der Lane, auf der
+           Interpretenseite und im grossen Cover findet. -->
+      <div class="regal-kopf" id="regal-kopf" hidden>
+        <div class="regal-name" id="regal-name"></div>
+      </div>
+      <!-- WEITERHOEREN — dort anknuepfen, wo aufgehoert wurde.
+
+           HIER STAND „OFT GEHOERT", und es ist ERSETZT. Was ein Kind oft
+           hoert, findet es auch im Raster darunter; wo es stehengeblieben ist,
+           beantwortet sonst nichts auf dieser Seite. Bei einem Hoerspiel von
+           einer Stunde ist das die haeufigste Frage ueberhaupt.
+
+           SIE LIEGT IM ROLLENDEN BEREICH, nicht darueber: So kostet sie nichts,
+           wenn niemand hinsieht — wer nach unten rollt, hat wieder das volle
+           Raster. Ein fester Balken haette von 344 sichtbaren Bildpunkten
+           dauerhaft ein Drittel genommen.
+
+           SIE ZEIGT NUR, WAS ZUR AUSWAHL GEHOERT (seit 02.08.2026): dieselbe
+           Liste, nach der auch das Raster darunter seine Kacheln baut. Bis
+           dahin verschwand sie in jeder gewaehlten Kategorie GANZ und stand
+           im Regal eines Interpreten unveraendert da — im Hoerspiel sah man
+           einen Musiktitel. Die Regel steht in `weiterZurAuswahl` (app.js),
+           gemessen wird sie mit tools/weiter-auswahl-schau.mjs.
+
+           BLEIBT NACH DEM FILTERN NICHTS UEBRIG, faellt sie ganz weg statt
+           leer dazustehen: auf 480 px kostet sie eine von vier sichtbaren
+           Zeilen, und die fuer „hier ist nichts" auszugeben waere teuer. -->
+      <section class="weiter" id="weiter" hidden aria-label="Weiterhören">
+        <h2 class="reihe-kopf" id="weiter-kopf">Weiterhören</h2>
+        <div class="weiter-reihe" id="weiter-reihe"></div>
+      </section>
+
+      <!-- BELOHNUNGS-VIDEOS (20.09.2026). Einzelne Videos aus der ARD
+           Mediathek, die ein Elternteil MIT EINER ANZAHL freigegeben hat.
+
+           SIE STEHT UNTER „Weiterhören" UND UEBER DEN INTERPRETEN: Was ein
+           Kind sich verdient hat, soll es finden, ohne zu suchen — aber die
+           Frage „wo war ich stehengeblieben?" ist die haeufigere und behaelt
+           den ersten Platz.
+
+           OHNE FREIGABE GIBT ES SIE NICHT. Kein Kasten mit „hier ist
+           nichts": auf 480 px kostet eine Reihe eine von vier sichtbaren
+           Zeilen, und was es hier zu holen gaebe, weiss ein Kind ohnehin
+           erst, wenn etwas darinsteht — dieselbe Ueberlegung wie bei
+           „Weiterhören" darueber.
+
+           GEFUELLT WIRD SIE VON NewDesign/video.js, nicht von app.js. -->
+      <section class="videos" id="video" hidden aria-label="Videos">
+        <h2 class="reihe-kopf">Videos</h2>
+        <div class="video-reihe" id="video-reihe"></div>
+      </section>
+
+      <!-- INTERPRETEN — der Weg zu den GANZEN Alben.
+           Eine Playlist ist eine Auswahl; das ist oft so gewollt. Wer das
+           vollstaendige Album will, geht ueber den Interpreten. Gemessen an
+           der Box: In acht Alben der Pummeleinhorn-Playlist fehlt jeweils
+           genau ein Titel.
+           RUND, weil dahinter Menschen und Figuren stehen — eine runde Kachel
+           liest sich als „wer", eine eckige als „was". -->
+      <section class="leute" id="leute" hidden aria-label="Interpreten">
+        <h2 class="reihe-kopf">Interpreten</h2>
+        <div class="leute-reihe" id="leute-reihe"></div>
+      </section>
+
+      <!-- DIE INTERPRETENSEITE — „das ist ein artist unter spotify, auf das
+           moechte ich kommen."
+
+           Sie liegt IM rollenden Bereich und ersetzt das Raster, statt sich
+           darueberzulegen: Der Mini-Player bleibt erreichbar, und „Platz beim
+           Blaettern" wirkt hier genauso wie auf der Startseite.
+
+           DER KOPF ERSCHEINT SOFORT, mit dem Namen und dem Bild der
+           angetippten Kachel; Follower, Genres und die Reihen kommen nach.
+           Auf einem Pi mit langsamem WLAN sind das bis zu vier Abrufe — eine
+           Seite, die so lange leer bleibt, sieht aus wie eine kaputte Box.
+
+           DER RUECKWEG STEHT OBEN LINKS IN DER ECKE, nicht mehr hier: Im Kiosk
+           gibt es keinen Browser-Zurueck-Knopf und keine Wischgeste, und es
+           gibt seit 03.08.2026 genau einen Ausgang fuer alle Ebenen. Die 64 px
+           Breite, die der eigene Pfeil hier belegte, gehen an Bild und Name. -->
+      <section class="interpret" id="interpret" hidden aria-label="Interpret">
+        <!-- BILD UND NAME IN EINER ZEILE, und das ist gemessen, nicht
+             Geschmack: Untereinander (Rueckweg 64 + 14, Kopf 88 + 14) blieben
+             von 332 px rollbarer Hoehe nur 152 uebrig — genau EINE Reihe, und
+             die zweite begann erst bei 441 px, also unsichtbar. Nebeneinander
+             kostet der Kopf 88 px statt 180, und die zweite Reihe steht zur
+             Haelfte im Bild. Erst dadurch sieht man, DASS es weitergeht. -->
+        <div class="int-kopf">
+          <div class="int-bild" id="interpret-bild"><div class="int-ersatz" id="interpret-ersatz">?</div></div>
+          <div class="int-wort">
+            <h2 class="int-name" id="interpret-name"></h2>
+            <div class="int-zeile" id="interpret-zeile"></div>
+          </div>
+        </div>
+        <div class="int-reihen" id="interpret-reihen"></div>
+      </section>
+
+      <div class="raster" id="raster" hidden></div>
+
+      <!-- Lade-, Leer- und Fehlerzustand teilen sich EINE Flaeche: es kann
+           immer nur einer davon gelten, und drei Bloecke, die sich
+           gegenseitig ausblenden muessen, waeren drei Stellen zum Vergessen. -->
+      <div class="zustand" id="zustand">
+        <div class="lader" aria-hidden="true"></div>
+        <div class="zustand-text">Medien werden geladen …</div>
+      </div>
+    </main>
+
+    <!-- ── Mini-Player ─── -->
+    <!--
+      `data-anzeigeort` UND `data-np` SIND KEIN SCHMUCK — sie sind die einzige
+      Liste der Orte, die „was laeuft gerade" zeigen.
+
+      DER FEHLER, DEN SIE VERHINDERN (gemeldet am 03.08.2026, „auch im voll
+      bild aktualiierte es die infromationen nicht"): Es gibt DREI Orte, die
+      dasselbe anzeigen — Mini-Player, grosser Player, Cover-Vollbild. Jeder
+      hatte in app.js seine EIGENEN Zuweisungen. Zwei wurden im 2-Sekunden-Takt
+      nachgezogen, der dritte nur beim Oeffnen. Beim Titelwechsel blieben dort
+      Titel, Interpret UND Cover des vorigen Stuecks stehen. Niemand hat es
+      bemerkt, weil kein einziger Ort wusste, dass es die anderen gibt.
+
+      SEITDEM LIEST app.js DIESE LISTE AUS DEM BAUM (`anzeigeOrte()`) und malt
+      jeden gefundenen Ort. Ein VIERTER Ort ist damit nicht mehr zu vergessen:
+      Er traegt dieselben Merkmale und wird ohne eine Zeile app.js mitgemalt.
+
+        data-anzeigeort="<Name>"   die Huelle; ihr `hidden` sagt, ob der Ort
+                                   gerade zu sehen ist. Der Name steht in den
+                                   Meldungen der Pruefung.
+        data-np="titel"            der Titel des laufenden Stuecks
+        data-np="unter"            Interpret oder Album (darf fehlen)
+        data-np="cover"            das <img> mit dem Cover (darf fehlen)
+        data-np="symbol"           der <path>, der Spiel/Pause zeigt
+
+      GEPRUEFT WIRD ES AUCH VON HIER AUS: tools/e2e/neu-oberflaeche.test.mjs
+      zaehlt die Orte selbst ab. Wer die Merkmale entfernt, bekommt dort keinen
+      stillen Durchlauf, sondern eine Beanstandung — der Test besteht darauf,
+      alle drei bekannten Huellen zu finden.
+    -->
+    <div class="mp" id="mp" hidden data-anzeigeort="Mini-Player">
+      <button class="mp-bild" data-auf type="button" aria-label="Großen Player öffnen">
+        <img id="mp-cover" data-np="cover" alt="">
+      </button>
+
+      <button class="mp-text" data-auf type="button">
+        <div class="mp-titel" id="mp-titel" data-np="titel">—</div>
+        <!-- DAS ALBUM IM KISSEN — neu am 07.08.2026.
+             Auftrag: „noch eine möglichkeit im mini player wie auch im player
+             spielt bis titel und oder Album anzeigen zu lassen."
+
+             ES IST EIN VIERTES `data-np` AN EINEM SCHON BEKANNTEN ORT und
+             deshalb keine Zeile app.js: Der Maler laeuft ueber alles, was
+             `data-np` traegt (siehe die Erklaerung oben beim Mini-Player).
+             Genau dafuer wurde die Liste gebaut.
+
+             DER PLATZ IST GERECHNET UND NICHT GESCHAETZT. `.mp-text` ist
+             66 px hoch und trug bisher 25 px Titel und 15 px Leiste, also
+             45 px mit einem Zwischenraum — es blieben 21 px ungenutzt. Diese
+             Zeile ist 15 px hoch und braucht 3 px Abstand; 25 + 3 + 15 + 5 +
+             15 = 63 passt in 66. Das Kissen wird davon NICHT hoeher.
+
+             UND SIE FAELLT WEG, WENN ES KEIN ALBUM GIBT (`:empty` in
+             app.css). Ein leerer Streifen zwischen Titel und Balken saehe aus
+             wie ein Fehler, und bei Radio und losen Titeln ist er der
+             Normalfall. -->
+        <div class="mp-unter" id="mp-unter" data-np="unter"></div>
+        <div class="mp-leiste">
+          <div class="mp-balken"><i id="mp-fuell"></i></div>
+          <div class="mp-zeit" id="mp-zeit"></div>
+        </div>
+      </button>
+
+      <!-- ══ LAUTSPRECHER VOR „VORHERIGER TITEL" ═══
+           Betreiber, 08.08.2026: „im mini player noch die |< und lautspecher
+           taste vertauschen."
+           (INZWISCHEN UEBERHOLT, 06.09.2026: der grosse Player hat gar keine
+           Lautstaerke-Tasten mehr — nur noch den Regler. Der Absatz bleibt
+           als Geschichte der MINI-Reihenfolge stehen.)
+           NACHGESEHEN, BEVOR HIER ETWAS BEHAUPTET WIRD: Im GROSSEN Player
+           stand damals „Vorheriger Titel", dann „Leiser" (gr-zurueck,
+           gr-leiser, gr-spiel, gr-vor). Der erste Entwurf dieses Kommentars
+           schrieb, dort sei laengst getauscht — das war falsch, und ein
+           Kommentar, der eine Begruendung erfindet, ist schlimmer als keiner.
+           DIE BEIDEN LIEGEN JETZT ALSO VERSCHIEDEN, und das ist eine offene
+           Frage und keine Entscheidung: Der Betreiber hat ausdruecklich den
+           MINI-Player genannt. Wenn der grosse mitziehen soll, gehoert das
+           gesagt — nicht nebenbei mitgemacht.
+           WAS DAMIT NICHT WANDERT: die Haupttaste bleibt an ihrer Stelle und
+           „Nächster Titel" auch. Getauscht werden genau die zwei, die der
+           Betreiber genannt hat. -->
+      <button class="mp-knopf mp-laut" id="mp-laut" type="button" aria-label="Lautstärke" aria-expanded="false">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+          <path d="M4 9h3.2L12 5v14l-4.8-4H4z"/>
+          <path d="M15.5 9.2a3.6 3.6 0 0 1 0 5.6v-5.6z"/>
+          <path d="M17.4 6.6a7 7 0 0 1 0 10.8v-2.2a4.9 4.9 0 0 0 0-6.4z"/>
+        </svg>
+      </button>
+      <button class="mp-knopf" id="mp-zurueck" type="button" aria-label="Vorheriger Titel">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M7 5h2.4v14H7zM19 5v14l-9-7z"/></svg>
+      </button>
+      <!-- EIN Knopf, nicht zwei. Zwei Tasten (+/-) waeren im Mini-Player zu
+           viel — er hat schon drei und soll schmal bleiben. Der Knopf oeffnet
+           einen Regler; der ist erst SICHER, seit die Obergrenze im
+           Flaschenhals mupi-lautstaerke.sh sitzt und kein Aufrufer mehr daran
+           vorbeikommt. Im grossen Player bleibt es bei den zwei Tasten: dort
+           ist Platz, und Tippen ist die verlaesslichere Geste. -->
+      <button class="mp-knopf mp-haupt" id="mp-spiel" type="button" aria-label="Anhalten oder weiter">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path id="mp-symbol" data-np="symbol" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+      </button>
+      <button class="mp-knopf" id="mp-vor" type="button" aria-label="Nächster Titel">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M14.6 5H17v14h-2.4zM5 5v14l9-7z"/></svg>
+      </button>
+
+      <!-- Der Regler faehrt UEBER dem Kissen auf, nicht darin: Der Mini-Player
+           ist 76 px hoch, ein Regler mit brauchbarer Trefferflaeche passt da
+           nicht hinein, ohne die Knoepfe zu verkleinern.
+           `max` setzt app.js aus `mupibox.maxVolume` — der Regler bietet gar
+           nicht erst an, was die Box ohnehin abweisen wuerde. Durchgesetzt
+           wird die Grenze trotzdem unten in mupi-lautstaerke.sh; hier geht es
+           nur darum, keinen Weg zu zeigen, der ins Leere fuehrt. -->
+      <div class="mp-laut-fenster" id="mp-laut-fenster" hidden>
+        <span class="mp-laut-zeichen" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M4 9h3.2L12 5v14l-4.8-4H4z"/></svg>
+        </span>
+        <!-- `step="1"`, nicht 5: Bei 190 px Bahn und Schritten von 5 gab es ueber
+             die ganze Laenge nur zwanzig Stellungen — ein Millimeter Finger
+             waren mehrere Prozent, und dazwischen ging nichts. Fein einstellen
+             liess sich das nicht. Die Bahn ist jetzt deutlich laenger, und die
+             Aufloesung darf mitwachsen. -->
+        <input class="mp-laut-regler" id="mp-laut-regler" type="range" min="0" max="100" step="1" value="0"
+               aria-label="Lautstärke">
+        <span class="mp-laut-zahl" id="mp-laut-zahl">0 %</span>
+      </div>
+    </div>
+
+  </div><!-- /.spalte -->
+
+  <!-- ── Grosser Player ───
+       Vorbereitet wie im Entwurf (`expanded`): dieselben Werte wie der
+       Mini-Player, nur gross. Er hat KEINE eigene Abfrage und keinen eigenen
+       Zustand - wer ihn oeffnet, sieht den Stand, den der Mini-Player ohnehin
+       schon haelt. Titelliste, Merken und Springen folgen in Stufe 2. -->
+  <!-- ── DAS ALBUM GROSS ───
+       Ein Tipp auf das Cover im Player zeigt es formatfuellend. Klingt nach
+       Schmuck, ist aber der eigentliche Inhalt: Ein Kind, das noch nicht
+       liest, betrachtet das Bild — die Figuren, die Farben, was darauf
+       passiert. Auf 800x480 war das Cover bisher 200 px gross; hier sind es
+       ueber 400.
+
+       WAS BLEIBT: anhalten und weiter, die Lautstaerke, und der Rueckweg
+       links oben. Wer nur schaut, soll die Musik nicht verlassen muessen, um
+       sie leiser zu stellen.
+
+       UND ES LIEGT NICHTS MEHR AUF DEM COVER (03.08.2026). Rueckweg und Titel
+       stehen in der linken Randspalte, die drei Knoepfe senkrecht in der
+       rechten. Ein quadratisches Cover laesst auf 800x480 beidseitig 168 px
+       frei; das Bild bleibt dadurch gleich gross (464 px) und ist zum ersten
+       Mal vollstaendig zu sehen.
+
+       DIE TITELLISTE IST HIER NICHT MEHR — sie steckt jetzt in den Lanes
+       (Playlist -> Alben -> Titel). Zwei Wege zu derselben Liste waeren einer
+       zu viel, und der Platz kann etwas Besseres tun. -->
+  <!-- ── DIE BUEHNE DER APPS (03.09.2026) ───
+       Eine Flaeche fuer ALLE Apps aus der Schublade, nicht eine je App. Der
+       Auftrag nennt „spiele, lernen, lesen" als Beispiele — es werden also
+       mehr, und jede als eigener Abschnitt im HTML hiesse: beim vierten
+       Zufuegen vier Rueckwege, vier Deckel, vier Stellen mit `hidden`.
+
+       WAS EINE APP LIEFERT, IST INHALT — nicht ihr Rahmen. Titel, Deckel,
+       Grund und der Weg hinaus stehen HIER und gelten fuer alle; die App
+       fuellt `#sch-app-inhalt` und sagt in `SCHUBLADE_APPS`, wie sie heisst.
+
+       KEIN EIGENER RUECKWEG, aus demselben Grund wie bei `.album-gross` eine
+       Zeile weiter unten: Es gibt einen fuer die ganze Oberflaeche, er liegt
+       mit z-index 9 darueber, und `naechsterRueckweg` kennt diese Ebene
+       (`appBuehne`). Ein zweiter Ausgang hier waere der zweite Ort, an dem
+       jemand denselben Zustand aufraeumen muesste. -->
+  <section class="sch-buehne" id="sch-buehne" hidden aria-label="App">
+    <h2 class="sch-buehne-titel" id="sch-buehne-titel"></h2>
+    <div class="sch-buehne-inhalt" id="sch-app-inhalt"></div>
+  </section>
+
+  <!-- DRITTER ANZEIGEORT — siehe die Erklaerung beim Mini-Player. Genau hier
+       blieben bis zum 03.08.2026 Titel, Interpret und Cover des vorigen
+       Stuecks stehen. -->
+  <div class="album-gross" id="album-gross" hidden data-anzeigeort="Cover-Vollbild">
+    <!-- HIER STAND EIN EIGENER RUECKWEG (`ag-zurueck`, links oben, 64 px). Er
+         ist seit 03.08.2026 weg — nicht, weil der Ausgang fehlen darf, sondern
+         weil es jetzt einen fuer die ganze Oberflaeche gibt, und der liegt
+         genau hier: `.zurueck` ist `position: fixed` und liegt mit z-index 9
+         ueber dieser Ansicht (z-index 8). Dass er das Cover nicht anschneidet,
+         wird gemessen: node tools/album-gross-schau.mjs --pruefen -->
+    <img class="ag-bild" id="ag-bild" data-np="cover" alt="">
+    <div class="ag-wort">
+      <div class="ag-titel" id="ag-titel" data-np="titel"></div>
+      <div class="ag-unter" id="ag-unter" data-np="unter"></div>
+    </div>
+    <!-- SENKRECHT AM RECHTEN RAND, seit 03.08.2026. Vorher lagen die drei
+         Knoepfe waagerecht AUF dem Cover; beanstandet wurde genau das („das
+         cover muss ganz sichtbar sein"). Ein quadratisches Cover laesst auf
+         800x480 links und rechts je 168 px frei — dorthin passen sie, ohne
+         dem Bild etwas wegzunehmen.
+         DIE REIHENFOLGE IST JETZT lauter/anhalten/leiser, weil sie senkrecht
+         stehen: oben mehr, unten weniger. Sie steht HIER und nicht als
+         `column-reverse` im Blatt, damit Vorlesereihenfolge und Augenschein
+         dasselbe sagen. -->
+    <!-- NUR NOCH DER REGLER, auch hier (Betreiber, 06.09.2026: „es gibt nur
+         den regler in allen 3 sichten nur eine umsetzung"). Er steht
+         SENKRECHT, weil die Leiste senkrecht steht — oben mehr, unten
+         weniger, dieselbe Leserichtung wie vorher bei den zwei Tasten. -->
+    <div class="ag-leiste">
+      <input class="mp-laut-regler ag-laut-regler" data-laut-regler type="range" min="0" max="100" step="1" value="0" aria-label="Lautstärke" />
+      <button class="ag-knopf ag-haupt" id="ag-spiel" type="button" aria-label="Anhalten oder weiter">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path data-np="symbol" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+      </button>
+    </div>
+    <!-- DIE LINKE RANDFLAECHE (Betreiber, 29.08.2026: "im cover player ...
+         ergaenze noch vor zurueck dort"): Titelwechsel links, Ton rechts -
+         jede Seite EINE Sorte Handlung, und das Cover bleibt unangetastet.
+         Senkrecht gelesen wie eine Titelliste: der vorige steht OBEN, der
+         naechste UNTEN. Die Zeichen sind wortgleich die des grossen Players
+         (gr-zurueck/gr-vor), die Verdrahtung dieselbe (tasteBinden). -->
+    <div class="ag-leiste ag-leiste-links">
+      <button class="ag-knopf" id="ag-titel-zurueck" type="button" aria-label="Vorheriger Titel">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M7 5h2.4v14H7zM19 5v14l-9-7z"/></svg>
+      </button>
+      <button class="ag-knopf" id="ag-titel-vor" type="button" aria-label="Nächster Titel">
+        <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M14.6 5H17v14h-2.4zM5 5v14l9-7z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ZWEITER ANZEIGEORT — siehe die Erklaerung beim Mini-Player. -->
+  <div class="gross" id="gross" hidden data-anzeigeort="grosser Player">
+    <div class="gross-blatt" id="gross-blatt">
+      <!-- VORDERSEITE: unveraendert das, was bisher hier stand. -->
+      <div class="gross-vorn">
+      <!-- E108: die Dienst-Plakette am Cover — welche QUELLE gerade spielt.
+           Gefuellt von quelleSetzen() aus DIENST_MARKEN; je gespieltem Titel
+           der Mischliste wechselt sie mit (titel[].quelle). -->
+      <div class="gross-bild"><img id="gr-cover" data-np="cover" alt=""><span id="gr-quelle" class="np-quelle" data-np="quelle" role="img" hidden></span></div>
+      <div class="gross-rechts">
+        <div class="gross-kopf">
+          <div class="gross-wort">
+            <div class="gross-titel" data-np="titel">—</div>
+            <div class="gross-unter" id="gr-unter" data-np="unter"></div>
+          </div>
+          <!-- ══ BUEHNEN-WAHL: EIN KNOPF STATT DREIER (07.09.2026) ═══
+               Entwurf 7a. Die Dreier-Zeile unter den Tasten kostete eine
+               ganze Zeile auf 480 px Hoehe und nannte nur drei der vier
+               Moeglichkeiten — „Titel" fehlte, weil vier Knoepfe nebeneinander
+               die Groessenmarke gerissen haetten.
+
+               DER KNOPF SAGT, WAS GERADE GILT („Buehne: Text"), und oeffnet
+               ein Blatt mit allen Kacheln. Damit ist die Wahl vollstaendig
+               UND kostet nur 44 px in einer Zeile, die es ohnehin gibt. -->
+          <button type="button" class="gross-buehne-knopf" id="gr-buehne-knopf"
+                  aria-haspopup="dialog" aria-controls="gr-buehne-blatt">
+            <span class="gross-buehne-punkt" aria-hidden="true"></span>
+            Bühne: <span id="gr-buehne-knopf-name">Aus</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+                 stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <!-- ══ AUFNEHMEN — NUR BEI FREMDER WIEDERGABE ═══
+               Betreiber, 12.08.2026: „dann eine funktion quick add fuer box
+               fremde inhalte zum drauf klicken und in einer playliste adden."
+
+               Wirft jemand per Spotify Connect etwas auf die Box, steht es
+               NICHT in der Bibliothek — ein Kind kann es also spaeter nicht
+               selbst starten. Dieser Knopf nimmt es auf.
+
+               ER STEHT NUR DA, WENN ES ETWAS AUFZUNEHMEN GIBT (app.js setzt
+               `hidden`). Bei eigener Wiedergabe waere er sinnlos: was die Box
+               gestartet hat, kommt aus ihrer Liste.
+
+               EIN TIPP, KEIN BLATT. „Quick" heisst quick: das laufende ALBUM
+               wandert in die Bibliothek. Das Album und nicht der Titel — eine
+               Kachel, die eine einzelne Spur startet, endet nach vier Minuten;
+               ein Hoerspiel ist ein Album. -->
+          <button class="gross-plus" id="gr-aufnehmen" hidden aria-label="In die Bibliothek aufnehmen">+</button>
+          <!-- HIER STAND DAS KREUZ ZUM SCHLIESSEN. Es ist seit 03.08.2026 weg:
+               Der eine Rueckweg liegt mit z-index 9 ueber diesem Blatt
+               (z-index 6) und schliesst es. Zwei Ausgaenge aus derselben
+               Ansicht sind einer zu viel — und der obere ist der, den man auch
+               ueberall sonst findet. -->
+        </div>
+        <!-- DER FORTSCHRITT LAESST SICH ZIEHEN.
+             Der Regler liegt UNSICHTBAR ueber dem Balken: Das Aussehen bleibt
+             der Balken (der auch im Mini-Player so aussieht), die Bedienung
+             macht ein echtes <input type="range"> — mit allem, was daran
+             haengt: Tastatur, Vorlesen, Ziehen mit dem Finger.
+             `max="1000"` statt 100: Bei ganzen Prozent raestet der Regler auf
+             Schritte von 1 %, und das sind bei einem Drei-Minuten-Stueck rund
+             1,8 Sekunden — der Balken kann sich gar nicht oefter bewegen, egal
+             wie weich man ihn zeichnet (llmwiki mupi-fortschrittsbalken-springt).
+             NUR IM GROSSEN PLAYER. Im Mini-Player waere die Bahn 4 px hoch und
+             laege dort, wo man das Kissen zum Oeffnen antippt — ein Ziehen aus
+             Versehen waere haeufiger als eines mit Absicht. -->
+        <div class="gross-leiste">
+          <div class="gross-bahn">
+            <!-- E99, dritter Entwurf (30.08.2026, Betreiber: „wir machen die
+                 frequenz eigenstaendig unter den buttons und bringen den
+                 progress zurueck"): die Wellen-Leinwand liegt NICHT mehr ueber
+                 diesem Balken, sondern als eigenes Feld UNTER den Tasten
+                 (.wellen-feld, weiter unten). Der Balken zeigt bei echten
+                 Pegeln wieder ganz normal Fuellung und Fortschritts-Punkt;
+                 nur der Rueckfall ohne Pegel-Lieferant (CSS-Pendelwellen,
+                 body.status-wellen ohne wellen-echt) ersetzt ihn weiterhin. -->
+            <div class="mp-balken gross-balken"><i id="gr-fuell"></i></div>
+            <!-- ══ DIE ZEIT SITZT IM GRIFF (07.09.2026, Entwurf 5a/5b) ═══
+                 Hier stand eine eigene Zeile `.gross-zeit` unter dem Balken
+                 mit Jetzt links und Ende rechts. Sie kostete Hoehe fuer eine
+                 Auskunft, die auch AN der Stelle stehen kann, um die es geht.
+                 Die Pille faehrt jetzt auf dem Strahl mit; die Endzeit steht
+                 klein am rechten Rand IN der Bahn.
+                 `pointer-events: none` am Griff: Gezogen wird weiter am
+                 unsichtbaren `<input>` darueber, der die ganze Bahn deckt. -->
+            <div class="gross-griff" id="gr-griff">
+              <span class="gross-griff-zeit" id="gr-jetzt">0:00</span>
+              <img class="gross-griff-figur" id="gr-figur" alt="" hidden>
+            </div>
+            <span class="gross-ende" id="gr-ende">0:00</span>
+            <input class="gross-schieber" id="gr-schieber" type="range"
+                   min="0" max="1000" step="1" value="0" aria-label="Stelle im Titel">
+          </div>
+        </div>
+        <!-- LAUTSTAERKE: ZWEI TASTEN, KEIN SCHIEBEREGLER.
+             Das ist keine Geschmacksfrage, sondern eine Sicherheitsfrage.
+             `mupibox.maxVolume` wird im Abspieldienst NUR in `setVolume()`
+             geprueft — das ist der Weg der ±5-Tasten. Ein Schieberegler geht
+             durch `setVolumeTo()`, und das klemmt bloss auf 0-100. Ein Kind,
+             das den Regler nach rechts zieht, bekaeme 100 %, egal was
+             eingestellt ist (llmwiki: mupi-lautstaerke-stand-2026-07-27).
+             Ausserdem ist Ziehen die schlechtere Geste fuer einen kleinen
+             Finger: Tasten trifft man, einen Regler muss man halten.
+             Sie stehen AUSSEN, weil die Raender am leichtesten zu treffen
+             sind — und die Wiedergabe bleibt in der Mitte.
+
+             ══ STAND 06.09.2026: KEINE LAUTSTAERKE-TASTEN MEHR ═══
+             Die ±5-Tasten sind gefallen (nur noch der Regler, siehe
+             `.gross-laut-zeile` unter der Reihe); die Tausch-Geschichte
+             darunter bleibt stehen, weil sie die REIHENFOLGE der uebrigen
+             Tasten begruendet — wo sie Lautstaerke-Tasten nennt, beschreibt
+             sie den Stand von damals.
+
+             ══ DIE ERSTEN BEIDEN SIND AM 07.08.2026 GETAUSCHT WORDEN ═══
+             Auftrag des Betreibers: „im player den lautsprecher button mit dem
+             zurück button vertauschen."
+
+             WAS DER TAUSCH WIRKLICH REPARIERT — nachgesehen, nicht vermutet:
+             Die beiden Player hatten VERSCHIEDENE Reihenfolgen fuer dieselben
+             Knoepfe. Der Mini-Player unten zeigt seit jeher
+                 zurueck · Lautstaerke · spiel · vor
+             der grosse Player zeigte
+                 leiser · zurueck · spiel · vor · lauter
+             Wer den Mini-Player antippt und ihn damit zum grossen aufzieht,
+             fand die zwei linken Knoepfe VERTAUSCHT — an derselben Stelle lag
+             eine andere Funktion. Nach dem Tausch lesen sich beide Reihen von
+             links gleich: zurueck · Lautstaerke · spiel · vor. Der grosse
+             Player haengt nur noch „lauter" hinten an, weil er dort Platz hat.
+
+             WAS DER TAUSCH NICHT ANTASTET — geprueft, bevor er gemacht wurde:
+               * DIE GROESSEN. Beide Knoepfe sind `.gross-knopf` (84 px), der
+                 Kasten ist ein `flex` mit festem `gap`; getauscht wird der
+                 INHALT zweier gleicher Plaetze, keine Kachel wird schmaler.
+                 Gemessen mit tools/beruehrziele-neu.mjs.
+               * DIE VERKABELUNG. `gr-zurueck` haengt an `tasteBinden(...,
+                 'previous')`, `gr-leiser` an `data-laut` — beides an der
+                 KENNUNG, nicht an der Stelle.
+               * KEINE CSS-REGEL zaehlt hier Kinder ab (`nth-child`); die
+                 Farbe der Lautstaerketasten kommt aus `.gross-laut`.
+             WAS ER SEHR WOHL AENDERT: die Reihenfolge fuer die Tastatur —
+             und zwar in dieselbe Richtung wie den Augenschein. Genau so soll
+             es sein; die Tabulatorreihe folgt dem Baum.
+
+             UND ER BETRIFFT NICHT DEN AUSGANG. „Zurueck" heisst hier
+             VORHERIGER TITEL, nicht „raus aus dem Player". Der eine Rueckweg
+             der Oberflaeche liegt fest oben links (`.zurueck`, z-index 9) und
+             ist von diesem Tausch nicht beruehrt. -->
+        <div class="gross-tasten">
+          <!-- ══ KEINE +/- TASTEN MEHR — NUR NOCH DER REGLER (06.09.2026) ═══
+               Betreiber, woertlich: „es gibt nur den regler in allen 3
+               sichten nur eine umsetzung". Die Tasten schickten `volume/+5`
+               — einen ZWEITEN Befehlsweg am Skalen-Flaschenhals
+               `mupi-lautstaerke.sh` vorbei, und der stand seit der
+               Nutzerskala (100 = erlaubte Grenze) schief: Anzeige 100,
+               Wirkung keine. Der Regler unten in der Zeile ist DERSELBE
+               Weg wie im Mini-Player: `setzen()` -> `setvolume:N`. -->
+          <button class="gross-knopf" id="gr-zurueck" type="button" aria-label="Vorheriger Titel">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M7 5h2.4v14H7zM19 5v14l-9-7z"/></svg>
+          </button>
+          <!-- ══ DER LAUTSTAERKE-RING (07.09.2026) ═══
+               Betreiber: „die Lautstaerke ist nicht gut angeordnet."
+               Entwurf 3f/4a aus der Uebergabe.
+
+               DER RING IST DAS ZIEHZIEL, DIE MITTE DAS TIPPZIEL. Beides
+               ueberlagert sich nicht: `ringWert()` gibt `null` zurueck,
+               solange der Finger innerhalb von 27 % des Durchmessers liegt
+               — dort gehoert der Druck der Play-Taste. Ein Ring, der auch
+               in der Mitte zoege, machte das Anhalten zum Gluecksspiel.
+
+               ER LAEUFT UEBER DENSELBEN WEG WIE DIE REGLER: `laut.gezogen()`
+               -> `setzen()` -> `setvolume:N`. Ein eigener Befehlsweg waere
+               genau der Fehler, der am 06.09. die Tasten gekostet hat
+               (`volume/+5` am Skalen-Flaschenhals vorbei). -->
+          <div class="gross-ring" id="gr-ring" role="slider" aria-label="Lautstärke"
+               aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+            <svg viewBox="0 0 160 160" aria-hidden="true">
+              <circle class="ring-spur" cx="80" cy="80" r="70" transform="rotate(135 80 80)"/>
+              <circle class="ring-fuell" cx="80" cy="80" r="70" transform="rotate(135 80 80)" id="gr-ring-fuell"/>
+            </svg>
+            <i class="ring-griff" id="gr-ring-griff"></i>
+            <!-- KEIN `.gross-knopf` MEHR (07.09.2026): Der traegt seine
+                 Flaeche als `::before` mit `inset: 8px` — 84 px aussen, 68 px
+                 sichtbar. Im Ring braucht es die aeusseren 84 px nicht, sie
+                 druecken nur gegen die Spur. Die Haupttaste ist deshalb ein
+                 eigenes 68-px-Element, genau so gross wie das, was man sieht. -->
+            <button class="gross-haupt" id="gr-spiel" type="button" aria-label="Anhalten oder weiter">
+              <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path data-np="symbol" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>
+            </button>
+          </div>
+          <button class="gross-knopf" id="gr-vor" type="button" aria-label="Nächster Titel">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor"><path d="M14.6 5H17v14h-2.4zM5 5v14l9-7z"/></svg>
+          </button>
+        </div>
+
+        <!-- HIER LAG DIE LAUTSTAERKE-ZEILE (`#gr-laut-regler`) bis zum
+             07.09.2026 — ein Schieber ueber die volle Breite unter den
+             Tasten. Betreiber: „die Lautstaerke ist nicht gut angeordnet."
+             Sie sitzt jetzt als RING um die Play-Taste (siehe oben): kein
+             eigener Streifen mehr, und der Platz gehoert der Buehne.
+
+             DER MINI-PLAYER UND DAS COVER-VOLLBILD BEHALTEN IHRE REGLER.
+             `reglerAngleichen()` findet sie weiter ueber `data-laut-regler`;
+             der Ring haengt sich mit `ringZeichnen()` an dieselbe Stelle,
+             damit er mitzieht, wenn woanders gedreht wird. -->
+
+        <!-- Der Stand zeigt sich NUR beim Aendern und geht wieder.
+             Eine dauerhafte Prozentzahl waere eine Zahl mehr auf einem
+             Bildschirm, auf dem es um Bilder geht — und ein Kind liest sie
+             nicht. Beim Tippen ist sie dagegen genau die Rueckmeldung, die
+             fehlt: Man hoert den Unterschied erst nach einem Augenblick. -->
+        <div class="laut-stand" id="laut-stand" hidden aria-live="polite">
+          <div class="laut-balken"><i id="laut-fuell"></i></div>
+          <span class="laut-zahl" id="laut-zahl"></span>
+        </div>
+
+        <!-- HIER STAND DIE DREIER-ZEILE Aus/Welle/Text (06.09.2026). Sie ist
+             am 07.09. dem Knopf oben im Kopf gewichen (Entwurf 7a): Er nennt
+             den Stand, oeffnet alle VIER Moeglichkeiten und kostet keine
+             eigene Zeile. -->
+      </div>
+      </div><!-- /.gross-vorn -->
+      <!-- ══ DIE BUEHNE (E129, 05.09.2026) ═══
+           Betreiber: „einmal sollen die bedienelemente dauerhaft hoch
+           ruecken auch wenn die welle aus ist. der bereich soll zum
+           anzeigen von weiteren animationen und auch songtext oder titel
+           von alben dienen. umschaltbar bzw konfigurierbar."
+
+           HIER STAND DAS FREQUENZ-FELD (E99, 30.08.2026) — es ist der
+           erste Bewohner dieser Flaeche, nicht mehr ihr Eigentuemer. Der
+           Unterschied ist der ganze Umbau: Platz gab es bisher NUR, wenn
+           echte Pegel flossen (body.wellen-echt, eine Laufzeit-Tatsache);
+           jetzt gibt ihn die EINSTELLUNG (body.gross-buehne-an), und was
+           darin steht, ist eine zweite Frage.
+
+           DER NAME TRAEGT DAS PRAEFIX DES GROSSEN PLAYERS, und das ist
+           keine Kosmetik: `.buehne` ist seit je die HAUPTFLAECHE der App
+           (die main-Flaeche weiter oben, app.css:2726). Eine Regel
+           `.buehne { display: none }` fuer dieses Feld haette die ganze
+           Oberflaeche ausgeblendet — beim Bauen genau so passiert und vor
+           dem ersten Lauf beim Gegenlesen gefunden.
+
+           Das Feld ist Geschwister von .gross-vorn und spannt unter Cover
+           UND Spalte ueber das ganze Blatt (Betreiber 30.08.2026: „geht
+           das ueber die ganze breite vom player?").
+
+           Die Leinwand behaelt ihre id `gr-wellen`: der Zeichner in app.js
+           findet sie darueber und misst die Groesse selbst.
+           `aria-hidden` an der Leinwand: reine Verzierung. Die Textflaeche
+           daneben ist KEINE Verzierung — sie wird vorgelesen, deshalb
+           `aria-live` und kein aria-hidden. -->
+      <div class="gross-buehne" id="gr-buehne">
+        <canvas class="wellen-leinwand" id="gr-wellen" aria-hidden="true"></canvas>
+        <!-- EINE Textflaeche fuer Songtext UND Albumtitel: beide zeigen
+             Zeilen, und zwei Flaechen uebereinander waeren zwei Wege zu
+             demselben Bild. Was drinsteht, entscheidet `buehne` in app.js.
+             `aria-live=polite`: die laufende Songtextzeile wechselt oft —
+             sie soll den Vorleser nicht unterbrechen, aber ankommen. -->
+        <div class="gross-buehne-text" id="gr-buehne-text" aria-live="polite" hidden></div>
+      </div>
+
+      <!-- ══ DAS WAHL-BLATT (07.09.2026, Entwurf 7a) ═══
+           Geschwister von `.gross-blatt` INNERHALB von `.gross` — damit liegt
+           es unter demselben Rueckweg und wird von ihm mitgeschlossen. Ein
+           Blatt, das den Player ueberlebt, waere ein Fenster ohne Tuer.
+
+           DIE KACHELN STEHEN NICHT HIER, sondern kommen aus `BUEHNE_BEWOHNER`
+           (app.js). Zwei Listen derselben Bewohner liefen auseinander, sobald
+           jemand einen vierten eintraegt — genau der Fehler, den die
+           Registratur verhindern soll.
+
+           DER SCHLEIER IST KEIN SCHMUCK: Er faengt Tipps neben dem Blatt ab
+           und schliesst es. Ohne ihn traefe ein Fingertipp die Kacheln
+           dahinter, die man gerade nicht meint. -->
+      <div class="gross-buehne-schleier" id="gr-buehne-schleier" hidden></div>
+      <div class="gross-buehne-blatt" id="gr-buehne-blatt" hidden role="dialog"
+           aria-labelledby="gr-buehne-blatt-titel">
+        <div class="gross-buehne-blatt-kopf">
+          <h2 id="gr-buehne-blatt-titel">Was zeigt die Bühne?</h2>
+          <button type="button" class="gross-buehne-blatt-zu" data-buehne-zu aria-label="Schließen">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="3" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+        <div class="gross-buehne-kacheln" id="gr-buehne-kacheln"></div>
+      </div>
+      <!-- HIER LAG DIE RUECKSEITE mit der Titelliste. Sie ist am 2026-08-02
+           entfernt worden: Seit den Lanes (Playlist -> Alben -> Titel) fuehrt
+           der bessere Weg zu jedem Titel dorthin, und der Tipp aufs Cover
+           zeigt das Bild gross. Die Begruendung steht in app.js beim grossen
+           Player, das Gemessene im Wiki unter
+           titelkarte-abgeloest-durch-lanes. -->
+    </div>
+  </div>
+
+  <!-- ── ELTERN-BEREICH (MUSTER, 04.08.2026) ───
+       EIN Muster zum Ansehen, kein Umbau. Es beantwortet die Frage, die sich
+       nicht beschreiben laesst: Traegt der Eltern-Bereich ohne Ionic?
+
+       WAS DARAN NEU IST — und was nicht:
+         NEU     Das Tor (PIN bzw. Rechenaufgabe) und EIN Fach (Bluetooth)
+                 leben hier als ZUSTAND, nicht als Adresse. Es gibt keinen
+                 Router und damit auch kein `canActivate`.
+         ALT     Der alte Weg ist unveraendert. Ein kurzer Tipp aufs Zahnrad
+                 geht wie bisher nach /settings; dieses Muster oeffnet sich
+                 NUR durch langes Halten (siehe app.js, `eltern`). Niemand
+                 wird durch das Muster aus seinen Einstellungen ausgesperrt.
+
+       DIE FAECHER, DIE NICHT HIER SIND, sind nicht vergessen: „Ton & Zeit"
+       und „Kinder" zeichnet der Entwurf, aber die Box hat NICHTS dahinter
+       (BACKLOG E23/P2). Ein Reiter, hinter dem nichts liegt, ist eine
+       Attrappe, die durch Weglassen luegt — deshalb stehen hier genau die
+       vier Faecher, die es auf der Box wirklich gibt.
+
+       DER RUECKWEG IST DER EINE OBEN LINKS (`.zurueck`, z-index 9). Diese
+       Flaeche liegt bei 8 — genau wie das grosse Cover, mit dem sie nie
+       gleichzeitig offen sein kann. Die ersten 76 px der Kopfzeile bleiben
+       deshalb frei.
+
+       DIE MASSE KOMMEN NICHT AUS DEM ENTWURF. Der ist auf demselben 800x480
+       gezeichnet, und 7 seiner 8 Bedienelemente liegen unter 9 mm — seine
+       PIN-Taste ist 46 px hoch, die HEUTIGE der Box 76 px. Uebernommen ist
+       die Gliederung und die Anmutung, nicht die Zahl. Gemessen von
+       tools/eltern-muster-schau.mjs. -->
+  <!-- ── ER HEISST ADMIN-MENUE (06.08.2026) ───
+       Betreiber: „ich stelle mir das eltern-menu veilleicht nen wir s
+       admin-menu :)". NACHGEZOGEN SIND DIE SICHTBAREN TEXTE — Ueberschrift,
+       Unterzeile, aria-Beschriftungen. DIE KENNUNGEN BLEIBEN: `eltern`,
+       `eltern-kopf`, `eltern-tor`, `.eltern-faecher`, `eltern.auf()`. Das ist
+       eine ENTSCHEIDUNG und kein Halbfertiges: ein Umbenennen quer durch
+       app.js, app.css, diese Datei und ein Dutzend Werkzeuge waere ein eigener
+       Durchgang mit eigenem Risiko und hat mit der neuen Gliederung nichts zu
+       tun. Wer es tut, tut es als Ganzes und misst danach alles nach. -->
+  <div class="eltern" id="eltern" hidden aria-label="Admin-Menü">
+    <div class="eltern-kopf">
+      <div class="eltern-wort">
+        <div class="eltern-titel">Admin-Menü</div>
+        <div class="eltern-unter" id="eltern-unter">wird geprüft …</div>
+        <!-- DIE LAUFENDE FASSUNG — UNTEN LINKS, auf Wunsch des Betreibers
+             (08.08.2026): „ich möchte die versions nr vom der normalen
+             oberflache ins admin menü unten links".
+             SIE STAND AUF DER STARTSEITE unter dem Schriftzug
+             (`.wappen-fassung`, 84 px breit und deshalb abgeschnitten). Dort
+             las sie ein Kind, das nichts damit anfangen kann; gebraucht wird
+             sie, wenn jemand wissen will, was auf dieser Box laeuft.
+             UND SIE GEHOERT IN DIESEN BLOCK, nicht daneben. Der erste Anlauf
+             baute ihr eine eigene Zeile am Fuss der Gruppenspalte — GEMESSEN
+             lag sie danach deckungsgleich auf „Verbindung" (beide y 452,
+             x 16..184). `.eltern-wort` sitzt absolut bei left 16 / bottom 12
+             und IST der Platz unten links; als dritte Zeile darin stoesst sie
+             mit nichts zusammen und liest sich als das, was sie ist.
+             Nicht die Nummer aus package.json (die steht seit jeher auf
+             1.0.0) und nicht die aus mupiboxconfig.json (auf der Box GEMESSEN
+             am 03.08.2026: leer), sondern die Zahl der eigenen Commits vor der
+             Quelle und der Commit selbst — siehe app.js, `fassungHolen`. -->
+        <div class="eltern-fassung" id="eltern-fassung"></div>
+      </div>
+    </div>
+
+    <!-- ── DAS TOR ───
+         Es gibt DREI Sorten Sperre, nicht zwei: „aus", „rechnen" und „pin"
+         (sperrlogik.ts, `alsModus`). Wer nur die PIN baut, laesst „rechnen"
+         still durchfallen — und eine Sperre, die nicht sperrt, sieht am
+         Bildschirm genauso aus wie eine, die niemand eingeschaltet hat. -->
+    <!-- ══ DAS MIXPI AM TOR — OBEN LINKS ═══
+         Betreiber, 08.08.2026: „setzte oben links den mixpi password eingabe
+         hin."
+         DAS BILD GAB ES SCHON UND WURDE NIRGENDS BENUTZT:
+         `bilder/mixpi-passwort.png` (256x256) zeigt das MixPi mit Schloss und
+         Passwortfeld — gemalt fuer genau diesen Schirm.
+         ES IST KEIN KNOPF. Oben links steht auf der Startseite `#ich` („wer
+         hoert"), und das ist ein Ziel, das den Profilwechsler oeffnet — VOR
+         der Sperre. Waehrend jemand eine PIN tippt, gehoert dort nichts hin,
+         das man antippen kann; deshalb ein Bild mit `aria-hidden` und ohne
+         Ereignisse. Die STELLE ist dieselbe (fixed, links 8, oben 0), damit
+         der Schirm sich anfuehlt wie derselbe.
+         ES STEHT IN `.eltern` UND NICHT IN DEN BEIDEN TOREN: Das Pruefen und
+         das SETZEN einer PIN sind zwei `.eltern-tor` (siehe unten). Ein Bild
+         je Tor waeren zwei Stellen fuer dieselbe Sache; `:has()` im Stilblatt
+         zeigt es genau dann, wenn eines von beiden dasteht. -->
+    <img class="tor-mixpi" src="bilder/mixpi-passwort.png" alt="" aria-hidden="true">
+
+    <div class="eltern-tor" id="eltern-tor" hidden>
+      <div class="tor-wort">
+        <div class="tor-ueber">Einstellungen sind gesperrt</div>
+        <div class="tor-frage" id="tor-frage">PIN eingeben</div>
+        <div class="tor-anzeige" id="tor-anzeige">– – – –</div>
+        <div class="tor-meldung" id="tor-meldung"></div>
+      </div>
+      <!-- Die zwoelf Tasten baut app.js (`torTastenBauen`) — als Daten, damit
+           die Reihenfolge pruefbar ist und nicht zwoelfmal im HTML steht. -->
+      <div class="tor-feld" id="tor-feld"></div>
+    </div>
+
+    <!-- ── DIE NEUE PIN — DASSELBE HAUS WIE DAS TOR ───
+         `class="eltern-tor"` ist ABSICHT und keine Sparsamkeit. Das Setzen
+         einer PIN braucht dieselben zwoelf Tasten in derselben Groesse wie
+         das Pruefen einer PIN; jede eigene Geometrie waere eine zweite
+         Stelle, an der die 9-mm-Marke verrutschen kann. Und der Elternteil
+         sieht denselben Schirm, den er vom Aufsperren kennt.
+
+         WARUM ES NICHT IM FACH LIEGT (gemessen, nicht geschaetzt): Die
+         Zeilenflaeche eines Fachs ist 209 px hoch (tools/eltern-masse-
+         messen.mjs). Das Ziffernfeld ist 4 * 66 + 3 * 16 = 312 px. Es haette
+         dort gerollt — ein Ziffernfeld, bei dem „Weiter" erst nach dem
+         Rollen erscheint, ist die Sorte Bedienung, die man nicht ausliefert.
+         Hier stehen 390 px zur Verfuegung, dieselben wie beim Tor.
+
+         DER ABBRUCH STEHT IM WORT-BLOCK und nicht auf dem Ziffernfeld: die
+         zwoelf Tasten sind belegt, und ein dreizehnter Knopf zwischen
+         Ziffern waere der, den man beim Tippen trifft. -->
+    <div class="eltern-tor" id="eltern-pin" hidden>
+      <div class="tor-wort">
+        <div class="tor-ueber" id="pin-ueber">Neue PIN</div>
+        <div class="tor-frage" id="pin-frage">4 bis 8 Ziffern</div>
+        <div class="tor-anzeige" id="pin-anzeige">– – – –</div>
+        <div class="tor-meldung" id="pin-meldung"></div>
+        <button class="tor-abbrechen" id="pin-abbrechen" type="button">Abbrechen</button>
+      </div>
+      <div class="tor-feld" id="pin-feld"></div>
+    </div>
+
+    <!-- ── DER BEREICH ─── -->
+    <div class="eltern-flaeche" id="eltern-flaeche" hidden>
+      <nav class="eltern-faecher" id="eltern-faecher" aria-label="Gruppen"></nav>
+      <section class="eltern-fach" aria-labelledby="fach-name">
+        <div class="fach-kopf" id="fach-kopf">
+          <h2 class="fach-name" id="fach-name">Bluetooth</h2>
+          <button class="fach-tat" id="fach-tat" type="button">Suchen</button>
+        </div>
+        <p class="fach-hinweis" id="fach-hinweis" role="status" hidden></p>
+        <div class="fach-zeilen" id="fach-zeilen"></div>
+      </section>
+    </div>
+
+    <!-- ── DAS MIXPI MIT DEM SCHRAUBENSCHLUESSEL — OBEN LINKS ───
+         WOHER (Betreiber, 06.08.2026): „ich habe ein neues mixpi mit einem
+         schraubenschluessel reinkopiert das koennen wir ... ins eck vom admin
+         bereich machen da ist noch so ein loch" — auf Nachfrage: „oben links".
+
+         ES STEHT AUF DEM PLATZ VON „WER HOERT" (`#ich`, x 8..74 / y 0..66),
+         und das ist der ganze Sinn: DIESELBE ECKE SAGT, IN WELCHEM MODUS MAN
+         IST. In der Kinderoberflaeche steht dort, wer gerade hoert; im
+         Werkzeugkasten das MixPi mit dem Schluessel. Gleiche Stelle, gleiche
+         Groesse, gleiche runde Flaeche (`.ich-rund`, 56 px im 66er Feld) —
+         beim Auf- und Zugehen wechselt nur das BILD, es springt nichts.
+         Dass `.ich-rund` hier wiederverwendet wird, ist Absicht: eine zweite
+         Geometrie fuer dieselbe Form liefe beim naechsten Anfassen
+         auseinander, und dann spraenge es doch.
+
+         ES IST KEIN BEDIENELEMENT — kein `button`, kein `aria-label`,
+         `pointer-events: none` (die Begruendung mit der Rechnung steht bei
+         `.eltern-werkzeug` in app.css). Ein Knopf hier waere ein Ziel, das
+         9 mm halten und 2 mm Abstand zum Rueckweg mitbringen muesste, und
+         die Gesamtzahl der zu engen Ziele stiege. `aria-hidden`, weil eine
+         Sprachausgabe an einem Bild ohne Wirkung nichts zu melden hat.
+
+         ES STEHT ERST HINTER DEM TOR, und das entscheidet der Bauplatz und
+         keine Zeile JavaScript: Es ist der LETZTE Knoten in `#eltern`, und
+         die Regel dazu lautet `#eltern-tor[hidden] ~ .eltern-werkzeug`.
+         Hinter dem Tor liegt an einem Bild nichts Geheimes — aber ein Kind,
+         das die Rechenaufgabe nicht loest, saehe sonst ein Werkzeug-MixPi,
+         das es nicht erreichen kann, und lernte, dass Tippen dort nichts
+         tut. Waehrend der PIN-Vergabe (`#eltern-pin`) bleibt es stehen: das
+         liegt hinter dem Tor, und der Schirm soll dabei nicht die Ecke
+         wechseln. `#eltern-tor` wird an genau ZWEI Stellen umgeschaltet
+         (`eltern.auf()` und der Durchgang in app.js) — mehr Zustand braucht
+         diese Regel nicht, und ein Zustand, der haengenbleibt, gibt es hier
+         damit gar nicht erst. -->
+    <div class="eltern-werkzeug" aria-hidden="true">
+      <span class="ich-rund">
+        <img class="ich-bild" src="bilder/mixpi-werkzeug.png" alt="">
+      </span>
+    </div>
+  </div>
+
+  <!-- ── DIE BILDSCHIRMTASTATUR — EINE fuer WLAN-Passwort, Suche und Umbenennen
+       ═══════════════════════════════════════════════════════════════════════
+       SIE DECKT DEN GANZEN SCHIRM, nicht nur den Eltern-Bereich. Das ist eine
+       Entscheidung und keine Bequemlichkeit:
+
+       * DIE HOEHE. 26 Buchstaben + Umschalt + Ziffernebene + Leerzeichen +
+         Loeschen + Fertig sind bei 9 mm je Taste (--griff) nicht in weniger
+         als VIER Reihen unterzubringen: 4 * 66 + 3 * 16 = 312 px. Im
+         Eltern-Bereich blieben unter der Kopfzeile 390 px, davon nimmt der
+         Kopf dieser Tastatur rund 110 — und sobald das Kissen des Mini-Players
+         dasteht, gehen weitere 94 ab (`body.kissen-da`). Dann passt es nicht
+         mehr. Auf dem ganzen Schirm sind es 472, und es passt IMMER.
+       * DIE BREITE. Acht Spalten in 768 px sind 82 px je Taste; im
+         Eltern-Bereich (680 px) waeren es 71 — beides ueber der 9-mm-Marke.
+         Die Hoehe entscheidet also, nicht die Breite.
+       * DIE SACHE SELBST. Wer ein WLAN-Passwort eintippt, soll nichts anderes
+         treffen koennen. Die alte Oberflaeche loest dasselbe mit
+         simple-keyboard und einer Buehne, die 61 px hoeher ist als der Platz,
+         den man ihr geben kann (BACKLOG E23/P3) — genau deshalb steht hier
+         eine eigene.
+
+       SIE VERDECKT DAMIT AUCH DEN EINEN RUECKWEG (`.zurueck`, z-index 9) und
+       das Kissen. Das ist der Grund, warum „Abbrechen" IM KOPF DIESER
+       TASTATUR steht und nicht irgendwo darunter: solange sie offen ist, ist
+       sie der einzige Ausgang, und er muss sichtbar sein. Dieselbe Ebene wie
+       `.meldung` und `.lern` (10), die aus demselben Grund dort liegen.
+
+       DAS AUGE („Zeigen") ist kein Zierrat: wer ein WLAN-Passwort blind
+       eintippt, tippt es dreimal. Es zeigt NUR auf Verlangen und faellt beim
+       naechsten Aufmachen wieder zu. -->
+  <div class="tastatur" id="tastatur" hidden role="dialog" aria-modal="true" aria-labelledby="tast-frage">
+    <div class="tastatur-kopf">
+      <div class="tastatur-wort">
+        <div class="tastatur-frage" id="tast-frage">Passwort</div>
+        <div class="tastatur-anzeige" id="tast-anzeige"></div>
+        <div class="tastatur-unter" id="tast-unter"></div>
+      </div>
+      <button class="tastatur-knopf" id="tast-auge" type="button" aria-pressed="false">Zeigen</button>
+      <button class="tastatur-knopf still" id="tast-weg" type="button">Abbrechen</button>
+    </div>
+    <!-- Die 32 Tasten baut app.js (`tastaturBauen`) aus TAST_EBENEN — als
+         Daten, damit die Belegung pruefbar ist und nicht 64-mal im HTML steht. -->
+    <div class="tastatur-feld" id="tast-feld"></div>
+  </div>
+
+  <!-- ── Meldung ───
+       Vor allem fuer die KINDERZEIT: der Server schickt bei abgelaufener Zeit
+       403 und den GRUND mit, „damit die Oberflaeche dem Kind sagen kann,
+       WARUM, statt einfach nichts zu tun" (server.ts:636-646). Ohne diese
+       Meldung waere ein Tipp auf eine Kachel folgenlos und die Box wirkte
+       kaputt. -->
+  <div class="meldung" id="meldung" hidden role="status">
+    <img class="meldung-bild" id="meldung-bild" src="bilder/mixpi-schlaeft.png" alt="" width="110" height="110">
+    <div class="meldung-text" id="meldung-text"></div>
+  </div>
+
+  <!-- ── Nachricht von daheim ───
+       Jemand aus der Erlaubnisliste hat der Box geschrieben (Matrix, Signal
+       oder Telegram). Der Server holt sie ab, legt sie ab und LIEST SIE VOR,
+       wenn das fuer dieses Kind eingeschaltet ist; hier steht sie nur.
+
+       SIE GEHT NICHT VON SELBST WEG — anders als `.meldung` darueber. Eine
+       Nachricht von Mama ist kein Hinweis auf einen misslungenen Tipp,
+       sondern das Einzige auf diesem Schirm, das von einem MENSCHEN kommt.
+       Verschwaende sie nach 4,5 Sekunden, hinge es vom Zufall ab, ob das Kind
+       gerade hinsieht. Ein Tipp irgendwohin raeumt sie ab und meldet sie der
+       Box als gelesen; liegt noch eine dahinter, kommt sie zum Vorschein.
+
+       DIESELBE STUFE (10) UND DERSELBE GRUND wie bei `.meldung`: sie deckt
+       den Schirm zu und wird durch einen Tipp geschlossen. Laege sie unter
+       dem einen Rueckweg (9), naehme ein Tipp oben links eine Ebene DAHINTER
+       weg, waehrend der Schirm unveraendert bliebe — der Fall, den
+       tools/rueckweg-nachlese.mjs fuer die Meldung gefunden hat. Weil sie
+       NICHT von selbst geht, waere er hier schlimmer als dort. -->
+  <div class="nachricht" id="nachricht" hidden role="status">
+    <img class="nachricht-bild" src="bilder/mixpi-hoert.png" alt="" width="96" height="96">
+    <div class="nachricht-von" id="nachricht-von"></div>
+    <div class="nachricht-text" id="nachricht-text"></div>
+    <div class="nachricht-hinweis">Tippen, wenn du sie gelesen hast</div>
+  </div>
+
+  <!-- ── Lernmodus: der Name GROSS und in Sprechsilben ───
+       NUR im Modus „lernen" (Verwaltung -> Vorlesen). Der erste Tipp auf eine
+       Kachel zeigt hier ihren Namen in genau der Trennung, die in der ersten
+       Klasse geuebt wird, und liest ihn Silbe fuer Silbe vor; erst der zweite
+       Tipp auf dieselbe Kachel spielt.
+
+       ES LIEGT UEBER ALLEM UND IST DESHALB ANTIPPBAR. Ein Kind, das den
+       zweiten Tipp nicht findet, saesse sonst vor einem Bildschirm, den es
+       nicht mehr wegbekommt.
+
+       aria-hidden: Was hier steht, ist mit Trennstrichen zerlegt („Pum-me-
+       lein-horn"). Ein Vorleseprogramm buchstabierte das — die Einblendung
+       ist zum ANSEHEN da, gesprochen wird sie von der Box selbst. -->
+  <div class="lern" id="lern" hidden aria-hidden="true">
+    <div class="lern-text" id="lern-text"></div>
+    <div class="lern-hinweis">Noch einmal tippen zum Abspielen</div>
+  </div>
+
+  <!-- ── „Zum Öffnen lange gedrückt halten" ───
+       WER DREIMAL KURZ AUFS WAPPEN TIPPT, SUCHT ETWAS UND FINDET ES NICHT.
+       Seit das Zahnrad weg ist (06.08.2026), fuehrt genau EIN Weg ins
+       Admin-Menue: den Schriftzug unten links 1200 ms halten. Der Ring ist
+       Rueckmeldung WAEHREND der Geste — wer gar nicht erst anfaengt zu
+       halten, sieht ihn nie. Das Bluetooth-Zeichen war der zweite Weg und
+       blendet sich selbst aus, sobald Bluetooth aus ist und nichts gekoppelt
+       ist; dann steht der Besitzer vor seiner eigenen Box.
+
+       DERSELBE SATZ WIE IN DER KLASSISCHEN OBERFLAECHE, Zeichen fuer Zeichen
+       (home.page.html: `.hm-tipp-hinweis`), und dieselben drei Zahlen aus
+       src/frontend-box/src/app/tippzaehler.ts (SCHWELLE 3, FENSTER_MS 2500,
+       2600 ms Standzeit). Zwei verschiedene Saetze fuer dieselbe Sache waeren
+       schlechter als einer — wer die Box von der einen auf die andere
+       Oberflaeche umstellt, soll nicht neu lernen muessen.
+
+       ER VERRAET EINEM KIND NICHTS, was es nicht ohnehin sieht: HALTEN muss
+       es danach immer noch, und das ist die Sperre. Der Satz nennt die Geste,
+       nicht ihre Dauer, und dahinter steht bei gesetzter Sperre das Tor.
+
+       KEIN BERUEHRZIEL: `pointer-events: none` in app.css. Er liegt ueber der
+       Buehne, faengt aber keinen einzigen Tipp ab — auch nicht den vierten
+       aufs Wappen. Und er geht nach 2,6 s von selbst wieder weg.
+
+       role="status": eine Sprachausgabe sagt ihn beilaeufig an, ohne zu
+       unterbrechen. Kein `aria-live="assertive"` — es ist ein Hinweis, keine
+       Warnung. -->
+  <div class="wappen-hinweis" id="wappen-hinweis" hidden role="status">Zum Öffnen lange gedrückt halten</div>
+
+  <!-- ── Der Lautstärke-Stand AM FINGER ───
+       Er gehört zur Wischgeste vom Rand und ist NICHT derselbe wie
+       `#laut-stand`: der liegt IM grossen Player und ist damit unsichtbar,
+       solange der zu ist — genau die Lage, in der man die Geste benutzt.
+
+       KEIN BERUEHRZIEL (`pointer-events: none` in app.css). Er erscheint
+       mitten in einer laufenden Geste; ein Element, das dabei Berührungen
+       abfängt, nähme dem eigenen Zug die weiteren Ereignisse ab.
+
+       aria-live="polite": eine Sprachausgabe sagt den Wert beiläufig an. Bei
+       einem Zug sind das mehrere Meldungen kurz nacheinander — deshalb
+       „polite" und nicht „assertive", das jede laufende Ansage abbräche. -->
+  <div class="wisch-laut" id="wisch-laut" hidden aria-live="polite">
+    <span class="wisch-laut-zeichen" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M4 9h3.2L12 5v14l-4.8-4H4z"/></svg>
+    </span>
+    <div class="wisch-laut-balken"><i id="wisch-laut-fuell"></i></div>
+    <span class="wisch-laut-zahl" id="wisch-laut-zahl">0 %</span>
+  </div>
+
+  <!-- ── Das Schnellfenster ───
+       Vier Zeilen: Helligkeit, Lautstärke, Hörzeit, Funk. Was davon frei ist
+       und was durch die Sperre geht, steht in app.js bei `schnell` — kurz:
+       Helligkeit und Ton wirken sofort, Hörzeit und Funk gehen durch das EINE
+       Tor des Eltern-Bereichs.
+
+       ES BAUT SEINE ZEILEN MIT DENSELBEN BAUSTEINEN wie der Eltern-Bereich
+       (`zeileBauen`, `reglerZeileBauen`) — deshalb steht hier nur die Hülle.
+       Die 9-mm-Marke für Berührziele gilt damit ohne zweite Rechnung.
+
+       DER RUECKWEG SCHLIESST ES, ein Tipp auf die graue Fläche daneben
+       ebenfalls, und dieselbe Geste noch einmal auch. Drei Wege hinaus für
+       ein Fenster, das man mit einer versteckten Geste geholt hat. -->
+  <div class="schnell" id="schnell" hidden role="dialog" aria-label="Schnelleinstellungen">
+    <div class="schnell-blatt">
+      <h2 class="schnell-ueber">Schnell einstellen</h2>
+      <div class="fach-zeilen schnell-zeilen" id="schnell-zeilen"></div>
+      <p class="schnell-hinweis" id="schnell-hinweis" hidden role="status"></p>
+    </div>
+  </div>
+
+</div><!-- /.rahmen -->
+
+<noscript>
+  <p style="padding:24px;font:16px system-ui">
+    Diese Oberfläche braucht JavaScript. (Eine klassische Zweit-Oberfläche
+    gibt es seit E118 nicht mehr — dies ist die eine.)
+  </p>
+</noscript>
+
+<!-- DIE APPS DER SCHUBLADE — VOR app.js, und beide ohne `defer`.
+     apps.js setzt `window.MixPiApps`, app.js liest es. Die Reihenfolge hier
+     ist die sichere und nicht die noetige: `schubladenApps()` fragt erst,
+     wenn die Schublade gebaut wird, also lange nach dem Laden beider Dateien.
+     Sie steht trotzdem so herum, damit niemand die Frage stellen muss.
+     FEHLT DIE DATEI, LAEUFT DIE SEITE WEITER — ohne Apps, mit einer Zeile im
+     Protokoll. Die Begruendung steht bei `schubladenApps` in app.js. -->
+<!-- DER VIDEO-SCHIRM — Vollbild ueber allem, auch ueber dem Player.
+     Er liegt AUSSERHALB des rollenden Bereichs: waehrend ein Video laeuft,
+     soll nichts darunter erreichbar sein. Der Rueckweg ist ein sichtbarer
+     Knopf und nicht eine Geste: ein Tipp auf das Bild HAELT AN (das ist,
+     was ein Kind meint), Schluss macht nur, wer den Knopf drueckt. -->
+<div class="video-schirm" id="video-schirm" hidden>
+  <button type="button" class="video-weg" id="video-weg" aria-label="Video beenden">Fertig</button>
+  <video class="video-spieler" id="video-spieler" playsinline preload="none"></video>
+  <p class="video-wort" id="video-wort" role="status" aria-live="polite"></p>
+  <!-- DIE SPIELLEISTE (Betreiber, 20.09.2026: „das video braucht noch einen
+       player menü mit volume").
+
+       SIE GEHT VON SELBST WEG und kommt bei jeder Beruehrung des Bildes
+       zurueck: ein Kind macht eine Leiste nicht wieder zu, und ueber einem
+       27-Minuten-Film staende sie sonst 27 Minuten lang im Bild.
+
+       DER REGLER TRAEGT `data-laut-regler` — damit ist er der VIERTE
+       Regler dieser Oberflaeche und laeuft durch DENSELBEN Flaschenhals
+       (`laut.setzen()` -> `setvolume:N` -> mupi-lautstaerke.sh). Er stellt
+       NICHT die Lautstaerke des <video>-Elements: die waere eine zweite,
+       unsichtbare Skala neben der des Hauses, und die Tasten der Box
+       regelten daneben. `reglerAngleichen()` zieht ihn ohne Zutun mit,
+       wenn jemand anders dreht.
+
+       KEIN SPRUNGBALKEN, und das ist Absicht: gezaehlt wird bei 90 %
+       Fortschritt. Wer springen darf, springt ans Ende — und haette damit
+       entweder die Belohnung schon verbraucht oder (schlimmer) einen Weg,
+       unbegrenzt zu schauen, ohne je zu verbrauchen. Der Balken ZEIGT
+       also, er nimmt nichts an. -->
+  <div class="video-leiste" id="video-leiste">
+    <button class="video-knopf" id="video-spiel" type="button" aria-label="Anhalten oder weiter">
+      <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" aria-hidden="true">
+        <path id="video-spiel-zeichen" d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" />
+      </svg>
+    </button>
+    <div class="video-fortschritt" role="progressbar" aria-label="Fortschritt" aria-valuemin="0" aria-valuemax="100"
+         aria-valuenow="0" id="video-fortschritt">
+      <div class="video-fuell" id="video-fuell"></div>
+    </div>
+    <span class="video-zeit" id="video-zeit">0:00 / 0:00</span>
+    <span class="video-ton" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M4 9v6h4l5 4V5L8 9H4z" />
+        <path d="M16 8.5a5 5 0 0 1 0 7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+      </svg>
+    </span>
+    <input class="video-laut" id="video-laut" data-laut-regler type="range" min="0" max="100" step="1" value="0"
+           aria-label="Lautstärke" />
+    <span class="video-laut-zahl" id="video-laut-zahl">0 %</span>
+  </div>
+</div>
+<script src="apps.js"></script>
+<script src="video.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Themen-Werkstatt — MuPiBox</title>
+<link rel="stylesheet" href="/werkstatt/werkstatt.css">
+</head>
+<body>
+
+<header class="kopf">
+  <h1>Themen-Werkstatt</h1>
+  <label class="themenwahl">
+    Thema
+    <select id="thema"></select>
+  </label>
+  <span id="aktivhinweis" class="hinweis"></span>
+  <span class="fuellung"></span>
+  <span id="stand" class="stand" role="status" aria-live="polite"></span>
+  <button id="sichern" class="haupt" disabled>Sichern</button>
+</header>
+
+<!--
+  ZWEI SPALTEN, UND DIE RECHTE IST DIE WICHTIGE: Links wird gestellt, rechts
+  steht die ECHTE Oberflaeche der Box, nicht ein Abbild davon. Sie kommt durch
+  denselben Server (siehe tools/thema-werkstatt.mjs, Punkt 4) und ist damit
+  gleichen Ursprungs — nur deshalb laesst sich ihr Themenblatt ohne Neuladen
+  austauschen.
+-->
+<main class="buehne">
+
+  <div class="spalte">
+    <nav class="reiter" id="reiter" role="tablist"></nav>
+    <div class="tafeln" id="tafeln"></div>
+  </div>
+
+  <aside class="vorschau">
+    <div class="vorschaukopf">
+      <span>Vorschau · 800 × 480</span>
+      <span class="fuellung"></span>
+      <label class="klein"><input type="checkbox" id="dunkel"> dunkel</label>
+      <button id="neuladen" class="klein-knopf" title="Die Vorschau frisch laden">neu laden</button>
+    </div>
+    <!--
+      DIE GROESSE IST DIE DES GERAETS und nicht die des Fensters: 800x480 ist
+      der Schirm der Box. Eine Vorschau, die sich mitdehnt, zeigt ein Bild, das
+      es auf keinem Geraet gibt.
+    -->
+    <div class="schirmhalter">
+      <iframe id="schirm" src="/neu/" title="Vorschau der Box-Oberfläche"></iframe>
+    </div>
+    <p class="fussnote">
+      Die Attrappe zeigt erfundene Inhalte. Ob eine Farbe auf dem Gerät hinter
+      Chromium taugt, sagt nur die Box.
+    </p>
+  </aside>
+
+</main>
+
+<script type="module" src="/werkstatt/werkstatt.js"></script>
+</body>
+</html>

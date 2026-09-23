@@ -1,0 +1,13 @@
+# Woechentlich, mit Streuung — und Persistent, damit eine Box, die am
+# Wochentermin aus war, den Lauf beim naechsten Einschalten nachholt.
+# Eine Box, die nur sonntags spielt, darf den Updater nicht verpassen.
+[Unit]
+Description=Woechentlich nach neuem Soloist-Build sehen
+
+[Timer]
+OnCalendar=weekly
+RandomizedDelaySec=4h
+Persistent=true
+
+[Install]
+WantedBy=timers.target

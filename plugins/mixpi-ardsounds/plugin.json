@@ -1,0 +1,16 @@
+{
+  "kennung": "mixpi-ardsounds",
+  "name": "ARD Sounds",
+  "fassung": "0.2.0",
+  "haupt": "index.mjs",
+  "rechte": ["netz"],
+  "sektion": "streaming/ardsounds",
+  "icon": "icon.svg",
+  "aktionen": [
+    {
+      "kennung": "pruefen",
+      "name": "Erreichbarkeit messen",
+      "hinweis": "Fragt die ARD dreimal an und nennt die Antwortzeiten."
+    }
+  ]
+}

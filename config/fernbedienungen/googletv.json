@@ -1,0 +1,53 @@
+{
+  "id": "googletv",
+  "name": "Google TV / Chromecast-Fernbedienung",
+  "_art": "Was fuer ein Geraet das ist — `controller` oder `fernbedienung`. Die Statusleiste der Box liest es (GET /api/eingabegeraete), um das richtige Zeichen zu setzen: ein Spielpad sieht anders aus als eine Fernbedienung, und beide koennen gleichzeitig verbunden sein.",
+  "art": "fernbedienung",
+  "bild": "googletv.jpg",
+  "pairing_hint": {
+    "zuerst": "Wie bei Fire TV: solange der Chromecast läuft, gehört ihm die Fernbedienung. Erst das Gerät ausschalten.",
+    "text": "„Zurück“ und „Home“ gleichzeitig gedrückt halten, bis die Leuchte am Kopf der Fernbedienung pulsiert.",
+    "warnung": "Diese Fernbedienung HAT eine Leuchte — anders als die von Fire TV. Pulsiert sie nicht, ist sie noch mit dem Chromecast verbunden.",
+    "bild": "googletv-pairing.jpg"
+  },
+  "match": {
+    "name_prefix": [
+      "Chromecast Remote",
+      "Google TV Remote",
+      "GoogleTV"
+    ],
+    "vendor_id": "18d1"
+  },
+  "keys": {
+    "103": "Hoch",
+    "108": "Runter",
+    "105": "Links",
+    "106": "Rechts",
+    "28": "Auswählen (Mitte)",
+    "158": "Zurück",
+    "172": "Home",
+    "115": "Lauter",
+    "114": "Leiser",
+    "113": "Ton aus",
+    "164": "Wiedergabe / Pause"
+  },
+  "unsupported_keys": {
+    "assistent": "Die Assistenten-Taste startet eine Sprachaufnahme über einen herstellereigenen Kanal, keinen Tastencode.",
+    "programmtasten": "Die Tasten für einzelne Anbieter (YouTube, Netflix) melden sich bei manchen Geräten gar nicht, bei anderen als eigener Code — der Tastentest zeigt, was ankommt."
+  },
+  "vorbelegung": {
+    "28": "abspielen-anhalten",
+    "106": "naechster-titel",
+    "105": "voriger-titel",
+    "115": "lauter",
+    "114": "leiser",
+    "172": "startseite",
+    "158": "zurueck"
+  },
+  "audio": "atv-adpcm",
+  "hinweis": "Für diese Bauart ist der Mikrofon-Weg im Experimental-Teil beschrieben (ADPCM über hidraw). Ohne den Schalter bleibt die Taste ohne Wirkung.",
+  "_ungemessen": "Tastencodes, die aus der Vorlage stammen und am GERAET NIE BESTAETIGT wurden. Die Wache (tools/fernbedienung-bild-deckung.py) meldet sie deshalb nicht als Fund, verlangt aber, dass sie hier stehen — ein ungemessener Code darf still sein, aber nicht unsichtbar. Wer die Fernbedienung in die Hand nimmt: `fernbedienung.py --roh` starten, Taste druecken, Code ablesen; stimmt er, wandert er aus dieser Liste heraus.",
+  "ungemessen": {
+    "164": "Wiedergabe/Pause — im Foto des Betreibers (06.09.2026) ist an dieser Fernbedienung KEINE Play-Taste zu sehen: Ring, Zurueck, Assistent, Home, Ton-aus, YouTube, Netflix, Ein/Aus, Eingang. Der Code stammt aus der Vorlage. Entweder sendet ihn eine der vorhandenen Tasten, oder er gehoert geloescht — beides ist eine Messung, keine Meinung."
+  }
+}

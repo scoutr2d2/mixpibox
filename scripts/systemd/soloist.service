@@ -1,0 +1,32 @@
+# DIE ZWEITE SPOTIFY-TONMASCHINE (E42) — laeuft NUR, wenn die Konfiguration
+# sie waehlt: spotify.engine == "soloist". Sonst wird der Start uebersprungen
+# (ExecCondition, kein Fehler, kein Neustartkreisel). Das Gegenstueck haengt
+# als Drop-In an librespot.service (engine.conf) — GENAU EINE von beiden
+# laeuft, und der Schalter ist ein Konfigurationswert, kein enable/disable.
+#
+# Umschalten:
+#   sudo jq '.spotify.engine = "soloist"' /etc/mupibox/mupiboxconfig.json  (RMW!)
+#   sudo systemctl restart librespot soloist
+[Unit]
+Description=Spotify-Connect-Geraet der Box (Soloist, offizieller Client)
+Documentation=https://developer.spotify.com/documentation/soloist
+Wants=network-online.target
+After=network-online.target sound.target
+
+[Service]
+User=dietpi
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+# /var/lib/soloist und /var/cache/soloist, dietpi gehoerend — Soloist liest
+# $STATE_DIRECTORY/$CACHE_DIRECTORY selbst (steht in seiner --help).
+StateDirectory=soloist
+CacheDirectory=soloist
+# jq direkt - KEIN bash -c: siehe librespot-engine.conf, dieselbe Falle.
+ExecCondition=/usr/bin/jq -e '(.spotify.engine // "librespot") == "soloist"' /etc/mupibox/mupiboxconfig.json
+# Das Warten auf die Tonsenke gehoert IN den Start, nicht davor — dieselbe
+# Lehre wie librespots nicht-blockieren.conf: sonst haelt es multi-user auf.
+ExecStart=/bin/bash -c 'for i in $(seq 1 40); do pactl list short sinks 2>/dev/null | grep -q . && break; sleep 0.5; done; exec /usr/local/bin/mupibox/soloist-start.sh'
+Restart=always
+RestartSec=12
+
+[Install]
+WantedBy=multi-user.target

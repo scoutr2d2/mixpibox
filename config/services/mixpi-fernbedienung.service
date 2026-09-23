@@ -1,0 +1,45 @@
+[Unit]
+# Die Fernbedienung steuert die Box — und NICHT den Browser.
+#
+# WOZU DIESER DIENST (06.09.2026, am Geraet gefunden): Eine gekoppelte
+# BLE-Fernbedienung meldet sich als normale Tastatur. Chromium belegt `Home`
+# mit „Startseite oeffnen" — auf der Box war das google.com. Ein Kind drueckt
+# Home und sitzt im offenen Internet. Das Skript greift das Eingabegeraet per
+# EVIOCGRAB exklusiv; danach sieht der Browser keinen Tastendruck mehr.
+Description=MixPi: Tasten der Fernbedienung auf Box-Aktionen abbilden
+# DIESE ZWEI GEHOEREN NACH [Unit] UND NICHT NACH [Service] — dort meldet
+# systemd „Unknown key ... ignoring" und die Bremse waere wirkungslos gewesen
+# (am Geraet gesehen, 06.09.2026). Ohne Zuordnung endet der Dienst mit 1; das
+# soll nicht in eine Neustart-Schleife laufen, die das Journal flutet.
+StartLimitIntervalSec=60
+StartLimitBurst=10
+# Der Abspieldienst nimmt die Aktionen entgegen — ohne ihn liefe der Dienst
+# ins Leere. `Wants` und nicht `Requires`: faellt der Abspieldienst aus,
+# soll die Fernbedienung trotzdem gegriffen bleiben (sonst steuerte sie in
+# genau diesem Moment wieder den Browser).
+After=bluetooth.service mupibox-server.service
+Wants=mupibox-server.service
+
+[Service]
+Type=simple
+# ROOT, WEIL /dev/input EINEN LESER MIT RECHTEN BRAUCHT. Die Alternative waere
+# die Gruppe `input` — sie ist auf DietPi nicht durchgaengig gesetzt, und ein
+# Dienst, der je nach Karte laeuft oder nicht, ist schlimmer als einer, der
+# ehrlich root verlangt. Er liest NUR; geschrieben wird ueber HTTP an den
+# eigenen Abspieldienst.
+User=root
+# /opt/mupibox-tools/ und NICHT /usr/local/bin/mupibox/: dorthin legen beide
+# Ausrollwege scripts/box/* (autosetup.sh und Update, seit X5 dieselbe Adresse
+# wie beim remote-step-installer). Der alte Pfad stammte von der von Hand
+# bestueckten Entwicklungsbox — eine frische Karte hatte dort nichts und der
+# Dienst starb mit 203/EXEC (Kritiker-Lauf 07.09.2026, Punkt 1).
+ExecStart=/opt/mupibox-tools/fernbedienung.py
+# NEUSTART IST DER NORMALFALL, NICHT DIE AUSNAHME: Die Fernbedienung schlaeft
+# nach kurzer Zeit ein, das Eingabegeraet verschwindet, der Dienst endet mit 0.
+# Wacht sie auf, ist das Geraet wieder da — und systemd hat den Leser schon
+# bereitgestellt. Deshalb `always` und eine kurze Pause.
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

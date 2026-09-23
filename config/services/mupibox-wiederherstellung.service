@@ -1,0 +1,58 @@
+[Unit]
+# BACKLOG E29/B3 — der Rueckweg OHNE SSH.
+#
+# „Eine Sicherung, die nie zurueckgespielt wurde, ist keine." Und ein
+# Rueckweg, der SSH braucht, ist im Ernstfall keiner: wenn die Box nichts
+# mehr anzeigt, hat man selten einen Rechner mit eingerichtetem Schluessel
+# daneben — aber IMMER einen Kartenleser.
+#
+# SO WIRD ER GEFAHREN (steht auch in LIESMICH.txt auf der Karte selbst):
+#   1. Karte in einen beliebigen Rechner. Die kleine FAT-Partition meldet
+#      sich unter Windows, macOS und Linux gleichermassen.
+#   2. Eine Textdatei `mupibox-wiederherstellen.txt` ins Wurzelverzeichnis
+#      dieser Partition legen. Inhalt: EINE Zeile — der Dateiname eines
+#      Standes aus dem Ordner `mupibox-sicherung/`, oder das Wort `neueste`.
+#   3. Karte zurueck, Box einschalten.
+#   4. Der Befund steht danach als `mupibox-wiederherstellen-bericht.txt`
+#      auf derselben Partition — auch wenn der Bildschirm schwarz bleibt.
+#
+# Ein Archiv auf der Karte loest NICHTS aus. Erst die Textdatei. Eine
+# Sicherung, die man versehentlich einspielt, waere ein neuer Weg, Daten zu
+# verlieren.
+Description=MuPiBox: Wiederherstellung von der Karte (E29/B3)
+# VOR den Diensten, die die Dateien lesen — sonst laeuft der Server mit dem
+# alten Stand an und schreibt ihn womoeglich zurueck.
+#
+# HIER STANDEN BIS ZUM 14.08.2026 AUCH `pm2-dietpi.service pm2-root.service`.
+# Die Begruendung dafuer lautete: „auf den per autosetup/update bespielten
+# Boxen laufen Server und Player unter pm2, nicht als mupibox-*.service".
+# DAS STIMMT NICHT MEHR — und zwar seit heute nicht mehr, weil autosetup.sh
+# und start_mupibox_update.sh jetzt selbst die beiden Units fahren. Damit
+# gibt es keinen Weg in diesem Repo mehr, der eine Box unter pm2 hinterlaesst.
+#
+# Nachgemessen an der laufenden Box .57 (14.08.2026, tools/pm2-bestand.sh):
+# pm2-dietpi.service ist `not-found`, pm2 ist nicht installiert.
+#
+# Ein `Before=` auf eine Unit, die es nirgends mehr gibt, ist zwar harmlos —
+# aber es ist auch eine Behauptung ueber die Welt, die nicht mehr zutrifft,
+# und die naechste Person liest sie als Hinweis, dass es noch pm2-Boxen gibt.
+Before=mupibox-server.service mupibox-player.service mupi_change_checker.service
+After=local-fs.target boot-firmware.mount
+# Ohne Marke gar nicht erst starten. Das ist der Normalfall bei jedem Boot.
+ConditionPathExists=/boot/firmware/mupibox-wiederherstellen.txt
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Als root: die FAT-Partition gehoert root, und /etc/mupibox will geschrieben
+# werden. Das Skript setzt Eigentuemer und Rechte danach zurueck, wie sie
+# waren ([[etc-mupibox-gehoert-dem-backend]]: dietpi:www-data 664).
+ExecStart=/usr/local/bin/mupibox/mupibox-sicherung.py --von-karte
+# Scheitert die Wiederherstellung, darf die Box trotzdem hochkommen: der
+# Bericht auf der Karte sagt warum, und eine Box, die wegen eines
+# fehlgeschlagenen Rueckwegs gar nicht mehr startet, ist der schlimmere Fall.
+SuccessExitStatus=0 1
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

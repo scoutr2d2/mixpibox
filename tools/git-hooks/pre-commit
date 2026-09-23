@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# PRE-COMMIT — haelt die abgeleiteten Angaben ueber das Wissenspaket dicht.
+#
+# WARUM ES DIESEN HAKEN GIBT (28.08.2026)
+# ---------------------------------------
+# Drei Prosadateien behaupten den Umfang von `llmwiki/pack.yaml` ("<N>
+# Einträge, Fassung <M>"). Nachgezogen wurde das bisher an EINER Naht:
+# `tools/wiki-anhaengen.py` ruft nach dem Anhaengen
+# `tools/paket-angaben-nachziehen.py`. Wer seinen Eintrag von Hand ins Paket
+# schreibt, umgeht die Naht — genau das tat `179d69a7` (nur `AUDIT-*.md` und
+# `pack.yaml` angefasst), und der Doku-Lauf am naechsten Tag fand denselben
+# Drift wie am Tag davor. Ein Befund, der wiederkehrt, ist ein Ablauffehler
+# und kein Doku-Fehler: die Wache stand HINTER dem Ereignis.
+#
+# Der Haken steht DAVOR. Er greift nur, wenn `llmwiki/pack.yaml` ueberhaupt
+# gestaged ist — jeder andere Commit laeuft ungebremst durch.
+#
+# ER SCHREIBT NICHTS. Automatisch nachziehen und nachstagen hiesse, waehrend
+# eines Commits fremde Dateien in den Index zu heben; auf dieser Maschine
+# laufen regelmaessig parallele Sitzungen, deren Arbeit im selben Baum liegt.
+# Der Haken meldet und verweigert, das Richten bleibt ein bewusster Aufruf.
+#
+# Gemessen wird der INDEX, nicht der Baum: eine im Baum gerichtete, aber nicht
+# gestagte README waere sonst gruen und der Commit trotzdem falsch.
+#
+# EINHAENGEN (einmalig, pro Klon):
+#     git config core.hooksPath tools/git-hooks
+# AUSHAENGEN:
+#     git config --unset core.hooksPath
+# UMGEHEN (ein Commit):
+#     git commit --no-verify
+#
+# llmwiki: `umfangsdrift-kehrt-wieder-weil-die-naht-an-einem-aufrufer-haengt`,
+#          `amend-am-gemeinsamen-baum-frisst-fremde-commits`
+
+set -u
+
+wurzel=$(git rev-parse --show-toplevel) || exit 0
+cd "$wurzel" || exit 0
+
+# ── SHELLCHECK-RATSCHE (29.08.2026, AUDIT-29 §4.1) ─────────────────────────
+# Der Bestand (161 Befunde in 118 Dateien) ist eingefroren; geblockt wird nur
+# die VERSCHLECHTERUNG — gemessen am INDEX-Inhalt der gestagten .sh-Dateien.
+# check_network.sh:83 (`( $(…) == … )` fuehrte ein Kommando aus statt zu
+# vergleichen) ist die belegte Fehlerklasse, die das hier faengt.
+#
+# OHNE shellcheck laesst der Haken den Commit mit LAUTER Warnung durch —
+# eine Commit-Blockade auf jeder Maschine ohne das Werkzeug waere zu hart.
+# Die Pflicht sitzt in tools/pruefen.sh: dort bricht der Schritt hart und
+# nennt den Installationsweg.
+if git diff --cached --name-only --diff-filter=ACMR | grep -q '\.sh$'; then
+  if command -v shellcheck >/dev/null 2>&1 && [ -f tools/shellcheck-ratsche.sh ]; then
+    if ! bash tools/shellcheck-ratsche.sh --index >&2; then
+      echo >&2
+      echo "pre-commit: die Shellcheck-Ratsche blockt diesen Commit (s.o.)." >&2
+      exit 1
+    fi
+  else
+    echo "pre-commit: shellcheck fehlt — .sh-Aenderungen dieses Commits UNGEPRUEFT (tools/shellcheck-ratsche.sh nennt den Installationsweg)." >&2
+  fi
+fi
+
+# Nur wenn das Paket selbst Teil dieses Commits ist.
+if ! git diff --cached --name-only | grep -qx 'llmwiki/pack.yaml'; then
+  exit 0
+fi
+
+werkzeug=tools/paket-angaben-nachziehen.py
+if [ ! -f "$werkzeug" ]; then
+  echo "pre-commit: $werkzeug fehlt — Umfangsangaben NICHT geprueft." >&2
+  exit 0
+fi
+
+# Ausgang IMMER in derselben Anweisung sichern, in der der Aufruf steht.
+# `if ausgabe=$(...); then ... fi` gefolgt von `ausgang=$?` liest NICHT den
+# Ausgang von python3: ein `if` ohne genommenen Zweig liefert selbst 0, und
+# genau diese 0 stand danach in `ausgang`. Der Zweig fuer "unmessbar" war
+# damit tot — der Haken blockierte und nannte dabei den falschen Grund.
+ausgabe=$(python3 "$werkzeug" --index 2>&1)
+ausgang=$?
+
+if [ "$ausgang" -eq 0 ]; then
+  exit 0
+fi
+
+# Ausgang 2 = unmessbar (kein Paket, keine Angabe gefunden). Das ist eine
+# Warnung, kein Grund, einen Commit zu verweigern — sonst blockiert der Haken
+# an dem Tag, an dem jemand die Form absichtlich umschreibt.
+if [ "$ausgang" -eq 2 ]; then
+  echo "pre-commit: Umfangsangaben unmessbar — durchgelassen:" >&2
+  echo "$ausgabe" >&2
+  exit 0
+fi
+
+echo "$ausgabe" >&2
+cat >&2 <<'ENDE'
+
+pre-commit: llmwiki/pack.yaml ist gestaged, aber die Umfangsangaben in der
+Doku stehen noch auf dem alten Stand. So richten und mitnehmen:
+
+    python3 tools/paket-angaben-nachziehen.py
+    git add -u README.md dokumentation/
+
+(Bewusst dagegen: `git commit --no-verify`)
+ENDE
+exit 1

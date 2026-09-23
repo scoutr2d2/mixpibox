@@ -1,0 +1,12 @@
+[Unit]
+Description=MuPiBox: ALSA-softvol-Regler "Master" anlegen (der Player braucht ihn beim Start)
+After=sound.target
+Before=pm2-dietpi.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/mupibox/init-alsa-softvol.sh
+
+[Install]
+WantedBy=multi-user.target

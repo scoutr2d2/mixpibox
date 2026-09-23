@@ -1,0 +1,116 @@
+<!--
+  Fire-TV-Fernbedienung (Alexa), schematisch — Vorlage des Betreibers
+  (06.09.2026), hier um `data-taste` ergaenzt. Aufbau und Begruendung wie bei
+  `googletv.svg`; dort steht die ausfuehrliche Fassung.
+
+  ══ ZWEI DINGE, DIE DIESE VORLAGE GEKLAERT HAT ══════════════════════════════
+
+  1. WAS ICH IM FOTO FUER EINE UNTERE EINZELTASTE HIELT, IST DER AMAZON-
+     SCHRIFTZUG. Ich hatte sie als „noch nicht gemessen" ins Schema
+     aufgenommen — es gibt sie gar nicht. Ein Beleg dafuer, warum ungepruefte
+     Beobachtungen als ungeprueft markiert gehoeren und nicht als Tatsache.
+
+  2. KEINE SEITLICHE LAUTSTAERKEWIPPE. Sie war hier kurz eingezeichnet, nach
+     einer ersten Beschreibung des Betreibers — der hat dann am Geraet
+     nachgesehen: „in meinem Fall gibt es beim Amazon keine Lautstaerkewippe"
+     (06.09.2026). Das Geraet in der Hand schlaegt jede Beschreibung; das
+     Modell dieses Baums hat schlicht keine Lautstaerketasten, und genau
+     deshalb liegt die Lautstaerke auf Hoch/Runter (siehe firetv-alexa.json).
+
+  Kennungen ohne `x-` sind Kernelcodes und damit belegbar. `x-` heisst: die
+  Taste existiert, erreicht den Pi aber nie.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 620" width="100%" height="100%" role="img" aria-labelledby="ftv-titel ftv-text">
+  <title id="ftv-titel">Fire-TV-Fernbedienung mit Alexa-Taste</title>
+  <desc id="ftv-text">Mikrofontaste oben, grosses Steuerkreuz mit Auswahltaste, darunter Zurueck, Home und Menue, darunter Ruecklauf, Wiedergabe und Vorlauf.</desc>
+  <defs>
+    <linearGradient id="classicBodyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#151719" />
+      <stop offset="15%" stop-color="#24272a" />
+      <stop offset="50%" stop-color="#1c1e21" />
+      <stop offset="85%" stop-color="#24272a" />
+      <stop offset="100%" stop-color="#121315" />
+    </linearGradient>
+    <filter id="classicShadow" x="-15%" y="-5%" width="135%" height="115%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45" />
+    </filter>
+    <linearGradient id="classicMicGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#353a40" />
+      <stop offset="100%" stop-color="#1a1c1e" />
+    </linearGradient>
+    <linearGradient id="classicBtnGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2c3035" />
+      <stop offset="100%" stop-color="#181a1c" />
+    </linearGradient>
+    <filter id="btnShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.5" />
+    </filter>
+  </defs>
+
+  <rect x="34" y="24" width="172" height="570" rx="40" fill="url(#classicBodyGrad)" stroke="#31353a" stroke-width="1.5" filter="url(#classicShadow)" />
+
+  <circle cx="120" cy="42" r="2.2" fill="#0a0a0b" />
+
+  <g transform="translate(120, 78)" filter="url(#btnShadow)" data-taste="x-mikrofon" data-name="Alexa (Mikrofon)">
+    <circle cx="0" cy="0" r="18" fill="url(#classicMicGrad)" stroke="#3d4248" stroke-width="1" />
+    <rect x="-3" y="-6" width="6" height="8" rx="3" fill="#cfd4d8" />
+    <path d="M -5.5,-2 C -5.5,2.5 5.5,2.5 5.5,-2" fill="none" stroke="#cfd4d8" stroke-width="1.6" stroke-linecap="round" />
+    <line x1="0" y1="4" x2="0" y2="7" stroke="#cfd4d8" stroke-width="1.6" stroke-linecap="round" />
+  </g>
+
+  <g transform="translate(120, 185)">
+    <g data-taste="ring" data-name="Steuerkreuz">
+      <circle cx="0" cy="0" r="58" fill="url(#classicBtnGrad)" stroke="#383d43" stroke-width="1.2" filter="url(#btnShadow)" />
+    </g>
+    <circle cx="0" cy="-45" r="1.5" fill="#585e65" />
+    <circle cx="0" cy="45" r="1.5" fill="#585e65" />
+    <circle cx="-45" cy="0" r="1.5" fill="#585e65" />
+    <circle cx="45" cy="0" r="1.5" fill="#585e65" />
+    <g data-taste="96" data-name="Auswählen (Mitte)">
+      <circle cx="0" cy="0" r="30" fill="url(#classicMicGrad)" stroke="#383d43" stroke-width="1.2" />
+    </g>
+  </g>
+
+  <g transform="translate(68, 288)" filter="url(#btnShadow)" data-taste="158" data-name="Zurück">
+    <circle cx="0" cy="0" r="19" fill="url(#classicBtnGrad)" stroke="#33373c" stroke-width="1" />
+    <path d="M 5,0 L -5,0 M -1,-5 L -5.5,0 L -1,5" fill="none" stroke="#cfd4d8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+
+  <g transform="translate(120, 288)" filter="url(#btnShadow)" data-taste="172" data-name="Home">
+    <circle cx="0" cy="0" r="19" fill="url(#classicBtnGrad)" stroke="#33373c" stroke-width="1" />
+    <path d="M -6.5,2 L -6.5,5.5 L 6.5,5.5 L 6.5,2 L 0,-4.5 Z" fill="none" stroke="#cfd4d8" stroke-width="2" stroke-linejoin="round" />
+    <rect x="-1.5" y="2" width="3" height="3.5" fill="#cfd4d8" />
+  </g>
+
+  <g transform="translate(172, 288)" filter="url(#btnShadow)" data-taste="139" data-name="Menü">
+    <circle cx="0" cy="0" r="19" fill="url(#classicBtnGrad)" stroke="#33373c" stroke-width="1" />
+    <line x1="-5.5" y1="-4.5" x2="5.5" y2="-4.5" stroke="#cfd4d8" stroke-width="2" stroke-linecap="round" />
+    <line x1="-5.5" y1="0" x2="5.5" y2="0" stroke="#cfd4d8" stroke-width="2" stroke-linecap="round" />
+    <line x1="-5.5" y1="4.5" x2="5.5" y2="4.5" stroke="#cfd4d8" stroke-width="2" stroke-linecap="round" />
+  </g>
+
+  <g transform="translate(68, 355)" filter="url(#btnShadow)" data-taste="168" data-name="Zurückspulen">
+    <circle cx="0" cy="0" r="19" fill="url(#classicBtnGrad)" stroke="#33373c" stroke-width="1" />
+    <polygon points="0,-4.5 -5,0 0,4.5" fill="#cfd4d8" />
+    <polygon points="5,-4.5 0,0 5,4.5" fill="#cfd4d8" />
+  </g>
+
+  <g transform="translate(120, 355)" filter="url(#btnShadow)" data-taste="164" data-name="Wiedergabe / Pause">
+    <circle cx="0" cy="0" r="19" fill="url(#classicBtnGrad)" stroke="#33373c" stroke-width="1" />
+    <polygon points="-5,-5 0,0 -5,5" fill="#cfd4d8" />
+    <line x1="3" y1="-4.5" x2="3" y2="4.5" stroke="#cfd4d8" stroke-width="1.8" stroke-linecap="round" />
+    <line x1="6.5" y1="-4.5" x2="6.5" y2="4.5" stroke="#cfd4d8" stroke-width="1.8" stroke-linecap="round" />
+  </g>
+
+  <g transform="translate(172, 355)" filter="url(#btnShadow)" data-taste="208" data-name="Vorspulen">
+    <circle cx="0" cy="0" r="19" fill="url(#classicBtnGrad)" stroke="#33373c" stroke-width="1" />
+    <polygon points="0,-4.5 5,0 0,4.5" fill="#cfd4d8" />
+    <polygon points="-5,-4.5 0,0 -5,4.5" fill="#cfd4d8" />
+  </g>
+
+  <g transform="translate(120, 500)">
+    <text x="0" y="-8" font-family="'Amazon Ember', 'Segoe UI', Helvetica, sans-serif" font-weight="bold" font-size="14" fill="#434a52" text-anchor="middle" letter-spacing="0.8">amazon</text>
+    <path d="M -16,4 Q 0,13 16,4" fill="none" stroke="#434a52" stroke-width="2.2" stroke-linecap="round" />
+    <path d="M 12.5,5.5 L 17,4 L 16,9 Z" fill="#434a52" />
+  </g>
+</svg>

@@ -1,0 +1,177 @@
+{
+  "_hinweis": "Zuordnung Zustand -> Maskottchenbild. JSON kennt keine Kommentare; die Begruendungen stehen in wiki/pack.yaml unter mixpi-maskottchen-familie und in MASKOTTCHEN.md. Die Bilder in bilder/ werden aus bilder/quellen/ ERZEUGT - nicht von Hand bearbeiten, sondern `tools/maskottchen-bauen.py` laufen lassen.",
+  "stand": "2026-07-31",
+  "ordner": "bilder/",
+  "quellordner": "bilder/quellen/",
+  "figurenordner": "bilder/figuren/",
+  "zustaende": {
+    "hoert": {
+      "datei": "mixpi-hoert.png",
+      "quelle": "Meshy_AI_mixpi-main-mascot-transparent.png",
+      "px": 256,
+      "alt": "MixPi steht mit Kopfhoerern und geschlossenen Augen",
+      "text": null,
+      "vorlesen": false,
+      "wo": "Zeichen 'wer hoert' oben links, solange kein Kind ein eigenes Bild gewaehlt hat - das Standardbild"
+    },
+    "spielt": {
+      "datei": "mixpi-spielt.png",
+      "quelle": "Meshy_AI_image_2d82663c-0a31-4205-bdce-0f6d3c031da4_0.png",
+      "px": 256,
+      "alt": "MixPi singt mit offenem Mund, Funken ringsum",
+      "text": null,
+      "vorlesen": false,
+      "wo": "Waehrend der Wiedergabe - loest aus, wenn /player/state playing meldet",
+      "regel": "Der Gegensatz zu hoert. Bisher zeigte die Startseite dasselbe Bild, ob Musik lief oder nicht."
+    },
+    "kein-bild": {
+      "datei": "mixpi-kein-bild.png",
+      "quelle": "Meshy_AI_image_5ecfad1b-3b75-49d7-b2fe-e710120545f3_0.png",
+      "px": 160,
+      "alt": "MixPi zuckt mit den Schultern, daneben eine gestrichelte Karte mit Note und Fragezeichen",
+      "text": null,
+      "vorlesen": false,
+      "wo": "IN der Kachel statt des Covers, wenn der Eintrag da ist, sein Bild aber nicht",
+      "regel": "Ohne Text - der Titel steht bereits in der Kachel. Muss bei 160 px lesbar sein. Die GESTRICHELTE Umrandung der Karte ist das Zeichen fuer 'hier fehlt etwas' und unterscheidet es vom Warndreieck bei fehler."
+    },
+    "schlaeft": {
+      "datei": "mixpi-schlaeft.png",
+      "quelle": "Meshy_AI_image_6ecbc226-de50-4595-822a-3f16b83af4b2_0.png",
+      "px": 256,
+      "alt": "MixPi liegt und schlaeft",
+      "text": "Gute Nacht!",
+      "vorlesen": true,
+      "wo": "Ruhezeit, abgelaufene Kinderzeit, Bildschirm geht gleich aus"
+    },
+    "farben": {
+      "datei": "mixpi-farben.png",
+      "quelle": "Meshy_AI_image_579516c3-b482-4d6f-98b8-7e60159de8d1_0.png",
+      "px": 256,
+      "alt": "MixPi winkt und haelt einen Farbfaecher",
+      "text": "Welches Aussehen darf es sein?",
+      "vorlesen": true,
+      "wo": "Themenauswahl"
+    },
+    "gestalten": {
+      "datei": "mixpi-gestalten.png",
+      "quelle": "Meshy_AI_mixpi-painting-musicbox-alpha.png",
+      "px": 256,
+      "alt": "MixPi bemalt mit Palette und Pinsel eine Musikbox",
+      "text": null,
+      "vorlesen": false,
+      "wo": "Theme-Designer, Admin-Reiter Darstellung",
+      "regel": "Die Fassung, die eine MUSIKBOX bemalt - nicht die mit dem Handy und nicht die mit der Staffelei. Der Designer aendert das Aussehen DIESES Geraets, und das Bild sagt genau das."
+    },
+    "blase": {
+      "datei": "mixpi-blase.png",
+      "quelle": "Meshy_AI_image_f3cdbc09-b48f-4478-9d3b-4284c3368de8_0.png",
+      "px": 384,
+      "alt": "MixPi winkt neben einer Sprechblase",
+      "text": "Hallo! Was moechtest du hoeren?",
+      "vorlesen": true,
+      "wo": "Begruessung",
+      "regel": "Der Text wird UEBERLAGERT, nicht danebengestellt. Groesser als die uebrigen, weil der Text mitskaliert. Feldmasse siehe MASKOTTCHEN.md.",
+      "blasenfeld": {
+        "links": "53%",
+        "oben": "25%",
+        "breit": "39%",
+        "hoch": "25%"
+      },
+      "blasenfeld_gemessen": "Kasten 171x122 px bei (192,85) in 384x384 - der Wert oben ist das eingezogene Textfeld"
+    },
+    "sucht": {
+      "datei": "mixpi-sucht.png",
+      "quelle": "Meshy_AI_mixpi-searching-transparent.png",
+      "px": 256,
+      "alt": "MixPi schaut durch eine Lupe, Fragezeichen daneben",
+      "text": "Ich schaue mal nach ...",
+      "vorlesen": true,
+      "wo": "Suche laeuft, Bibliothek wird gelesen, kein Treffer",
+      "regel": "NICHT als Ladeanzeige waehrend jedes Abrufs - erst ab etwa einer Sekunde, sonst blinkt es."
+    },
+    "passwort": {
+      "datei": "mixpi-passwort.png",
+      "quelle": "Meshy_AI_mixpi-password-transparent.png",
+      "px": 256,
+      "alt": "MixPi zeigt auf ein Schloss mit Sternchenfeld",
+      "text": "Das duerfen nur Grosse.",
+      "vorlesen": true,
+      "wo": "PIN-Dialog der Einstellungssperre, Admin-Anmeldung"
+    },
+    "fehler": {
+      "datei": "mixpi-fehler.png",
+      "quelle": "Meshy_AI_mixpi-error-transparent.png",
+      "px": 256,
+      "alt": "MixPi erschrickt, rotes Warndreieck daneben",
+      "text": null,
+      "vorlesen": false,
+      "wo": "Etwas funktioniert wirklich nicht",
+      "regel": "ERSETZT NIE die Fehlermeldung. Der Grund muss im Klartext danebenstehen. Die Vorlage hatte ein eingebranntes Transparenz-Karo - deshalb erkennt das Freistell-Werkzeug zwei Hintergrundfarben."
+    }
+  },
+  "_sammlung": {
+    "_hinweis": "KEINE Zustaende - das sind FIGUREN. Seit 05.08.2026 gibt es die Auswahl, auf die sie gewartet haben: das Zeichen oben links in der neuen Oberflaeche, ein Tipp darauf oeffnet sie. Erzeugt werden sie mit `tools/maskottchen-bauen.py --figuren` nach `figurenordner`; von dort liest sie GET /api/figuren. ERZEUGT WIRD NUR AUF ZURUF - welche Vorlage ein Kind sein darf, ist eine Entscheidung des Betreibers, und ohne den Schalter wiegen sie im Bau nichts.",
+    "kandidaten": [
+      {
+        "quelle": "Meshy_AI_image_42f12963-2fec-4b18-a1ed-ebb09145cbae_0.png",
+        "zeigt": "faehrt Fahrrad"
+      },
+      {
+        "quelle": "Meshy_AI_image_50c39e2d-7cf2-4138-909e-21928f28ffb1_0.png",
+        "zeigt": "schaut aus einem Flugzeugfenster"
+      },
+      {
+        "quelle": "Meshy_AI_image_6355862d-b5a9-44d0-810f-f8301679fba2_0.png",
+        "zeigt": "Hallo/Hello/Xin chao - KEIN Sprachwechsler, die Box hat kein i18n"
+      },
+      {
+        "quelle": "Meshy_AI_image_66431c4a-1738-45ea-9250-69006b56eb92_0.png",
+        "zeigt": "winkt einer kleinen Fee zu"
+      },
+      {
+        "quelle": "Meshy_AI_image_6f9575cd-5ad5-4998-a618-8b0a1b09b7e8_0.png",
+        "zeigt": "malt an einer Staffelei - die Vorgaengerfassung von gestalten"
+      },
+      {
+        "quelle": "Meshy_AI_image_7bf5e2b4-c2e9-4270-857d-231bea45f5cc_0.png",
+        "zeigt": "steht unter einem Regenbogen"
+      },
+      {
+        "quelle": "Meshy_AI_image_7db812d9-fdee-467b-8f9f-8898985ed795_0.png",
+        "zeigt": "reitet einen Papierflieger"
+      },
+      {
+        "quelle": "Meshy_AI_image_87d5f922-7a46-4512-8821-f657a2cdf210_0.png",
+        "zeigt": "schlaeft im Bett mit Zzz"
+      },
+      {
+        "quelle": "Meshy_AI_image_9f523336-a885-4c4b-a9d2-26017e9ea031_0.png",
+        "zeigt": "bemalt einen Handybildschirm - abgeloeste Fassung von gestalten"
+      },
+      {
+        "quelle": "Meshy_AI_image_ae56634a-edae-4166-9c93-259ae4834230_0.png",
+        "zeigt": "fliegt ueber einen Regenbogen"
+      },
+      {
+        "quelle": "Meshy_AI_image_c0836125-296d-456f-b747-7062c7bda1a3_0.png",
+        "zeigt": "faehrt eine Dampflok"
+      },
+      {
+        "quelle": "Meshy_AI_image_c1a28424-5828-47f7-abfb-a5cc96b0ed8f_0.png",
+        "zeigt": "faehrt Auto"
+      },
+      {
+        "quelle": "Meshy_AI_image_cdb4f68c-2507-414c-a25f-4a4592699170_0.png",
+        "zeigt": "reitet ein Einhorn"
+      },
+      {
+        "quelle": "Meshy_AI_image_cefd8af0-28cd-46bc-911c-f7c674ea4c18_0.png",
+        "zeigt": "sitzt in der Badewanne"
+      },
+      {
+        "quelle": "Meshy_AI_image_ed1cd6a8-9950-4faf-b11c-16d5737f3b1b_0.png",
+        "zeigt": "duscht"
+      }
+    ]
+  }
+}

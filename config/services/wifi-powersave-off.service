@@ -1,0 +1,23 @@
+[Unit]
+Description=MuPiBox: WLAN-Energiesparmodus abschalten (sonst bricht die Verbindung weg)
+After=network.target
+Wants=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Power save laesst das Funkmodul einschlafen: SSH stirbt, die Box wirkt abgestuerzt
+# und ist Minuten spaeter wieder da (am Geraet 2026-07-25 dreimal erlebt).
+#
+# JEDE wl*-Schnittstelle, NICHT NUR DIE ERSTE (E131/B6): hier stand ein
+# `exit 0` nach dem ERSTEN Erfolg — mit interner Karte UND USB-Stick behielt
+# die zweite ihren Sparmodus, und genau das oben beschriebene Symptom kam
+# zurueck. Jetzt endet der Dienst erst, wenn in EINEM Durchlauf alle gerade
+# vorhandenen wl* gesetzt wurden (bis zu 10 Anlaeufe fuer spaet auftauchende
+# Treiber). GRENZE, ehrlich benannt: ein Stick, der erst NACH diesen 30 s
+# gesteckt wird, bekommt weiter nichts — dafuer braeuchte es eine udev-Regel,
+# nicht einen oneshot.
+ExecStart=/bin/sh -c 'for i in 1 2 3 4 5 6 7 8 9 10; do alle=1; eine=0; for w in $(ls /sys/class/net | grep -E "^wl"); do eine=1; /usr/sbin/iw dev "$w" set power_save off 2>/dev/null || alle=0; done; [ "$eine" = 1 ] && [ "$alle" = 1 ] && exit 0; sleep 3; done; exit 0'
+
+[Install]
+WantedBy=multi-user.target

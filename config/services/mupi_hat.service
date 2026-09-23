@@ -1,0 +1,32 @@
+[Unit]
+Description=MuPiHAT Service
+Before=basic.target
+After=local-fs.target sysinit.target
+DefaultDependencies=no
+
+[Service]
+Type=simple
+WorkingDirectory=/usr/local/bin/mupibox/
+User=root
+# ══ OHNE `-B`: DER BYTECODE DARF LIEGENBLEIBEN (E52, 20.08.2026) ═══════════
+#
+# `-B` verhindert das SCHREIBEN der .pyc — und kostet damit dauerhaft
+# Arbeitsspeicher, nicht nur Startzeit. GEMESSEN an der Box: der Import von
+# mupihat_bq25792 (5764 Zeilen, 58 Klassen, 568 Methoden) belegt mit `-B`
+# 15.595 kB PSS, ohne 7.734 kB — 7,9 MB Unterschied. Der Speicher geht nicht
+# fuer den Code drauf, sondern fuer die Uebersetzer-Arenen, die Python nach
+# dem Uebersetzen nicht ans System zurueckgibt. Mit .pyc entfaellt das
+# Uebersetzen ganz (Importzeit 0,060 s -> 0,028 s).
+#
+# GEFAHRLOS, weil `-B` nur das Schreiben verhindert, nie das Lesen: eine
+# veraltete .pyc erkennt Python selbst an Zeitstempel und Groesse und
+# uebersetzt neu. Es kann kein alter Code haengenbleiben.
+#
+# Die Datei landet in /usr/local/bin/mupibox/__pycache__/ (326 kB, einmalig);
+# der Dienst laeuft als root und darf dort schreiben. Alle anderen
+# Python-Dienste der Box haben ihre .pyc laengst — nur dieser eine nicht.
+ExecStart=/usr/bin/python3 /usr/local/bin/mupibox/mupihat.py -j /tmp/mupihat.json
+Restart=on-failure
+
+[Install]
+WantedBy=basic.target

@@ -1,0 +1,12 @@
+# E104: alle 2 Minuten kurz ins Logbuch sehen. Billig (jq + journalctl),
+# und die Luecke "Box bootet, Spotify bleibt den ganzen Abend stumm"
+# schliesst sich damit von selbst nach spaetestens ~2 Minuten.
+[Unit]
+Description=Soloist-Anmeldewache im 2-Minuten-Takt
+
+[Timer]
+OnBootSec=90
+OnUnitActiveSec=2min
+
+[Install]
+WantedBy=timers.target

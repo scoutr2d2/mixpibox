@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MixPiBox einrichten</title>
+<!--
+  Der Einrichtungsassistent — die Seite, die auf dem HANDY laeuft.
+
+  VOLLSTAENDIG IN SICH: kein Nachladen von irgendwoher. Das ist keine Marotte,
+  sondern Notwendigkeit — beim ersten Start hat die Box oft noch gar kein
+  Internet, und ein Stil, der von einem fremden Rechner kommt, waere hier eine
+  weisse Seite. Der Agent setzt zusaetzlich eine Content-Security-Policy, die
+  genau das erzwingt.
+
+  FARBEN AUS DER NEUEN OBERFLAECHE (NewDesign/app.css), hell und dunkel. Der
+  Benutzer sieht gleich danach dieselbe Box — eine zweite Farbwelt fuer zehn
+  Minuten Einrichtung waere ein Bruch.
+
+  DER TOKEN LEBT NUR IM SPEICHER DIESER SEITE. Kein localStorage: er ist der
+  Schluessel zu einem Programm, das als root laeuft, und er soll mit dem
+  Schliessen des Reiters verschwinden.
+-->
+<style>
+  :root{
+    --bg:#FFF7EC; --surface:#FFFFFF; --ink:#2E2A3B; --muted:#8B8397;
+    --line:#F3EDE2; --accent:#FF6B57; --hl:#FFE7C2; --ok:#2E7D5B; --fehler:#C0392B;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#1A1726; --surface:#241F33; --ink:#F2EDE4; --muted:#9A92AC;
+      --line:#2E2840; --hl:#3B3252; --ok:#6FCF97; --fehler:#FF8A7A;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom));
+  }
+  header{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+  header img{width:56px;height:56px;flex:0 0 auto}
+  h1{font-size:1.35rem;margin:0;line-height:1.2}
+  .unter{color:var(--muted);font-size:.9rem}
+  .karte{background:var(--surface);border:1px solid var(--line);border-radius:16px;
+         padding:16px;margin-bottom:14px}
+  label{display:block;font-weight:600;margin-bottom:8px}
+  /* Das Code-Feld ist ein Sonderfall: sechs Ziffern, gross und gespreizt.
+     Der Stil gilt DESHALB nur fuer dieses eine Feld — als `input[type=text]`
+     erwischte er auch den WLAN-Namen, und der ist so unlesbar. */
+  #code{
+    width:100%;font-size:1.6rem;letter-spacing:.35em;text-align:center;
+    padding:12px;border:2px solid var(--line);border-radius:12px;
+    background:var(--bg);color:var(--ink);font-family:ui-monospace,monospace;
+  }
+  input.frei{
+    width:100%;font-size:1.05rem;padding:12px;margin-top:4px;
+    border:2px solid var(--line);border-radius:12px;
+    background:var(--bg);color:var(--ink);
+  }
+  #code:focus,input.frei:focus{outline:none;border-color:var(--accent)}
+  button{
+    width:100%;font-size:1.05rem;font-weight:600;padding:14px;margin-top:12px;
+    border:0;border-radius:12px;background:var(--accent);color:#fff;cursor:pointer;
+  }
+  button:disabled{opacity:.5;cursor:default}
+  button.leise{background:transparent;color:var(--accent);border:2px solid var(--accent)}
+  .aktion{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid var(--line);
+          border-radius:12px;margin-bottom:10px;background:var(--surface);cursor:pointer}
+  .aktion:active{background:var(--hl)}
+  .aktion b{flex:1;font-weight:600}
+  .meldung{padding:12px;border-radius:12px;margin-bottom:14px;font-size:.95rem}
+  .meldung.fehler{background:var(--hl);color:var(--fehler);border:1px solid var(--fehler)}
+  .meldung.ok{background:var(--hl);color:var(--ok)}
+  pre{background:var(--surface);border:1px solid var(--line);border-radius:12px;
+      padding:12px;margin:0;max-height:45vh;overflow:auto;
+      font:13px/1.45 ui-monospace,monospace;white-space:pre-wrap;word-break:break-word}
+  .verborgen{display:none}
+  footer{color:var(--muted);font-size:.8rem;text-align:center;margin-top:18px}
+</style>
+</head>
+<body>
+
+<header>
+  <img id="mixpi" src="/einrichtung/mixpi.png" alt="">
+  <div>
+    <h1>MixPiBox einrichten</h1>
+    <div class="unter" id="unterzeile">Schritt fuer Schritt, direkt vom Handy</div>
+  </div>
+</header>
+
+<div id="meldung" class="meldung verborgen"></div>
+
+<!-- 1. Anmelden -->
+<section id="anmelden" class="karte">
+  <label for="code">Code vom Bildschirm der Box</label>
+  <input id="code" type="text" inputmode="numeric" autocomplete="one-time-code"
+         maxlength="6" placeholder="------">
+  <button id="anmelden-knopf">Verbinden</button>
+  <div class="unter" style="margin-top:10px">
+    Der Code steht unten links auf dem Bildschirm der Box. Nach mehreren
+    Fehlversuchen macht die Box zu — dann hilft nur ein Neustart.
+  </div>
+</section>
+
+<!-- 3. Die Tuer zur Box. Steht VOR der Schrittliste, sobald sie auftaucht:
+     wer hier ankommt, ist mit dem Netz fertig und soll nicht erst an neun
+     Netzwerk-Aktionen vorbeiscrollen. -->
+<section id="weiter" class="karte verborgen">
+  <b>Die Box ist bereit</b>
+  <div class="unter" style="margin:8px 0 14px">
+    Hier geht es weiter: Profil anlegen, Farbe waehlen, Spotify und Jellyfin
+    verbinden und die ersten Inhalte einraeumen — alles auf der Box selbst.
+  </div>
+  <button id="weiter-knopf">Zur Box</button>
+  <div class="unter" id="weiter-adressen" style="margin-top:10px"></div>
+</section>
+
+<!-- 2. Schritte -->
+<section id="schritte" class="verborgen">
+  <div id="formular" class="verborgen"></div>
+  <div id="liste"></div>
+  <div class="karte">
+    <b id="lauf-titel">Ausgabe</b>
+    <pre id="ausgabe">Noch nichts ausgefuehrt.</pre>
+    <button id="abbrechen" class="leise verborgen">Abbrechen</button>
+  </div>
+</section>
+
+<footer id="fuss"></footer>
+
+<script>
+(() => {
+  'use strict'
+  // Der Token lebt NUR hier — nicht in localStorage. Siehe Kopfkommentar.
+  let token = null
+  let laufId = null
+  let strom = null
+
+  const $ = (id) => document.getElementById(id)
+  const zeigen = (el, ja) => el.classList.toggle('verborgen', !ja)
+
+  function melden(text, art) {
+    const m = $('meldung')
+    m.textContent = text
+    m.className = 'meldung ' + (art || '')
+    zeigen(m, !!text)
+  }
+
+  async function ruf(pfad, rumpf) {
+    const kopf = {'Content-Type': 'application/json'}
+    if (token) kopf['Authorization'] = 'Bearer ' + token
+    const a = await fetch(pfad, {
+      method: rumpf === undefined ? 'GET' : 'POST',
+      headers: kopf,
+      body: rumpf === undefined ? undefined : JSON.stringify(rumpf),
+      cache: 'no-store',
+    })
+    let d = {}
+    try { d = await a.json() } catch (e) { /* leerer Rumpf ist in Ordnung */ }
+    return {status: a.status, daten: d}
+  }
+
+  // ── Anmelden ──────────────────────────────────────────────────────────────
+  async function angemeldet(t) {
+    token = t
+    melden('', '')
+    zeigen($('anmelden'), false)
+    zeigen($('schritte'), true)
+    $('unterzeile').textContent = 'Verbunden mit der Box'
+    await aktionenLaden()
+    await netzlisteZeigen()
+    weiterBeobachten()
+  }
+
+  // DER ANMELDEFREIE WEG: Wer ueber das eigene Netz der Box kommt, hat seine
+  // Naehe schon bewiesen — die Box vergibt dann von selbst einen Schluessel,
+  // der NUR die Einrichtung kann. Im Heimnetz (Kabel) schlaegt das fehl, und
+  // die Code-Abfrage bleibt: dort hoeren mehr Geraete mit.
+  async function autoAnmelden() {
+    try {
+      const {status, daten} = await ruf('/pair', {auto: true})
+      if (status === 200 && daten.token) { await angemeldet(daten.token); return true }
+    } catch (e) { /* dann eben mit Code */ }
+    return false
+  }
+
+  async function anmelden() {
+    const code = $('code').value.trim()
+    if (!/^\d{6}$/.test(code)) { melden('Der Code hat sechs Ziffern.', 'fehler'); return }
+    $('anmelden-knopf').disabled = true
+    const {status, daten} = await ruf('/pair', {code})
+    $('anmelden-knopf').disabled = false
+    if (status === 200 && daten.token) {
+      await angemeldet(daten.token)
+      return
+    }
+    if (status === 429) {
+      // DIE SPERRE BEIM NAMEN NENNEN. „Falscher Code" waere hier gelogen und
+      // liesse jemanden ewig weiterprobieren, wo nichts mehr geht.
+      melden('Zu viele Fehlversuche — die Box nimmt keinen Code mehr an. '
+             + 'Box neu starten, dann gilt ein neuer Code.', 'fehler')
+      $('anmelden-knopf').disabled = true
+      return
+    }
+    const rest = daten.verbleibend
+    melden('Der Code stimmt nicht.' + (rest !== undefined
+      ? ' Noch ' + rest + ' Versuch' + (rest === 1 ? '' : 'e') + '.' : ''), 'fehler')
+    $('code').value = ''
+    $('code').focus()
+  }
+
+  // ── Dein WLAN zum Antippen ────────────────────────────────────────────────
+  // Die Liste stammt aus einem Scan VOR dem AP-Start (im AP-Betrieb kann der
+  // Funkbaustein nicht suchen). Antippen fragt nur noch das Passwort ab —
+  // der Netzname ist der haeufigste Tippfehler, und er entfaellt damit.
+  async function netzlisteZeigen() {
+    const {status, daten} = await ruf('/einrichtung/aktion', {aktion: 'wlan-liste'})
+    if (status !== 200 || !daten || !Array.isArray(daten.netze) || !daten.netze.length) return
+    const liste = $('liste')
+    const kopf = document.createElement('div')
+    kopf.className = 'aktion'
+    const kb = document.createElement('b')
+    kb.textContent = 'Dein WLAN antippen:'
+    kopf.appendChild(kb)
+    liste.prepend(kopf)
+    // Nach dem Kopf einfuegen, staerkstes Netz zuerst — rueckwaerts eingefuegt.
+    for (const n of [...daten.netze].reverse()) {
+      const el = document.createElement('div')
+      el.className = 'aktion'
+      const b = document.createElement('b')
+      b.textContent = n.ssid
+      el.appendChild(b)
+      const st = document.createElement('span')
+      st.className = 'unter'
+      // Grob genuegt: naeher an 0 ist besser. Drei Stufen statt dBm-Zahlen.
+      const s = Number(n.signal)
+      st.textContent = s > -55 ? 'sehr gut' : s > -70 ? 'gut' : 'schwach'
+      el.appendChild(st)
+      el.addEventListener('click', () => starten(
+        {name: 'wlan-verbinden', titel: 'Mit \u201E' + n.ssid + '\u201C verbinden',
+         felder: ['ssid', 'psk']},
+        {ssid: n.ssid}))
+      kopf.after(el)
+    }
+  }
+
+  // ── Die Tuer zur Box ──────────────────────────────────────────────────────
+  // Der Assistent kann NUR Netz — und mehr soll er auch nicht koennen, denn
+  // jedes weitere Formular hier waere eine weitere Tuer in einen Dienst, der
+  // als root laeuft. Profil, Farbe, Spotify, Jellyfin und die ersten Inhalte
+  // kann die Box in ihrem Eltern-Bereich laengst. Also wird nicht nachgebaut,
+  // sondern uebergeben — sobald die Oberflaeche wirklich antwortet.
+  //
+  // WARUM NICHT EINFACH IMMER DEN KNOPF ZEIGEN: Auf einer frisch bespielten
+  // Karte laeuft die Oberflaeche noch gar nicht (das macht erst der
+  // Controller-Lauf). Ein Knopf, der ins Leere fuehrt, ist schlimmer als
+  // keiner — er sieht nach Fehler aus, wo alles seinen Gang geht.
+  let weiterUhr = null
+
+  function weiterBeobachten() {
+    if (weiterUhr) return
+    weiterPruefen()
+    weiterUhr = setInterval(weiterPruefen, 5000)
+  }
+
+  async function weiterPruefen() {
+    const {status, daten} = await ruf('/einrichtung/weiter')
+    if (status !== 200 || !daten || !daten.bereit) return
+    clearInterval(weiterUhr); weiterUhr = null
+
+    // DIE ADRESSE, UNTER DER DAS HANDY GERADE HIER IST, ist die einzige, von
+    // der wir WISSEN, dass sie das Handy erreicht — es steht ja darauf. Die
+    // uebrigen Adressen der Box kommen als Hinweis darunter, denn wer im
+    // Einrichtungs-WLAN haengt (192.168.4.1), verliert die Box in dem
+    // Augenblick, in dem sein Telefon zurueck ins Heimnetz wechselt.
+    const ziel = location.protocol + '//' + location.hostname + ':' + daten.port + '/'
+    const knopf = $('weiter-knopf')
+    knopf.addEventListener('click', () => { location.href = ziel })
+
+    const andere = (daten.adressen || []).filter((a) => a !== location.hostname)
+    if (andere.length) {
+      $('weiter-adressen').textContent =
+        'Wechselt das Handy zurueck ins Heimnetz, steht die Box unter: '
+        + andere.map((a) => a + ':' + daten.port).join(' oder ') + '.'
+    }
+    zeigen($('weiter'), true)
+    melden('Die Box laeuft — es kann weitergehen.', 'ok')
+  }
+
+  // ── Schritte ──────────────────────────────────────────────────────────────
+  async function aktionenLaden() {
+    const {status, daten} = await ruf('/einrichtung/aktionen')
+    if (status !== 200) { melden('Die Schrittliste kam nicht.', 'fehler'); return }
+    const liste = $('liste')
+    liste.textContent = ''
+    for (const a of daten.aktionen || []) {
+      const el = document.createElement('div')
+      el.className = 'aktion'
+      const b = document.createElement('b')
+      b.textContent = a.titel
+      el.appendChild(b)
+      if (a.felder.length) {
+        const s = document.createElement('span')
+        s.className = 'unter'
+        s.textContent = a.felder.join(', ')
+        el.appendChild(s)
+      }
+      el.addEventListener('click', () => starten(a))
+      liste.appendChild(el)
+    }
+  }
+
+  // Beschriftung und Art je Feld. Die Box nennt nur die NAMEN der Felder —
+  // wie sie einem Menschen heissen, weiss sie nicht und soll sie nicht wissen.
+  const FELDER = {
+    ssid:   {label: 'Name des WLANs', art: 'text',     hinweis: 'Genau wie am Router geschrieben.'},
+    psk:    {label: 'WLAN-Passwort',  art: 'password', hinweis: '8 bis 63 Zeichen. Leer lassen fuer ein offenes Netz.'},
+    geraet: {label: 'Schnittstelle',  art: 'text',     hinweis: 'z. B. wlan0'},
+  }
+
+  function formularZeigen(aktion) {
+    return new Promise((fertig) => {
+      const karte = document.createElement('div')
+      karte.className = 'karte'
+      const h = document.createElement('b')
+      h.textContent = aktion.titel
+      karte.appendChild(h)
+      const eingaben = {}
+      for (const feld of aktion.felder) {
+        const info = FELDER[feld] || {label: feld, art: 'text', hinweis: ''}
+        const l = document.createElement('label')
+        l.textContent = info.label
+        l.style.marginTop = '12px'
+        const i = document.createElement('input')
+        i.type = info.art
+        i.className = 'frei'
+        if (info.art === 'password') i.autocomplete = 'off'
+        karte.appendChild(l); karte.appendChild(i)
+        if (info.art === 'password') {
+          // KLARTEXT AUF WUNSCH. Auf einem Handy ist ein vertipptes
+          // WLAN-Passwort der Normalfall, nicht die Ausnahme — und niemand
+          // schaut einem hier ueber die Schulter, den man nicht selbst
+          // hereingelassen hat.
+          const z = document.createElement('label')
+          z.style.cssText = 'display:flex;align-items:center;gap:8px;'
+            + 'font-weight:400;font-size:.9rem;margin-top:6px;color:var(--muted)'
+          const cb = document.createElement('input')
+          cb.type = 'checkbox'
+          cb.addEventListener('change', () => { i.type = cb.checked ? 'text' : 'password' })
+          z.append(cb, document.createTextNode('Passwort anzeigen'))
+          karte.appendChild(z)
+        }
+        if (info.hinweis) {
+          const s = document.createElement('div')
+          s.className = 'unter'; s.textContent = info.hinweis
+          karte.appendChild(s)
+        }
+        eingaben[feld] = i
+      }
+      const los = document.createElement('button')
+      los.textContent = 'Weiter'
+      const zurueck = document.createElement('button')
+      zurueck.textContent = 'Abbrechen'; zurueck.className = 'leise'
+      karte.appendChild(los); karte.appendChild(zurueck)
+      $('formular').textContent = ''
+      $('formular').appendChild(karte)
+      zeigen($('formular'), true)
+      zeigen($('liste'), false)
+      const raus = (werte) => {
+        zeigen($('formular'), false); zeigen($('liste'), true)
+        $('formular').textContent = ''
+        fertig(werte)
+      }
+      los.addEventListener('click', () => {
+        const w = {}
+        for (const feld of aktion.felder) w[feld] = eingaben[feld].value
+        raus(w)
+      })
+      zurueck.addEventListener('click', () => raus(null))
+      const erstes = Object.values(eingaben)[0]
+      if (erstes) erstes.focus()
+    })
+  }
+
+  // Aktionen, die etwas EINRICHTEN statt nur nachzusehen, bekommen eine
+  // Rueckfrage. Alle anderen laufen mit einem Tipp los, und das ist richtig:
+  // "WLAN-Netze suchen" darf nicht erst um Erlaubnis bitten. Aber eine
+  // Installation, die 20 Minuten dauert und die Box umbaut, darf kein
+  // Fehltipp auf einem Telefon in der Hand sein.
+  const RUECKFRAGE = {
+    'installation-starten':
+      'Die Box richtet sich jetzt selbst ein. Das dauert 10 bis 20 Minuten, '
+      + 'sie startet dabei mehrmals neu, und der Fortschritt steht auf ihrem '
+      + 'Bildschirm. Jetzt starten?',
+  }
+
+  async function starten(aktion, vorbelegt) {
+    const frage = RUECKFRAGE[aktion.name]
+    if (frage && !(await bestaetigen(aktion.titel, frage))) return
+    const rumpf = {aktion: aktion.name}
+    // VORBELEGT kommt vom Antippen eines Netzes: der Name steht dann fest und
+    // wird nicht noch einmal abgefragt — nur was fehlt (das Passwort).
+    if (vorbelegt) Object.assign(rumpf, vorbelegt)
+    const offen = aktion.felder.filter((f) => !(vorbelegt && f in vorbelegt))
+    if (offen.length) {
+      // Nur die Felder, die die Box selbst genannt hat. Die Box prueft jeden
+      // Wert noch einmal — hier wird gefragt, nicht entschieden.
+      const werte = await formularZeigen({...aktion, felder: offen})
+      if (werte === null) return
+      Object.assign(rumpf, werte)
+    }
+    $('lauf-titel').textContent = aktion.titel
+    $('ausgabe').textContent = ''
+    melden('', '')
+    const {status, daten} = await ruf('/einrichtung/aktion', rumpf)
+
+    // ZWEI SORTEN ANTWORT: eine mit Ausgabestrom (ein Programm laeuft), und
+    // eine, die schon fertig ist (die WLAN-Schritte).
+    if (daten.run_id) {
+      if (status !== 200) { melden(daten.error || 'Das hat nicht geklappt.', 'fehler'); return }
+      laufId = daten.run_id
+      zeigen($('abbrechen'), true)
+      lauschen(daten.run_id)
+      return
+    }
+    if (status !== 200 || daten.ok === false) {
+      // Die Box antwortet mit dem FELDNAMEN ("ssid: laenger als 32 Byte") —
+      // sie kennt die Beschriftung nicht und soll sie nicht kennen. Hier steht
+      // sie, also wird hier uebersetzt.
+      let text = daten.fehler || daten.error || 'Das hat nicht geklappt.'
+      for (const [feld, info] of Object.entries(FELDER)) {
+        if (text.startsWith(feld + ': ')) {
+          text = info.label + ': ' + text.slice(feld.length + 2)
+          break
+        }
+      }
+      melden(text, 'fehler')
+      return
+    }
+    melden(daten.hinweis || 'Fertig.', 'ok')
+    $('ausgabe').textContent = daten.hinweis || 'Fertig.'
+    if (daten.wechsel) {
+      // DIE BOX WECHSELT DAS NETZ — diese Seite stirbt gleich, und zwar
+      // richtigerweise. Alles Weitere sagt der Bildschirm der Box; hier
+      // bleibt nur die grosse, letzte Anweisung stehen.
+      const karte = document.createElement('div')
+      karte.className = 'karte'
+      const t = document.createElement('b')
+      t.textContent = 'Jetzt auf den Bildschirm der Box schauen'
+      const tx = document.createElement('div')
+      tx.className = 'unter'
+      tx.style.marginTop = '8px'
+      tx.textContent = daten.hinweis
+      karte.append(t, tx)
+      $('formular').textContent = ''
+      $('formular').appendChild(karte)
+      zeigen($('formular'), true)
+      zeigen($('liste'), false)
+      return
+    }
+    if (aktion.name === 'wlan-verbinden') abschlussZeigen()
+  }
+
+  // Eine Rueckfrage, die dieselbe Karte benutzt wie das Formular — kein
+  // `confirm()`: das sieht auf jedem Telefon anders aus, laesst sich nicht
+  // gestalten, und auf manchen Systemen unterdrueckt der Browser es ganz.
+  // Dann waere die Rueckfrage weg und der Knopf loeste sofort aus.
+  function bestaetigen(titel, text) {
+    return new Promise((fertig) => {
+      const karte = document.createElement('div')
+      karte.className = 'karte'
+      const t = document.createElement('b')
+      t.textContent = titel
+      const s = document.createElement('div')
+      s.className = 'unter'
+      s.textContent = text
+      const ja = document.createElement('button')
+      ja.textContent = 'Ja, starten'
+      const nein = document.createElement('button')
+      nein.textContent = 'Abbrechen'; nein.className = 'leise'
+      karte.append(t, s, ja, nein)
+      $('formular').textContent = ''
+      $('formular').appendChild(karte)
+      zeigen($('formular'), true)
+      zeigen($('liste'), false)
+      const schliessen = (antwort) => {
+        zeigen($('formular'), false); zeigen($('liste'), true)
+        $('formular').textContent = ''
+        fertig(antwort)
+      }
+      ja.addEventListener('click', () => schliessen(true))
+      nein.addEventListener('click', () => schliessen(false))
+    })
+  }
+
+  function abschlussZeigen() {
+    // DER ZWEI-STUFEN-ABSCHLUSS, und warum er hier so sichtbar ist: Die
+    // Einstellung gilt bis hierher NUR IM SPEICHER. Wer sich vertippt hat,
+    // waere nach einem Festschreiben aus dem eigenen Netz ausgesperrt — mit
+    // „Verwerfen" ist der alte Stand sofort wieder da.
+    const karte = document.createElement('div')
+    karte.className = 'karte'
+    const t = document.createElement('b')
+    t.textContent = 'Hat es geklappt?'
+    const s = document.createElement('div')
+    s.className = 'unter'
+    s.textContent = 'Die Box hat das WLAN eingestellt, aber noch nicht dauerhaft gespeichert. '
+      + 'Erst wenn du hier bestaetigst, gilt es auch nach einem Neustart.'
+    const ja = document.createElement('button')
+    ja.textContent = 'Ja, festschreiben'
+    const nein = document.createElement('button')
+    nein.textContent = 'Nein, verwerfen'; nein.className = 'leise'
+    karte.append(t, s, ja, nein)
+    $('formular').textContent = ''
+    $('formular').appendChild(karte)
+    zeigen($('formular'), true)
+    zeigen($('liste'), false)
+    const weiter = async (name) => {
+      zeigen($('formular'), false); zeigen($('liste'), true); $('formular').textContent = ''
+      await starten({name, titel: name === 'wlan-bestaetigen' ? 'WLAN festschreiben' : 'WLAN verwerfen', felder: []})
+    }
+    ja.addEventListener('click', () => weiter('wlan-bestaetigen'))
+    nein.addEventListener('click', () => weiter('wlan-verwerfen'))
+  }
+
+  function lauschen(id) {
+    if (strom) strom.close()
+    // Der Agent streamt jede Ausgabezeile einzeln (SSE) — genau dafuer ist der
+    // Assistent da: zusehen statt warten.
+    strom = new EventSource('/stream/' + id + '?token=' + encodeURIComponent(token))
+    strom.onmessage = (e) => {
+      try {
+        const d = JSON.parse(e.data)
+        if (d.line !== undefined) $('ausgabe').textContent += d.line + '\n'
+        $('ausgabe').scrollTop = $('ausgabe').scrollHeight
+      } catch (x) { /* eine unlesbare Zeile darf den Strom nicht abreissen */ }
+    }
+    strom.addEventListener('done', (e) => {
+      strom.close(); strom = null; laufId = null
+      zeigen($('abbrechen'), false)
+      let d = {}
+      try { d = JSON.parse(e.data) } catch (x) {}
+      if (d.aborted) melden('Abgebrochen.', 'fehler')
+      else if (d.timedout) melden('Zeitlimit erreicht — der Schritt hing.', 'fehler')
+      else if (d.exit === 0) melden('Fertig.', 'ok')
+      else melden('Beendet mit Fehlercode ' + d.exit + '.', 'fehler')
+    })
+    strom.onerror = () => {
+      // Kein Abbruch: der Agent schliesst den Strom am Ende von sich aus.
+      if (strom && strom.readyState === EventSource.CLOSED) {
+        strom = null
+        zeigen($('abbrechen'), false)
+      }
+    }
+  }
+
+  $('abbrechen').addEventListener('click', async () => {
+    if (!laufId) return
+    await ruf('/abort/' + laufId, {})
+  })
+  $('anmelden-knopf').addEventListener('click', anmelden)
+  $('code').addEventListener('keydown', (e) => { if (e.key === 'Enter') anmelden() })
+  $('mixpi').addEventListener('error', function () { this.style.display = 'none' })
+  $('fuss').textContent = 'MixPiBox — Einrichtung ueber ' + location.host
+  $('code').focus()
+  autoAnmelden()
+})()
+</script>
+</body>
+</html>

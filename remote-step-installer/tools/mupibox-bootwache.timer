@@ -1,0 +1,22 @@
+[Unit]
+# OPT-IN — NICHT standardmaessig einschalten.
+#
+# Gedacht fuer Boxen OHNE SSH, bei denen der Bildschirm die einzige Bedienung
+# ist. Wer die Box ueber SSH oder die Verwaltung erreicht, nimmt eine falsche
+# Drehung dort sofort zurueck (bootwache.py --zuruecknehmen) und braucht diesen
+# Zeitgeber nicht — der wuerde die Box von selbst neu starten, womoeglich
+# mitten im Lied.
+#
+# Die Frist laeuft im BETRIEB ab, nicht beim Booten: nach einer Aenderung
+# startet die Box neu, kommt hoch — und erst wenn dann 15 Minuten lang niemand
+# bestaetigt, dass man etwas sieht, wird zurueckgenommen. Ein reiner
+# Startdienst wuerde diesen Moment nie erleben.
+Description=MuPiBox Bootwache regelmaessig pruefen
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

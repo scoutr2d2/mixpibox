@@ -1,0 +1,47 @@
+{
+  "_hinweis": "Welche Fernbedienung, welche Taste, welche Aktion. Angelegt beim Koppeln über die Verwaltung; von Hand änderbar. Die Aktions-Kennungen sind die aus src/backend-api/src/box-aktionen.ts — sie sind dort festgenagelt.",
+  "_geraete": "Namensteile, unter denen das Eingabegerät gesucht wird. NICHT die event-Nummer: die ist nach jedem Neustart eine andere. Der Dienst nimmt das ERSTE Gerät, das er findet — mehrere Einträge sind also eine Rangfolge, keine Gleichzeitigkeit.",
+  "geraete": [
+    "Fire TV Remote",
+    "Amazon Fire TV Remote",
+    "Xbox Wireless Controller"
+  ],
+  "_tasten": "Tastencode (wie ihn der Kernel liefert) -> Box-Aktion. Am Gerät gemessen, nicht angenommen: die Mitteltaste der Fire TV sendet 96, nicht 28. BEIDE GERÄTE STEHEN IN EINER TABELLE, und das geht ohne Kollision auf: Tastaturcodes liegen unter 256, Gamepad-Tasten ab 304. Ein Code gehört also immer eindeutig einem Gerät.",
+  "tasten": {
+    "164": "abspielen-anhalten",
+    "96": "auswaehlen",
+    "208": "naechster-titel",
+    "168": "voriger-titel",
+    "103": "hoch",
+    "108": "runter",
+    "172": "startseite",
+    "158": "zurueck",
+    "105": "links",
+    "106": "rechts",
+
+    "304": "auswaehlen",
+    "305": "zurueck",
+    "308": "abspielen-anhalten",
+    "307": "startseite",
+    "310": "voriger-titel",
+    "311": "naechster-titel",
+    "314": "buehne-weiter",
+    "315": "startseite",
+
+    "167": "spielecke"
+  },
+  "_achsen": "NUR FÜR GAMEPADS. Das Steuerkreuz des Xbox-Controllers ist keine Taste, sondern eine Achse (ABS_HAT0X = 16, ABS_HAT0Y = 17) — ein reiner Tastenleser sieht davon nichts, ohne dass irgendwo ein Fehler erschiene. Je Achse: erst die Aktion für den NEGATIVEN Ausschlag (links bzw. oben), dann die für den positiven.",
+  "_kreuz_ist_fest_belegt": "Das Kreuz bedeutet auf dem Controller IMMER dasselbe: oben/unten die Lautstärke, links/rechts der Titelwechsel. Das ist die Entscheidung des Betreibers vom 06.09.2026 und beseitigt die Doppelbelegung, die die Fire-TV-Fernbedienung braucht (dort heißt Hoch/Runter je nach Ort etwas anderes, weil sie nur elf Tasten hat). Navigiert wird auf dem Controller mit dem linken Stick — dafür ist genug Platz.",
+  "achsen": {
+    "16": ["voriger-titel", "naechster-titel"],
+    "17": ["lauter", "leiser"]
+  },
+  "_sticks": "Daumensticks. Sie melden eine Werteleiter statt -1/0/+1 und zittern auch unberührt (gemessen: 32139 bis 33883 um die Mitte 32768). Deshalb werden sie getrennt von den Achsen geführt: mit Totzone und nur auf die Flanke — einmal auslenken ist ein Schritt, nicht zwölf. Nur der LINKE Stick (ABS_X = 0, ABS_Y = 1); der rechte hätte keine eigene Aufgabe.",
+  "sticks": {
+    "0": ["links", "rechts"],
+    "1": ["hoch", "runter"]
+  },
+  "_buehne": "View (314) lag bis 06.09.2026 auf `zurueck` — genau wie B (305). Eine doppelt belegte Taste ist eine verschenkte: sie wurde frei fuer `buehne-weiter`. Die Taste schaltet die Buehne im Player weiter UND ein (aus → Wellen → Songtext → Titel → aus); die Einstellung der Verwaltung bleibt die Vorgabe und kommt beim naechsten Start zurueck.",
+  "_spielecke": "Die Share-Taste des Xbox-Controllers (das Rechteck mit dem Pfeil, zwischen Kreuz und rechtem Stick). Sie sendet 167 (KEY_RECORD) — am Gerät gemessen, 06.09.2026 — und war in keiner Zuordnung belegt. Sie liegt UNTER 256, ist also ein Tastaturcode: ein ungegriffener Browser bekäme ihn mit. Solange der Dienst das Gerät exklusiv hält, ist das ohne Belang.",
+  "_nicht_zugeordnet": "Hoch/Runter sind DOPPELT belegt, nach Zusammenhang: im laufenden Player regeln sie die Lautstärke, im Regal bewegen sie die Auswahl. Das ist kein Kniff, sondern Notwendigkeit — die echten Lautstärketasten der Fire-TV-Modelle laufen per Infrarot und erreichen den Pi nie. Beim Controller gilt dasselbe über das Steuerkreuz. Menü (139) bleibt frei; dort passt später der Langdruck fürs Ausschalten."
+}

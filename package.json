@@ -1,0 +1,45 @@
+{
+  "name": "mupibox",
+  "version": "1.0.0",
+  "description": "Music player with touch screen.",
+  "workspaces": [
+    "src/*"
+  ],
+  "scripts": {
+    "docker:build": "docker build -t mupibox .",
+    "docker:start": "docker run -it -v ./src/backend-api/:/home/dietpi/.mupibox/Sonos-Kids-Controller-master/server/ -p 8200:8200 -p 5005:5005 mupibox:latest bash",
+    "serve": "concurrently 'npm run serve:backend-api' 'npm run serve:backend-player'",
+    "serve:frontend-admin": "npm run serve --workspace=mupibox-frontend-admin",
+    "serve:backend-api": "npm run serve --workspace=mupibox-backend-api",
+    "serve:backend-player": "npm run serve --workspace=mupibox-backend-player",
+    "build": "npm run build --workspaces",
+    "build:frontend-admin": "npm run build --workspace=mupibox-frontend-admin",
+    "build:backend-api": "npm run build --workspace=mupibox-backend-api",
+    "build:backend-player": "npm run build --workspace=mupibox-backend-player",
+    "test": "npm run test --workspaces && npm run test:plugins",
+    "test:plugins": "node --test plugins/*/*.spec.mjs",
+    "plugin:neu": "node tools/plugin-geruest.mjs",
+    "plugin:pruefen": "npx tsx tools/plugin-pruefen.mjs",
+    "test:frontend-admin": "npm run test --workspace=mupibox-frontend-admin",
+    "lint": "npm run lint --workspaces",
+    "lint:fix": "npm run lint:fix --workspaces"
+  },
+  "keywords": [
+    "mupi",
+    "music",
+    "rss feed",
+    "spotify",
+    "raspberry pi",
+    "touch screen"
+  ],
+  "author": "Mupi Team",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@biomejs/biome": "*",
+    "baseline-browser-mapping": "^2.9.9",
+    "concurrently": "9.1.0",
+    "cross-env": "7.0.3",
+    "karma-coverage": "~2.2.1"
+  }
+}

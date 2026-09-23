@@ -1,0 +1,27 @@
+[Unit]
+Description=MuPiBox Standwache regelmaessig fragen
+
+[Timer]
+# JEDE MINUTE, und zwar aus zwei Gruenden zugleich:
+#
+#  * Die Frist ist 10 Minuten. Ein Blick je Minute heisst: der Fehlerfall wird
+#    binnen einer Minute bemerkt, und bis zum Zurueckdrehen liegen drei
+#    Messungen — die Wache urteilt nie nach einer einzigen.
+#  * Der Blick je Minute IST das zweite Tor. Der Raspberry hat keine gepufferte
+#    Uhr; springt sie beim NTP-Abgleich rueckwaerts, laeuft die Frist
+#    rechnerisch nie ab. Dann loest der Laufzaehler aus — und der zaehlt genau
+#    diese Ausloesungen hier. Die Zahl `laeufe_max` in der schwebenden Frist
+#    ist auf diesen Takt gerechnet (frist_s / 60 + 5). Wer hier etwas anderes
+#    einstellt, verschiebt diese zweite Sicherung mit.
+#
+# Erst 150 s nach dem Start: das Programm urteilt ohnehin vor 120 s Laufzeit
+# nicht (START_KARENZ). Frueher zu fragen waere reine Last in genau der Minute,
+# in der die Box am meisten zu tun hat — dieselbe Ueberlegung wie bei der
+# Kioskwache, nur mit der Karenz zusaetzlich IM Programm, damit sie auch bei
+# einem Aufruf von Hand gilt.
+OnBootSec=150s
+OnUnitActiveSec=60s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

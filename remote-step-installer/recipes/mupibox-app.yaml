@@ -1,0 +1,1520 @@
+name: MixPiBox — App aus UNSEREN Paketen
+version: 1
+# Installiert Frontend + Backend + Admin aus den Paketen DEINES Forks — die Box holt
+# dafür NICHTS aus dem Netz (die Dateien schiebt der Controller per `put:` hinüber).
+# Das ist der Teil, der gestern über das autosetup lief; hier Schritt für Schritt,
+# abbrechbar, wiederholbar.
+#
+#   ./tui --recipe mupibox-app
+#
+# WO DER FORK LIEGT, MUSS MAN SEIT DEM 23.09.2026 NICHT MEHR SAGEN: `expand_path`
+# im Controller fragt denselben Finder wie der SD-Assistent (`core.fork_wurzel`)
+# — Elternordner des Installers, ~/Downloads/mixpibox, ~/mixpibox, alter Standard
+# — und nimmt den ersten Ordner, der WIRKLICH wie der Fork aussieht. Der
+# Ersatzwert `$HOME/Downloads/mixpibox` in den `src:`-Zeilen unten ist nur noch
+# die letzte Reserve. Wer etwas anderes will, setzt weiterhin:
+#
+#   export MUPI_REPO=/wo/auch/immer      # gewinnt vor dem Finder
+#
+# Voraussetzung: ein nacktes DietPi mit Agent (./sdprep + ./connect) und die
+# System-Pakete aus `mupibox.yaml` (node, mplayer, …). Diese Recipe macht NUR die App.
+env:
+  # Muss zur Wahl im System-Rezept passen (siehe dessen Kopf) — und zwar
+  # WIRKLICH, an BEIDEN Stellen.
+  #
+  MUPI_APP: /home/dietpi/.mupibox/Sonos-Kids-Controller-master
+  # NAME DER BOX — und zwar an ZWEI Stellen zugleich: als `mupibox.host` in der
+  # Konfiguration UND als Rechnername. Beides setzt der Schritt 'box-name', der
+  # diese Variable liest (ohne sie: `MuPiBox`).
+  #
+  # ZWEI BOXEN IM SELBEN NETZ BRAUCHEN ZWEI NAMEN. `mupibox.host` wird in
+  # config/templates/env-librespot zu LIBRESPOT_NAME, ist also der Name des
+  # Spotify-Geraets — und genau danach sucht der Player, wenn er ein Geraet
+  # waehlt. Am 2026-07-30 hiessen BEIDE Boxen `MuPiBox`: die eine sah das
+  # Geraet der anderen und spielte dorthin.
+  #   Pi 5 (die eingerichtete Box) = MuPiBox
+  #   Pi 4 (die zweite)            = MuPiBox2
+  #
+  # Der Wert hier ist die VORGABE fuer jede Box. Was eine EINZELNE Box angeht,
+  # steht im Inventar `boxen.yaml` (dort `env: MUPI_HOST:`) und gewinnt gegen
+  # diese Zeile — so braucht der Pi 4 kein eigenes Rezept. Passt dort kein
+  # Eintrag, gilt der Wert hier; dann fuer einen Lauf gegen die zweite Box
+  # eben hier MuPiBox2 eintragen.
+  #
+  # In der eigenen Shell zu exportieren bringt nichts: zur Box hinueber geht
+  # nur, was der Runner als `export …` voranstellt (controller/sysinfo.py,
+  # recipe_prefix). $MUPI_REPO oben ist etwas anderes — der meint einen Pfad
+  # auf DIESEM Rechner und wird beim Hochladen ausgewertet, nie auf der Box.
+  MUPI_HOST: MixPiBox
+  MUPI_PLAYER: /home/dietpi/.mupibox/spotifycontroller-main
+  MUPI_USER: dietpi
+
+steps:
+  - id: dirs
+    name: "Verzeichnisse anlegen"
+    note: "wie im autosetup: App, Player, Chromium-Cache"
+    run: |
+      set -e
+      mkdir -p "$MUPI_APP/server/config" "$MUPI_PLAYER/config"
+      chown -R $MUPI_USER:$MUPI_USER /home/$MUPI_USER/.mupibox
+
+      # DER CHROMIUM-SPEICHER BRAUCHT MEHR ALS EIN chown BEI DER INSTALLATION.
+      #
+      # AM GERAET GEMESSEN (2026-08-03): Der Kiosk lief seit einer Woche OHNE
+      # Plattenspeicher. Das Verzeichnis war da, der Schalter zeigte darauf, und
+      # trotzdem stand darin nichts Neueres als der 27. Juli:
+      #
+      #   Chromium laeuft als:         dietpi
+      #   chromium_cache/Default:      drwx------ root root
+      #   dietpi darf lesen/schreiben: NEIN
+      #
+      # Der Grund ist eine REIHENFOLGE, keine fehlende Zeile: Das `chown -R`
+      # oben greift bei der Installation. `Default/` legt aber erst CHROMIUM an,
+      # beim ersten Start — und solange der Kiosk als root lief, gehoerte es
+      # root. Nach der Umstellung auf den Kiosk-Benutzer (llmwiki
+      # mupi-kiosk-als-dietpi) kam es nie wieder in seine Haende, und Chromium
+      # warf seinen Speicher fortan bei jedem Beenden weg.
+      #
+      # Folge: nach JEDEM Start holte die Box alle Cover, Schriften und JS-Teile
+      # neu, obwohl der Server sie mit ETag und max-age ausliefert (eine
+      # Rueckfrage kostet dort 304 mit 0 Bytes). Dazu lagen 123 MB toter
+      # Speicher auf der SD-Karte.
+      #
+      # Deshalb wird hier nicht nur besessen, sondern GEPRUEFT: Kann der
+      # Kiosk-Benutzer wirklich hineinschreiben? Wenn nicht, ist der Inhalt
+      # ohnehin unbrauchbar — er stammt von einem anderen Benutzer. Weg damit;
+      # Chromium baut ihn beim naechsten Start in Sekunden selbst wieder auf.
+      CACHE=/home/$MUPI_USER/.mupibox/chromium_cache
+      if [ -e "$CACHE/Default" ] && ! su -s /bin/sh -c "test -w '$CACHE/Default'" "$MUPI_USER" 2>/dev/null; then
+        echo "Chromium-Speicher gehoert nicht $MUPI_USER - wird verworfen (Chromium legt ihn neu an)"
+        rm -rf "$CACHE"
+      fi
+      install -d -o $MUPI_USER -g $MUPI_USER -m 755 "$CACHE"
+      # /etc/mupibox gehoert dem BACKEND-Nutzer: es legt dort beim Start sein
+      # TLS-Verzeichnis an. Als root-eigenes Verzeichnis scheitert das jedes Mal
+      # mit "EACCES: mkdir '/etc/mupibox/tls'" (am Geraet belegt).
+      # setgid + Gruppe www-data, damit der PHP-Admin die Konfiguration weiter
+      # speichern kann (existiert die Gruppe noch nicht, greift der Fallback).
+      GRP=www-data; getent group "$GRP" >/dev/null || GRP=$MUPI_USER
+      install -d -o $MUPI_USER -g $GRP -m 2775 /etc/mupibox
+      install -d -o $MUPI_USER -g $MUPI_USER -m 755 /etc/mupibox/tls
+      echo "Verzeichnisse bereit (/etc/mupibox gehört $MUPI_USER, Gruppe $GRP)"
+
+  - id: app-paket
+    name: "App-Paket hochladen + entpacken (Frontend + Backend)"
+    note: >-
+      deploy.zip = server.js (backend-api) + plugin-laufwerk.js (Einstieg der
+      Plugin-Worker, MUSS eine eigene Datei bleiben - ein Worker braucht einen
+      Pfad auf der Platte) + spotify-control.js (player) + herkunft.json
+      (Commit, Zweig, Baudatum - daran haengt die ganze Aktualisierung) +
+      www/neu/ (Box-Oberflaeche; seit E118/1e gibt es KEINEN Angular-Bau mehr,
+      direkt unter www/ liegt NICHTS) + www-admin/ (neue Verwaltung) +
+      README.md (Lizenztexte der uebernommenen Fremdteile).
+
+      NACHGEZAEHLT 19.09.2026 an `unzip -l` des Pakets aus 0bc0d9e7
+      (6.706.321 B, gebaut aus f97fcbce): 230 Eintraege, davon 185 unter
+      www/neu/ und 40 unter www-admin/. Die alte Fassung dieser Zeile nannte
+      vier Stuecke und liess drei weg - darunter plugin-laufwerk.js, dessen
+      Fehlen die Box NICHT kaputtmacht, sondern nur still KEIN Plugin laden
+      laesst (src/deploy.sh bricht auf der Bauseite genau dafuer hart ab).
+      `check:` unten prueft deshalb alle fuenf tragenden Stuecke, nicht drei -
+      dieselbe Liste, die src/deploy.sh in seiner Schlussschleife fuehrt.
+      tools/rezept-deckung.py haelt Beschreibung, `check:` und Zip zusammen.
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/bin/nodejs/deploy.zip
+        dest: /tmp/mupi-deploy.zip
+    run: |
+      set -e
+      command -v unzip >/dev/null || { apt-get install -y unzip; }
+      unzip -o /tmp/mupi-deploy.zip -d "$MUPI_APP"
+      cp "$MUPI_APP/spotify-control.js" "$MUPI_PLAYER/spotify-control.js"
+      chown -R $MUPI_USER:$MUPI_USER /home/$MUPI_USER/.mupibox
+      rm -f /tmp/mupi-deploy.zip
+      ls -la "$MUPI_APP" | head -20
+      # Die neue Verwaltung liegt als Nachbar von server.js im Paket. Bei
+      # MUPI_ADMIN=node ist sie die EINZIGE Verwaltung der Box — fehlt sie
+      # dann, steht man ohne da, und zwar ohne es zu merken.
+      if [ ! -f "$MUPI_APP/www-admin/index.html" ]; then
+        echo "HINWEIS: www-admin/ fehlt im Paket (deploy.zip aus einem alten Bau?)."
+        echo "  Bei MUPI_ADMIN=node haette die Box damit KEINE Verwaltung."
+        echo "  Abhilfe: im Fork 'npm run build --workspaces' + src/deploy.sh."
+      fi
+    check: |
+      test -f $MUPI_APP/server.js && test -f $MUPI_PLAYER/spotify-control.js &&
+      test -f $MUPI_APP/plugin-laufwerk.js && test -f $MUPI_APP/herkunft.json &&
+      test -f $MUPI_APP/www/neu/index.html &&
+      test -f $MUPI_APP/www-admin/index.html
+
+  - id: konfig
+    name: "Konfigurationsvorlagen setzen"
+    note: "NUR anlegen, wenn noch keine da ist — bestehende Config/Tokens bleiben unangetastet"
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/www.json
+        dest: /tmp/mupi-www.json
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/monitor.json
+        dest: /tmp/mupi-monitor.json
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/spotifycontroller.json
+        dest: /tmp/mupi-spotifycontroller.json
+    run: |
+      set -e
+      [ -f "$MUPI_APP/server/config/config.json" ]  || cp /tmp/mupi-www.json "$MUPI_APP/server/config/config.json"
+      [ -f "$MUPI_APP/server/config/monitor.json" ] || cp /tmp/mupi-monitor.json "$MUPI_APP/server/config/monitor.json"
+      [ -f "$MUPI_PLAYER/config/config.json" ]      || cp /tmp/mupi-spotifycontroller.json "$MUPI_PLAYER/config/config.json"
+      # Zustandsdateien des Backends anlegen. FEHLEN sie, ANTWORTET die Route gar
+      # nicht: der Handler ist `existsSync(f) && readFile(...)` — ohne Datei kein
+      # Response, die Anfrage haengt EWIG und die Oberflaeche dreht endlos (am Geraet
+      # belegt: /api/data lief in jeden Timeout, danach 1,5 ms).
+      for f in data.json active_data.json resume.json active_resume.json wlan.json; do
+        [ -s "$MUPI_APP/server/config/$f" ] || echo "[]" > "$MUPI_APP/server/config/$f"
+      done
+      # /api/mupihat liest /tmp/mupihat.json — und /tmp ist nach JEDEM Start leer.
+      # Ohne MuPiHAT schreibt die Datei niemand, die Route antwortet also nie und
+      # die Oberflaeche verbraucht pro Abfrage eine der sechs Browser-Verbindungen,
+      # bis sie steht ("wird immer langsamer"). systemd-tmpfiles legt sie bei jedem
+      # Boot wieder an (laeuft in sysinit, also lange vor pm2).
+      printf '# %s\nf /tmp/mupihat.json 0644 %s %s - []\n' \
+        "ohne MuPiHAT schreibt niemand diese Datei - fehlt sie, haengt /api/mupihat" \
+        "$MUPI_USER" "$MUPI_USER" > /etc/tmpfiles.d/mupibox.conf
+      systemd-tmpfiles --create /etc/tmpfiles.d/mupibox.conf || true
+      # Netzstatus: die Skripte des Forks schreiben nach /tmp/network.json, das
+      # Backend liest server/config/network.json. NICHT verknuepfen! Die Skripte
+      # schreiben die Datei dutzendfach hintereinander neu und sie ist dabei kurz
+      # LEER - das Backend liefert dann "Unexpected end of JSON input", die
+      # Oberflaeche haelt sich fuer OFFLINE und laedt das Spotify-SDK gar nicht
+      # erst ("Device is offline"): keine Wiedergabe. Der Abgleich passiert
+      # stattdessen ATOMAR im Schritt 'systemd-dienste'.
+      ln -sf /etc/mupibox/mupiboxconfig.json "$MUPI_PLAYER/config/mupiboxconfig.json"
+      chown -R $MUPI_USER:$MUPI_USER /home/$MUPI_USER/.mupibox
+      rm -f /tmp/mupi-www.json /tmp/mupi-monitor.json /tmp/mupi-spotifycontroller.json
+      echo "Konfiguration bereit (vorhandene Dateien wurden NICHT überschrieben)"
+
+  - id: mupiboxconfig
+    name: "Zentrale mupiboxconfig.json anlegen (falls neu)"
+    optional: true
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/mupiboxconfig.json
+        dest: /tmp/mupiboxconfig.json
+    run: |
+      set -e
+      if [ -f /etc/mupibox/mupiboxconfig.json ]; then
+        echo "vorhanden — bleibt unangetastet (Spotify-Tokens!)"
+      else
+        # 664 + Gruppe www-data: Backend (als $MUPI_USER) UND PHP-Admin dürfen speichern
+        GRP=www-data; getent group "$GRP" >/dev/null || GRP=$MUPI_USER
+        install -D -m 664 -o $MUPI_USER -g $GRP /tmp/mupiboxconfig.json /etc/mupibox/mupiboxconfig.json
+        echo "angelegt"
+      fi
+      rm -f /tmp/mupiboxconfig.json
+
+  - id: box-name
+    name: "Name der Box setzen (mupibox.host + Rechnername)"
+    note: >-
+      DER EINZIG RICHTIGE ORT dafuer, und er MUSS vor allem laufen, was
+      librespot startet — der Dienst liest den Namen EINMAL beim Start.
+
+      `mupibox.host` ist keine Kosmetik: `config/templates/env-librespot`
+      macht daraus LIBRESPOT_NAME, also den Namen, unter dem die Box in
+      Spotifys Geraeteliste steht. Nach genau diesem Namen sucht der Player,
+      wenn er sein Geraet waehlt, und danach sucht auch der librespot-Waechter
+      (`jq -r .mupibox.host`).
+
+      AM GERAET (2026-07-30): BEIDE Boxen hiessen `MuPiBox`. Dann sieht die
+      eine das Geraet der anderen, waehlt es aus und spielt DORT — hier tippen,
+      drueben klingt es. Deshalb traegt jede Box einen EIGENEN Namen
+      (`$MUPI_HOST` im Kopf dieser Recipe).
+
+      DER NAME IST SEIT DEM 09.08.2026 `MixPiBox` — der Fork heisst so, und
+      der Name steht nicht nur im Verborgenen: er ist der SPOTIFY-GERAETENAME
+      (LIBRESPOT_NAME), die Kopfzeile der Verwaltung und der Rechnername im
+      Netz. Eine Box, die sich MuPiBox nennt, waere an jeder dieser drei
+      Stellen falsch beschriftet.
+
+      Der Rechnername wird gleich mitgesetzt: er ist der Geraetename in der
+      MQTT-Erkennung (der Schritt 'mqtt-reparieren' traegt ihn als `mqtt.name`
+      ein), und zwei Boxen namens `MuPiBox` sind im Netz ohnehin nicht
+      auseinanderzuhalten.
+    run: |
+      set -e
+      NAME="${MUPI_HOST:-MixPiBox}"
+      [ -f /etc/mupibox/mupiboxconfig.json ] || {
+        echo "  /etc/mupibox/mupiboxconfig.json fehlt — erst den Schritt 'mupiboxconfig'."
+        exit 1
+      }
+      python3 - "$NAME" <<'ENDE'
+      import json, sys
+      p = '/etc/mupibox/mupiboxconfig.json'
+      name = sys.argv[1]
+      c = json.load(open(p))
+      alt = (c.get('mupibox') or {}).get('host')
+      c.setdefault('mupibox', {})['host'] = name
+      json.dump(c, open(p, 'w'), indent=2)
+      print(f"mupibox.host: {name} (unveraendert)" if alt == name
+            else f"mupibox.host: {alt!r} -> {name!r}")
+      ENDE
+      # Rechnername. `hostnamectl` schreibt nur /etc/hostname und laesst
+      # /etc/hosts in Ruhe - bleibt dort der alte Name stehen, laeuft jede
+      # Namensaufloesung des eigenen Rechners ins Leere ("unable to resolve
+      # host"), und jedes sudo haengt erst einmal.
+      hostnamectl set-hostname "$NAME" || { echo "$NAME" > /etc/hostname; hostname "$NAME"; }
+      if grep -q '^127\.0\.1\.1' /etc/hosts; then
+        sed -i "s/^127\.0\.1\.1.*/127.0.1.1\t$NAME/" /etc/hosts
+      else
+        printf '127.0.1.1\t%s\n' "$NAME" >> /etc/hosts
+      fi
+      echo "Rechnername: $(hostname)"
+    check: |
+      test "$(python3 -c "
+      import json
+      print((json.load(open('/etc/mupibox/mupiboxconfig.json')).get('mupibox') or {}).get('host',''))")" \
+        = "${MUPI_HOST:-MixPiBox}" \
+        && test "$(hostname)" = "${MUPI_HOST:-MixPiBox}" \
+        && echo OK
+    timeout: 60
+
+  - id: extras
+    name: "Helper-Skripte, Themes + Kiosk-Skript (aus dem Fork)"
+    note: "68 Skripte (mupibox/mupihat/fan/wifi/bluetooth/wled/mqtt/telegram) und das EIGENE chromium-autostart.sh (Themes der alten Oberflaeche: entfallen mit E118/1e) — ohne die fehlen Kiosk, Lüfter, Akku-Anzeige u.v.m. Das Kiosk-Skript wählt seit E56 zwischen Chromium und Cog (mupibox.kioskBrowser, Vorgabe chromium); Cog wird ABSICHTLICH nicht vorinstalliert, sondern erst beim Umstellen von mixpi-kiosk-pakete.sh nachgeholt — wer bei Chromium bleibt, trägt die Pakete nicht mit."
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts
+        dest: /tmp/mupi-scripts.tgz          # Verzeichnis -> wird unterwegs gepackt
+    run: |
+      set -e
+      mkdir -p /usr/local/bin/mupibox
+      cd /tmp && rm -rf mupi-x && mkdir mupi-x
+      tar xzf /tmp/mupi-scripts.tgz -C mupi-x
+      install -m 755 mupi-x/scripts/chromium-autostart.sh /var/lib/dietpi/dietpi-software/installed/chromium-autostart.sh
+      # ══ KIOSK-RICHTLINIE — Uebersetzen und Passwortmanager aus ═════════
+      # Betreiber, 10.08.2026: „uebersetzten muss im chrome immer
+      # deaktiviert werden."
+      #
+      # ALS RICHTLINIE UND NICHT NUR ALS STARTSCHALTER: chromium-autostart.sh
+      # traegt zwar `--disable-features=…,Translate`, aber der Kiosk startet
+      # aus der ANMELDESITZUNG des Benutzers dietpi (Vater ist init, keine
+      # eigene Unit), und die Schalterzeile kann an mehreren Stellen stehen.
+      # Wer die Datei ersetzt oder Chromium anders startet, hat den Schalter
+      # verloren. Eine Richtlinie gilt fuer JEDEN Start.
+      #
+      # DAS WISSEN STAND IM WISSENSPAKET (Eintrag
+      # chromium-kiosk-passwortmanager-aus) UND NIE IM REZEPT — die Box bekam
+      # es nur, wenn jemand es von Hand nachtrug. Genau die Luecke, nach der
+      # der Betreiber gefragt hat.
+      install -d -m 755 /etc/chromium/policies/managed
+      # Heredoc mit EINGERUECKTEM Inhalt: im YAML-Blockskalar beendet eine
+      # Zeile auf Spalte 0 den Block (erster Versuch genau daran gescheitert),
+      # und JSON stoert fuehrender Leerraum nicht.
+      cat > /etc/chromium/policies/managed/mixpibox-kiosk.json <<'RICHTLINIE'
+      {
+        "TranslateEnabled": false,
+        "PasswordManagerEnabled": false,
+        "PasswordLeakDetectionEnabled": false,
+        "AutofillAddressEnabled": false,
+        "AutofillCreditCardEnabled": false,
+        "AutoFillEnabled": false,
+        "DefaultNotificationsSetting": 2,
+        "PromptForDownloadLocation": false
+      }
+      RICHTLINIE
+      chmod 644 /etc/chromium/policies/managed/mixpibox-kiosk.json
+      # DIE LISTE IST DER AUSROLLWEG — was hier fehlt, kommt nie an.
+      # Am 31.08.2026 nannte sie 8 von 17 Verzeichnissen in scripts/, und die
+      # Luecke war nicht theoretisch: der WLAN-Adapter (mixpi/), die
+      # Soloist-Anmeldewache (soloist/) und die Taster-Bedienung (OnOffShim/)
+      # lagen im Baum und kamen auf keine frische Box. Gemessen mit
+      # tools/rezepte-gegen-box.py gegen die laufende Box.
+      #
+      # BESONDERS mixpi/: nach der Namensregel landet dort alles NEUE — das
+      # Verzeichnis, das am ehesten wachsen wird, war ausgerechnet nicht dabei.
+      #
+      # NICHT AUFGENOMMEN und das mit Absicht: `systemd` enthaelt .service- und
+      # .timer-Dateien. Die gehoeren nach /etc/systemd/system, nicht nach
+      # /usr/local/bin/mupibox — sie kaemen hier als nicht ausfuehrbare
+      # Textdateien an und wuerden nie starten. Ebenso bleiben `box`,
+      # `hwdetect` und `online` draussen, solange kein Befund sie verlangt:
+      # eine Liste, die auf Verdacht waechst, rollt irgendwann alles aus.
+      for d in mupibox bluetooth wled telegram mupihat fan wifi mqtt mixpi soloist OnOffShim librespot; do
+        [ -d "mupi-x/scripts/$d" ] && cp -a mupi-x/scripts/$d/* /usr/local/bin/mupibox/ || true
+      done
+      chmod 755 /usr/local/bin/mupibox/* 2>/dev/null || true
+      # (Die Themes der alten Oberflaeche entfielen mit E118/1e - Farben
+      #  kommen aus /farben.css, E118/1c.)
+      chown -R $MUPI_USER:$MUPI_USER "$MUPI_APP" /home/$MUPI_USER/MuPiBox
+      rm -rf /tmp/mupi-x /tmp/mupi-scripts.tgz
+      echo "Skripte: $(ls /usr/local/bin/mupibox/ | wc -l)   Themes: $(ls "$MUPI_APP/www/theme-data/" | wc -l)"
+    # BEIDE Dateien, nicht nur die eine: das Kiosk-Skript ruft seit E56
+    # mixpi-kiosk-pakete.sh, bevor es Cog startet. Fehlt sie, faellt der Kiosk
+    # stumm auf Chromium zurueck — die Box laeuft, der Schalter im
+    # Eltern-Bereich tut aber nichts, und niemand sieht warum.
+    check: "test -x /var/lib/dietpi/dietpi-software/installed/chromium-autostart.sh && test -x /usr/local/bin/mupibox/mixpi-kiosk-pakete.sh"
+
+  - id: plugins
+    name: "Erweiterungen (Plugins) ausrollen — versioniert, wie beim Update"
+    note: >-
+      BIS 22.08.2026 ROLLTE DIESER WEG GAR KEINE PLUGINS AUS: kein "plugin"
+      im ganzen Rezept, deploy.zip ohne plugins/ — eine per Rezept
+      aufgesetzte Box hatte weder ARD noch Jellyfin noch die Engine-Gesichter,
+      bis das erste Update oder ausliefern.py lief. Der Server laeuft dann
+      ruhig weiter und die Kacheln fehlen einfach; gesucht wird der Fehler
+      bei den Diensten, nicht beim Installationsweg (llmwiki:
+      cp-rn-friert-plugins-auf-dem-erststand-ein).
+      DERSELBE KOPIERER WIE IN DEN SCHALEN-WEGEN
+      (mixpi-plugins-nachziehen.sh): Erstausrollung kopiert, hoehere
+      fassung ersetzt ganz, Gleichstand und Betreiber-Eigenes bleiben.
+      Ein Rezept-Lauf auf einer BESTEHENDEN Box ist damit gefahrlos.
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/plugins
+        dest: /tmp/mupi-plugins.tgz          # Verzeichnis -> wird unterwegs gepackt
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/mixpi/mixpi-plugins-nachziehen.sh
+        dest: /usr/local/bin/mupibox/mixpi-plugins-nachziehen.sh
+        mode: "755"
+    run: |
+      set -e
+      cd /tmp && rm -rf mupi-plugins && mkdir mupi-plugins
+      tar xzf /tmp/mupi-plugins.tgz -C mupi-plugins
+      # VOR dem ersten Serverstart (dienste-systemd kommt spaeter): der Wirt
+      # liest die Plugins beim Start — wer sie danach hinlegt, braucht einen
+      # Neustart mehr und wundert sich bis dahin ueber eine leere Steckleiste.
+      MIXPI_PLUGIN_BESITZER="${MUPI_USER:-dietpi}:${MUPI_USER:-dietpi}"         /usr/local/bin/mupibox/mixpi-plugins-nachziehen.sh         /tmp/mupi-plugins/plugins         "/home/${MUPI_USER:-dietpi}/.mupibox/plugins"
+      rm -rf /tmp/mupi-plugins /tmp/mupi-plugins.tgz
+      echo "── Stand ──"
+      ls "/home/${MUPI_USER:-dietpi}/.mupibox/plugins" | sed 's/^/  /'
+    check: "test -f /home/${MUPI_USER:-dietpi}/.mupibox/plugins/mixpi-ardsounds/plugin.json"
+
+  - id: audio-mixer
+    name: "ALSA: Standard-Gerät + Master-Regler (softvol)"
+    note: "OHNE das stürzt der Player in einer Schleife ab: er liest die Lautstärke per `amixer sget Master`, der MAX98357A hat aber KEINEN eigenen Regler (am Gerät belegt)"
+    put:
+      # BEWUSST unsere Fassung, NICHT die des Forks: dort steht "plughw:0" fest
+      # verdrahtet — die Kartenreihenfolge wechselt aber zwischen Neustarts.
+      #
+      # NACH /tmp, NICHT NACH /etc: die put:-Liste laeuft VOR dem run:-Block
+      # und damit vor dem PipeWire-Wachposten darunter. Bis zum 14.08.2026
+      # landete /etc/asound.conf deshalb bei JEDEM Lauf — auch nachdem der
+      # Pflichtschritt `pipewire` sie beiseitegelegt hatte — und bog ALSA-
+      # Klienten am PipeWire vorbei auf einen softvol, den es dort nicht
+      # mehr gibt (ANGLEICH-PI4-PI5.md, Rest von Punkt 10; dieselbe
+      # put-vor-run-Falle wie einst beim pipewire-Schritt selbst). Ob sie
+      # nach /etc gehoert, entscheidet der run:.
+      - src: tools/asound.conf
+        dest: /tmp/mupi-asound.conf
+        mode: "644"
+      - src: tools/init-alsa-softvol.sh
+        dest: /usr/local/bin/mupibox/init-alsa-softvol.sh
+        mode: "755"
+      - src: tools/mupibox-alsa-init.service
+        dest: /etc/systemd/system/mupibox-alsa-init.service
+        mode: "644"
+    run: |
+      set -e
+      # UNTER PIPEWIRE NICHT ANFASSEN. Der Schritt `pipewire` in mupibox.yaml
+      # schaltet mupibox-alsa-init bewusst ab und schiebt /etc/asound.conf
+      # beiseite. Dieses Rezept laeuft DANACH — ohne diesen Wachposten macht
+      # der spaetere Pflichtschritt den frueheren zunichte (gemessener Konflikt
+      # zweier Pflichtschritte: der spaetere gewinnt).
+      if command -v wpctl >/dev/null 2>&1; then
+        rm -f /tmp/mupi-asound.conf
+        echo "PipeWire ist da (wpctl vorhanden) — softvol/ALSA-Init entfaellt"
+        exit 0
+      fi
+      install -m 644 /tmp/mupi-asound.conf /etc/asound.conf
+      rm -f /tmp/mupi-asound.conf
+      # Der softvol-Regler entsteht erst bei der ersten Wiedergabe und ist nach JEDEM
+      # Neustart wieder weg -> als Boot-Dienst anlegen, sonst stirbt der Player.
+      systemctl daemon-reload
+      systemctl enable --now mupibox-alsa-init >/dev/null 2>&1
+      sleep 2
+      amixer scontrols 2>/dev/null | grep -q Master && echo "Master-Regler vorhanden" \
+        || echo "WARNUNG: kein Master-Regler — Player wird abstuerzen"
+    check: "command -v wpctl >/dev/null 2>&1 || amixer scontrols | grep -q Master"
+
+  # (Schritt api-port-fix entfiel mit E118/1e: er flickte www/*.js der alten Angular-App;
+  #  die eigenstaendige Anmeldeseite nutzt relative /api-Pfade.)
+  - id: cover-fix
+    name: "Backend: Album-Bilder + Titelanzahl der Playlists"
+    note: >-
+      Das Backend fordert bei Spotify nur `items(track(id,uri,name))` an — die
+      Oberflaeche liest aber track.album.images/id/name/total_tracks und
+      track.artists. Folge: in der Album-/Flip-Ansicht fehlen ALLE Cover und
+      Album-Angaben (am Geraet belegt). Zweitens deckelt das Backend auf
+      Math.min(limit,10), waehrend die Oberflaeche in 50er-Schritten blaettert
+      (`if (c.length < 50) break`) — sie bricht deshalb nach 10 Titeln ab.
+      Beides hier korrigieren; server.js kommt aus deploy.zip und wird vom
+      Schritt 'app-paket' jedes Mal neu geschrieben.
+    optional: true
+    run: |
+      python3 - <<'PYEOF'
+      import os, shutil
+      F = f"/home/{os.environ.get('MUPI_USER','dietpi')}/.mupibox/Sonos-Kids-Controller-master/server.js"
+      ALT = '"items(track(id,uri,name))"'
+      NEU = '"items(track(id,uri,name,artists(name),album(id,name,images,total_tracks)))"'
+      if not os.path.isfile(F):
+          print("server.js nicht gefunden - uebersprungen"); raise SystemExit
+      src = open(F, encoding="utf-8", errors="replace").read()
+      if NEU in src and "Math.min(a,10)" not in src:
+          print("Cover-Fix: schon angewandt"); raise SystemExit
+      bak = F + ".vor-cover-fix"
+      if not os.path.exists(bak):
+          shutil.copy2(F, bak)
+      n1 = src.count(ALT)
+      src = src.replace(ALT, NEU)
+      # Die Deckelung steht direkt hinter der Feldliste. NICHT auf die
+      # minifizierten Namen (a/r) festnageln: nach einem Neubau des Forks heissen
+      # sie anders und der Schritt haette still nur die Haelfte repariert.
+      import re
+      pat = re.compile(re.escape(NEU) + r",Math\.min\((\w+),10\)")
+      src, n2 = pat.subn(lambda m: NEU + f",Math.min({m.group(1)},50)", src)
+      st = os.stat(F); tmp = F + ".neu"
+      open(tmp, "w", encoding="utf-8").write(src)
+      os.chown(tmp, st.st_uid, st.st_gid); os.chmod(tmp, st.st_mode & 0o777)
+      os.replace(tmp, F)
+      print(f"Cover-Fix: Feldliste {n1}x, Deckelung {n2}x ersetzt"
+            if n1 or n2 else "Cover-Fix: nichts gefunden (andere Fassung?)")
+      PYEOF
+    check: "grep -q 'album(id,name,images,total_tracks)' /home/$MUPI_USER/.mupibox/Sonos-Kids-Controller-master/server.js"
+  # (Schritt leisten-ton entfiel mit E118/1e: er flickte styles*.css der alten Angular-App.)
+  - id: systemd-dienste
+    name: "systemd-Dienste des Forks installieren"
+    note: >-
+      Der Fork bringt 21 Dienste mit (config/services/) — ohne sie fehlt u.a.
+      mupi_check_internet, das data.json -> active_data.json spiegelt. Genau das
+      liest die Oberflaeche: ohne den Dienst bleibt sie LEER, obwohl Alben
+      eingetragen sind (am Geraet belegt).
+      EINE DATEI IST KEIN EIGENER DIENST, SONDERN EINE UEBERSCHREIBUNG:
+      systemd-user-sessions.service liegt hier als volle Kopie der systemd-Unit,
+      aus deren After= das network.target entfernt ist (E59, 20.08.2026). Sie
+      landet in /etc/systemd/system/ und gewinnt damit gegen
+      /usr/lib/systemd/system/. Gemessen an der Box: der Kiosk startete danach
+      bei 2,98 s statt bei 8,17 s — er wartete zuvor auf eine WLAN-Adresse, um
+      localhost anzuzeigen. Bei einem systemd-Update lohnt ein Blick, ob das
+      Original inzwischen mehr Abhaengigkeiten traegt.
+      Alle Dateien werden bereitgestellt,
+      aber nur die unbedenklichen eingeschaltet: idle_shutdown faehrt die Box
+      herunter, fan braucht einen angeschlossenen Luefter, spotifyd ist bei
+      Web-SDK-Wiedergabe ungenutzt, und pulseaudio (System-Modus) wuerde die
+      laufende Tonausgabe gefaehrden. Die restlichen sind da und koennen
+      bewusst per `systemctl enable --now <name>` dazugeschaltet werden.
+
+      MUPIHAT: NICHT MEHR PAUSCHAL AUS, SONDERN GEFRAGT. Die alte Begruendung
+      ("hat/fan brauchen MuPiHAT-Hardware") traf auf diese Boxen nicht zu: am
+      Pi 4 antwortet der Ladebaustein auf I2C 0x6b sehr wohl - die Box HAT
+      einen MuPiHAT und stand trotzdem ohne jede Telemetrie da
+      (`/tmp/mupihat.json` blieb `[]`, keine Akkuanzeige). Also wird die
+      Hardware geprueft und bei Antwort werden mupi_hat + mupi_hat_control
+      eingeschaltet. Antwortet sie nicht, bleiben beide aus - und die
+      ExecCondition aus dem System-Rezept ('mupihat-ohne-akku-still') faengt
+      denselben Fall danach ohnehin sauber ab: der Dienst gilt dann als
+      UEBERSPRUNGEN, nicht als fehlgeschlagen.
+
+      librespot steht bewusst NICHT in dieser Liste - er bekommt einen eigenen
+      Schritt ('librespot': Binaer + Dienst + Waechter). Hier laege sonst nur
+      die Unit-Datei auf der Box und kein Programm dazu.
+
+      PFLICHT SEIT DEM 14.08.2026: dieser Schritt traegt die mupi_hat-
+      Aktivierung und die Fork-Dienste - abwaehlbar hiess, eine Box ohne
+      Telemetrie und ohne Waechter zu bauen, und genau so sah der Pi 4 am
+      30.07. aus (ANGLEICH-PI4-PI5.md, Ausfall 5). Wer wirklich ohne will,
+      waehlt im Runner ab, was der Schritt EINSCHALTET, statt den Schritt
+      wegzulassen.
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services
+        dest: /tmp/mupi-services.tgz
+      - src: tools/mupibox-network-sync.sh
+        dest: /tmp/mupibox-network-sync.sh
+    run: |
+      set -e
+      cd /tmp && rm -rf mupi-svc && mkdir mupi-svc
+      tar xzf /tmp/mupi-services.tgz -C mupi-svc
+      install -m 644 mupi-svc/services/*.service /etc/systemd/system/
+      systemctl daemon-reload
+      AN="mupi_check_internet mupi_check_monitor mupi_change_checker"
+      # DIE TELEMETRIE KOMMT IMMER AN — die Hardware entscheidet zur LAUFZEIT.
+      #
+      # Hier stand eine Pruefung auf I2C 0x6b, die ueber das Einschalten
+      # entschied. Das war eine EINMALIGE Entscheidung im Moment der
+      # Installation: fiel sie auch nur einmal negativ aus, blieb mupi_hat fuer
+      # immer aus, und niemand sah je wieder nach. Am 09.08.2026 gemeldet:
+      # "der mupihat ist da, wird aber nicht erkannt".
+      #
+      # Gebraucht wird die Pruefung hier gar nicht. Der Schritt
+      # 'mupihat-ohne-akku-still' legt dem Dienst eine ExecCondition auf
+      # GENAU diese Frage bei, samt `Restart=on-failure` mit 30 s Abstand —
+      # ausdruecklich fuer den Fall, "dass jemand den Akku spaeter ansteckt".
+      # Damit gilt: HAT da -> Dienst laeuft. HAT nicht da -> Dienst gilt als
+      # UEBERSPRUNGEN, nicht als gescheitert. HAT spaeter da -> laeuft von
+      # selbst an. Alle drei Faelle sind besser als eine Momentaufnahme.
+      #
+      # Die Pruefung bleibt als AUSKUNFT stehen: sie sagt im Protokoll, was
+      # gerade auf dem Bus zu sehen war — aber sie entscheidet nichts mehr.
+      AN="$AN mupi_hat mupi_hat_control"
+      I2C=$(command -v i2cdetect || echo /usr/sbin/i2cdetect)
+      if [ -x "$I2C" ]; then
+        GEFUNDEN=""
+        for B in /dev/i2c-*; do
+          [ -e "$B" ] || continue
+          "$I2C" -y "${B##*-}" 2>/dev/null | grep -q ' 6b ' && GEFUNDEN="$GEFUNDEN ${B##*-}"
+        done
+        if [ -n "$GEFUNDEN" ]; then
+          echo "  MuPiHAT antwortet auf Bus:$GEFUNDEN (0x6b)"
+        else
+          echo "  0x6b antwortet auf keinem Bus ($(ls -d /dev/i2c-* 2>/dev/null | tr '\n' ' ')) —"
+          echo "  der Dienst wird trotzdem eingeschaltet und prueft bei jedem Start selbst."
+        fi
+      else
+        echo "  i2cdetect fehlt — keine Auskunft moeglich, Dienst kommt trotzdem an."
+      fi
+      for s in $AN; do
+        [ -f /etc/systemd/system/$s.service ] || continue
+        systemctl enable --now $s >/dev/null 2>&1 && echo "  ein: $s" || echo "  FEHLER beim Start: $s"
+      done
+      echo "  bereitgestellt, aber bewusst AUS:"
+      for f in /etc/systemd/system/mupi_*.service /etc/systemd/system/spotifyd.service; do
+        [ -f "$f" ] || continue
+        n=$(basename "$f" .service)
+        case " $AN " in *" $n "*) continue;; esac
+        echo "    $n"
+      done
+      echo "  librespot: kommt im eigenen Schritt 'librespot' (Binaer + Dienst + Waechter)"
+      rm -rf /tmp/mupi-svc /tmp/mupi-services.tgz
+
+      # Netzwerkdaten fuer die Oberflaeche. Zwei Gruende, warum das ein eigener
+      # Abgleich sein MUSS und keine Verknuepfung auf /tmp/network.json:
+      #  * Die Oberflaeche filtert /api/network auf `e.ip !== undefined` und zeigt
+      #    sonst dauerhaft die durchgestrichene Wolke. Das ip-Feld schreibt allein
+      #    get_network.sh - dessen Aufruf im Fork AUSKOMMENTIERT ist
+      #    (mupi_startup.sh: "#sudo .../get_network.sh"), es laeuft also nie.
+      #  * Die Fork-Skripte schreiben /tmp/network.json dutzendfach hintereinander
+      #    neu und sie ist dabei kurz LEER. Liest das Backend direkt hinein, kommt
+      #    "Unexpected end of JSON input" -> die Oberflaeche haelt sich fuer OFFLINE
+      #    und laedt das Spotify-SDK GAR NICHT ("Device is offline"): keine
+      #    Wiedergabe. Am Geraet belegt.
+      # Das Skript uebernimmt deshalb nur VOLLSTAENDIGES JSON, setzt es per mv
+      # unteilbar ein und heilt eine kaputte Quelldatei (sonst scheitert jedes
+      # weitere jq und der Defekt haelt sich selbst am Leben).
+      install -m 755 /tmp/mupibox-network-sync.sh /usr/local/bin/mupibox-network-sync.sh
+      cat > /etc/systemd/system/mupi-network-info.service <<'SVC'
+      [Unit]
+      Description=Netzwerkdaten fuer die MuPiBox-Oberflaeche bereitstellen
+      After=network-online.target
+      [Service]
+      Type=oneshot
+      ExecStart=/usr/local/bin/mupibox-network-sync.sh
+      SVC
+      cat > /etc/systemd/system/mupi-network-info.timer <<'TMR'
+      [Unit]
+      Description=Netzwerkdaten regelmaessig auffrischen
+      [Timer]
+      OnBootSec=25
+      OnUnitActiveSec=20
+      [Install]
+      WantedBy=timers.target
+      TMR
+      sed -i 's/^      //' /etc/systemd/system/mupi-network-info.service /etc/systemd/system/mupi-network-info.timer
+      systemctl daemon-reload
+      systemctl enable --now mupi-network-info.timer >/dev/null 2>&1 && echo "  ein: mupi-network-info.timer"
+      systemctl start mupi-network-info.service || true
+      rm -f /tmp/mupibox-network-sync.sh
+    check: "systemctl is-active mupi_check_internet"
+  - id: dienste-systemd
+    name: "Dienste als systemd-Units statt pm2 (rund 11 s frueher am Bild)"
+    note: >-
+      AM GERAET GEMESSEN (Pi 4, 2026-07-29). Der Kiosk wartet in seinem
+      Autostart auf localhost:8200, BEVOR er X startet - die Startzeit der App
+      ist also direkt die Zeit bis zum Bild. Mit pm2 war die App bei ~23,5 s
+      bereit (pm2 selbst 3,4 s, danach server.js), mit systemd bei 6,1 s.
+      Folge: X ab 13,8 statt 23,7 s, Fenster ab 25,1 statt 34,9 s, Boot
+      11,1 statt 17,8 s.
+      Bewusst KEIN After=network.target - die App bedient localhost. Haengt
+      man sie ans Netz, wartet der ganze Start wieder auf das WLAN.
+      RUECKWEG: pm2-dietpi wieder einschalten und den gesicherten
+      dump.pm2.vor-systemd zuruecklegen; die Units abschalten.
+
+      PFLICHTSCHRITT (kein `optional:` mehr). Das ist der Endzustand BEIDER
+      Boxen - und er hing bis 2026-07-30 an einem Schritt, den man wegdruecken
+      konnte: wer ihn uebersprang, bekam eine Box, die anders lief als die
+      andere. Der frueher davor stehende pm2-Schritt 'dienste' ist deshalb
+      ersatzlos entfallen.
+    run: |
+      set -e
+      # KEIN <<'EOF' mit Anfuehrungszeichen: dann kaeme `${MUPI_APP}` WOERTLICH
+      # in der Unit an. systemd ersetzt dort nichts (nur in ExecStart-Argumenten,
+      # und auch da nur aus Environment=) - die Unit stuende also mit
+      # `User=${MUPI_USER:-dietpi}` und `ExecStart=/usr/bin/node /server.js` da
+      # und koennte nie starten. Ohne Anfuehrungszeichen setzt die Shell die
+      # Werte ein, und in der Datei landen fertige Pfade.
+      cat > /etc/systemd/system/mupibox-server.service <<EOF
+      [Unit]
+      Description=MuPiBox Backend (server.js)
+      After=local-fs.target mupibox-alsa-init.service
+      Wants=mupibox-alsa-init.service
+
+      [Service]
+      Type=simple
+      User=${MUPI_USER:-dietpi}
+      WorkingDirectory=${MUPI_APP}
+      ExecStart=/usr/bin/node ${MUPI_APP}/server.js
+      Restart=on-failure
+      RestartSec=2
+
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+      cat > /etc/systemd/system/mupibox-player.service <<EOF
+      [Unit]
+      Description=MuPiBox Player (spotify-control.js)
+      After=local-fs.target mupibox-alsa-init.service
+      Wants=mupibox-alsa-init.service
+
+      [Service]
+      Type=simple
+      User=${MUPI_USER:-dietpi}
+      # XDG_RUNTIME_DIR IST NICHT SCHMUCK, sondern der Unterschied zwischen Ton
+      # und Stille. PipeWire ist ein SITZUNGSdienst und horcht unter
+      # /run/user/<uid>. Ein Systemdienst bekommt diese Variable nicht von
+      # selbst - auch nicht, wenn er als derselbe Benutzer laeuft.
+      #
+      # WAS OHNE SIE PASSIERT (am Geraet gemessen, Pi 5, 2026-08-01): mpv
+      # meldet `current-ao: None`, nimmt `loadfile` mit `success` an, legt die
+      # Datei in die Liste - und STARTET SIE NIE. `playlist-count` steigt,
+      # `playlist-pos-1` bleibt -1, `idle-active` bleibt true. Es sieht aus,
+      # als sei die Wiedergabe kaputt; in Wirklichkeit fehlt der Tonausgang.
+      # Jellyfin und lokale Dateien waren damit stumm, WAEHREND Spotify
+      # spielte - denn librespot.service traegt diese Zeile laengst.
+      #
+      # Dasselbe mpv mit denselben Argumenten, nur MIT der Variablen, spielt
+      # dieselbe Adresse sofort (current-ao: pipewire, time-pos laeuft).
+      Environment=XDG_RUNTIME_DIR=/run/user/1000
+      WorkingDirectory=${MUPI_PLAYER}
+      ExecStart=/usr/bin/node ${MUPI_PLAYER}/spotify-control.js
+      Restart=on-failure
+      RestartSec=2
+
+      [Install]
+      WantedBy=multi-user.target
+      EOF
+      # pm2 raeumen - sonst haelt sein Hauptprozess die Ports und die Units
+      # laufen in eine Neustartschleife (EADDRINUSE, am Geraet passiert).
+      cp /home/${MUPI_USER:-dietpi}/.pm2/dump.pm2 \
+         /home/${MUPI_USER:-dietpi}/.pm2/dump.pm2.vor-systemd 2>/dev/null || true
+      su - ${MUPI_USER:-dietpi} -c "pm2 delete all" >/dev/null 2>&1 || true
+      su - ${MUPI_USER:-dietpi} -c "pm2 save --force" >/dev/null 2>&1 || true
+      # KLAMMER UM DEN ERSTEN BUCHSTABEN — sonst erschiesst sich der Schritt
+      # SELBST: `pkill -f` durchsucht die ganze Kommandozeile, und die Shell,
+      # die diesen Schritt faehrt, traegt seinen kompletten Text mit sich —
+      # inklusive der Suchzeichenkette. Am Geraet als "Fehlercode -15"
+      # (SIGTERM) bei Schritt 43 von 53 gesehen, nach 42 gelungenen.
+      # "[P]M2 v" trifft echte PM2-Prozesse, aber nicht die eigene Zeile.
+      pkill -f "[P]M2 v" 2>/dev/null || true
+      systemctl disable pm2-dietpi >/dev/null 2>&1 || true
+      sleep 2
+      systemctl daemon-reload
+      systemctl enable --now mupibox-server mupibox-player
+      sleep 5
+      systemctl is-active mupibox-server mupibox-player | tr '\n' ' '; echo
+      curl -s -m5 -o /dev/null -w "  API %{http_code}\n" http://localhost:8200/api/darstellung || true
+    check: "systemctl is-active mupibox-server >/dev/null"
+
+  - id: standwache
+    name: "Standwache ausrollen (Frist nach einer Auslieferung)"
+    note: >-
+      SIE FEHLTE AUF DER FRISCHEN KARTE (gemessen 11.08.2026 mit
+      tools/erstlauf-abnahme.py: /opt/mupibox-tools/mupibox-standwache.py war
+      nicht da). Kein Rezept hat sie je ausgerollt - dieselbe Luecke wie bei
+      librespot-konto.py, und sie faellt aus demselben Grund nicht auf: eine
+      Auslieferung ohne Standwache LAEUFT ja, sie stellt nur keine Frist.
+
+      WOZU SIE DA IST: Nach einer Auslieferung setzt ausliefern.py eine Frist.
+      Wird bis dahin nicht nachgemessen - weil die Verbindung abriss, weil der
+      Rechner zuklappte -, dreht die BOX von selbst zurueck. Ohne die
+      Standwache bleibt ein halb ausgelieferter Stand einfach stehen, und
+      niemand erfaehrt es.
+
+      DER TAUSCHER GEHOERT DAZU: die Standwache dreht nicht selbst zurueck,
+      sie beauftragt ihn. Ohne ihn haette sie eine Frist ohne Wirkung.
+
+      DER TIMER WIRD EINGESCHALTET, der Dienst NICHT: Er laeuft nur, wenn eine
+      Frist steht. Ein `enable --now` auf den Dienst wuerde ihn sofort einmal
+      laufen lassen, ohne dass es etwas zu bewachen gaebe.
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/box/mupibox-standwache.py
+        dest: /opt/mupibox-tools/mupibox-standwache.py
+        mode: "0755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/box/mupibox-tauscher.py
+        dest: /opt/mupibox-tools/mupibox-tauscher.py
+        mode: "0755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-standwache.service
+        dest: /etc/systemd/system/mupibox-standwache.service
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-standwache.timer
+        dest: /etc/systemd/system/mupibox-standwache.timer
+        mode: "0644"
+    run: |
+      set -e
+      install -d -m 755 /opt/mupibox-tools
+      chown root:root /opt/mupibox-tools/mupibox-standwache.py \
+                      /opt/mupibox-tools/mupibox-tauscher.py \
+                      /etc/systemd/system/mupibox-standwache.service \
+                      /etc/systemd/system/mupibox-standwache.timer
+      systemctl daemon-reload
+      systemctl enable --now mupibox-standwache.timer
+      echo "  Standwache: $(systemctl is-active mupibox-standwache.timer)"
+      /opt/mupibox-tools/mupibox-standwache.py --stand 2>&1 | head -3
+    check: "test -x /opt/mupibox-tools/mupibox-standwache.py && systemctl is-enabled mupibox-standwache.timer"
+
+  - id: sicherung
+    name: "Sicherung + Rueckweg ausrollen (E29: Staende, Karte, Kioskwache)"
+    note: >-
+      SIE FEHLTE AUF DER FRISCHEN KARTE (Audit 2026-08-13, 2.1.4): der
+      Dienste-Schritt oben installiert nur *.service aus config/services/ und
+      schaltet eine feste Liste ein — die ausloesenden .path/.timer der
+      Sicherung kamen nie an, und keine E29-Unit stand in der enable-Liste.
+      Die Unit-Dateien lagen stumm auf der Karte: kein selbsttaetiger Stand,
+      kein Rueckweg von der Karte, keine Kioskwache. Eine Box ohne Sicherung
+      LAEUFT — es faellt erst auf, wenn man den Rueckweg braucht. Dieselbe
+      Falle wie bei Standwache und librespot-konto.py, also dieselbe Antwort:
+      ein eigener Schritt, in dem Programme, Units und das Einschalten
+      ZUSAMMEN stehen (die Begruendung dafuer steht am Dienste-Schritt:
+      "Hier laege sonst nur die Unit-Datei auf der Box und kein Programm
+      dazu").
+
+      WAS EINGESCHALTET WIRD, folgt autosetup.sh (Z. 1116-1146, bis heute der
+      einzige Weg, der E29 vollstaendig brachte): sicherung.path + .timer
+      (selbsttaetige Staende), wiederherstellung.service (der Rueckweg von
+      der Karte beim Boot; die Unit selbst prueft, ob ein Rueckweg verlangt
+      ist), sicherungsprobe.timer (faehrt den Rueckweg regelmaessig zur
+      Probe), kioskwache.timer. Die getriggerten .service-Einheiten werden
+      NICHT enabled — sie laufen nur, wenn path/timer/Boot sie rufen.
+
+      DER ERSTE STAND WIRD GLEICH ANGELEGT und auf die Karte gelegt, samt
+      Probe — tolerant wie in autosetup: eine fehlgeschlagene Erstprobe
+      bricht die Installation nicht ab, sie steht als Warnung im Protokoll
+      (und in letzte-probe.txt auf der Box).
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/mupibox/mupibox-sicherung.py
+        dest: /usr/local/bin/mupibox/mupibox-sicherung.py
+        mode: "0755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/mupibox/mupibox-sicherungsprobe.sh
+        dest: /usr/local/bin/mupibox/mupibox-sicherungsprobe.sh
+        mode: "0755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/mupibox/mupibox-kioskwache.py
+        dest: /usr/local/bin/mupibox/mupibox-kioskwache.py
+        mode: "0755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-sicherung.service
+        dest: /etc/systemd/system/mupibox-sicherung.service
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-sicherung.path
+        dest: /etc/systemd/system/mupibox-sicherung.path
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-sicherung.timer
+        dest: /etc/systemd/system/mupibox-sicherung.timer
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-wiederherstellung.service
+        dest: /etc/systemd/system/mupibox-wiederherstellung.service
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-sicherungsprobe.service
+        dest: /etc/systemd/system/mupibox-sicherungsprobe.service
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-sicherungsprobe.timer
+        dest: /etc/systemd/system/mupibox-sicherungsprobe.timer
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-kioskwache.service
+        dest: /etc/systemd/system/mupibox-kioskwache.service
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mupibox-kioskwache.timer
+        dest: /etc/systemd/system/mupibox-kioskwache.timer
+        mode: "0644"
+    run: |
+      set -e
+      install -d -m 755 /usr/local/bin/mupibox
+      install -d -m 700 -o dietpi -g dietpi /home/dietpi/.mupibox/sicherungen
+      systemctl daemon-reload
+      systemctl enable mupibox-sicherung.path mupibox-sicherung.timer \
+                       mupibox-wiederherstellung.service \
+                       mupibox-sicherungsprobe.timer mupibox-kioskwache.timer
+      # Erster Stand + Karte + Probe — tolerant, wie in autosetup.sh.
+      sudo -u dietpi /usr/local/bin/mupibox/mupibox-sicherung.py --anlegen \
+        --grund erstinstallation --behalten \
+        || echo "  Erststand fehlgeschlagen — siehe Protokoll"
+      /usr/local/bin/mupibox/mupibox-sicherung.py --auf-karte \
+        || echo "  Karte nicht beschrieben — Rueckweg erst nach erstem Lauf"
+      sudo -u dietpi /usr/local/bin/mupibox/mupibox-sicherungsprobe.sh \
+        || echo "  Sicherungsprobe fehlgeschlagen — Rueckweg NICHT belegt, siehe letzte-probe.txt"
+      echo "  Sicherung: $(systemctl is-enabled mupibox-sicherung.path) / Probe: $(systemctl is-enabled mupibox-sicherungsprobe.timer)"
+    check: "test -x /usr/local/bin/mupibox/mupibox-sicherung.py && systemctl is-enabled mupibox-sicherung.path && systemctl is-enabled mupibox-kioskwache.timer"
+
+  - id: librespot
+    name: "librespot ausrollen (fertiges Binaer 0.8.0 + Dienst + Waechter)"
+    note: >-
+      DAS SPOTIFY-GERAET DER BOX. Am Geraet (2026-07-30) gab es auf dem Pi 4
+      gar kein `/usr/bin/librespot` - kein Rezept hat es je ausgerollt. Ohne
+      das Programm laeuft weder der Dienst noch der Waechter, und die Box
+      taucht in Spotify NIE auf. Die zweite Box war damit stumm, obwohl alles
+      andere stand.
+
+      NICHT AUF DER BOX BAUEN (Entscheidung 2026-07-30): ein cargo-Bau zieht
+      die ganze Rust-Werkzeugkette nach und dauert auf einem Pi Stunden.
+      Stattdessen liegt das FERTIGE arm64-Binaer im Fork
+      (bin/librespot/0.8.0/librespot-arm64, 17,6 MB, deckungsgleich mit dem
+      `/usr/bin/librespot` der laufenden Hauptbox). Beide Boxen sind arm64.
+
+      FASSUNG >= 0.8.0 IST PFLICHT: 0.6.0-dev fragt den ueberholten
+      Metadaten-Endpunkt ab, bekommt keine Tondatei ("no alternatives found")
+      und spielt nichts - ausfuehrlich in `config/templates/env-librespot`.
+
+      Der WAECHTER (Timer alle 5 min) misst das Symptom, nicht den Prozess:
+      librespots Sitzung kann sterben, waehrend der Prozess weiterlaeuft -
+      systemd sieht dann einen gesunden Dienst, Restart=always greift nie, und
+      die Box ist aus Spotifys Geraeteliste verschwunden. Der Waechter
+      vergleicht mit `mupibox.host`, laeuft also NACH 'box-name'.
+
+      KEIN ZUGANGSTOKEN MEHR IN env-librespot (11.08.2026). Die Vorlage schob
+      librespot beim ersten Start den accessToken der Box unter. Seit die Box
+      eine SELBST angelegte Client-ID aus dem Spotify-Dashboard benutzt, weist
+      Spotify das ab (INVALID_CREDENTIALS) - und eine gescheiterte
+      Token-Anmeldung BEENDET librespot, mit Restart=always also ein
+      Neustartkreis (21 Neustarts gemessen). Ohne Token laeuft es im
+      Entdeckungs-Modus: gemessen 100 s ohne einen Neustart, UDP 5353 selbst
+      belegt. Dann steht die Box in der Spotify-App, die Wiedergabe wird
+      EINMAL daraufgeworfen, und librespot legt credentials.json selbst an -
+      ab dann meldet es sich allein an. Siehe Wiki mupi-librespot-login5.
+
+      Der erste Start wartet in einem ExecStartPre auf eine Tonsenke - in der
+      Regel Bruchteile einer Sekunde, im Deckel hoechstens 20 s. Der naechste
+      Schritt ('librespot-nicht-blockieren') holt genau dieses Warten aus dem
+      Start heraus.
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/bin/librespot/0.8.0/librespot-arm64
+        dest: /usr/bin/librespot
+        mode: "0755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/librespot.service
+        dest: /etc/systemd/system/librespot.service
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/env-librespot
+        dest: /etc/librespot/env-librespot
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/librespot/librespot-waechter.sh
+        dest: /usr/local/bin/mupibox/librespot-waechter.sh
+        mode: "0755"
+      # OHNE DIESE DATEI IST DER WAECHTER EIN NEUSTARTKNOPF. Er ruft
+      # librespot-konto.py --heilen, und wenn es fehlt, faellt er auf ein
+      # blosses `systemctl restart` zurueck — das half am 11.08.2026 genau
+      # null Mal von 21. Sie fehlte hier bis dahin; auf der Testbox lag sie
+      # deshalb gar nicht, und die Heilung konnte nie greifen.
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/librespot/librespot-konto.py
+        dest: /usr/local/bin/mupibox/librespot-konto.py
+        mode: "0755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/librespot-waechter.service
+        dest: /etc/systemd/system/librespot-waechter.service
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/librespot-waechter.timer
+        dest: /etc/systemd/system/librespot-waechter.timer
+        mode: "0644"
+    run: |
+      set -e
+      install -d -m 755 /etc/librespot
+      # Alles hier gehoert root: das Binaer laeuft als Dienst, und die
+      # Umgebungsdatei zieht beim Start den Spotify-Zugangstoken aus der
+      # Box-Konfiguration - beides darf niemand sonst aendern koennen.
+      # (Der Token selbst steht NICHT in dieser Datei, sie holt ihn per jq.)
+      chown root:root /usr/bin/librespot /etc/librespot/env-librespot \
+                      /usr/local/bin/mupibox/librespot-waechter.sh \
+                      /usr/local/bin/mupibox/librespot-konto.py \
+                      /etc/systemd/system/librespot.service \
+                      /etc/systemd/system/librespot-waechter.service \
+                      /etc/systemd/system/librespot-waechter.timer
+      systemctl daemon-reload
+      systemctl enable --now librespot librespot-waechter.timer
+      sleep 3
+      echo "  librespot: $(systemctl is-active librespot)   Waechter: $(systemctl is-active librespot-waechter.timer)"
+      /usr/bin/librespot --version 2>&1 | head -1
+    check: "/usr/bin/librespot --version 2>&1 | grep -q 0.8"
+    timeout: 300
+
+  - id: librespot-nicht-blockieren
+    name: "librespot haelt den Start nicht mehr auf"
+    note: >-
+      AM GERAET GEMESSEN (Pi 5, 2026-07-29): librespot stand mit 5-6 s auf der
+      KRITISCHEN KETTE - graphical.target wartete darauf. Die Zeit ging nicht
+      ins Abspielen, sondern in ein ExecStartPre, das auf eine Tonsenke wartet.
+      Als ExecStartPre gilt der Dienst so lange als "startet noch", und weil er
+      WantedBy=multi-user.target ist, wartet das ganze System mit.
+
+      DER DECKEL: 20 s, seit 2026-08-02 nachgemessen (vorher 90 s). Die
+      Wartebedingung selbst ist gesund - `pactl` gelingt im Dienstkontext in
+      27 ms, die ganze Schleife in 51 ms, weil die Unit XDG_RUNTIME_DIR selbst
+      setzt. Am Geraet liegen zwischen Dienststart (13,11 s) und bereiter
+      pipewire-pulse (14,21 s) rund 1,1 s. Voll ausgeschoepft wird der Deckel
+      nur ohne Kiosk-Sitzung - und dann verzoegert er bloss die Erholung durch
+      Restart=always. Nachzumessen mit tools/librespot-warten-messen.sh im
+      Box-Repo; Zahlen im llmwiki unter librespot-panik-beim-kaltstart.
+      Das Warten gehoert IN den Start: dann gilt der Dienst sofort als
+      gestartet, wartet im Hintergrund, und librespot laeuft danach genauso
+      los wie vorher. Ergebnis: librespot verschwindet aus der Bestenliste,
+      Boot 18,2 -> 13,4 s (zusammen mit dem Abschalten von PHP).
+
+      KEIN SELBST-UEBERSPRINGER MEHR. Der Schritt stieg frueher mit
+      "kein librespot - nichts zu tun" und Erfolg aus, wenn er die Unit nicht
+      fand. Solange librespot ueberhaupt nicht ausgerollt wurde, sah so JEDER
+      Lauf gruen aus, waehrend die Box in Wahrheit kein Spotify-Geraet war -
+      genau der stille Fehlschlag, der am Pi 4 monatelang niemandem auffiel.
+      Seit der Schritt 'librespot' davor steht, ist eine fehlende Unit ein
+      FEHLER.
+    run: |
+      set -e
+      systemctl cat librespot >/dev/null 2>&1 || {
+        echo "  KEIN librespot auf der Box — der Schritt 'librespot' davor hat ihn nicht ausgerollt."
+        echo "  Frueher stieg es hier still mit Erfolg aus; genau so blieb unbemerkt, dass die"
+        echo "  Box gar kein Spotify-Geraet ist. Also: Fehler."
+        exit 1
+      }
+      mkdir -p /etc/systemd/system/librespot.service.d
+      cat > /etc/systemd/system/librespot.service.d/nicht-blockieren.conf <<'EOF'
+      # Das Warten auf die Tonsenke gehoert IN den Start, nicht davor - sonst
+      # haelt es multi-user.target auf. Siehe die Notiz am Rezeptschritt.
+      # Deckel 20 s (40 Runden a 0,5 s), nachgemessen - NICHT 90 s.
+      [Service]
+      ExecStartPre=
+      ExecStart=
+      ExecStart=/bin/bash -c 'for i in $(seq 1 40); do pactl list short sinks 2>/dev/null | grep -q . && break; sleep 0.5; done; source /etc/librespot/env-librespot && exec /usr/bin/librespot -q'
+      EOF
+      systemctl daemon-reload
+      systemctl restart librespot || true
+      sleep 3
+      echo "  librespot: $(systemctl is-active librespot)"
+    check: "test -f /etc/systemd/system/librespot.service.d/nicht-blockieren.conf"
+
+  - id: soloist
+    name: "Soloist ausrollen — die zweite Spotify-Tonmaschine (E42)"
+    note: >
+      Legt Skripte, Units und den Engine-Schalter. Das BINARY wird GEHOLT, nicht
+      mitgeliefert: jeder Build verfaellt 90 Tage nach dem Bau. Ohne Netz
+      scheitert nur der Bezug, nicht der Schritt — die Vorgabe librespot
+      braucht Soloist nicht.
+    optional: true
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/soloist/soloist-start.sh
+        dest: /usr/local/bin/mupibox/soloist-start.sh
+        mode: "755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/soloist/soloist-updater.sh
+        dest: /usr/local/bin/mupibox/soloist-updater.sh
+        mode: "755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/systemd/soloist.service
+        dest: /etc/systemd/system/soloist.service
+        mode: "644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/systemd/soloist-updater.service
+        dest: /etc/systemd/system/soloist-updater.service
+        mode: "644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/systemd/soloist-updater.timer
+        dest: /etc/systemd/system/soloist-updater.timer
+        mode: "644"
+      # DIE ANMELDEWACHE (E104) KAM HIER NIE AN — gefunden am 31.08.2026.
+      # autosetup.sh und der Update-Weg legen sie beide und schalten den Timer
+      # ein; dieser Schritt nannte sie nicht, und damit lief die Selbstheilung
+      # gegen den nach dem Start stummen Soloist auf keiner frisch bespielten
+      # Karte. Seit der Sammelkopie desselben Tages kam das SKRIPT sogar an
+      # (scripts/soloist/ steht in der Kopierschleife) — nur der TAKT nicht.
+      # Ein Stueck Selbstheilung, das daliegt und nie gerufen wird, sieht von
+      # aussen genau wie eine gesunde Box aus.
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/soloist/soloist-anmeldewache.sh
+        dest: /usr/local/bin/mupibox/soloist-anmeldewache.sh
+        mode: "755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/systemd/soloist-anmeldewache.service
+        dest: /etc/systemd/system/soloist-anmeldewache.service
+        mode: "644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/systemd/soloist-anmeldewache.timer
+        dest: /etc/systemd/system/soloist-anmeldewache.timer
+        mode: "644"
+      # NACH /tmp, NICHT direkt ins Drop-In-Verzeichnis: das legt der run:-Block
+      # an — put: laeuft vorher und wuerde an einem fehlenden Ordner scheitern.
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/systemd/librespot-engine.conf
+        dest: /tmp/librespot-engine.conf
+        mode: "644"
+    run: |
+      set -e
+      # ── GENAU EINE MASCHINE LAEUFT ────────────────────────────────────────
+      # Beide Units tragen eine ExecCondition auf spotify.engine. Das Drop-In
+      # haengt sie an das MITGELIEFERTE librespot.service an, ohne es zu
+      # ersetzen — ein Update des Forks nimmt den Schalter damit nicht mit.
+      install -d /etc/systemd/system/librespot.service.d
+      install -m 644 /tmp/librespot-engine.conf /etc/systemd/system/librespot.service.d/engine.conf
+      rm -f /tmp/librespot-engine.conf
+      systemctl daemon-reload
+      systemctl enable --now soloist-updater.timer >/dev/null 2>&1 || true
+      # Die Anmeldewache laeuft IMMER, auch bei der Vorgabe librespot: sie
+      # sieht nur ins Logbuch und baut einen stumm angemeldeten Client neu an
+      # (oneshot, alle 2 Minuten, jq + journalctl). Kein `--now`-Zwang: taktet
+      # ohnehin 90 s nach dem Start das erste Mal.
+      systemctl enable --now soloist-anmeldewache.timer >/dev/null 2>&1 || true
+      # soloist.service NICHT enable --now: seine ExecCondition entscheidet,
+      # und bei der Vorgabe librespot soll er gar nicht erst anlaufen. Der
+      # Schalter sitzt in der Verwaltung (Streaming -> Spotify -> Tonmaschine).
+      systemctl enable soloist.service >/dev/null 2>&1 || true
+
+      # ── DAS BINARY ────────────────────────────────────────────────────────
+      # Ueber denselben Updater, der es kuenftig erneuert — ein Weg statt zwei.
+      if [ ! -x /usr/local/bin/soloist ]; then
+        echo "  Soloist-Binary fehlt — der Updater holt es frisch."
+        /usr/local/bin/mupibox/soloist-updater.sh \
+          || echo "  (kein Netz? Der woechentliche Timer versucht es wieder.)"
+      fi
+
+      # librespot einmal neu starten, damit die Condition ab jetzt gilt.
+      systemctl restart librespot.service 2>/dev/null || true
+
+      echo "── Stand ──"
+      /usr/local/bin/soloist -V 2>/dev/null | head -1 || echo "  (Binary noch nicht da)"
+      systemctl is-enabled soloist-updater.timer 2>/dev/null | sed 's/^/  updater.timer: /'
+      jq -r '"  engine: " + (.spotify.engine // "librespot")' /etc/mupibox/mupiboxconfig.json 2>/dev/null || true
+    check: |
+      test -x /usr/local/bin/mupibox/soloist-start.sh &&
+      test -f /etc/systemd/system/soloist.service &&
+      test -f /etc/systemd/system/librespot.service.d/engine.conf
+
+  - id: mqtt-reparieren
+    name: "MQTT instandsetzen: fehlende Module, fehlender Schluessel, toter Schalter"
+    note: >-
+      AM GERAET GEFUNDEN (2026-07-30). `mupi_mqtt.service` war der EINZIGE
+      Eintrag in `systemctl --failed`, und daran hingen DREI Fehler
+      uebereinander:
+
+      1. Zwei Python-Module fehlten: `netifaces` UND `paho.mqtt` (nur
+         `alsaaudio` war da). Dieselbe Sorte wie `smbus2` beim MuPiHAT.
+      2. Der Konfigurationsabschnitt `mqtt` hat 13 Schluessel, das Skript
+         liest 14 - **`name` fehlte**. Er ist der Geraetename in der
+         Home-Assistant-Erkennung; der Rechnername passt und ist je Box
+         eindeutig.
+      3. `mqtt.py` LIEST `mqtt.active` (Zeile 908), BENUTZT den Wert aber
+         nirgends. Der Schalter in der Konfiguration tat also gar nichts -
+         der Dienst versuchte auch ausgeschaltet, den Beispiel-Broker
+         `mqtt-example-broker.com` zu erreichen.
+
+      Fuer (3) eine ERGAENZUNG statt eines Eingriffs ins Original:
+      `ExecCondition` prueft den Schalter vor dem Start. Scheitert die
+      Bedingung, gilt der Dienst als UEBERSPRUNGEN - nicht als
+      fehlgeschlagen. Genau das ist richtig: "nicht eingerichtet" ist kein
+      Fehler. (`ExecStartPre` waere falsch, das ergaebe wieder ein `failed`.)
+
+      Danach laeuft er in beide Richtungen: `active=true` -> startet,
+      `active=false` -> uebersprungen, beides am Geraet belegt.
+    run: |
+      set -e
+      DEBIAN_FRONTEND=noninteractive apt-get install -y python3-netifaces python3-paho-mqtt
+      python3 - <<'ENDE'
+      import json, socket
+      p = '/etc/mupibox/mupiboxconfig.json'
+      c = json.load(open(p))
+      m = c.setdefault('mqtt', {})
+      if not m.get('name'):
+          m['name'] = socket.gethostname()
+          json.dump(c, open(p, 'w'), indent=2)
+          print(f"mqtt.name ergaenzt: {m['name']}")
+      else:
+          print(f"mqtt.name schon da: {m['name']}")
+      ENDE
+      mkdir -p /etc/systemd/system/mupi_mqtt.service.d
+      cat > /etc/systemd/system/mupi_mqtt.service.d/nur-wenn-aktiv.conf <<'ENDE'
+      [Service]
+      ExecCondition=/usr/bin/python3 -c "import json,sys; sys.exit(0 if (json.load(open('/etc/mupibox/mupiboxconfig.json')).get('mqtt') or {}).get('active') else 1)"
+      ENDE
+      sed -i 's/^      //' /etc/systemd/system/mupi_mqtt.service.d/nur-wenn-aktiv.conf
+      systemctl daemon-reload
+      systemctl enable mupi_mqtt || true
+      systemctl reset-failed mupi_mqtt || true
+      systemctl start mupi_mqtt || true
+    check: |
+      python3 -c "import netifaces, paho.mqtt.client" \
+        && python3 -c "
+      import json,sys
+      m=json.load(open('/etc/mupibox/mupiboxconfig.json')).get('mqtt') or {}
+      sys.exit(0 if m.get('name') else 1)" \
+        && test "$(systemctl is-failed mupi_mqtt)" != failed \
+        && echo OK
+    optional: true
+    timeout: 400
+
+  - id: darstellung-angleichen
+    name: "Aussehen angleichen: Themen und Darstellung wie auf der Hauptbox"
+    note: >-
+      ZIEL: zwei Boxen, die GLEICH AUSSEHEN. Am 2026-07-30 war die zweite eine
+      "komische Mischung", und der Grund lag an DREI Stellen gleichzeitig:
+
+      1. Die Themen in `darstellung.json` waren RUEMPFE - 11 bis 18 Felder
+         statt 44 bis 48. Wird so eines angewandt, setzt es eine Handvoll
+         Werte und laesst den Rest stehen, wie er gerade war. Genau das ergibt
+         eine Mischung.
+      2. Das alte MuPiBox-Farbthema (`www/active_theme.css`, ein VERWEIS nach
+         `~/MuPiBox/themes/<name>.css`, gesetzt aus `mupibox.theme` durch
+         `setting_update.sh`) stand auf `blue`, waehrend die Hauptbox ein
+         eigenes `MupiNew` benutzt, das es auf der zweiten gar nicht gab.
+      3. Der laufende Kiosk hielt den ALTEN Stand im Speicher und schrieb ihn
+         nach dem Schreiben zurueck. Deshalb wird hier zum Schluss die
+         Zeitmarke von `main-*.js` angefasst - der eingebaute Waechter der
+         Oberflaeche laedt daraufhin neu und uebernimmt.
+
+      NICHT BLIND AUSFUEHREN: der Schritt UEBERSCHREIBT das Aussehen. Fuer
+      eine frische Zweitbox richtig, fuer eine eingerichtete Box nicht.
+    run: |
+      set -e
+      B=/home/dietpi/.mupibox/Sonos-Kids-Controller-master
+      # Sicherung NUR beim ersten Lauf — sonst ueberschreibt der zweite Lauf sie
+      # mit dem bereits angeglichenen Stand, und das Original ist unwiederbringlich weg.
+      [ -f "$B/server/config/darstellung.json.vor-angleich" ] || \
+        cp "$B/server/config/darstellung.json" "$B/server/config/darstellung.json.vor-angleich" 2>/dev/null || true
+      python3 - <<'ENDE'
+      import json, urllib.request
+      neu = json.load(open('/tmp/darstellung-vorlage.json'))
+      r = urllib.request.Request(
+          'http://localhost:8200/api/darstellung',
+          data=json.dumps(neu).encode(),
+          headers={'Content-Type': 'application/json'},
+          method='PUT')
+      # Die HUELLE {aktuell, themen} ist Pflicht: das innere Objekt allein
+      # ergibt 200 OK und danach `aktuell: null` - die ganze Darstellung weg.
+      assert 'aktuell' in neu and 'themen' in neu
+      with urllib.request.urlopen(r, timeout=15) as a:
+          print('Darstellung gesetzt:', a.status)
+      ENDE
+      # HIER STAND der Farbthema-Angleich (mupibox.theme=dark + Anlage des
+      # active_theme.css-Verweises von Hand): entfallen mit E118/1e - die
+      # Themen der alten Oberflaeche sind geloescht, Farben kommen aus
+      # /farben.css (feste Datei, E118/1c), und die reist im deploy.zip mit.
+      touch $B/www/neu/app.js
+    check: |
+      python3 -c "
+      import json,urllib.request
+      d=json.load(urllib.request.urlopen('http://localhost:8200/api/darstellung', timeout=10))
+      a=d.get('aktuell') or {}; t=d.get('themen') or {}
+      assert a, 'aktuell ist leer'
+      assert all(len(v) > 40 for v in t.values()), 'ein Thema ist noch ein Rumpf'
+      print('OK', len(a), 'Felder,', len(t), 'volle Themen')"
+    optional: true
+    timeout: 180
+    put:
+      # src/dest/mode — NICHT von/nach/modus: der Runner kennt nur die drei
+      # englischen Schluessel und wirft sonst "put: braucht src und dest",
+      # BEVOR das run: ueberhaupt laeuft. Der Schritt kam damit nie an.
+      - src: dateien/darstellung.json
+        dest: /tmp/darstellung-vorlage.json
+        mode: "0644"
+
+  - id: php-abschalten
+    name: "PHP-Verwaltung abschalten (nur bei MUPI_ADMIN=node)"
+    note: >-
+      Bei MUPI_ADMIN=node liefert lighttpd/PHP nichts mehr aus, laeuft aber
+      weiter. Gemessen (Pi 5, 2026-07-29): 6 Prozesse, 88 MB. Auf dem Pi 4
+      waren es 73 MB - und lighttpd ABZUSCHALTEN GENUEGT NICHT, php-fpm ist
+      ein EIGENER Dienst und lief mit 5 Prozessen weiter.
+      REIHENFOLGE: vorher pruefen, dass die Node-Verwaltung wirklich
+      antwortet. Sonst steht die Box ohne JEDE Verwaltung da.
+    run: |
+      set -e
+      [ "${MUPI_ADMIN:-node}" = node ] || { echo "  MUPI_ADMIN=${MUPI_ADMIN} - PHP bleibt"; exit 0; }
+      code=$(curl -s -m5 -o /dev/null -w "%{http_code}" -L http://localhost:8200/admin/ || echo 000)
+      if [ "$code" != 200 ]; then
+        echo "  Node-Verwaltung antwortet mit $code - PHP bleibt an (kein Blindflug)"
+        exit 0
+      fi
+      for u in lighttpd php8.4-fpm php8.2-fpm; do
+        systemctl disable --now "$u" >/dev/null 2>&1 && echo "  $u abgeschaltet" || true
+      done
+      sleep 2
+      echo "  PHP-Prozesse jetzt: $(ps -eo comm | grep -cE 'php|lighttpd')"
+      curl -s -m5 -o /dev/null -w "  Verwaltung danach: %{http_code}\n" -L http://localhost:8200/admin/ || true
+    check: "true"
+    optional: true
+
+  - id: kiosk
+    name: "Chromium-Kiosk als Autostart setzen"
+    note: "DietPi-AutoStart 11 = Chromium-Kiosk; startet nach dem Reboot direkt die MuPiBox-Oberflaeche auf dem Display"
+    put:
+      - src: tools/force-dsi-output.sh
+        dest: /usr/local/bin/mupibox/force-dsi-output.sh
+        mode: "755"
+    run: |
+      set -e
+      /boot/dietpi/dietpi-autostart 11 2>&1 | tail -2
+      # X nimmt sonst einen NICHT angeschlossenen HDMI als "primary" und laesst den
+      # DSI-Ausgang disabled -> Panel schwarz, obwohl Chromium laeuft (am Geraet belegt).
+      F=/var/lib/dietpi/dietpi-software/installed/chromium-autostart.sh
+      # WEISSES AUFBLITZEN beim Uebergang Startbild -> Oberflaeche.
+      # Zwei Quellen, beide am Geraet gesehen (Pi 4, 2026-07-29):
+      #  1. X malt beim Start seinen Wurzelhintergrund. Mit `-background none`
+      #     laesst es ihn in Ruhe - stehen bleibt, was der Framebuffer zeigt,
+      #     also das letzte Bild des Startbilds, bis Chromium zeichnet.
+      #  2. Chromium stand auf 44afe2ff (HELLES Blau), waehrend die Oberflaeche
+      #     in Wahrheit #000000/#121212 ist. Bis die Seite das erste Mal malt,
+      #     leuchtete also ein helles Feld.
+      # WARTESCHLEIFE FEINER: der Kiosk wartet auf localhost:8200, BEVOR er X
+      # startet - diese Schleife ist also direkt die Zeit bis zum Bild. Sie
+      # probierte erst HTTPS mit 2 s Zeitlimit, dann HTTP, dann 1 s Schlaf.
+      # Gemessen brachte HTTP-zuerst: X ab 18,3 statt 23,7 s.
+      #
+      # NUR DIE PROBE UMZUSTELLEN WAR EIN FEHLER (2026-07-30 beim Gegenlesen
+      # gefunden). Der erste Zweig des Autostarts lautet
+      #     if curl … https://localhost:8200; then MUPI_URL="https://localhost:8200"
+      # Schreibt man allein die curl-Zeile auf http um, TRIFFT dieser Zweig
+      # sofort - und setzt weiterhin die HTTPS-Adresse. Chromium bekaeme also
+      # --homepage https://localhost:8200, und 8200 spricht nur HTTP (dieselbe
+      # Messung steht in der Notiz von 'api-port-fix'): der Kiosk zeigt eine
+      # Fehlerseite statt der Oberflaeche - auf JEDER Box, jedes Mal. Deshalb
+      # BEIDE Zeilen umstellen, Probe und Adresse.
+      sed -i 's|--max-time 2 https://localhost:8200|--max-time 1 http://localhost:8200|' "$F" 2>/dev/null || true
+      sed -i 's|MUPI_URL="https://localhost:8200"|MUPI_URL="http://localhost:8200"|' "$F" 2>/dev/null || true
+      # Beweis statt Vertrauen: bleibt irgendwo eine HTTPS-Adresse fuer 8200
+      # stehen, ist die Umstellung halb passiert. Das faellt sonst erst am
+      # Fehlerbild auf dem Panel auf, und dort sucht niemand im Rezept.
+      # NUR ECHTE ZEILEN PRUEFEN, keine Kommentare: die Datei ERKLAERT weiter
+      # unten, warum der https-Zweig nie greift ("DER https-ZWEIG GREIFT NIE.
+      # Er probiert https://localhost:8200 ..."). Die Probe schlug auf genau
+      # diese Begruendung an und hielt den Schritt fuer gescheitert — am
+      # Geraet bei 48 von 53. Wer eine Datei nach einem Fehler durchsucht,
+      # muss die Stellen ueberspringen, an denen der Fehler nur BESCHRIEBEN
+      # wird.
+      if grep -v '^[[:blank:]]*#' "$F" | grep -q 'https://localhost:8200'; then
+        echo "FEHLER: im Autostart steht noch https://localhost:8200 - 8200 spricht nur HTTP"
+        exit 1
+      fi
+      grep -q 'background none' "$F" || \
+        sed -i 's/-- -nocursor tty2/-- -background none -nocursor tty2/' "$F"
+      sed -i 's/background-color=44afe2ff/background-color=000000ff/g' "$F"
+      grep -q force-dsi-output.sh "$F" || \
+        printf '\n# vom remote-step-installer: DSI-Ausgang erzwingen (sonst schwarzes Panel)\n/usr/local/bin/mupibox/force-dsi-output.sh &\n' >> "$F"
+      # Touch-Kiosk: keine Rollbalken. Gescrollt wird mit dem Finger; der Balken
+      # ist nur optischer Ballast (am Geraet im Album-Bereich sichtbar gewesen).
+      # ANHAENGEN waere WIRKUNGSLOS: Chromium startet mitten in der Datei (Zeile
+      # ~106), eine Zuweisung am Dateiende kaeme zu spaet. Also direkt HINTER die
+      # letzte CHROMIUM_OPTS-Zeile setzen. Muss hier stehen, weil der Schritt
+      # 'extras' die Datei aus dem Fork jedes Mal neu schreibt.
+      if ! grep -q hide-scrollbars "$F"; then
+        L=$(grep -n '^CHROMIUM_OPTS=' "$F" | tail -1 | cut -d: -f1)
+        if [ -n "$L" ]; then
+          sed -i "${L}a CHROMIUM_OPTS=\"\${CHROMIUM_OPTS} --hide-scrollbars\"" "$F"
+          bash -n "$F" || echo "  WARNUNG: Autostart-Skript nach dem Einfuegen fehlerhaft"
+        else
+          echo "  WARNUNG: keine CHROMIUM_OPTS-Zeile gefunden — Rollbalken bleibt"
+        fi
+      fi
+      # „SEITE UEBERSETZEN?" ABSCHALTEN.
+      # Chromium bietet die Uebersetzung als Blase ueber der Seite an, sobald
+      # es die Sprache fuer fremd haelt. Auf einem Kinder-Kiosk ist das eine
+      # Falle: einmal getippt, steht die Oberflaeche auf Englisch, und den
+      # Weg zurueck findet niemand. Zu uebersetzen gibt es hier ohnehin
+      # nichts — die Seite kommt von der Box selbst.
+      #
+      # ANHAENGEN, NICHT DANEBENSTELLEN: zwei `--disable-features=` waeren
+      # eins. Chromium nimmt den LETZTEN Wert und wirft den ersten weg — eine
+      # eigene Zeile haette also stillschweigend die Wischgesten-Sperre
+      # (OverscrollHistoryNavigation) aufgehoben, und das faellt erst auf,
+      # wenn ein Kind die Seite versehentlich zurueckwischt.
+      # Im Fork steht es schon in der Quelle; das hier ist fuer Boxen, deren
+      # Autostart-Skript aus einer aelteren Quelle stammt.
+      if ! grep -q 'disable-features=[^"]*Translate' "$F"; then
+        if grep -q 'disable-features=' "$F"; then
+          sed -i '0,/--disable-features=[A-Za-z]*/s//&,Translate/' "$F"
+          echo "  Uebersetzungs-Blase abgeschaltet (an vorhandene Option angehaengt)"
+        else
+          L=$(grep -n '^CHROMIUM_OPTS=' "$F" | tail -1 | cut -d: -f1)
+          if [ -n "$L" ]; then
+            sed -i "${L}a CHROMIUM_OPTS=\"\${CHROMIUM_OPTS} --disable-features=Translate\"" "$F"
+            echo "  Uebersetzungs-Blase abgeschaltet (eigene Zeile)"
+          fi
+        fi
+        bash -n "$F" || echo "  WARNUNG: Autostart-Skript nach dem Einfuegen fehlerhaft"
+      fi
+      bash -n "$F"
+      echo "Autostart-Index: $(cat /boot/dietpi/.dietpi-autostart_index 2>/dev/null)"
+    check: "[ \"$(cat /boot/dietpi/.dietpi-autostart_index 2>/dev/null)\" = 11 ]"
+
+  - id: pruefen
+    name: "Läuft es? (Dienste + Backend antworten)"
+    note: >-
+      systemd statt pm2: die App laeuft seit 'dienste-systemd' als Unit, pm2
+      ist von beiden Boxen verschwunden. `pm2 list` zeigte hier zuletzt eine
+      LEERE Tabelle und sah trotzdem nach Erfolg aus - die eigentliche Frage
+      (laufen die Dienste?) blieb unbeantwortet.
+    run: |
+      sleep 3
+      echo "--- Dienste ---"
+      for u in mupibox-server mupibox-player librespot mupi_check_internet; do
+        printf '  %-22s %s\n' "$u" "$(systemctl is-active $u 2>/dev/null || true)"
+      done
+      echo "--- backend-api :8200 ---"
+      # /api/sonos ist am 19.09.2026 gefallen (AUDIT-2026-09-19 Rang 7) - diese
+      # Zeile war ihr einziger Rufer. Gefragt wird jetzt /api/config, und zwar
+      # MIT Inhaltspruefung: der Catch-all des Servers beantwortet JEDEN Pfad
+      # mit 302, `curl >/dev/null` endete deshalb auch auf einem erfundenen Weg
+      # mit 0 - am 19.09. an der Box nachgemessen. Die alte Zeile hat nie mehr
+      # bewiesen, als dass auf 8200 ueberhaupt jemand horcht.
+      curl -sS -m 5 http://127.0.0.1:8200/api/config | grep -q '"mupibox"' && echo "backend-api antwortet" || echo "backend-api antwortet NICHT"
+      echo "--- player :5005 ---"
+      curl -sS -m 5 http://127.0.0.1:5005/local >/dev/null && echo "player antwortet" || echo "player antwortet NICHT"
+
+  - id: boot-animation
+    name: "Boot-Animation mit echtem Fortschritt"
+    note: >-
+      Der Fork zeigt nur ein STATISCHES Bild (splash_screen.sh -> `fbv <bild>`),
+      und fbv ist auf einem nackten DietPi gar nicht installiert. Hier stattdessen
+      eine Animation direkt auf /dev/fb0, deren Balken aus ERREICHTEN Meilensteinen
+      waechst (Netz, Backend-Port, Bibliotheksdienst, X, Chromium) statt aus einem
+      geratenen Timer. Nur Standardbibliothek; Schrift aus den vorhandenen
+      Konsolenschriften (PSF), weil PIL fehlt. Beendet sich selbst, sobald der
+      Kiosk laeuft, und bricht bei jedem Fehler still ab - eine Animation darf den
+      Start nie aufhalten.
+
+      LAEUFT AUF BEIDEN BOARDS. Es gab zwischenzeitlich ein `when: pi5`, weil
+      die Animation auf dem Pi 4 kroch — die Ursache war aber nicht das Board,
+      sondern eine Umrechnung: gezeichnet wurde bei 32 bpp und danach JEDER
+      Bildpunkt nach RGB565 gewandelt (800x480 = 384000 Schleifendurchlaeufe
+      je Bild; die Zeit steckte allein in `nach565`, nicht im Zeichnen). Jetzt
+      wird nativ in der Farbtiefe des Schirms gezeichnet, die Umrechnung gibt
+      es gar nicht mehr. Am Geraet gemessen (Pi 4, 16 bpp): 331 Bilder/s. Die
+      Einschraenkung war also ein Umweg um einen eigenen Fehler und ist wieder
+      weg.
+    optional: true
+    put:
+      # ══ AUS DEM FORK, NICHT AUS tools/ ══════════════════════════════
+      # Betreiber, 10.08.2026: „der boot screen ist wieder mupi."
+      #
+      # Hier stand `src: tools/mupibox-boot-splash.py` — die Kopie DIESES
+      # Repos, und die ist stehengeblieben: dort steht `titel = "MuPiBox"`
+      # fest im Code. Die Fassung im Fork liest den Namen der Box
+      # (`titel = boxname()`), seit der Betreiber am 07.08.2026 danach
+      # gefragt hatte. Am 10.08.2026 gemessen: 114 Zeilen Unterschied.
+      #
+      # UND ES WAREN ZWEI PFADE: der Skriptschritt weiter oben kopiert
+      # scripts/mupibox/* nach /usr/local/bin/mupibox/ — also die GUTE
+      # Fassung. Dieser Schritt schrieb danach die ALTE nach
+      # /usr/local/bin/mupibox-boot-splash.py, einen Ordner hoeher, und
+      # genau die ruft die Unit auf. Zwei Kopien, ein Aufrufer, falsche
+      # gewonnen.
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/mupibox/mupibox-boot-splash.py
+        dest: /tmp/mupibox-boot-splash.py
+      - src: tools/mupibox-boot-splash.service
+        dest: /tmp/mupibox-boot-splash.service
+    run: |
+      set -e
+      install -m 755 /tmp/mupibox-boot-splash.py /usr/local/bin/mupibox-boot-splash.py
+      install -m 644 /tmp/mupibox-boot-splash.service /etc/systemd/system/mupibox-boot-splash.service
+      python3 -c 'import py_compile; py_compile.compile("/usr/local/bin/mupibox-boot-splash.py", doraise=True)'
+      systemctl daemon-reload
+      systemctl enable mupibox-boot-splash >/dev/null 2>&1 && echo "  Boot-Animation eingeschaltet"
+      rm -f /tmp/mupibox-boot-splash.py /tmp/mupibox-boot-splash.service
+    check: "test -x /usr/local/bin/mupibox-boot-splash.py"
+  - id: neustart
+    name: "Dienste neu starten (nach Konfigänderungen)"
+    note: >-
+      systemd statt pm2 - `pm2 restart all` scheiterte hier, sobald pm2 weg
+      war (und tat davor nichts anderes). librespot ist dabei, weil er seinen
+      Namen (`mupibox.host` -> LIBRESPOT_NAME) nur BEIM START liest.
+    optional: true
+    run: |
+      systemctl restart mupibox-server mupibox-player
+      systemctl try-restart librespot || true
+      sleep 3
+      systemctl is-active mupibox-server mupibox-player librespot | tr '\n' ' '; echo
+
+  - id: stueckliste
+    name: "Stueckliste vergleichen: was hat sich seit der letzten guten Box bewegt?"
+    note: >-
+      DIE REZEPTE PINNEN BEWUSST NICHTS. `apt-get install -y mplayer` holt, was
+      an dem Tag da ist - gut fuer Sicherheitsupdates, aber es heisst auch: zwei
+      Boxen, im Abstand von Monaten aufgesetzt, sind nicht dieselbe Box. Der
+      Installationszeitpunkt entscheidet mit.
+
+      Das Wissenspaket ist im Kern ein Katalog dieser Faelle
+      (mupi-nodesource-trixie, mupi-max98357a-trixie-silent,
+      mupi-rpi-eeprom-trixie, librespot-versionen-2026). Jedes Mal hatte sich
+      draussen etwas bewegt, und jedes Mal begann die Suche bei null - weil
+      niemand wusste, was die funktionierende Box vorher hatte.
+
+      Dieser Schritt beantwortet genau das. Er vergleicht die frische
+      Installation mit `dateien/stueckliste.txt` (aufgenommen von einer Box, die
+      nachweislich rundlief) und MELDET die Unterschiede.
+
+      ER VERHINDERT NICHTS und schlaegt nie fehl. Ein Schritt, der eine
+      Installation wegen einer neueren Paketfassung abbricht, waere ein Pin
+      durch die Hintertuer - und die Entscheidung war ausdruecklich: rolling
+      bleiben, aber sehen, was rollt. Deshalb `optional: true` und immer exit 0.
+
+      Die Vorlage neu aufnehmen, wenn eine Box rundlaeuft - NICHT von einer, die
+      gerade repariert wird:  tools/stueckliste.py <box> --schreiben
+    optional: true
+    timeout: 120
+    put:
+      - src: dateien/stueckliste.txt
+        dest: /etc/mupibox/stueckliste-vorlage.txt
+        mode: "0644"
+    run: |
+      VORLAGE=/etc/mupibox/stueckliste-vorlage.txt
+      JETZT=/etc/mupibox/stueckliste-installiert.txt
+      if [ ! -s "$VORLAGE" ]; then
+        echo "  keine Vorlage hinterlegt - nichts zu vergleichen"
+        exit 0
+      fi
+
+      # Den aktuellen Wert zu EINEM Eintrag holen. Die Zweige spiegeln
+      # tools/stueckliste.py - wer dort etwas ergaenzt, ergaenzt es hier mit.
+      jetzt_wert() {
+        case "$1" in
+          apt)
+            w=$(dpkg-query -W -f='${Version}' "$2" 2>/dev/null)
+            [ -n "$w" ] || w="nicht installiert"
+            ;;
+          system)
+            case "$2" in
+              modell) w=$(cat /proc/device-tree/model 2>/dev/null | tr -d '\0') ;;
+              os)     w=$(. /etc/os-release 2>/dev/null && echo "$PRETTY_NAME") ;;
+              kern)   w=$(uname -r) ;;
+              dietpi) w=$(. /boot/dietpi/.version 2>/dev/null && \
+                          echo "$G_DIETPI_VERSION_CORE.$G_DIETPI_VERSION_SUB.$G_DIETPI_VERSION_RC") ;;
+              *)      w="" ;;
+            esac
+            ;;
+          sonstige)
+            case "$2" in
+              nodejs)    w=$(node --version 2>/dev/null) ;;
+              librespot) w=$(/usr/bin/librespot --version 2>/dev/null | head -1) ;;
+              chromium)  w=$(chromium --version 2>/dev/null | head -1) ;;
+              *)         w="" ;;
+            esac
+            ;;
+          *) w="" ;;
+        esac
+        [ -n "$w" ] || w="-"
+        printf '%s' "$w"
+      }
+
+      TAB=$(printf '\t')
+      abweichungen=0
+      umfeld=""
+      : > "$JETZT"
+
+      # `< "$VORLAGE"` und NICHT `cat | while`: hinter einer Pipe laeuft die
+      # Schleife in einer Unterschale, und der Zaehler waere danach wieder 0.
+      while IFS="$TAB" read -r bereich name frueher; do
+        case "$bereich" in ''|'#'*) continue ;; esac
+        jetzt=$(jetzt_wert "$bereich" "$name")
+        printf '%s\t%s\t%s\n' "$bereich" "$name" "$jetzt" >> "$JETZT"
+        [ "$jetzt" = "$frueher" ] && continue
+        if [ "$bereich" = "system" ]; then
+          # Modell und Kern unterscheiden sich zwischen Pi 4 und Pi 5 voellig
+          # zu Recht. Das ist Umfeld, keine Abweichung - sonst steht hier auf
+          # jeder zweiten Box eine Warnung, die niemand mehr liest.
+          umfeld="${umfeld}      ${name}: ${frueher}  ->  ${jetzt}
+      "
+          continue
+        fi
+        printf '  ANDERS  %-22s %s  ->  %s\n' "$name" "$frueher" "$jetzt"
+        abweichungen=$((abweichungen + 1))
+      done < "$VORLAGE"
+
+      if [ -n "$umfeld" ]; then
+        echo "  Umfeld weicht ab (bei anderer Platine normal):"
+        printf '%s' "$umfeld"
+      fi
+      if [ "$abweichungen" = "0" ]; then
+        echo "  Deckungsgleich mit der Vorlage."
+      else
+        echo "  $abweichungen Abweichung(en) - kein Fehler, aber der erste Ort zum Nachsehen,"
+        echo "  falls diese Box sich anders verhaelt als die, von der die Vorlage stammt."
+      fi
+      echo "  Ist-Stand liegt auf der Box: $JETZT"
+      exit 0

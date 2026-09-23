@@ -1,0 +1,70 @@
+# ══ WAS NICHT NACH GITHUB GEHT ═══════════════════════════════════════════════
+#
+# WOZU DIESE DATEI: Der Fork liegt vollstaendig auf den eigenen Git-Ablagen
+# (NAS, Maschinen). Nach GitHub geht ein KURATIERTER Stand — Betreiber,
+# 23.09.2026: „die modelle muessen nicht mit, nur software und wichtige
+# bestandteile wie icons, aber auch nicht die sourcen, nur das benutzte."
+#
+# DIE REGEL, nach der hier entschieden wird: veroeffentlicht wird, was man
+# braucht, um eine Box AUFZUSETZEN, zu BETREIBEN, die App zu BAUEN oder das
+# Projekt zu VERSTEHEN und zu ERWEITERN. Draussen bleibt Quellmaterial
+# (Rohrender, CAD), Unbenutztes (alte Binaerstaende) und alles, was die
+# Heimumgebung verraet.
+#
+# WAS HIER NICHT STEHT UND WARUM: Die Analyse- und Konzeptdateien
+# (ADMIN-BOARD-ANALYSE.md, MODERNIZATION.md, KONZEPT-*.md, …) SEHEN aus wie
+# Sitzungsartefakte, sind aber KEINE: mehrere veroeffentlichte Wachen lesen sie
+# (tools/md-verweise-pruefen.py, tools/doku-pfade-pruefen.py,
+# tools/analyse-md-stand-pruefen.py, .github/workflows/ci.yml). Wer sie
+# weglaesst, liefert eine Wache aus, die garantiert rot steht. Dasselbe gilt
+# fuer die kleinen Vorlagen unter config/templates/ und news.txt — der Gewinn
+# waere ein Kilobyte, der Preis ein falsch stehender Pruefer. Gemessen und
+# belegt bei der Inventur vom 23.09.2026.
+#
+# FORMAT: ein Muster je Zeile, Pfade relativ zur Repo-Wurzel. Ein Muster ohne
+# Sonderzeichen deckt den Pfad UND alles darunter ab. `*` und `?` wirken wie
+# in einem Dateinamen-Muster (fnmatch), `#` beginnt einen Kommentar.
+#
+# WER HIER ETWAS EINTRAEGT, schreibt den Grund dahinter. Ein Ausschluss ohne
+# Grund ist in einem halben Jahr nicht mehr von einem Versehen zu
+# unterscheiden — und `tools/github-veroeffentlichen.py` sagt den Grund beim
+# Trockenlauf mit auf.
+#
+# AUSNAHMEN WERDEN NICHT HIER GEPFLEGT, SONDERN GEMESSEN: 34 Bilder unter
+# NewDesign/bilder/quellen/ werden von maskottchen.json und von
+# remote-step-installer/tools/sdstart-bilder.py NAMENTLICH gebraucht. Das
+# Werkzeug holt genau die zurueck (`bildquellen_noetig`) und sagt es im
+# Bericht — eine Liste von Dateinamen hier waere beim naechsten Maskottchen
+# veraltet.
+
+# ── Quellmaterial: die Rohstoffe, nicht das Erzeugnis ───────────────────────
+3D-Design/                       # CAD- und Druckdateien der Gehaeuse — Modelle, keine Software
+NewDesign/bilder/quellen/        # 117 KI-Rohrender (126 MB); ausgeliefert werden die daraus erzeugten Figuren (34 namentlich gebrauchte holt das Werkzeug zurueck)
+NewDesign/Tastatur/Vorlage/      # Rohrender der Tastatur-Zeichen; benutzt wird NewDesign/bilder/tastatur/
+NewDesign/Progressbar/Vorlage/   # Rohrender der Fortschritts-Zeichen; benutzt wird NewDesign/bilder/progressbar/
+
+# ── Unbenutztes ─────────────────────────────────────────────────────────────
+NewDesign/MixPiBox-standalone.html  # 3,8-MB-Entwurfsschnappschuss vom 31.07.2026; vom Ausrollweg ausgenommen, von beiden Tote-Code-Wachen ausgeklammert
+bin/librespot/0.5.0/             # alter Binaerstand, von keinem Weg mehr gerufen
+bin/librespot/dev_0.5_20240905/  # alter Binaerstand, von keinem Weg mehr gerufen
+bin/librespot/dev_0.5_20241008/  # alter Binaerstand, von keinem Weg mehr gerufen
+bin/librespot/dev_0.6_20250305/  # alter Binaerstand, von keinem Weg mehr gerufen
+bin/librespot/dev_0.6_20250628/  # alter Binaerstand, von keinem Weg mehr gerufen
+bin/librespot/dev_0.6_20250806/  # alter Binaerstand; autosetup nennt ihn nur im Kommentar („spielt KEINEN TON", A/B-Beleg 28.07.2026)
+src/deploy.ps1                   # toter Windows-Ausrollweg: kein Aufrufer, flacht ein Verzeichnis ab, das es seit E118/1e nicht mehr gibt
+tools/bilder-dunkel/             # Ausgabe von tools/kinder-dunkel-schau.mjs, jederzeit neu erzeugbar
+# bin/librespot/0.6.0/ bleibt DRIN: Dockerfile:108 holt genau diesen Stand.
+
+# `screenshots/` STAND HIER — und steht es nicht mehr. Bis zum 23.09.2026 lagen
+# dort die Schirmbilder des URSPRUNGS (Angular-Oberflaeche, Themes,
+# Spotify-Suche): eine Oberflaeche, die es hier seit E118/1e nicht mehr gibt.
+# Sie sind geloescht und durch frische ersetzt, die `tools/schirmbilder-*.mjs`
+# und `remote-step-installer/tools/schirmbilder-sdstart.py` aus der laufenden
+# Oberflaeche aufnehmen — die README bettet sie ein, also gehoeren sie mit.
+
+# ── Was die Heimumgebung verraet ────────────────────────────────────────────
+.claude/                         # Umgebung der Agentensitzung: interne Adressen (192.168.178.x, git.local:3000) und Freigaben dieser Maschine
+tools/zugang-sackgassen/         # mitgeschnittener Laufzeitzustand einer echten Box, inkl. eines echten bcrypt-Verwaltungspassworts
+
+# ── Momentaufnahmen einzelner Pruefsitzungen ────────────────────────────────
+AUDIT-*.md                       # was daraus dauerhaft gilt, steht im Wissenspaket; die Laeufe selbst sind Tagesstand

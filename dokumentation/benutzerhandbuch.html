@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Benutzerhandbuch der MixPiBox: Einkaufsliste, Hardware-Aufbau, Installation, Musikquellen, Kinderzeit und Fehlersuche.">
+<title>MixPiBox — Benutzerhandbuch</title>
+<style>
+  :root {
+    --grund: #FAF7F1;
+    --flaeche: #FFFFFF;
+    --flaeche-2: #F1ECE3;
+    --tinte: #2A2433;
+    --tinte-2: #6E6579;
+    --linie: #E3DCD0;
+    --akzent: #6D45C4;
+    --akzent-tief: #533799;
+    --akzent-flaeche: #EFE9FB;
+    --warn-flaeche: #FBF0DC;
+    --warn-rand: #D99C3A;
+    --warn-tinte: #7A5210;
+    --gefahr-flaeche: #FBE9E7;
+    --gefahr-rand: #C4453A;
+    --gefahr-tinte: #8F2A22;
+    --ok: #2E7D46;
+    --code-grund: #241F2E;
+    --code-tinte: #E9E3F4;
+    --code-akzent: #C9B4F2;
+    --schatten: 0 1px 2px rgba(42,36,51,.06), 0 4px 14px rgba(42,36,51,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --grund: #171320;
+      --flaeche: #211B2D;
+      --flaeche-2: #2A2338;
+      --tinte: #ECE7F4;
+      --tinte-2: #A69DB8;
+      --linie: #382F49;
+      --akzent: #A98BE8;
+      --akzent-tief: #C3ACF2;
+      --akzent-flaeche: #2C2440;
+      --warn-flaeche: #362B16;
+      --warn-rand: #A8802F;
+      --warn-tinte: #E8C583;
+      --gefahr-flaeche: #3A1F1C;
+      --gefahr-rand: #A85248;
+      --gefahr-tinte: #F0A9A0;
+      --ok: #7CC894;
+      --code-grund: #120E1B;
+      --code-tinte: #DED6EC;
+      --code-akzent: #B79DEE;
+      --schatten: 0 1px 2px rgba(0,0,0,.35), 0 4px 14px rgba(0,0,0,.25);
+    }
+  }
+  :root[data-theme="dark"] {
+    --grund: #171320;
+    --flaeche: #211B2D;
+    --flaeche-2: #2A2338;
+    --tinte: #ECE7F4;
+    --tinte-2: #A69DB8;
+    --linie: #382F49;
+    --akzent: #A98BE8;
+    --akzent-tief: #C3ACF2;
+    --akzent-flaeche: #2C2440;
+    --warn-flaeche: #362B16;
+    --warn-rand: #A8802F;
+    --warn-tinte: #E8C583;
+    --gefahr-flaeche: #3A1F1C;
+    --gefahr-rand: #A85248;
+    --gefahr-tinte: #F0A9A0;
+    --ok: #7CC894;
+    --code-grund: #120E1B;
+    --code-tinte: #DED6EC;
+    --code-akzent: #B79DEE;
+    --schatten: 0 1px 2px rgba(0,0,0,.35), 0 4px 14px rgba(0,0,0,.25);
+  }
+  :root[data-theme="light"] {
+    --grund: #FAF7F1;
+    --flaeche: #FFFFFF;
+    --flaeche-2: #F1ECE3;
+    --tinte: #2A2433;
+    --tinte-2: #6E6579;
+    --linie: #E3DCD0;
+    --akzent: #6D45C4;
+    --akzent-tief: #533799;
+    --akzent-flaeche: #EFE9FB;
+    --warn-flaeche: #FBF0DC;
+    --warn-rand: #D99C3A;
+    --warn-tinte: #7A5210;
+    --gefahr-flaeche: #FBE9E7;
+    --gefahr-rand: #C4453A;
+    --gefahr-tinte: #8F2A22;
+    --ok: #2E7D46;
+    --code-grund: #241F2E;
+    --code-tinte: #E9E3F4;
+    --code-akzent: #C9B4F2;
+    --schatten: 0 1px 2px rgba(42,36,51,.06), 0 4px 14px rgba(42,36,51,.05);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 1.5rem; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body {
+    margin: 0;
+    background: var(--grund);
+    color: var(--tinte);
+    font-family: system-ui, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+    font-size: 1.0rem;
+    line-height: 1.65;
+  }
+  h1, h2, h3, h4, .wortmarke {
+    font-family: "Trebuchet MS", "Segoe UI", Verdana, sans-serif;
+    line-height: 1.25;
+    text-wrap: balance;
+  }
+  code, pre, kbd { font-family: ui-monospace, "Cascadia Code", "JetBrains Mono", Consolas, "DejaVu Sans Mono", monospace; }
+
+  .seite {
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: 1.25rem 1.25rem 4rem;
+  }
+
+  /* ── Kopf ─────────────────────────────── */
+  header.kopf {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 2.25rem 0 1.5rem;
+    flex-wrap: wrap;
+  }
+  .maskottchen { flex: 0 0 auto; }
+  .kopf-text h1 {
+    margin: 0;
+    font-size: clamp(2rem, 5vw, 2.9rem);
+    letter-spacing: -.01em;
+  }
+  .kopf-text h1 .mix { color: var(--akzent); }
+  .untertitel {
+    margin: .35rem 0 0;
+    font-size: 1.12rem;
+    color: var(--tinte-2);
+    max-width: 42ch;
+  }
+  .chips { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .9rem; }
+  .chip {
+    font-size: .78rem;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: .22rem .6rem;
+    border: 1px solid var(--linie);
+    border-radius: 999px;
+    color: var(--tinte-2);
+    background: var(--flaeche);
+    white-space: nowrap;
+  }
+
+  /* ── Raster: Navigation + Inhalt ──────── */
+  .rumpf {
+    display: grid;
+    grid-template-columns: 15.5rem minmax(0, 1fr);
+    gap: 2.75rem;
+    align-items: start;
+  }
+  nav.inhalt {
+    position: sticky;
+    top: 1.25rem;
+    font-size: .92rem;
+  }
+  nav.inhalt .nav-titel {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    color: var(--tinte-2);
+    margin: 0 0 .6rem .75rem;
+  }
+  nav.inhalt ol { list-style: none; margin: 0; padding: 0; }
+  nav.inhalt a {
+    display: flex;
+    gap: .55rem;
+    padding: .32rem .75rem;
+    color: var(--tinte-2);
+    text-decoration: none;
+    border-radius: .5rem;
+    border-left: 2px solid transparent;
+  }
+  nav.inhalt a:hover { color: var(--akzent-tief); background: var(--akzent-flaeche); }
+  nav.inhalt a .nr {
+    color: var(--akzent);
+    font-variant-numeric: tabular-nums;
+    min-width: 1.4em;
+    text-align: right;
+  }
+  details.nav-mobil { display: none; }
+
+  main { min-width: 0; max-width: 46rem; }
+
+  section { margin: 0 0 3.25rem; }
+  section > h2 {
+    font-size: 1.55rem;
+    margin: 0 0 .35rem;
+    padding-top: 1rem;
+    display: flex;
+    align-items: baseline;
+    gap: .7rem;
+  }
+  section > h2 .nr {
+    color: var(--akzent);
+    font-size: 1.05rem;
+    font-variant-numeric: tabular-nums;
+  }
+  section > h2 + p.vorspann { margin-top: .25rem; }
+  h3 { font-size: 1.13rem; margin: 1.8rem 0 .5rem; }
+  p { margin: .7rem 0; }
+  .vorspann { color: var(--tinte-2); }
+  a { color: var(--akzent-tief); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  ul, ol { padding-left: 1.35rem; margin: .7rem 0; }
+  li { margin: .3rem 0; }
+  li::marker { color: var(--akzent); }
+  hr { border: 0; border-top: 1px solid var(--linie); margin: 2.5rem 0; }
+  strong { color: var(--tinte); }
+
+  /* UI-Pfade wie „Verwaltung → Kinderzeit“ */
+  .pfad {
+    font-family: inherit;
+    background: var(--akzent-flaeche);
+    color: var(--akzent-tief);
+    border-radius: .35rem;
+    padding: .06rem .42rem;
+    white-space: nowrap;
+    font-size: .93em;
+  }
+  code {
+    background: var(--flaeche-2);
+    border-radius: .3rem;
+    padding: .08rem .32rem;
+    font-size: .88em;
+  }
+  pre {
+    background: var(--code-grund);
+    color: var(--code-tinte);
+    border-radius: .65rem;
+    padding: .9rem 1.1rem;
+    overflow-x: auto;
+    font-size: .86rem;
+    line-height: 1.55;
+    box-shadow: var(--schatten);
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  pre .bef { color: var(--code-akzent); }
+  pre .kom { color: #8E84A3; }
+
+  /* Tabellen */
+  .tabelle-huelle {
+    overflow-x: auto;
+    border: 1px solid var(--linie);
+    border-radius: .65rem;
+    background: var(--flaeche);
+    box-shadow: var(--schatten);
+    margin: 1rem 0;
+  }
+  table { border-collapse: collapse; width: 100%; font-size: .93rem; }
+  th, td { text-align: left; vertical-align: top; padding: .55rem .8rem; border-top: 1px solid var(--linie); }
+  thead th {
+    border-top: 0;
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--tinte-2);
+    background: var(--flaeche-2);
+  }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* Hinweiskästen */
+  .kasten {
+    border-radius: .65rem;
+    padding: .85rem 1.1rem;
+    margin: 1.1rem 0;
+    border: 1px solid var(--linie);
+    background: var(--flaeche);
+  }
+  .kasten .etikett {
+    display: block;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .09em;
+    margin-bottom: .25rem;
+  }
+  .kasten p { margin: .35rem 0; }
+  .kasten.merken { background: var(--akzent-flaeche); border-color: transparent; }
+  .kasten.merken .etikett { color: var(--akzent-tief); }
+  .kasten.achtung { background: var(--warn-flaeche); border-color: var(--warn-rand); }
+  .kasten.achtung .etikett { color: var(--warn-tinte); }
+  .kasten.gefahr { background: var(--gefahr-flaeche); border-color: var(--gefahr-rand); }
+  .kasten.gefahr .etikett { color: var(--gefahr-tinte); }
+
+  /* Schrittfolgen */
+  ol.schritte { counter-reset: schritt; list-style: none; padding: 0; margin: 1rem 0; }
+  ol.schritte > li {
+    counter-increment: schritt;
+    position: relative;
+    padding: 0 0 .35rem 2.6rem;
+    margin: 0 0 .8rem;
+  }
+  ol.schritte > li::before {
+    content: counter(schritt);
+    position: absolute;
+    left: 0; top: .05rem;
+    width: 1.7rem; height: 1.7rem;
+    border-radius: 50%;
+    background: var(--akzent);
+    color: #fff;
+    font-weight: 700;
+    font-size: .9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  :root[data-theme="dark"] ol.schritte > li::before { color: #171320; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) ol.schritte > li::before { color: #171320; } }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--linie);
+    color: var(--tinte-2);
+    font-size: .88rem;
+  }
+
+  :focus-visible { outline: 2px solid var(--akzent); outline-offset: 2px; border-radius: .25rem; }
+
+  @media (max-width: 940px) {
+    .rumpf { grid-template-columns: 1fr; gap: 1rem; }
+    nav.inhalt { display: none; }
+    details.nav-mobil {
+      display: block;
+      background: var(--flaeche);
+      border: 1px solid var(--linie);
+      border-radius: .65rem;
+      padding: .6rem .9rem;
+      margin-bottom: 1.5rem;
+    }
+    details.nav-mobil summary { cursor: pointer; font-weight: 700; }
+    details.nav-mobil ol { list-style: none; padding: .4rem 0 0; margin: 0; }
+    details.nav-mobil a { display: block; padding: .3rem 0; text-decoration: none; color: var(--akzent-tief); }
+  }
+</style>
+</head>
+<body>
+<div class="seite">
+  <header class="kopf">
+    <!-- DAS ECHTE MASKOTTCHEN, nicht eine Zeichnung davon (29.08.2026,
+         Betreiber): hier stand ein von Hand gebautes Inline-SVG, das dem
+         MixPi nur aehnlich sah. Die Box zeigt aber eine richtige Familie
+         (NewDesign/MASKOTTCHEN.md) - das Standardbild ist mixpi-hoert.png
+         aus NewDesign/bilder/, hier als data-URI eingebettet, damit das
+         Handbuch eine selbststaendige Datei bleibt. Neu erzeugen:
+         base64 -w0 NewDesign/bilder/mixpi-hoert.png -->
+    <img class="maskottchen" width="84" height="84" alt="MixPi steht mit Kopfhörern und geschlossenen Augen – das Maskottchen der Box" src="data:image/png;base64,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">
+    <div class="kopf-text">
+      <h1 class="wortmarke"><span class="mix">MixPi</span>Box</h1>
+      <p class="untertitel">Das Benutzerhandbuch — von der Einkaufsliste über den Zusammenbau bis zu Spotify, Kinderzeit und Verwaltung.</p>
+      <div class="chips">
+        <span class="chip">Raspberry Pi 5 / Pi 4</span>
+        <span class="chip">DietPi · Debian 13</span>
+        <span class="chip">Stand 22.08.2026</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="kasten merken" role="note">
+    <span class="etikett">Privater Fork</span>
+    <p>Die MixPiBox ist ein <strong>harter Fork</strong> der <a href="https://mupibox.de">MuPiBox</a> von splitti und nero — ohne deren Arbeit gäbe es dieses Projekt nicht. Dieses Handbuch beschreibt <strong>den Fork</strong>, nicht das Original: eigene Backends, zweite Oberfläche, neue Verwaltung, eigener Installationsweg. Wer eine Musikbox mit Anleitung, Community und Releases sucht, nimmt das Original. Support-Fragen zum Fork gehören ins eigene Repo, nie zum Ursprungsprojekt.</p>
+  </div>
+
+  <details class="nav-mobil">
+    <summary>Inhalt</summary>
+    <ol>
+      <li><a href="#ueberblick">1 · Was die MixPiBox ist</a></li>
+      <li><a href="#einkaufsliste">2 · Einkaufsliste</a></li>
+      <li><a href="#aufbau">3 · Hardware-Aufbau</a></li>
+      <li><a href="#optionen">4 · Optionen &amp; Varianten</a></li>
+      <li><a href="#installation">5 · Software installieren</a></li>
+      <li><a href="#dienste">6 · Musikquellen einrichten</a></li>
+      <li><a href="#bedienung">7 · Die Box im Alltag</a></li>
+      <li><a href="#verwaltung">8 · Verwaltung für Eltern</a></li>
+      <li><a href="#zugaenge">9 · Adressen &amp; Zugänge</a></li>
+      <li><a href="#hilfe">10 · Wenn etwas klemmt</a></li>
+      <li><a href="#im-bau">11 · Was gerade im Bau ist</a></li>
+    </ol>
+  </details>
+
+  <div class="rumpf">
+    <nav class="inhalt" aria-label="Inhaltsverzeichnis">
+      <p class="nav-titel">Inhalt</p>
+      <ol>
+        <li><a href="#ueberblick"><span class="nr">1</span> Was die MixPiBox ist</a></li>
+        <li><a href="#einkaufsliste"><span class="nr">2</span> Einkaufsliste</a></li>
+        <li><a href="#aufbau"><span class="nr">3</span> Hardware-Aufbau</a></li>
+        <li><a href="#optionen"><span class="nr">4</span> Optionen &amp; Varianten</a></li>
+        <li><a href="#installation"><span class="nr">5</span> Software installieren</a></li>
+        <li><a href="#dienste"><span class="nr">6</span> Musikquellen einrichten</a></li>
+        <li><a href="#bedienung"><span class="nr">7</span> Die Box im Alltag</a></li>
+        <li><a href="#verwaltung"><span class="nr">8</span> Verwaltung für Eltern</a></li>
+        <li><a href="#zugaenge"><span class="nr">9</span> Adressen &amp; Zugänge</a></li>
+        <li><a href="#hilfe"><span class="nr">10</span> Wenn etwas klemmt</a></li>
+        <li><a href="#im-bau"><span class="nr">11</span> Was gerade im Bau ist</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <section id="ueberblick">
+        <h2><span class="nr">1</span> Was die MixPiBox ist</h2>
+        <p class="vorspann">Eine Musikbox für Kinder auf einem Raspberry Pi: Touchscreen, Lautsprecher, keine Tastatur.</p>
+        <p>Ein Kind tippt auf ein Cover, und es spielt — aus <strong>Spotify</strong>, aus <strong>Jellyfin</strong>, aus <strong>lokalen Dateien</strong> oder aus einem <strong>Radiostream</strong>. Auch Sendungen der ARD&nbsp;Audiothek lassen sich als Quelle eintragen. Die Eltern pflegen die Inhalte über eine Verwaltungsoberfläche im Browser; das Kind sieht davon nichts.</p>
+        <p>Was die Box im Alltag besonders macht:</p>
+        <ul>
+          <li><strong>Weiterhören</strong> — „wo war ich stehengeblieben?“ Die Startseite zeigt angefangene Hörspiele als eigene Reihe.</li>
+          <li><strong>Kinderzeit</strong> — wie lange, wann und an welchen Tagen gehört werden darf. Entschieden wird auf dem Server, nicht im Browser; Neuladen setzt nichts zurück.</li>
+          <li><strong>Profile</strong> — Verlauf, Weiterhören und Favoriten haben einen Besitzer. Wer nicht angemeldet ist, ist der Gast — die Box spielt immer.</li>
+          <li><strong>MixPis</strong> — Musikwesen mit Kopfhörern, die Zustände der Box begleiten (<i>hört</i>, <i>spielt</i>, <i>schläft</i>, <i>sucht</i> …). Ein Kind, das noch nicht liest, erkennt seinen Platz am Wesen.</li>
+          <li><strong>Cover liegen auf der Box</strong> — gemessen 1,69&nbsp;s kalt, danach 0,03&nbsp;s. Die Box zeigt ihre Bilder auch ohne Netz.</li>
+        </ul>
+        <p>Es gibt <strong>zwei Box-Oberflächen</strong> (die klassische und eine neue, schlanke) und <strong>eine Verwaltung</strong> (den früheren PHP-Admin gibt es seit August 2026 nicht mehr). Umgeschaltet wird in der Konfiguration — mehr dazu in <a href="#verwaltung">Abschnitt 8</a>.</p>
+      </section>
+
+      <section id="einkaufsliste">
+        <h2><span class="nr">2</span> Einkaufsliste</h2>
+        <p class="vorspann">Was in Achims Aufbau tatsächlich steckt — mit den Revisions-Fallen, die wehtun.</p>
+
+        <h3>Pflicht</h3>
+        <div class="tabelle-huelle">
+          <table>
+            <thead>
+              <tr><th>Teil</th><th>Genau das</th><th>Worauf achten</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Raspberry Pi</strong></td>
+                <td>Pi 5 (Achims Aufbau) oder Pi 4, jeweils 64-bit</td>
+                <td>Das Ursprungsprojekt empfahl den Pi 4 mit 1 GB — läuft. Die SD-Karte des Forks ist dual-tauglich für beide.</td>
+              </tr>
+              <tr>
+                <td><strong>Touchdisplay</strong></td>
+                <td>Waveshare 5″ DSI LCD, 800 × 480</td>
+                <td><strong>Für den Pi 5 zwingend Rev 2.2.</strong> Bei Rev 2.1 oder älter deutet die Pi-5-Stromerkennung die Kondensatoren des Panels als Kurzschluss — der Pi bootet gar nicht.</td>
+              </tr>
+              <tr>
+                <td><strong>MuPiHAT</strong></td>
+                <td>Audio-Verstärker + Akku-Ladeteil + Ein/Aus-Taster auf einer Platine</td>
+                <td><strong>Für den Pi 5 Rev 3.4.1 oder neuer</strong> (ältere 3.x haben ein 5-V-Anlauf­problem). Rev 3.0 hat eine vertauschte J2-Beschriftung — siehe <a href="#aufbau">Aufbau</a>.</td>
+              </tr>
+              <tr>
+                <td><strong>Lautsprecher</strong></td>
+                <td>Zwei kleine Breitband­lautsprecher (Class-D, 2 × 3 W)</td>
+                <td>Der Verstärker ist ein MAX98357A auf dem MuPiHAT; Stereo/Mono ist per Schalter wählbar.</td>
+              </tr>
+              <tr>
+                <td><strong>Akku</strong></td>
+                <td>2S-Li-Ion-Pack, 7,4 V — Achims: ENERpower 7,2 V / 10 Ah (2S2P)</td>
+                <td>Nur mit Ladeteil (SW2) sinnvoll. Das Akkuprofil muss später in der Verwaltung <em>exakt</em> gewählt werden, sonst rechnet die Box mit fremden Schwellen.</td>
+              </tr>
+              <tr>
+                <td><strong>Netzteil</strong></td>
+                <td>USB-C, <strong>USB-PD 3.0, 20 W</strong> (Empfehlung des Datenblatts)</td>
+                <td>Ohne PD-Vertrag lässt der Laderegler nur ~500 mA durch — die Box lädt dann praktisch nicht.</td>
+              </tr>
+              <tr>
+                <td><strong>microSD + Leser</strong></td>
+                <td>≥ 8 GB</td>
+                <td>Ein Kartenleser am Laptop wird auch später gebraucht (WLAN-Wechsel, Diagnose ohne Netz).</td>
+              </tr>
+              <tr>
+                <td><strong>Gehäuse</strong></td>
+                <td>3D-Druck</td>
+                <td>Vorlagen des Ursprungsprojekts oder der eigene Entwurf (Displaybox-Modell im Projekt).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Optional, aber bewährt</h3>
+        <div class="tabelle-huelle">
+          <table>
+            <thead>
+              <tr><th>Teil</th><th>Wozu</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>USB-Bluetooth-Dongle</strong> (z. B. CSR-Dongle, ASUS BT500)</td>
+                <td>Der Pi hat <em>einen</em> Funkbaustein für WLAN <em>und</em> Bluetooth. Musik übers WLAN holen und per Bluetooth ausgeben stottert deshalb hörbar (~50 Fehlerrahmen/min gemessen). Mit USB-Dongle: <strong>0 Fehler in 10 Minuten</strong>. Läuft ohne Treiber-Nachbau.</td>
+              </tr>
+              <tr>
+                <td><strong>USB-WLAN-Stick</strong> (RTL8822BU erprobt)</td>
+                <td>Zweiter WLAN-Adapter, umschaltbar in der Verwaltung. Kernel-Treiber sind an Bord, nur die Realtek-Firmware muss da sein — das Rezept erledigt das.</td>
+              </tr>
+              <tr>
+                <td><strong>Bluetooth-Lautsprecher</strong></td>
+                <td>Als zweite Tonausgabe. Die Box verbindet einen gekoppelten Lautsprecher nach dem Einschalten selbst wieder (alle 30 s ein Versuch).</td>
+              </tr>
+              <tr>
+                <td><strong>Passive Kühlkörper</strong></td>
+                <td>Reichen in der Regel; das Eingangslimit des MuPiHAT ist bewusst so gewählt, dass er ohne Kühlkörper sicher läuft.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="kasten achtung">
+          <span class="etikett">Platinenstand prüfen, bevor bestellt oder gebaut wird</span>
+          <p>Die MuPiHAT-Stände unterscheiden sich in Dingen, die wehtun: 2.2 begrenzt den Eingangsstrom auf 1,75 A, 3.x auf 2,2 A; erst 3.4.1 bootet sauber am Pi 5. Die Box kann den Stand später selbst schätzen (über die gemessene Eingangsgrenze, Seite <span class="pfad">Verwaltung → MuPiHAT</span>) — verlassen sollte man sich beim Einkauf darauf nicht.</p>
+        </div>
+      </section>
+
+      <section id="aufbau">
+        <h2><span class="nr">3</span> Hardware-Aufbau</h2>
+        <p class="vorspann">Der Zusammenbau ist eine halbe Stunde — wenn man die zwei Fallen kennt.</p>
+
+        <ol class="schritte">
+          <li><strong>MuPiHAT auf den Pi stecken</strong> — auf die 40-polige GPIO-Leiste, wie jeder HAT.</li>
+          <li><strong>Display anschließen:</strong> Das FPC-Kabel des Waveshare-Panels kommt beim Pi 5 an <strong>DSI1</strong> — das ist der Port näher an den Kamera-Anschlüssen. (DSI0 ginge auch, braucht dann aber eine andere Overlay-Zeile.)</li>
+          <li><strong>Lautsprecher an die Klemmen</strong> des MuPiHAT. Mono/Stereo wählt der Schalter SW3.</li>
+          <li><strong>Akku anschließen</strong> und SW2 auf „Akku benutzen“ stellen (linke Stellung). Ohne Akku: rechte Stellung.</li>
+          <li><strong>Strom an den USB-C-Port des MuPiHAT</strong> — nicht an den Pi. Der HAT versorgt den Pi (Jumper JP2, ab Werk geschlossen).</li>
+        </ol>
+
+        <div class="kasten gefahr">
+          <span class="etikett">JP2 — das kann Hardware kosten</span>
+          <p>Der Jumper <strong>JP2</strong> (ab Werk geschlossen) speist den Pi vom HAT. Das Datenblatt sagt wörtlich: wird der Pi <em>gleichzeitig</em> über seinen eigenen USB-C versorgt, während JP2 geschlossen ist, <strong>wird der HAT beschädigt</strong>. Also: entweder Strom über den HAT (JP2 zu) <em>oder</em> über den Pi (JP2 offen) — nie beides.</p>
+        </div>
+
+        <div class="kasten gefahr">
+          <span class="etikett">Nur MuPiHAT Rev 3.0: J2 ist falsch beschriftet</span>
+          <p>Auf dem Stand 3.0 ist die Beschriftung des Steckers J2 <strong>vertauscht</strong> — der als 5 V bezeichnete Pin ist GND und umgekehrt. Vor dem Anschließen nachmessen.</p>
+        </div>
+
+        <h3>Schalter und LEDs auf dem MuPiHAT (alle 3.x)</h3>
+        <div class="tabelle-huelle">
+          <table>
+            <thead><tr><th>Element</th><th>Bedeutung</th></tr></thead>
+            <tbody>
+              <tr><td class="num">SW1.1</td><td>Status-LED an/aus (Vorgabe: an). Aus legt den Strom auf die Stiftleiste für eine externe Lade-LED (ab 3.2, Stecker J3).</td></tr>
+              <tr><td class="num">SW1.2</td><td>Thermistor auf der Platine (Vorgabe: an)</td></tr>
+              <tr><td class="num">SW1.3</td><td>On/Off-Shim — sauberes Herunterfahren über den Taster (Vorgabe: an)</td></tr>
+              <tr><td class="num">SW2</td><td><strong>Links: Akku/Lader benutzen · rechts: kein Akku</strong></td></tr>
+              <tr><td class="num">SW3</td><td>Stereo oder Mono</td></tr>
+              <tr><td class="num">PWR-LED</td><td>Grün = 5 V da. <strong>Blinken ist nicht vorgesehen</strong> — eine blinkende PWR heißt: die 5 V kommen und gehen. Fast immer ist das Netzteil oder Kabel schuld.</td></tr>
+              <tr><td class="num">STATUS-LED</td><td>An = lädt · aus = fertig/aus · blinkt 1 Hz = Fehler</td></tr>
+              <tr><td class="num">CAP_MIS-LED</td><td>Wechselt sie ständig, kommt kein sauberer USB-PD-Vertrag zustande — anderes Netzteil probieren.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>Der <strong>Taster</strong> am On/Off-Shim schaltet die Box sauber ein und aus; seine LED hängt an GPIO 13. Der Eingang des HAT verträgt 3,6–12 V (USB-PD 3.1); der Eingangsstrom ist hardwareseitig begrenzt, damit die Platine ohne Kühlkörper sicher bleibt.</p>
+      </section>
+
+      <section id="optionen">
+        <h2><span class="nr">4</span> Optionen &amp; Varianten</h2>
+        <p class="vorspann">Drei Entscheidungen, die man vor dem Bau trifft.</p>
+
+        <h3>Pi 5 oder Pi 4?</h3>
+        <p>Beide laufen mit derselben SD-Karte. Der <strong>Pi 5</strong> ist Achims Hauptbox: schneller, kann 2,4- <em>und</em> 5-GHz-WLAN. Er verlangt aber die neueren Revisionen (Display Rev 2.2, MuPiHAT ≥ 3.4.1). Der <strong>Pi 4</strong> ist die günstige, erprobte Wahl — ein reines 5-GHz-WLAN ist für ihn allerdings unerreichbar.</p>
+
+        <h3>Mit Akku oder am Netzteil?</h3>
+        <p>Der MuPiHAT kann beides. Mit Akku wird die Box tragbar; der Laderegler misst Spannung und Strom, die Box rechnet daraus einen feinen Ladestand über die echte Entladekurve des gewählten Akkuprofils. Gemessen am Pi 5 mit laufender Oberfläche: <strong>4,6–5,6 W</strong> im Leerlauf — ein 10-Ah-Pack hält damit viele Stunden (bei 57 % Restladung zeigte die Box ~7,5 h Restzeit). Eine Box ohne Akku ist genauso in Ordnung: SW2 nach rechts, Profil „USB-C mode (no battery)“ — sie zeigt dann schlicht kein Akkusymbol. Auch ein <strong>MuPiHAT ganz ohne Ladeteil-Nutzung</strong> nur als Verstärker ist ein gültiger Aufbau (so läuft die Pi-4-Zweitbox).</p>
+
+        <h3>Interner Lautsprecher, Bluetooth oder beides?</h3>
+        <p>Der eingebaute Weg über den MuPiHAT ist der verlässliche Standard. Bluetooth-Lautsprecher gehen zusätzlich — dann aber mit USB-Dongle (siehe Einkaufsliste), sonst stottert der Ton, weil WLAN und Bluetooth sich die Antenne teilen. Fällt ein verbundener Bluetooth-Lautsprecher aus, führt der Weg in der Verwaltung immer zurück auf intern.</p>
+      </section>
+
+      <section id="installation">
+        <h2><span class="nr">5</span> Software installieren</h2>
+        <p class="vorspann">Der Normalweg ist ein einziger Befehl am Laptop — danach installiert sich die Box beim ersten Start selbst.</p>
+
+        <h3>Weg A · Frische SD-Karte (empfohlen)</h3>
+        <ol class="schritte">
+          <li><strong>DietPi flashen:</strong> Raspberry Pi Imager öffnen → als OS <em>DietPi</em> (Raspberry Pi, ARMv8 64-bit) → die SD wählen → Write. Danach die Karte einmal aus- und wieder einstecken.</li>
+          <li><strong>MixPiBox einbacken</strong> — ein Skript findet die Karte selbst, legt die aktuelle Fork-Version, das WLAN und die Display-Konfiguration darauf ab:
+            <pre><code><span class="kom"># am Laptop, im Projektordner</span>
+cd ~/Downloads/MuPiBox
+<span class="bef">scripts/flash-mupibox-sd.sh --wifi 'DEIN_WLAN_NAME'</span></code></pre>
+            Das WLAN-Passwort wird versteckt abgefragt und landet nur als Hash auf der Karte. Ohne WLAN (LAN-Kabel): <code>--wifi</code> weglassen. Weitere Schalter: <code>--no-waveshare</code>, <code>--help</code>.</li>
+          <li><strong>SD in den Pi, einschalten.</strong> Der erste Start richtet alles automatisch ein: DietPi-Grundsystem, dann die MixPiBox-Installation. Das dauert <strong>10–20 Minuten</strong> — der Bildschirm zeigt dabei den Fortschritt.</li>
+          <li><strong>Zusehen (optional):</strong> Die Box meldet sich währenddessen im WLAN an.
+            <pre><code><span class="bef">ssh dietpi@&lt;box-ip&gt;</span>          <span class="kom"># Passwort: mupibox</span>
+<span class="bef">tail -f /var/tmp/mupibox-firstboot.log</span></code></pre></li>
+        </ol>
+
+        <h3>Weg B · Schritt für Schritt mit dem Installer</h3>
+        <p>Für Sonderfälle (andere Hardware, hängende Schritte, volle Kontrolle) gibt es den <strong>remote-step-installer</strong>: ein kleiner Agent läuft auf der Box, der Laptop fährt ein Rezept <em>Schritt für Schritt</em> — jeder Schritt live zu beobachten, abzubrechen, zu wiederholen oder zu überspringen. Genau so entstand er: der alte Monolith fror bei ~69 % am Bluetooth-Schritt ein, ohne Abbruchmöglichkeit.</p>
+        <pre><code><span class="kom"># Agent auf die Box bringen (zeigt einen 6-stelligen Pair-Code)</span>
+<span class="bef">scp -r agent dietpi@&lt;box-ip&gt;:/tmp/</span>
+<span class="bef">ssh dietpi@&lt;box-ip&gt; 'sudo bash /tmp/agent/install-agent.sh'</span>
+
+<span class="kom"># am Laptop: Tunnel + TUI mit BEIDEN Rezepten</span>
+<span class="bef">ssh -N -L 8099:localhost:8099 dietpi@&lt;box-ip&gt; &amp;</span>
+<span class="bef">./tui --recipe mupibox,mupibox-app --pair &lt;CODE&gt;</span></code></pre>
+        <div class="kasten achtung">
+          <span class="etikett">Eine vollständige Installation sind zwei Rezepte</span>
+          <p><code>mupibox</code> richtet das <em>System</em> ein (Pakete, Audio, Kiosk, Netz), <code>mupibox-app</code> die <em>App</em> (Dateien, Dienste, Konfiguration). Nur das erste allein sieht fertig aus — dann startet der Browser, hat aber nichts anzuzeigen. Deshalb beide als eine Liste angeben.</p>
+        </div>
+
+        <h3>WLAN später ändern</h3>
+        <p>Zieht die Box um, führt der Weg über den Kartenleser: Karte in den Laptop, dann übernimmt ein Werkzeug das <em>aktive</em> WLAN des Laptops auf die Karte (nur als Hash, nie im Klartext):</p>
+        <pre><code>cd ~/Downloads/MuPiBox/remote-step-installer
+<span class="bef">python3 controller/sdwlan.py --trocken</span>   <span class="kom"># erst ansehen</span>
+<span class="bef">python3 controller/sdwlan.py</span></code></pre>
+        <p>Das alte Netz bleibt als Rückfall stehen; das neue gewinnt. Danach hat die Box eine <strong>neue IP-Adresse</strong> — die Verwaltung liegt dann unter <code>http://&lt;neue-ip&gt;:8200/admin/</code>. Vorher prüfen, ob das Zielnetz auf 2,4 GHz sendet, wenn ein Pi 4 einzieht.</p>
+
+        <h3>Zwischen bekannten Netzen umschalten — ohne Passwort</h3>
+        <p>Netze, in denen die Box <em>schon einmal</em> war, kennt sie mit Passwort. Der Weg dorthin führt nicht mehr über die Tastatur: <span class="pfad">Verwaltung → Netzwerk</span>, Abschnitt <strong>Gespeicherte Netze</strong>. Dort steht jedes gelernte Netz mit Namen, das laufende ist als <em>verbunden</em> gekennzeichnet. Je Netz gibt es zwei Knöpfe: „Verbinden“ wechselt sofort dorthin — es wird nichts abgefragt, das Passwort liegt der Box vor. „Vergessen“ wirft das Netz samt Passwort weg und fragt vorher nach; das Netz, in dem die Box <em>gerade</em> hängt, lässt sich nicht vergessen, denn sie nähme sich damit selbst vom Netz. Erst umschalten, dann vergessen.</p>
+        <div class="kasten achtung">
+          <span class="etikett">Was passiert, wenn der Wechsel misslingt</span>
+          <p>Wird die Verwaltung <em>aus der Ferne</em> bedient, gilt dasselbe Sicherheitsnetz wie beim Einrichten eines neuen WLANs: die Umstellung bleibt zunächst nur im Arbeitsspeicher. Die Box prüft danach selbst, ob sie im gewählten Netz wirklich angekommen ist (angemeldet, richtiger Name, Adresse vom Router) — erst dann schreibt sie die Änderung fest. Kommt sie nicht an, stellt sie nach rund zweieinhalb Minuten den vorherigen Zustand wieder her. <strong>Am Bildschirm der Box selbst</strong> entfällt das: wer davorsteht, kann sich nicht aussperren, und die Wahl gilt sofort.</p>
+        </div>
+
+        <h3>Unterwegs ins Heimnetz: VPN (WireGuard)</h3>
+        <p>Nimmt die Box woanders Quartier (Urlaub, Großeltern), bleiben Jellyfin, das NAS und diese Verwaltung erreichbar, wenn sie sich als <strong>WireGuard-Klient</strong> am Heimrouter anmeldet — zu Hause muss dafür <em>kein</em> Port geöffnet werden. Der Weg: auf der FRITZ!Box unter <span class="pfad">Internet → Freigaben → VPN (WireGuard)</span> eine Verbindung für ein <em>Einzelgerät</em> anlegen (die Frage nach dem <em>gesamten</em> Internetverkehr <strong>verneinen</strong>), die angebotene Datei herunterladen und ihren Inhalt unter <span class="pfad">Verwaltung → VPN</span> einfügen — als Datei oder als Text, vom Handy wie vom Rechner. Die Box prüft die Datei beim Übernehmen: eine, die <em>allen</em> Verkehr durch den Tunnel schickte, lehnt sie mit Begründung ab, denn dann liefe auch Spotify über die Heimleitung.</p>
+        <p>Danach zwei Schalter wie bei den Systemdiensten: <strong>„Läuft gerade"</strong> wirkt sofort, <strong>„Startet mit der Box"</strong> gilt fürs nächste Hochfahren. Ob die Leitung wirklich trägt, zeigt der <strong>Handschlag</strong> — „steht", „stand (zuletzt vor …)" oder „nie", jeweils mit dem, was dann zu prüfen ist. Der private Schlüssel aus der Datei bleibt auf der Box (nur für root lesbar) und taucht weder in der Verwaltung noch in einer Sicherung wieder auf. Eine ehrliche Grenze: Namen wie <code>fritz.box</code> löst die Box unterwegs nicht auf — Geräte im Heimnetz über ihre Adresse ansprechen (<code>192.168.178.…</code>).</p>
+
+        <h3>Ein Netzlaufwerk für Sicherungen (NAS)</h3>
+        <p>Die Box sichert ihren Stand täglich, und diese Stände liegen auf <em>derselben</em> Karte wie die Box: stirbt die Karte, ist beides weg. Unter <span class="pfad">Verwaltung &rarr; Netzlaufwerk</span> lässt sich deshalb eine <strong>Freigabe im Heimnetz</strong> als zweite Ablage eintragen — wahlweise <strong>SMB</strong> (die Windows-Freigabe, die jedes NAS anbietet: Adresse, Freigabename, Anmeldung) oder <strong>WebDAV</strong> (Nextcloud und die meisten Hoster: eine vollständige Adresse wie <code>https://nas/remote.php/dav/files/achim/MuPiBox</code> und die Anmeldung dazu — wo es geht, mit einem App-Passwort statt des eigenen). Auf dem NAS gehört dafür ein <em>eigener</em> Benutzer angelegt, der nur auf diese eine Freigabe darf, nicht der Hauptzugang.</p>
+        <p>Drei Dinge, die dabei mit Absicht so sind. <strong>Die Karte bleibt der Rückweg:</strong> das NAS ist eine zweite Kopie, und Wiederherstellen ohne SSH geht weiter über die Karte — ein NAS hilft niemandem, dessen Bildschirm schwarz bleibt. <strong>Ein ausgeschaltetes NAS hält die Box nie auf:</strong> sie hängt die Freigabe nicht beim Hochfahren ein, sondern erst beim Zugriff, und der Ordner dafür liegt unter <code>/mnt/</code> — also nie auf dem Weg, den das Abspielen nimmt. <strong>Das Passwort bleibt auf der Box:</strong> es liegt in einer Datei, die nur root lesen darf, taucht in der Verwaltung nicht wieder auf und geht ausdrücklich <em>nicht</em> in eine Sicherung — sonst trüge die Sicherung den Schlüssel zu dem Ort mit, an dem sie liegt.</p>
+        <p>Welche der beiden Sorten zur Wahl steht, hängt am Paket auf der Box: <code>cifs-utils</code> für SMB, <code>davfs2</code> für WebDAV. Seit dem 20.09.2026 bringt eine <strong>frisch bespielte Karte beide mit</strong>, und das nächste Update holt sie auf einer bestehenden Box nach; fehlt eines trotzdem, ist sein Knopf grau, und die Seite sagt, wie es nachkommt. Ein Unterschied gehört vor die Wahl: <strong>WebDAV lädt über einen Zwischenspeicher auf der Karte hoch</strong> — jede Datei wird erst lokal geschrieben und dann übertragen. Für Sicherungsstände von wenigen Kilobyte ist das gleichgültig; wer große Dateien ablegen will und das gerade wegen der Karte tut, nimmt SMB.</p>
+        <p>Bei WebDAV über <code>https</code> kommt oft eine Rückfrage, und die ist gewollt: Fast jedes NAS im Heimnetz zeigt ein <strong>selbstsigniertes Zertifikat</strong> — die Box kann es nicht prüfen und würde sonst wortlos nie einhängen. Stattdessen zeigt sie den <strong>Fingerabdruck</strong> des Servers und fragt nach. Gehört er zum eigenen Gerät (auf dem NAS steht derselbe Wert in den TLS-Einstellungen), genügt „Diesem Zertifikat vertrauen". Danach prüft die Box weder Gültigkeit noch Namen dieses Zertifikats mehr — deshalb steht in der Übersicht dauerhaft, dass hier ein Zertifikat auf Zuruf gilt.</p>
+        <p>Nach dem Eintragen sagt der Knopf <strong>„Jetzt prüfen"</strong> die Wahrheit, die zählt: er schreibt eine Datei auf die Freigabe und nimmt sie wieder weg. Dass ein Laufwerk erreichbar ist, heißt nämlich noch nicht, dass die Box darauf schreiben darf — und das merkt man sonst erst, wenn die erste Sicherung nicht ankommt.</p>
+      </section>
+
+      <section id="dienste">
+        <h2><span class="nr">6</span> Musikquellen einrichten</h2>
+        <p class="vorspann">Fünf Quellen, jede mit ihrem eigenen kurzen Einrichtungsweg.</p>
+
+        <h3>Spotify</h3>
+        <p>Voraussetzung ist ein Spotify-Konto (Premium — die Box meldet sich als eigenes Abspielgerät an). Der einfachste Weg ist der <strong>Gerätecode</strong>, wie man ihn vom Fernseher kennt:</p>
+        <ol class="schritte">
+          <li>In der Verwaltung: <span class="pfad">Streaming-Dienste → Spotify → Abschnitt „Lautsprecher (Ton)“ → „Code holen“</span>. An der Box selbst führt derselbe Weg über die Spotify-Seite: <span class="pfad">„Ton anmelden“ → „Code anzeigen“</span>.</li>
+          <li>Die Box zeigt <strong>sechs Zeichen</strong>. Auf einem beliebigen Gerät <code>spotify.com/pair</code> öffnen, Code eintippen, bestätigen.</li>
+          <li>Die Box merkt es selbst und meldet sich fortan alleine an — kein Passwort auf der Box, kein Handy-Zwang.</li>
+        </ol>
+        <p>Alternative: In der Spotify-App unter <em>Geräte</em> die Box auswählen — auch das hinterlegt die Anmeldung dauerhaft. Suche und Albenlisten laufen grundsätzlich über die Box selbst; im Browser muss dafür nichts erlaubt werden.</p>
+
+        <h3>Jellyfin</h3>
+        <p>Für die eigene Hörspielsammlung auf einem Server im Haus. Zwei Angaben genügen:</p>
+        <ul>
+          <li><strong>Server finden:</strong> <span class="pfad">Streaming-Dienste → Jellyfin → Serveradresse → „Jellyfin im Netz suchen“</span> — die Box ruft ins Netz und listet gefundene Server auf.</li>
+          <li><strong>API-Key:</strong> In Jellyfin unter <em>Dashboard → API-Schlüssel → Erstellen</em> erzeugen und in der Verwaltung eintragen.</li>
+        </ul>
+
+        <h3>Lokale Dateien</h3>
+        <p><strong>Es gibt keine fertige Netzwerkfreigabe.</strong> Hier stand bis zum 30.&nbsp;August 2026 „die Box hat eine Netzwerkfreigabe (Samba/FTP)" — das stimmt nicht: <em>weder</em> Samba <em>noch</em> ein FTP-Server wird eingerichtet, auf keinem der beiden Wege aus <a href="#installation">Abschnitt 5</a>. (Vorlagen für beides liegen im Projekt, aber kein Installationsweg legt sie ab, und die Pakete werden nicht mitinstalliert.) Zum Aufspielen dient der <strong>SSH-Zugang</strong> aus <a href="#zugaenge">Abschnitt 9</a> — also <code>scp</code> auf der Kommandozeile oder ein Dateiprogramm, das <em>SFTP</em> spricht (WinSCP, FileZilla, unter Linux „Mit Server verbinden" → <code>sftp://dietpi@&lt;box-ip&gt;</code>).</p>
+        <p><strong>Wohin die Dateien gehören — drei Ebenen, und die sind Pflicht.</strong> Der Abspieldienst sucht ein Album genau hier:</p>
+        <p><code>/home/dietpi/MuPiBox/media/&lt;Kategorie&gt;/&lt;Interpret&gt;/&lt;Album&gt;/</code></p>
+        <p>Die <strong>Kategorie</strong> ist eine von genau dreien: <code>music</code>, <code>audiobook</code> oder <code>other</code>. Ein Ordner daneben (etwa <code>media/Kinderlieder/…</code>) wird beim Einlesen stillschweigend übergangen — er taucht nie als Kachel auf. Die Tondateien (<code>.mp3</code>, <code>.flac</code>, <code>.wav</code>, <code>.ogg</code>, <code>.m4a</code>, <code>.wma</code>) liegen <em>direkt</em> im Albumordner, nicht in weiteren Unterordnern. Ein <code>.jpg</code> im Albumordner wird das Titelbild, eines im Interpretenordner das Bild des Interpreten. Um die Wiedergabeliste kümmert sich die Box selbst.</p>
+        <p><strong>Und danach: einmal einlesen lassen.</strong> Die Box merkt neue Dateien <em>nur zum Teil</em> von allein — sie schaut dafür ausschließlich auf die drei Kategorieordner. Ein <em>neuer Interpret</em> fällt ihr darum auf, ein <strong>neues Album unter einem Interpreten, den es schon gibt, aber nicht</strong> (nachgemessen am 30.&nbsp;August 2026). Wenn also Kopiertes nicht auftaucht, ist nichts kaputt: unter <span class="pfad">Verwaltung → Medien</span> den Knopf <strong>Medien neu einlesen</strong> drücken. Das ist auch der Weg, wenn die Dateien mit erhaltenem Zeitstempel angekommen sind.</p>
+        <p>Danach unter <span class="pfad">Medien</span> eintragen — fertig. Unter Medien liegen auch die Unterseiten <em>Interpreten</em> und <em>Doppelte</em>: Interpretenseiten führen zu <em>allen</em> Alben eines Künstlers, und dasselbe Album aus zwei Quellen wird zu einer Kachel verschmolzen.</p>
+        <p>Ganz oben auf der Medien-Seite klebt <strong>ein</strong> Suchfeld, das <em>alle</em> Abschnitte der Seite zugleich durchsucht — Bibliothek, Regale, Sender, Archiv und die Dienste-Suche. Man muss also nicht wissen, in welchem Kasten das Gesuchte wohnt. Tippen filtert sofort, was schon da ist; die Eingabetaste fragt zusätzlich am Netz nach (Archiv und Dienste). Die Zeile darunter zählt je Rubrik die Treffer und springt auf Klick zum passenden Abschnitt. Die Suchfelder in den einzelnen Abschnitten bleiben daneben bestehen — sie tragen ihre eigenen Einstellungen.</p>
+
+        <h3>Radio &amp; ARD Audiothek</h3>
+        <p>Radiostreams werden als Medieneintrag mit Stream-Adresse angelegt. Sendungen der ARD Audiothek lassen sich ebenfalls einbinden.</p>
+
+        <h3>Internet Archive (gemeinfreie Hörspiele)</h3>
+        <p>Die bequemste Quelle, weil sie <strong>weder Konto noch Server im Haus</strong> braucht: Das Internet Archive hält gemeinfreie Hörspiele und Lesungen frei zugänglich bereit. Gesucht und aufgenommen wird unter <span class="pfad">Verwaltung → Medien</span>, im Abschnitt <em>Internet Archive</em> — <strong>nicht</strong> auf der Plugin-Unterseite:</p>
+        <ol class="schritte">
+          <li>Suchbegriff eintippen und auf <strong>Suchen</strong> klicken (oder die Eingabetaste drücken). Gesucht wird jedes Mal am Netz — das Archiv hat Millionen Werke, deshalb bewusst <em>kein</em> Suchen bei jedem Tastendruck. Das <strong>Suchfeld ganz oben auf der Medien-Seite</strong> tut dasselbe: Tippen filtert die schon vorhandenen Kästen sofort, die Eingabetaste schickt den Begriff zusätzlich ans Archiv und an die Dienste-Suche.</li>
+          <li>Beim gewünschten Werk auf <strong>Aufnehmen</strong> klicken — es landet als Kachel in der Medienliste und ist sofort spielbar.</li>
+        </ol>
+        <p>Einstellen lassen sich unter <span class="pfad">Verwaltung → Plugins → Internet Archive</span> <em>Sprache</em> und <em>Treffer je Suche</em>. Zwei Dinge, die normal sind: Ein Werk erscheint oft in mehreren Tonqualitäten — die Box fasst diese Dubletten selbst zu einem Stück zusammen. Und ein Werk ist kein Album: Bilder und andere Beigaben aus dem Archiv werden aussortiert, es kommt nur Ton an.</p>
+        <p><strong>Seit dem 5.&nbsp;September 2026 steht die Erweiterung selbst auf der Medien-Seite</strong> — direkt über dem Archiv-Kasten, im Abschnitt <em>Erweiterungen</em>. Dort stehen ihr Zeichen, ihre Fassung, ihr Zustand (<em>bereit</em>, <em>abgeschaltet</em> oder <em>nicht geladen</em>), ein Satz darüber, ob das Archiv gerade antwortet, der Knopf <strong>Erreichbarkeit messen</strong> und der Weg zu <em>Einstellungen und Schalter</em>. Das ist die Stelle, an der man zuerst nachsieht, wenn die Suche „Das Internet Archive ist gerade nicht erreichbar" meldet: Steht dort <em>abgeschaltet</em>, ist nicht das Archiv das Problem, sondern der Schalter. Vorher war dieser Abschnitt leer — die Erweiterung meldete sich zwar für die Medien-Seite an, aber niemand zeichnete sie dort.</p>
+
+        <h3>Aufnahmen (Mitschnitt) — das Steuerpult auf der Medien-Seite</h3>
+        <p><strong>Testfunktion.</strong> Die Erweiterung <em>Mitschnitt</em> ist noch nicht fertig; was dabei schiefgehen kann, steht in <a href="#im-bau">Abschnitt 11</a>. Wer sie eingeschaltet hat, bedient sie seit dem 30.&nbsp;August 2026 nicht mehr nur auf der Plugin-Unterseite, sondern direkt unter <span class="pfad">Verwaltung → Medien</span> — an zwei Stellen:</p>
+        <ul>
+          <li><strong>Anstoßen an der Album-Zeile.</strong> Bei jedem Album, das aus <em>Spotify</em> stammt, steht in der Medienliste ein Knopf <strong>Aufnehmen</strong> (bei einem angefangenen Album: <strong>Neu aufnehmen</strong>). Ein Klick fragt zurück — der Knopf beschriftet sich zu <strong>wirklich aufnehmen?</strong> um —, der zweite merkt die <em>fehlenden</em> Titel des Albums beim Mitschnitt vor. Zwei Klicks, kein Fenster. Schon vorhandene Titel werden übersprungen, nicht doppelt aufgenommen.</li>
+          <li><strong>Nachsehen im Kasten <em>Aufnahmen</em>.</strong> Weiter oben auf derselben Seite sitzt ein aufklappbarer Kasten. Zugeklappt steht dort <em>Aufnahme-Lage ansehen</em>; beim Aufklappen holt er die Liste selbst (nachladen jederzeit über <strong>Liste holen</strong>). Die Kopfzeile zählt dann <em>offen · fertig · mit Fehler</em>, darunter stehen die vorgemerkten Titel mit ihrem Stand; bei einem Fehler steht der Grund dabei. Ist nichts vorgemerkt, meldet der Kasten <em>Nichts vorgemerkt.</em></li>
+        </ul>
+        <p>Zwei Dinge, die normal sind und <em>kein</em> Defekt der Seite: Ist der Mitschnitt <strong>ausgeschaltet</strong> (oder läuft eine ältere Fassung, die diese Auskunft noch nicht kennt), bleibt es bei einem ruhigen Hinweis statt einer Fehlermeldung. Und aufnehmen lässt sich nur aus <strong>Spotify</strong> — der Mitschnitt hört nur dort mit, deshalb trägt keine andere Quelle den Knopf. Einzelne Titel eines Spotify-Albums ohne eigene Kennung kann er ebenfalls nicht vormerken; sie werden mitgezählt, aber nicht geschickt.</p>
+
+        <h3>Aufzeichnen — der Stand der Aufnahmen auf einen Blick</h3>
+        <p>Seit dem 4.&nbsp;September 2026 gibt es unter <span class="pfad">Verwaltung → Aufzeichnen</span> die Übersicht dazu: oben der <strong>Satz des Mitschnitts selbst</strong> („bereit — 23 vorgemerkt, als nächstes …, Leerlauf: es spielt gerade“), darunter drei Zahlen (vorgemerkt / aufgezeichnet / mit Fehler) und drei Listen. <strong>Fehler stehen zuerst</strong> — ihretwegen kommt man —, dann die <strong>Warteschlange in echter Reihenfolge</strong> (der Leerlauf nimmt von oben, Vorrang zuerst; der oberste Eintrag ist als „als Nächstes“ markiert), zuletzt die Erledigten hinter einem Aufklapper. Jeder Eintrag nennt, was die Liste über ihn weiß: Album, Fehlversuche, ob er Vorrang hat und ob er aus der Verwaltung stammt. Die Seite holt sich alle zehn Sekunden den frischen Stand. Läuft gerade eine Aufnahme, steht sie <strong>oben in einer eigenen Karte</strong> mit Titel und mitlaufender Zeit. Und wer mit einer Aufnahme nicht zufrieden ist, klickt <strong>„Neu aufladen"</strong> (bei Fehlern: <strong>„Nochmal"</strong>): der Titel wird mit <em>Vorrang</em> vorgemerkt, und die alte Datei wird als unvollständig markiert — bis die neue Aufnahme steht, spielt die Box wieder aus der Cloud.</p>
+        <p><strong>Seit dem 4.&nbsp;September 2026 nimmt die Box auch auf, während jemand hört</strong> — vorausgesetzt, es sind zwei Ströme mit <em>verschiedenen</em> Spotify-Zugängen eingerichtet (<span class="pfad">Streaming-Dienste → Spotify → Ströme</span>). Genau dafür ist der zweite Strom da. Ist nur ein Zugang vorhanden, wartet der Mitschnitt wie bisher, bis niemand mehr hört: ein zweiter Strom auf demselben Konto würde dem Hörenden die Wiedergabe wegnehmen.</p>
+      </section>
+
+      <section id="bedienung">
+        <h2><span class="nr">7</span> Die Box im Alltag</h2>
+        <p class="vorspann">Für das Kind: tippen und hören. Alles andere ist bewusst weggelassen.</p>
+        <ul>
+          <li><strong>Cover tippen → spielt.</strong> Die Startseite zeigt Kacheln mit Bildern, keine Texte, keine Menüs.</li>
+          <li><strong>Lautstärke: zwei Tasten</strong> (leiser/lauter in 5er-Schritten) — die trifft ein kleiner Finger am besten. Daneben gibt es einen Schieberegler im Mini-Player. <em>Früher stand hier, ein Regler sei unmöglich</em>, weil die Obergrenze <code>maxVolume</code> nur auf dem Tastenweg gegriffen habe. Das gilt seit dem 05.08.2026 nicht mehr: Die Grenze sitzt im Flaschenhals <code>mupi-lautstaerke.sh</code>, durch den <em>jeder</em> Weg muss — Tasten, Regler, Geste, Telegram und die Verwaltung.</li>
+          <li><strong>Weiterhören:</strong> Eine eigene Reihe zeigt angefangene Hörspiele und setzt beim richtigen Titel an der richtigen Stelle fort. Zu Ende Gehörtes verschwindet von selbst.</li>
+          <li><strong>Vorlesen:</strong> Die Box kann Titel vorsprechen (Modi <em>aus</em> / <em>antippen</em> / <em>lernen</em> — letzterer in Silben, für Leseanfänger). In der neuen Oberfläche liest der erste Tipp vor, der zweite spielt.</li>
+          <li><strong>Uhrzeit antippen → die Box sagt sie.</strong> Steht die Uhr oben in der Mitte (<span class="pfad">Eltern-Bereich → Anzeigen → Uhrzeit oben</span>), kann ein Tipp darauf die Zeit ansagen — ‚Es ist 15 Uhr 43‘. Der Schalter dazu heißt <strong>Uhrzeit ansagen</strong> und steht in beiden Menüs: am Gerät unter <span class="pfad">Eltern-Bereich → Anzeigen</span>, im Netz unter <span class="pfad">Verwaltung → Darstellung → Optik → Anzeigen</span> (‚Tipp sagt die Zeit‘). <strong>Ab Werk aus</strong>, und er wirkt nur, wenn die Uhr auch angezeigt wird und die Sprachausgabe eingerichtet ist (<span class="pfad">Verwaltung → Vorlesen</span>). Er hängt <em>nicht</em> am Vorlese-Modus für die Kacheln: die Uhr sagt nur etwas, wenn jemand sie ausdrücklich antippt. Gedacht für Kinder, die die Ziffern noch nicht lesen — und für alle, die aus zwei Metern Abstand fragen, wie spät es ist. <em>(20. September 2026)</em></li>
+          <li><strong>Spiele:</strong> Ist ein Controller angeschlossen, öffnet dessen Spiele-Taste die <strong>Spielecke</strong> — die Musik läuft dabei weiter, und „Zurück" führt immer heraus. Vier Spiele stehen bereit: <em>Schlange</em> (der Klassiker), <em>Paare</em> (zwölf Karten, sechs Paare), <em>Drei gewinnt</em> (gegen die Box) und <em>Farben merken</em> (eine Folge nachtippen). Gesteuert wird mit dem Steuerkreuz oder dem Stick, <strong>A</strong> wählt aus bzw. beginnt neu, <strong>B</strong> beendet. Unter <span class="pfad">Verwaltung → Spiele</span> lässt sich der ganze Bereich abschalten, <strong>jedes Spiel einzeln</strong> — bleibt nur eines übrig, startet die Taste es ohne Auswahl dazwischen — und die <strong>Stimme im Spielbereich</strong> einschalten: dann sagt die Box das gewählte Spiel an, bei „Paare" jedes aufgedeckte Bild und bei „Farben merken" die Farben. Das ist <em>nicht</em> der Vorlese-Schalter für die Kacheln; er wirkt unabhängig davon, braucht aber dieselbe eingerichtete Sprachausgabe. <strong>Ab Werk still</strong>, die Spiele selbst sind an. Auf derselben Seite stehen seit dem 20.&nbsp;September 2026 auch die <strong>Tipp-Apps der Schublade</strong> (Memory, Puzzle, Rechnen, Uhr, Lesen, Malen) einzeln zum Abschalten — das ist der zweite Spielort, für den Finger am Schirm statt für den Controller, und er hängt nicht am Schalter für den Spielbereich. <em>(20. September 2026)</em></li>
+          <li><strong>Profile:</strong> Ein Tipp auf das Bild oben links wechselt das Profil. Jedes Kind erkennt seinen Zugang an seinem MixPi-Wesen. Ein Profil kann ein Passwort tragen — als Zeichen, Ziffern, <em>sechs Farbpunkte</em> oder ein 3×3-Muster. Abmelden ist immer frei, und der Gast hat nie ein Schloss: eine Box, an der niemand hören kann, soll es nicht geben. Hat ein Kind sein Passwort vergessen, entfernen es die Eltern über die Verwaltung.</li>
+        </ul>
+        <h3>Gesten mit zwei und drei Fingern</h3>
+        <p>Die neue Oberfläche lässt sich zusätzlich mit Gesten bedienen. <strong>Nichts davon ist eingeschaltet, wenn die Box aus dem Karton kommt</strong> — eine Bedienung, die man nicht sieht, soll man eingeschaltet haben. Der Schalter steht unter <span class="pfad">Eltern-Bereich → Darstellung → Gesten</span>.</p>
+
+        <div class="tabelle-huelle">
+          <table>
+            <thead>
+              <tr><th>Geste</th><th>Was sie tut</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>zwei Finger hoch/runter</td><td>Lautstärke — der Finger bleibt am Regler</td></tr>
+              <tr><td>zwei Finger links/rechts</td><td>nächster / voriger Titel (links = vorwärts)</td></tr>
+              <tr><td>Doppeltipp mit zwei Fingern</td><td>anhalten und weiterspielen</td></tr>
+              <tr><td><strong>schnell</strong> über den Player streichen</td><td>das Kissen geht weg und kommt nach 10 s von selbst zurück</td></tr>
+              <tr><td>drei Finger vom Rand nach innen</td><td>das Schnellfenster</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p><strong>Ein Finger rollt weiter wie bisher</strong> — die Gesten fangen erst beim zweiten an. <strong>Langsames Ziehen über den Player zählt nicht:</strong> Auf dem Kissen liegen drei Knöpfe, und ein Fehlgriff beim Zielen soll den Player nicht kosten.</p>
+
+        <p>Welcher Rand und wie viele Finger das Schnellfenster holen, ist einstellbar. Wer den <em>linken</em> Rand mit <em>einem</em> Finger wählt, verliert dafür die Abkürzung, mit der man die eingefahrene Kategorienleiste zurückholt — die kommt dann nur noch nach ihrer Ruhezeit von selbst wieder.</p>
+
+        <div class="kasten achtung">
+          <span class="etikett">Was im Schnellfenster frei ist — und was nicht</span>
+          <p>Helligkeit und Lautstärke wirken sofort. <strong>Hörzeit und Funk gehen durch dieselbe Sperre wie der Eltern-Bereich</strong> (PIN, Rechenaufgabe oder Ecken-Geste). Das ist keine Umständlichkeit: Eine Geste ist kein Schloss, und ein Kind findet einen Wisch schneller, als Erwachsene glauben. Wäre der Funk frei, nähme es die Box aus dem Netz; wäre die Hörzeit frei, wäre die Kinderzeit mit einem Wisch abgeschafft.</p>
+        </div>
+
+        <h3>Wellen im Player</h3>
+        <p>Im großen Player kann sich die Fortschrittszeile wellenartig bewegen, solange Musik läuft; bei Pause oder Stopp ruhen die Wellen an Ort und Stelle. <strong>Ab Werk ist das aus</strong> — der Schalter steht unter <span class="pfad">Eltern-Bereich → Darstellung → Optik → Mini-Player → „Wellen im Player“</span> und gilt nur für die neue Oberfläche. <em>Bis zum 30.08.2026 lag er im Reiter <span class="pfad">Verhalten</span>; er ist dorthin gewandert, wo auch der Fortschrittsstreifen steht, den er bewegt.</em></p>
+        <p><strong>Seit dem 30.08.2026 hören die Wellen den echten Ton.</strong> Nicht der Browser misst — er könnte es nicht, der Ton läuft ja auf der Box selbst. Die <em>Box</em> hört an ihrem eigenen Lautsprecherausgang mit, teilt das Gehörte in vier Frequenzbereiche (Bass, untere Mitten, obere Mitten, Höhen) und schickt zehnmal je Sekunde vier Pegelwerte an die Oberfläche. Dort läuft für jedes Band eine eigene Linie durch das Bild, von rechts nach links, und ihr Ausschlag folgt dem, was gerade wirklich zu hören ist. Bei Stille ist der Ausschlag null. Mitgehört wird alles, was aus dem Lautsprecher kommt — <strong>auch gesprochene Ansagen der Box</strong>, etwa die Erinnerung an die Restzeit; eine Welle, die dabei flach bliebe, würde lügen.</p>
+        <p><strong>Auf älteren Boxen bewegen sich die Wellen weiter wie früher.</strong> Kann die Box keinen Pegel liefern (kein PipeWire, kein <code>pw-record</code>), fällt die Anzeige stillschweigend auf die alte Bauart zurück: eine gleichmäßige Bewegung, die <em>nur</em> dem Wiedergabezustand folgt und nicht dem Takt der Musik. Man muss dafür nichts einstellen und bekommt keine Fehlermeldung — die Wellen sehen dann nur immer gleich aus, statt auf den Ton zu reagieren.</p>
+        <p>Hat der Bildschirm der Box eingestellt, dass Bewegung reduziert werden soll, bleiben die Wellen aus — <em>unabhängig</em> vom Schalter.</p>
+
+        <h3>Größe von Cover und Namen</h3>
+        <p>Zwei Zeilen stellen ein, wie groß Bild und Schrift ausfallen. Beide schalten bei jedem Tippen eine Stufe weiter — <em>klein → mittel → groß → klein</em> —, und die mittlere Stufe ist der Auslieferungszustand: Wer nie tippt, sieht keine Änderung.</p>
+        <ul>
+          <li><span class="pfad">Eltern-Bereich → Darstellung → Player</span> — an der Box selbst heißt die Zeile dort „Größe des Covers“ und meint das Albumbild im großen Player. <em>Groß</em> ist zugleich das Größte, was das Blatt hergibt; darüber hinaus würde das Bild nicht mehr wachsen.</li>
+          <li><span class="pfad">Eltern-Bereich → Darstellung → Indikatoren</span> — an der Box selbst heißt die Zeile dort „Größe der Namen“ und meint die Schrift unter den Kacheln, also Titel und Interpret im Regal. Sie steht direkt unter dem Schalter, der diese Namen ganz ausblendet.</li>
+        </ul>
+        <p><strong>Bis zum 31.08.2026 gab es diese zwei Zeilen nicht.</strong> Die Größen ließen sich in der Box selbst nirgends einstellen, obwohl die Oberfläche sie längst auswertete — wer danach suchte, suchte zu Recht und fand nichts.</p>
+
+        <div class="kasten merken">
+          <span class="etikett">Kinderzeit, aus Kindersicht</span>
+          <p>Ist die Zeit um, darf der laufende Titel noch zu Ende spielen (Vorgabe: 5 Minuten Nachsicht) — kein Abschneiden mitten im Lied. Danach erklärt die Oberfläche, <em>warum</em> nichts mehr startet. Anhalten und Leiserstellen gehen immer, auch bei abgelaufener Zeit.</p>
+        </div>
+      </section>
+
+      <section id="verwaltung">
+        <h2><span class="nr">8</span> Verwaltung für Eltern</h2>
+        <p class="vorspann">Der Einstieg ist bewusst unsichtbar — und steht deshalb hier.</p>
+
+        <h3>Der Weg hinein</h3>
+        <p>Unten links auf dem Bildschirm der Box steht das Wappen <strong>„MixPi Box“</strong>. Es <strong>1,2 Sekunden gedrückt halten</strong> — während des Haltens läuft ein Ring um das Wappen; ist er voll, öffnet sich das Admin-Menü. Auf dem Schirm gibt es <em>keinen</em> sichtbaren Hinweis auf diesen Weg: Ein Knopf, der auf einen Tipp die Verwaltung öffnet, wäre auf der Startseite eines Kindes das Gegenteil einer Sperre. (Mit Tastatur: Wappen antabben, Eingabetaste.)</p>
+        <p>Danach kommt die <strong>Einstellungssperre</strong>. Welche, bestimmt die Konfiguration (<code>mupibox.einstellungssperre</code>):</p>
+        <div class="tabelle-huelle">
+          <table>
+            <thead><tr><th>Stufe</th><th>Bedeutung</th></tr></thead>
+            <tbody>
+              <tr><td><code>aus</code></td><td>kein Tor, es geht sofort auf</td></tr>
+              <tr><td><code>rechnen</code></td><td>eine Rechenaufgabe (Vorgabe)</td></tr>
+              <tr><td><code>pin</code></td><td>vier bis acht Ziffern</td></tr>
+              <tr><td><code>geste</code></td><td>die vier Ecken der Fläche im Uhrzeigersinn antippen, beginnend links oben — höchstens 4 s zwischen zwei Ecken (nur neue Oberfläche)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Wer die Sperre gelöst hat, wird zwei Minuten lang nicht erneut gefragt.</p>
+        <div class="kasten achtung">
+          <span class="etikett">PIN oder Geste vergessen?</span>
+          <p>Per SSH auf der Box in <code>/etc/mupibox/mupiboxconfig.json</code> den Wert <code>mupibox.einstellungssperre</code> auf <code>aus</code> setzen, neu einrichten, zurückstellen. Das ist der einzige Weg vorbei — deshalb den SSH-Zugang nie verlieren.</p>
+        </div>
+
+        <h3>Die Verwaltung im Browser</h3>
+        <p>Bequemer als am 5-Zoll-Schirm: <code>http://&lt;box-ip&gt;:8200/admin/</code> am Laptop oder Handy. Die Kopfleiste sortiert alle Seiten nach einer Leitfrage — und es gibt eine <strong>Suche über alle Einstellungen</strong>:</p>
+        <div class="tabelle-huelle">
+          <table>
+            <thead><tr><th>Gruppe</th><th>Seiten</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Was da ist</strong></td><td>Profile · Medien · Streaming-Dienste · Aufzeichnen</td></tr>
+              <tr><td><strong>Was man sieht und hört</strong></td><td>Darstellung · Vorlesen · Spiele · Videos</td></tr>
+              <tr><td><strong>Was die Box ist</strong></td><td>Konfiguration · Netzwerk · VPN · Netzlaufwerk · Bluetooth · Ton · MuPiHAT · Plugins</td></tr>
+              <tr><td><strong>Wenn etwas klemmt</strong></td><td>Systemdienste · System · Leistung · Protokolle · Aktualisierung · Sicherung</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Videos als Belohnung freigeben</h3>
+        <p>Unter <span class="pfad">Verwaltung &rarr; Videos</span> lassen sich <strong>einzelne</strong> Videos aus der ARD Mediathek freigeben &mdash; jedes mit einer Anzahl: &bdquo;noch dreimal anschauen&ldquo;. Gedacht ist das als Belohnung und ausdr&uuml;cklich nicht als Mediathek zum Durchbl&auml;ttern: Das Kind sieht auf der Box nur, was freigegeben ist, und ein Video verschwindet von selbst, sobald seine Anzahl aufgebraucht ist.</p>
+        <ul>
+          <li><strong>Je Kind.</strong> Oben w&auml;hlt man, wer gemeint ist. Was das eine Kind sich verdient hat, ist nicht das Guthaben des anderen.</li>
+          <li><strong>Gez&auml;hlt wird erst bei 90 Prozent.</strong> Wer nach zwei Minuten abbricht, verliert nichts. Ein Neuladen mitten im Video kostet ebenfalls nichts &mdash; jeder Start bekommt eine eigene Kennung, und die z&auml;hlt h&ouml;chstens einmal.</li>
+          <li><strong>Die H&ouml;rzeit bleibt unber&uuml;hrt.</strong> Ein Video kostet keine Minuten aus der Kinderzeit; eine Belohnung soll nicht das H&ouml;ren auffressen.</li>
+          <li><strong>Nachlegen statt neu suchen.</strong> Aufgebrauchte Videos bleiben in der Elternliste stehen (mit &bdquo;0&times;&ldquo;) &mdash; ein Tipp auf <em>+</em> gibt sie wieder frei.</li>
+          <li><strong>Die Erweiterung muss laufen.</strong> Gesucht wird &uuml;ber das Plugin &bdquo;ARD Mediathek&ldquo; (<span class="pfad">Verwaltung &rarr; Plugins</span>). Ist es ausgeschaltet, findet die Suche nichts; schon freigegebene Videos bleiben in der Liste, lassen sich aber nicht mehr abspielen.</li>
+        </ul>
+        <p>Auf der Box selbst steht das Freigegebene in einer eigenen Reihe &bdquo;Videos&ldquo;; die Zahl auf der Kachel sagt, wie oft es noch laufen darf. Ein Tipp spielt es im <strong>Vollbild</strong>. Dort gibt es:</p>
+        <ul>
+          <li><strong>Eine Spielleiste unten</strong> mit Anhalten/Weiter, Fortschritt, Laufzeit und einem <strong>Lautst&auml;rkeregler</strong>. Sie blendet sich nach ein paar Sekunden aus und kommt bei jeder Ber&uuml;hrung des Bildes zur&uuml;ck; steht das Video, bleibt sie stehen.</li>
+          <li><strong>Der Regler ist derselbe wie &uuml;berall</strong> &mdash; er stellt die Lautst&auml;rke der ganzen Box (dieselbe Skala wie im Mini-Player und im Cover-Vollbild), nicht eine eigene f&uuml;r das Video.</li>
+          <li><strong>Kein Sprungbalken.</strong> Der Fortschritt zeigt nur an. Wer springen d&uuml;rfte, k&ouml;nnte ans Ende springen &mdash; und damit entweder die Belohnung verbrauchen, ohne zu schauen, oder unbegrenzt schauen, ohne je zu verbrauchen.</li>
+          <li><strong>&bdquo;Fertig&ldquo; oben links</strong> ist der Weg zur&uuml;ck. Er steht immer da, auch wenn die Leiste ausgeblendet ist.</li>
+        </ul>
+        <p>Beim Start eines Videos h&auml;lt die Box das an, was gerade l&auml;uft &mdash; sonst l&auml;gen H&ouml;rspiel und Video &uuml;bereinander.</p>
+
+        <h3>Kinderzeit einstellen</h3>
+        <p>Unter <span class="pfad">Verwaltung → Profile</span> (die Seite hieß bis zum 15.08.2026 „Kinderzeit“ und ist seither der Ort für <em>alle</em> Einstellungen je Kind): Tageslimit in Minuten, Zeitfenster (von–bis) und erlaubte Wochentage. <strong>Diese drei stellt <em>die Seite</em> für alle Kinder gemeinsam ein</strong> — die Box selbst kann sie je Kind, es fehlt nur das Feld (<code>PUT /api/kinderzeit?profil=&lt;kennung&gt;</code>, siehe unten „Was noch fehlt"). Je Kind sind auf dieser Seite Konto, Bonusminuten und das Zurücksetzen des Tages (oben wählt man, wer gemeint ist). Gezählt wird nur, was wirklich klingt — Pause kostet nichts. Für Ausnahmen gibt es <strong>Bonusminuten</strong> („heute 15 Minuten mehr“, auch negativ) und ein Zurücksetzen des Tages. Eine kaputte Regel-Datei sperrt nie aus: Im Zweifel läuft die Box frei weiter.</p>
+
+        <h3>Darstellung &amp; Themen</h3>
+        <p>Unter <span class="pfad">Verwaltung → Darstellung</span> liegen vier mitgelieferte Themen (<em>Classic</em>, <em>New</em>, <em>Tiger</em>, <em>Brücke</em>) und beliebige eigene: aktuellen Zustand unter einem Namen ablegen, per Klick anwenden. Der Wähler zeigt an, welches Thema gerade läuft. Mitgelieferte Themen lassen sich überschreiben; löschen kann man sie nicht — sie sind der Rückweg. <em>„Zurücksetzen“</em> neben dem Namensfeld holt die <em>ganze</em> Darstellung auf den Auslieferungsstand zurück. Ein <em>einzelnes</em> mitgeliefertes Thema zurückzuholen geht nur an der Box selbst — dort auf ihrer Themenseite: <em>„Voreinstellungen bearbeiten“ → „Original“</em> (daneben legt <em>„Übernehmen“</em> den jetzigen Stand unter diesem Namen ab). Die Kachelform (rund / abgerundet / eckig, mit Rand) ist eine eigene Wahl und überlebt jeden Themenwechsel.</p>
+        <p>Es gibt außerdem <strong>zwei Box-Oberflächen</strong>: die klassische und die neue. Der Umschalter ist der Konfigurationswert <code>mupibox.oberflaeche</code> (<code>klassisch</code> / <code>neu</code>) und wirkt nach einem Neustart der Box — gedacht zum Vergleichen, nicht zum Hin- und Herspringen.</p>
+
+        <h3>Erweiterungen (Plugins)</h3>
+        <p>Unter <span class="pfad">Verwaltung → Plugins</span> steht, welche Erweiterungen die Box mitbringt und wie es ihnen geht. Erweiterungen bringen der Box <strong>neue Medienquellen</strong> bei oder lassen sie <strong>auf Ereignisse reagieren</strong> (etwa eine Lampe schalten, wenn Musik startet). Jede hat eine eigene Unterseite mit ihren Schaltern; ein Klick auf den Namen führt hin.</p>
+        <p>Mitgeliefert sind unter anderem <em>Internet Archive</em> (siehe <a href="#dienste">Abschnitt 6</a>), <em>ARD Audiothek</em>, <em>Jellyfin</em>, <em>Klang</em> und <em>WLED</em>. Was eine Erweiterung darf, steht in ihrem Vertrag — sie bekommt nur die Rechte, die sie anmeldet, und keine darüber hinaus.</p>
+
+        <h3>Bluetooth-Lautsprecher</h3>
+        <p>Unter <span class="pfad">Verwaltung → Bluetooth</span> koppeln — das Koppeln bleibt bewusst eine Handlung des Menschen, danach verbindet die Box den bekannten Lautsprecher selbst wieder. Drei Dinge, die normal sind und nur so aussehen wie Fehler: Nach einem Neustart darf „Paired: no“ dastehen (manche Lautsprecher koppeln ohne dauerhaften Schlüssel), nach einem <strong>Adapterwechsel</strong> (eingebaut ↔ USB-Dongle) ist die Kopplungsliste leer — Kopplungen hängen am Adapter, einmal neu koppeln genügt —, und ein Lautsprecher <strong>mit Mikrofon</strong> bietet an der Box kein Mikrofon an.</p>
+        <p>Das Mikrofon ist <strong>mit Absicht abgeschaltet</strong>, nicht kaputt: Die Box benutzt von Bluetooth-Geräten nur das Musikprofil (A2DP), nicht das Freisprechprofil. Solange beide erlaubt waren, versuchte die Box im Halbminutentakt, das Freisprechprofil nachzuverbinden, und <em>jeder</em> Versuch hackte die laufende Musik ab — der Ton klang abgehackt, obwohl technisch alles fehlerfrei lief. Gelegentlich fiel der Lautsprecher dabei ganz auf Telefonqualität zurück. Die Einschränkung lässt sich in der Verwaltung nicht umstellen; die technische Seite steht im Architekturhandbuch unter <em>Die Tonkette</em>.</p>
+        <p><strong>Auf einer ganz frisch aufgesetzten Box fehlt die Einschränkung noch</strong> — und damit auch ihr Nutzen: Wenn der Ton dort im Halbminutentakt abhackt, sobald ein Lautsprecher <em>mit</em> Mikrofon verbunden ist, ist das kein Defekt und keine schlechte Funkverbindung. Ein Update der Box legt die Einstellung nach, danach ist Ruhe. Dasselbe gilt für den <strong>Klangregler</strong> (Equalizer): Auch seine Voreinstellung kommt erst mit dem ersten Update auf die Box.</p>
+
+        <h3>MuPiHAT &amp; Akku</h3>
+        <p>Unter <span class="pfad">Verwaltung → MuPiHAT</span> den Platinenstand eintragen (die Seite zeigt dann die Besonderheiten dieses Stands) und das <strong>Akkuprofil exakt</strong> aus der Liste wählen — z. B. das ENERpower-Profil statt der Vorgabe. Ein Profilname, der nicht exakt in der Liste steht, fällt still auf fremde Schwellen zurück; die Box prüft das inzwischen und meldet es. Das Akkusymbol der Oberfläche kommt aus der echten Messung: Ohne plausiblen Akku erscheint keines.</p>
+
+        <h3>Aktualisieren</h3>
+        <p>Updates laufen über <span class="pfad">Verwaltung → Aktualisierung</span> beziehungsweise über eine neu gebackene Karte (der Weg aus <a href="#installation">Abschnitt 5</a> lässt Medienliste und Zugänge unangetastet). (Den Update-Knopf des früheren PHP-Admins, der den Upstream geholt und den Fork überschrieben hätte, gibt es mitsamt dem PHP-Admin nicht mehr.)</p>
+      </section>
+
+      <section id="zugaenge">
+        <h2><span class="nr">9</span> Adressen &amp; Zugänge</h2>
+        <p class="vorspann">Alles, was man irgendwann sucht, an einem Ort.</p>
+        <div class="tabelle-huelle">
+          <table>
+            <thead><tr><th>Was</th><th>Adresse / Zugang</th><th>Anmerkung</th></tr></thead>
+            <tbody>
+              <tr><td>Box-Oberfläche</td><td><code>http://&lt;box-ip&gt;:8200</code></td><td>dieselbe Oberfläche wie auf dem Touchscreen; die neue liegt unter <code>/neu/</code></td></tr>
+              <tr><td>Verwaltung</td><td><code>http://&lt;box-ip&gt;:8200/admin/</code></td><td>eigene Passwort-Anmeldung, unabhängig von der Einstellungssperre der Box — ohne gesetztes Passwort für jeden im Netzwerk offen; Passwort unter <span class="pfad">Verwaltung → Konfiguration</span> setzen</td></tr>
+              <tr><td>HTTPS</td><td><code>https://&lt;box-ip&gt;:8443</code></td><td>sobald ein Zertifikat eingerichtet ist</td></tr>
+              <tr><td>SSH</td><td><code>ssh dietpi@&lt;box-ip&gt;</code> · Passwort <code>mupibox</code></td><td>Standard des Images — nach der Einrichtung ändern lohnt sich</td></tr>
+              <tr><td>Musik aufspielen</td><td>über den SSH-Zugang eine Zeile höher — <code>scp</code> oder <code>sftp://dietpi@&lt;box-ip&gt;</code></td><td><strong>Eine Samba-/FTP-Freigabe gibt es nicht</strong> (Stand 30.08.2026) — kein Installationsweg richtet sie ein. Wohin die Dateien gehören und warum danach „Medien neu einlesen" nötig sein kann: <a href="#dienste">Abschnitt 6, „Lokale Dateien"</a></td></tr>
+              <tr><td>Wichtige Dienste</td><td><code>mupibox-server</code> · <code>mupibox-player</code> · <code>librespot</code></td><td>laufen unter systemd; Protokolle siehe unten</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="hilfe">
+        <h2><span class="nr">10</span> Wenn etwas klemmt</h2>
+        <p class="vorspann">Erst messen, dann raten — die Box bringt ihr Prüfwerkzeug mit.</p>
+        <pre><code><span class="bef">sudo mupi-check</span>            <span class="kom"># rund 70 Prüfungen über die ganze Box</span>
+<span class="bef">sudo mupi-check tonweg</span>     <span class="kom"># nur: kommt der Ton bis zum Lautsprecher?</span>
+<span class="bef">sudo mupi-check spotifykette</span>
+<span class="bef">sudo mupi-check kinderzeit</span>
+<span class="bef">sudo mupi-check akku</span></code></pre>
+        <p>Protokolle stehen in der Verwaltung unter <span class="pfad">Protokolle</span> — oder per SSH: <code>journalctl -u mupibox-server -n 200</code> (ebenso <code>-player</code>, <code>librespot</code>).</p>
+
+        <div class="tabelle-huelle">
+          <table>
+            <thead><tr><th>Symptom</th><th>Erste Hilfe</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Blitz-Symbol oben rechts</td>
+                <td>Unterspannung — das Netzteil liefert zu wenig. USB-PD-3.0-Netzteil mit 20 W verwenden; PWR-LED des MuPiHAT beobachten (Blinken = 5 V kommen und gehen).</td>
+              </tr>
+              <tr>
+                <td>Schwarzer Bildschirm am Pi 5, SSH geht</td>
+                <td>Grafik-Konfiguration: Der Pi 5 kann nur volles KMS. In <code>/boot/firmware/config.txt</code> gehören <code>dtoverlay=vc4-kms-v3d</code> und das Waveshare-Overlay (<code>vc4-kms-dsi-waveshare-panel,5_0_inch</code>) — die geflashte Karte bringt das mit.</td>
+              </tr>
+              <tr>
+                <td>Pi 5 bootet gar nicht (keine LED-Aktivität)</td>
+                <td>Display-Revision prüfen: Waveshare Rev 2.1 am Pi 5 verhindert den Start. Es braucht Rev 2.2.</td>
+              </tr>
+              <tr>
+                <td>Bluetooth-Ton stottert</td>
+                <td>WLAN und Bluetooth teilen sich den Funkbaustein. USB-Bluetooth-Dongle einstecken und unter <span class="pfad">Bluetooth → Adapter</span> umschalten; Lautsprecher einmal neu koppeln.</td>
+              </tr>
+              <tr>
+                <td>Box verschwindet immer wieder aus dem WLAN</td>
+                <td>Den WLAN-Energiesparmodus schaltet ein eigener Dienst ab (<code>wifi-powersave-off</code>) — prüfen, ob er läuft. Bei einem Pi 4 außerdem: sendet das Netz überhaupt auf 2,4 GHz? Hilft beides nicht, ist der schnellste Ausweg ein anderes Netz: <span class="pfad">Verwaltung → Netzwerk</span> → <strong>Gespeicherte Netze</strong> → „Verbinden“ wechselt ohne Passworteingabe auf ein bekanntes Netz (z.&nbsp;B. das andere Band oder den Handy-Hotspot).</td>
+              </tr>
+              <tr>
+                <td>Spotify spielt nicht</td>
+                <td><code>sudo mupi-check spotifykette</code> — prüft Dienst, Anmeldung und ob die Box in Spotifys Geräteliste steht. Meist hilft <span class="pfad">Streaming-Dienste → Spotify → „Code holen“</span> mit neuem Gerätecode.</td>
+              </tr>
+              <tr>
+                <td>PIN/Geste vergessen</td>
+                <td>Siehe <a href="#verwaltung">Abschnitt 8</a>: per SSH die Einstellungssperre auf <code>aus</code> stellen.</td>
+              </tr>
+              <tr>
+                <td>Karte bleibt am Anmelde-Prompt statt MixPi-Schirm</td>
+                <td>Erststart-Installation lief nicht durch — Log ansehen: <code>/var/tmp/mupibox-firstboot.log</code>. Zur Not Karte neu backen (Abschnitt 5).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Für die WLAN-Fehlersuche <em>ohne</em> Netzzugang gibt es einen eigenen Weg: Die Karte in den Laptop stecken — ein Diagnose-Werkzeug lässt die Box beim nächsten Start ihren Befund auf die Karte schreiben und bringt ihn so zurück.</p>
+      </section>
+
+      <section id="im-bau">
+        <h2><span class="nr">11</span> Was gerade im Bau ist</h2>
+        <p class="vorspann">Ehrlich benannt, damit niemand darauf baut.</p>
+        <ul>
+          <li><strong>Der Einrichtungsassistent</strong> (erster Start ganz ohne Laptop: QR-Code auf dem Schirm, eigenes Einrichtungs-WLAN <code>MixPiBox-Einrichtung</code>, Seite öffnet sich auf dem Handy von selbst) steht als Gerüst, ist aber noch nicht verdrahtet. Bis dahin gilt der Weg aus <a href="#installation">Abschnitt 5</a>.</li>
+          <li><strong>Die Wochentabelle der Hörzeit stellt <em>die Verwaltung</em> für alle Kinder gemeinsam ein</strong> — der Box fehlt das nicht, der <em>Seite</em> fehlt das Feld. Nur dieses eine Feld fehlt noch je Kind — <em>Tageslimit, Zeitfenster und erlaubte Wochentage</em> stellt man einmal für die ganze Box ein. Alles andere je Kind ist da und in Benutzung: eigener Verlauf, eigenes Weiterhören, eigene Listen, eigene Medienauswahl, eigenes Aussehen, eigenes Zeitkonto samt Bonusminuten und Tages-Reset, dazu der Profilwechsel am Schirm mit Passwort. Wer die Tabelle heute schon je Kind braucht, kann sie am Server setzen (<code>PUT /api/kinderzeit?profil=&lt;kennung&gt;</code>); in der Verwaltung gibt es dafür noch kein Feld.</li>
+          <li><strong>Aufnehmen, was gerade läuft</strong> (Erweiterung <em>Mitschnitt</em>) ist eine Testfunktion und ausdrücklich noch nicht fertig. Wer sie einschaltet, sollte wissen: Kachel und Titelliste entstehen schon <strong>nach dem ersten gelungenen Stück</strong>, nicht am Ende des Albums. Bricht die Aufnahme früh ab, steht deshalb eine Kachel mit nur wenigen Sekunden in der Liste, oder ein Album fängt bei Stück 02 an. Die Daten sind dabei heil — es ist die Anzeige, die mehr verspricht, als aufgenommen wurde. <strong>Nachtrag 23.&nbsp;August 2026:</strong> es gibt einen zweiten Fall, bei dem die Daten <em>nicht</em> heil sind. Lief bis zum 22.&nbsp;August mehr als ein Dienst gleichzeitig, nahm der Mitschnitt unter Umständen den <strong>Lautsprecher</strong> auf statt den eigenen Ton — die Kachel sieht normal aus, das Stück ist still oder enthält etwas ganz anderes. Der Fehler ist behoben, aber <strong>sechs betroffene Aufnahmen liegen noch in der Mediathek</strong>; wer eine stille Kachel findet, kann sie bedenkenlos löschen.</li>
+        </ul>
+      </section>
+
+      <footer>
+        <p>MixPiBox-Benutzerhandbuch · Stand 31.08.2026 · Zusammengetragen aus dem Wissenspaket <code>llmwiki/pack.yaml</code> (1113 Einträge, Fassung 615), der Projekt-Dokumentation und den am Gerät gemessenen Befunden. Zahlen in diesem Handbuch sind gemessen oder am Bestand abgelesen, nicht geschätzt.</p>
+        <p>Die MixPiBox ist ein privater Fork der <a href="https://mupibox.de">MuPiBox</a> von splitti und nero — Dank dorthin.</p>
+      </footer>
+
+    </main>
+  </div>
+</div>
+</body>
+</html>

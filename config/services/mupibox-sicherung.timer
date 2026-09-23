@@ -1,0 +1,23 @@
+[Unit]
+# BACKLOG E29/B1 — der Boden, unter den es nicht faellt.
+#
+# Der Pfad-Wachhund (mupibox-sicherung.path) sichert, wenn sich die
+# Konfiguration aendert. Dieser Zeitgeber sichert, wenn sich LANGE NICHTS
+# aendert — denn die Bibliothek (data.json) und die gemerkten Stellen
+# (resume.json) aendern sich, ohne dass mupiboxconfig.json angefasst wird.
+Description=MuPiBox: taeglich einen Stand sichern
+
+[Timer]
+# Nicht zur vollen Stunde und nicht mitten am Abend: die Box soll dann
+# arbeiten, wenn niemand hoert. Ein Pi ohne Echtzeituhr kann die Zeit erst
+# nach dem Netz — Persistent=true holt einen verpassten Lauf nach.
+OnCalendar=*-*-* 04:17:00
+RandomizedDelaySec=20m
+Persistent=true
+AccuracySec=1m
+# Beim Start nicht sofort: da hat die Box genug zu tun (gemessen 19–24 s bis
+# zum fertigen Bild), und ein Stand mehr oder weniger eilt nie.
+OnBootSec=10min
+
+[Install]
+WantedBy=timers.target

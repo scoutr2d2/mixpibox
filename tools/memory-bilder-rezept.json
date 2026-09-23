@@ -1,0 +1,337 @@
+{
+  "_warum": [
+    "DIE KURATIERTEN KARTENSAETZE DES MEMORY (E140, 09.09.2026).",
+    "Jede Zeile ist eine Entscheidung eines Menschen: aus den CC0-Treffern der",
+    "beiden Haeuser ausgesucht, danach auf dem Kontaktbogen ANGESEHEN",
+    "(tools/memory-bilder-holen.py --kontaktbogen). Deshalb steht hier eine",
+    "Liste von Kennungen und keine Suchabfrage: Eine Abfrage liefert morgen",
+    "andere Bilder, und niemand haette sie gesehen.",
+    "Die LIZENZ prueft das Werkzeug je Objekt nach (Met isPublicDomain,",
+    "Cleveland share_license_status) — eine Kennung hier drin ist kein Freibrief.",
+    "`wort` ist, was die Sprachausgabe zur Kategorie sagt; die Karten selbst",
+    "bleiben stumm, sonst waere das Vorlesen ein Spickzettel.",
+    "`vorschau` ist die Kachel des Wahlschirms — bewusst gewaehlt und nicht die alphabetisch erste: Tiere zeigte sonst den grauen Steinelefanten statt des roten Papageis, und die Kachel ist das, woran ein Kind den Satz erkennt."
+  ],
+  "_was-der-erste-durchgang-gelehrt-hat": [
+    "DER ERSTE TIER-SATZ WAR UNBRAUCHBAR und ist komplett ersetzt worden. Er",
+    "bestand aus Museums-SKULPTUREN: ein Entenkopf-Beschlag, eine Tierkreis-",
+    "figur mit Menschenkoerper als 'Hase', eine abstrakte Saeule als 'Vogel'.",
+    "Fuer einen Erwachsenen sind das Tiere, weil der Titel es sagt; ein",
+    "Vierjaehriger sieht graue Klumpen. Der Ersatz sind farbige BILDER (Drucke",
+    "und Malerei) — ein Papagei auf gruenem Ring, ein Hund mit Welpen, ein",
+    "Tang-Pferd. Die Lehre: Fuer ein Kind zaehlt, was das Bild ZEIGT, nicht was",
+    "das Objekt IST.",
+    "ZWEI STUECKE SIND WEGEN NACKTHEIT GEFALLEN, beide harmlos gemeint und",
+    "beide erst auf dem Kontaktbogen aufgefallen: 'Turtle Baby' (ein nacktes",
+    "Kleinkind auf einer Schildkroete) und die Bronze 'Dancer'. Genau dafuer",
+    "gibt es den Bogen — ein Stichwortfilter haette beide durchgelassen.",
+    "AUSSERDEM RAUS: alles, was im Kleinen nicht lesbar ist (ein Fernrohr-",
+    "STAENDER, eine flach eingravierte Sonnenuhr, eine Mondaufnahme mit",
+    "aufgedrucktem Bildunterschrift-Streifen — die beiden letzten hat der",
+    "Betreiber selbst am Bogen gefunden), und Beinahe-Doppel: von vier",
+    "Blumenstillleben blieb eines, von drei Masken zwei."
+  ],
+  "saetze": {
+    "tiere": {
+      "wort": "Tiere",
+      "bilder": [
+        {
+          "datei": "papagei",
+          "quelle": "cleveland",
+          "id": 142738
+        },
+        {
+          "datei": "schmetterling",
+          "quelle": "cleveland",
+          "id": 679354
+        },
+        {
+          "datei": "hund",
+          "quelle": "cleveland",
+          "id": 144854
+        },
+        {
+          "datei": "schaf",
+          "quelle": "cleveland",
+          "id": 170791
+        },
+        {
+          "datei": "kuh",
+          "quelle": "cleveland",
+          "id": 109582
+        },
+        {
+          "datei": "tiger",
+          "quelle": "cleveland",
+          "id": 136595
+        },
+        {
+          "datei": "hahn",
+          "quelle": "cleveland",
+          "id": 152546
+        },
+        {
+          "datei": "vogel",
+          "quelle": "cleveland",
+          "id": 679088
+        },
+        {
+          "datei": "katze",
+          "quelle": "cleveland",
+          "id": 126212
+        },
+        {
+          "datei": "pferd",
+          "quelle": "cleveland",
+          "id": 132819
+        },
+        {
+          "datei": "elefant",
+          "quelle": "cleveland",
+          "id": 150549
+        },
+        {
+          "datei": "fisch",
+          "quelle": "cleveland",
+          "id": 118852
+        }
+      ],
+      "vorschau": "papagei.jpg"
+    },
+    "kulturen": {
+      "wort": "Kulturen",
+      "bilder": [
+        {
+          "datei": "maske-bueffel",
+          "quelle": "cleveland",
+          "id": 144495
+        },
+        {
+          "datei": "maske-bwoom",
+          "quelle": "cleveland",
+          "id": 115157
+        },
+        {
+          "datei": "maske-gesicht",
+          "quelle": "cleveland",
+          "id": 130743
+        },
+        {
+          "datei": "vase-amphore",
+          "quelle": "cleveland",
+          "id": 123616
+        },
+        {
+          "datei": "vase-fasan",
+          "quelle": "cleveland",
+          "id": 145937
+        },
+        {
+          "datei": "teekanne",
+          "quelle": "cleveland",
+          "id": 119326
+        },
+        {
+          "datei": "teekanne-begonien",
+          "quelle": "cleveland",
+          "id": 519488
+        },
+        {
+          "datei": "teppich",
+          "quelle": "cleveland",
+          "id": 137340
+        },
+        {
+          "datei": "kostuem-no",
+          "quelle": "cleveland",
+          "id": 147935
+        },
+        {
+          "datei": "korb",
+          "quelle": "cleveland",
+          "id": 115635
+        }
+      ],
+      "vorschau": "maske-bwoom.jpg"
+    },
+    "kunst": {
+      "wort": "Kunst",
+      "bilder": [
+        {
+          "datei": "adeline",
+          "quelle": "cleveland",
+          "id": 135299
+        },
+        {
+          "datei": "platanen",
+          "quelle": "cleveland",
+          "id": 125249
+        },
+        {
+          "datei": "pappeln",
+          "quelle": "cleveland",
+          "id": 135310
+        },
+        {
+          "datei": "rotes-tuch",
+          "quelle": "cleveland",
+          "id": 135382
+        },
+        {
+          "datei": "seerosen",
+          "quelle": "cleveland",
+          "id": 136510
+        },
+        {
+          "datei": "fruehlingsblumen",
+          "quelle": "cleveland",
+          "id": 130391
+        },
+        {
+          "datei": "niedrigwasser",
+          "quelle": "cleveland",
+          "id": 125234
+        },
+        {
+          "datei": "gaertnerhaus",
+          "quelle": "cleveland",
+          "id": 95272
+        },
+        {
+          "datei": "kaschmir",
+          "quelle": "cleveland",
+          "id": 171296
+        },
+        {
+          "datei": "prater",
+          "quelle": "cleveland",
+          "id": 151298
+        }
+      ],
+      "vorschau": "adeline.jpg"
+    },
+    "menschen": {
+      "wort": "Menschen",
+      "bilder": [
+        {
+          "datei": "dame-mit-kind",
+          "quelle": "cleveland",
+          "id": 131819
+        },
+        {
+          "datei": "ezra",
+          "quelle": "cleveland",
+          "id": 171154
+        },
+        {
+          "datei": "koenig",
+          "quelle": "cleveland",
+          "id": 162623
+        },
+        {
+          "datei": "mann",
+          "quelle": "cleveland",
+          "id": 119701
+        },
+        {
+          "datei": "musiker",
+          "quelle": "cleveland",
+          "id": 169651
+        },
+        {
+          "datei": "nathaniel",
+          "quelle": "cleveland",
+          "id": 155822
+        },
+        {
+          "datei": "taenzerin-mantel",
+          "quelle": "cleveland",
+          "id": 172659
+        },
+        {
+          "datei": "zwei-kinder",
+          "quelle": "cleveland",
+          "id": 122346
+        }
+      ],
+      "vorschau": "koenig.jpg"
+    },
+    "technik": {
+      "wort": "Technik",
+      "bilder": [
+        {
+          "datei": "uhr",
+          "quelle": "met",
+          "id": 14298
+        },
+        {
+          "datei": "turmuhr",
+          "quelle": "cleveland",
+          "id": 142773
+        },
+        {
+          "datei": "standuhr",
+          "quelle": "cleveland",
+          "id": 156855
+        },
+        {
+          "datei": "auto",
+          "quelle": "cleveland",
+          "id": 118676
+        },
+        {
+          "datei": "gitarre",
+          "quelle": "cleveland",
+          "id": 98679
+        },
+        {
+          "datei": "trommel",
+          "quelle": "cleveland",
+          "id": 110818
+        },
+        {
+          "datei": "lokomotive",
+          "quelle": "met",
+          "id": 268079
+        }
+      ],
+      "vorschau": "auto.jpg"
+    },
+    "wissenschaft": {
+      "wort": "Wissenschaft",
+      "bilder": [
+        {
+          "datei": "mikroskop",
+          "quelle": "cleveland",
+          "id": 147777
+        },
+        {
+          "datei": "sonnenuhr",
+          "quelle": "cleveland",
+          "id": 122167
+        },
+        {
+          "datei": "sonnenuhr-tragbar",
+          "quelle": "met",
+          "id": 188861
+        },
+        {
+          "datei": "himmelsglobus",
+          "quelle": "met",
+          "id": 193606
+        },
+        {
+          "datei": "globus",
+          "quelle": "met",
+          "id": 4023
+        },
+        {
+          "datei": "globus-keramik",
+          "quelle": "met",
+          "id": 198711
+        }
+      ],
+      "vorschau": "himmelsglobus.jpg"
+    }
+  }
+}

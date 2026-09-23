@@ -1,0 +1,11 @@
+# ══ WINDOWS-STARTER BEHALTEN IHRE ZEILENENDEN ══════════════════════════════
+#
+# `git` wollte beim Einchecken CRLF durch LF ersetzen ("CRLF wird durch LF
+# ersetzt, sobald es das naechste Mal von Git verarbeitet wird"). Fuer eine
+# .cmd ist das kein Schoenheitsfehler: `cmd.exe` liest Sprungmarken (`goto`,
+# `:ende`) und `if`-Bloecke zeilenweise und verschluckt sich an reinen
+# LF-Enden — der Starter tut dann etwas anderes als dastehende.
+#
+# Angelegt am 08.08.2026, als sdstart.cmd und sdgui.cmd dazukamen.
+*.cmd text eol=crlf
+*.bat text eol=crlf

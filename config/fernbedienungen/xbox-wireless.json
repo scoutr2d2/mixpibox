@@ -1,0 +1,73 @@
+{
+  "id": "xbox-wireless",
+  "name": "Xbox Wireless Controller (Series X|S, Modell 1914)",
+  "_art": "Was fuer ein Geraet das ist — `controller` oder `fernbedienung`. Die Statusleiste der Box liest es (GET /api/eingabegeraete), um das richtige Zeichen zu setzen: ein Spielpad sieht anders aus als eine Fernbedienung, und beide koennen gleichzeitig verbunden sein.",
+  "art": "controller",
+  "bild": "xbox-wireless.jpg",
+  "pairing_hint": {
+    "zuerst": "Anders als bei der Fire-TV-Fernbedienung muss NICHTS ausgeschaltet werden — der Controller sucht von sich aus eine neue Verbindung, auch wenn eine Konsole in der Nähe steht.",
+    "text": "Xbox-Taste drücken, bis sie dauerhaft leuchtet. Dann die kleine Sync-Taste oben neben dem USB-Anschluss etwa 3 Sekunden halten, bis die Xbox-Taste SCHNELL blinkt.",
+    "warnung": "Das schnelle Blinken ist der Kopplungsmodus und hält nur rund 20 Sekunden an. Danach leuchtet sie wieder ruhig, und es passiert nichts mehr — dann noch einmal von vorn.",
+    "bild": "xbox-wireless-pairing.jpg"
+  },
+  "match": {
+    "name_prefix": [
+      "Xbox Wireless Controller"
+    ],
+    "vendor_id": "045e",
+    "product_id": "0b13"
+  },
+  "_keys": "AM GERÄT GEMESSEN (06.09.2026, Box .81, `fernbedienung.py --roh`) — nicht aus einem Datenblatt. A und B, die Schultertasten und View/Menü wurden einzeln angesagt und im Protokoll wiedergefunden.",
+  "keys": {
+    "304": "A (unten)",
+    "305": "B (rechts)",
+    "307": "Y (oben)",
+    "308": "X (links)",
+    "310": "LB (Schulter links)",
+    "311": "RB (Schulter rechts)",
+    "314": "View (kleine Taste links)",
+    "315": "Menü (kleine Taste rechts)",
+    "167": "Share (Rechteck mit Pfeil, zwischen Kreuz und rechtem Stick)"
+  },
+  "_achsen": "DAS STEUERKREUZ IST KEINE TASTE, sondern eine Achse — der Grund, warum ein reiner Tastenleser hier NICHTS sieht. Steht so in /proc/bus/input/devices (`B: EV=20001b` hat Bit 3 für EV_ABS, `B: ABS=30627` die Bits 16 und 17) und wurde am Gerät bestätigt. Je Achse: erst die Aktion für den negativen Ausschlag, dann die für den positiven.",
+  "achsen": {
+    "16": [
+      "links",
+      "rechts"
+    ],
+    "17": [
+      "hoch",
+      "runter"
+    ]
+  },
+  "unsupported_keys": {
+    "sticks": "Der RECHTE Daumenstick bleibt unbelegt — er haette keine eigene Aufgabe, und Sticks melden auch unberuehrt fortwaehrend Werte (gemessen: 148 Ereignisse in 40 s ohne Beruehrung). Der linke ist mit Totzone belegt, siehe `sticks`.",
+    "trigger": "Die analogen Trigger (ABS_Z, ABS_GAS) sind aus demselben Grund frei.",
+    "xbox_taste": "Die grosse Xbox-Taste meldet sich beim Kernel nicht als gewöhnliche Taste und bleibt deshalb außen vor. Die Share-Taste dagegen sendet 167 (KEY_RECORD) und ist belegt."
+  },
+  "_vorbelegung": "Die wichtigen Aktionen liegen auf den Tasten, die einzeln angesagt und bestätigt wurden. X und Y (307/308) sind nach der Linux-Konvention zugeordnet (BTN_NORTH = Y oben, BTN_WEST = X links) und am Gerät NICHT einzeln nachgeprüft — wer sie vertauscht vorfindet, dreht hier zwei Zeilen.",
+  "vorbelegung": {
+    "304": "auswaehlen",
+    "305": "zurueck",
+    "308": "abspielen-anhalten",
+    "307": "startseite",
+    "310": "voriger-titel",
+    "311": "naechster-titel",
+    "314": "buehne-weiter",
+    "315": "startseite",
+    "167": "spielecke"
+  },
+  "audio": "none",
+  "hinweis": "Robuster als jede Fernbedienung und für Kinderhände gut geformt — die Kopplung lief ohne `bluetooth.disable_ertm=1`, weil dieses Modell BLE spricht. Bei älteren Xbox-One-Controllern (Modell 1708) ist dieser Schalter dagegen der klassische Grund für sofort abbrechende Verbindungen.",
+  "_sticks": "Der LINKE Daumenstick (ABS_X = 0, ABS_Y = 1) navigiert — mit Totzone und Flanke, siehe fernbedienung.py. Der rechte bleibt unbelegt (siehe unsupported_keys).",
+  "sticks": {
+    "0": [
+      "links",
+      "rechts"
+    ],
+    "1": [
+      "hoch",
+      "runter"
+    ]
+  }
+}

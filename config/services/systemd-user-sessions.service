@@ -1,0 +1,38 @@
+# ══ ANMELDUNGEN WARTEN NICHT AUFS WLAN (MixPi, E59, 20.08.2026) ════════════
+#
+# VOLLE KOPIE der Unit aus /usr/lib/systemd/system/, mit EINER Aenderung:
+# `network.target` ist aus `After=` heraus. Ein Drop-In genuegt hier NICHT —
+# Ordnungs-Abhaengigkeiten (After=/Before=) lassen sich in systemd nicht mit
+# einer leeren Zuweisung zuruecksetzen, anders als etwa ExecStart=. Der
+# Versuch stand kurz hier und blieb wirkungslos: `systemctl show -p After`
+# zeigte network.target unveraendert weiter.
+#
+# GEMESSEN am Kaltstart dieser Box, davor:
+#     basic.target                    3,47 s
+#     mupibox-server (Seite bereit)   4,05 s
+#     network.target                  8,07 s   <- wartet auf ifup@wlan0 (DHCP)
+#     systemd-user-sessions           8,16 s   <- wartete auf network.target
+#     getty@tty1 (der Kiosk)          8,17 s   <- wartet auf user-sessions
+# Der Kiosk zeigt http://localhost:8200 und wartete rund vier Sekunden auf
+# eine WLAN-Adresse, die er dafuer nicht braucht.
+#
+# WARUM GEFAHRLOS: Dieser Dienst entfernt /run/nologin, erlaubt also
+# Anmeldungen. Das network.target im Original ist fuer Systeme gedacht, deren
+# Benutzer aus dem NETZ kommen (LDAP, NIS). Diese Box hat in
+# /etc/nsswitch.conf `passwd: files` und `group: files` — die Benutzer stehen
+# auf der Karte. SSH ist nicht betroffen (eigener Dienst, eigene Kette).
+#
+# WAS ZU BEACHTEN IST: Als volle Kopie erbt diese Datei kuenftige Aenderungen
+# von systemd NICHT. Bei einem systemd-Update lohnt ein Blick, ob das Original
+# mehr als diese vier Abhaengigkeiten bekommen hat.
+# ZURUECK: diese Datei loeschen, `systemctl daemon-reload`.
+[Unit]
+Description=Permit User Sessions
+Documentation=man:systemd-user-sessions.service(8)
+After=remote-fs.target nss-user-lookup.target home.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/systemd/systemd-user-sessions start
+ExecStop=/usr/lib/systemd/systemd-user-sessions stop

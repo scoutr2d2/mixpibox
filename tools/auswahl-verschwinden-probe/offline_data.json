@@ -1,0 +1,34 @@
+[
+  {
+    "type": "jellyfin-album",
+    "category": "music",
+    "id": "7d9a37e2732ca78bc68eacb3232960c0",
+    "artist": "Kapelle Petra",
+    "title": "HAMM",
+    "cover": "http://192.168.178.199:8899/Items/7d9a37e2732ca78bc68eacb3232960c0/Images/Primary?api_key=WEGGENOMMEN"
+  },
+  {
+    "type": "jellyfin-album",
+    "category": "music",
+    "title": "Die Zukunft wird groß",
+    "artist": "Das Lumpenpack",
+    "id": "e131865d504a657a93533722fc88bc90",
+    "cover": "http://192.168.178.199:8899/Items/e131865d504a657a93533722fc88bc90/Images/Primary?api_key=WEGGENOMMEN"
+  },
+  {
+    "type": "ard",
+    "category": "audiobook",
+    "title": "Die Maus zum Hören",
+    "artist": "Die Maus",
+    "id": "69106028",
+    "cover": "https://api.ardmediathek.de/image-service/images/urn:ard:image:e24f3bfe04125c29?w=512&ch=b710cc19a9544f5f"
+  },
+  {
+    "type": "ard",
+    "category": "other",
+    "title": "Quarks Science Cops",
+    "artist": "WDR",
+    "id": "83030960",
+    "cover": "https://api.ardmediathek.de/image-service/images/urn:ard:image:89269fde7425e5e4?w=512&ch=dc1c6d6a37735238"
+  }
+]
