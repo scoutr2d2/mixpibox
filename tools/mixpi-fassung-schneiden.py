@@ -80,7 +80,8 @@ def sha256_datei(p: Path) -> str:
     return h.hexdigest()
 
 
-def paket_umstempeln(quelle: Path, ziel: Path, fassung: str) -> bool:
+def paket_umstempeln(quelle: Path, ziel: Path, fassung: str,
+                     felder: dict | None = None) -> bool:
     """Das Paket nach `ziel` schreiben und dabei `herkunft.json` die
     veroeffentlichte Fassung geben. Alles andere bleibt Byte fuer Byte.
 
@@ -88,6 +89,9 @@ def paket_umstempeln(quelle: Path, ziel: Path, fassung: str) -> bool:
     was sie faehrt (`herkunftLesen()` in server.ts). Ein zweites Feld daneben
     haetten zwei Wahrheiten ergeben, und der Vergleich haette weiter die falsche
     genommen.
+
+    `felder` ueberschreibt weitere Angaben (der GitHub-Weg setzt so `quelle`,
+    `commit` und `zweig` des Runners, tools/mixpi-github-fassung.py).
     """
     try:
         with zipfile.ZipFile(quelle) as alt:
@@ -96,6 +100,18 @@ def paket_umstempeln(quelle: Path, ziel: Path, fassung: str) -> bool:
                 return False
             stempel = json.loads(alt.read("herkunft.json").decode("utf-8"))
             stempel["version"] = fassung
+            # ══ EINE FASSUNG IST DIE QUELLE, KEIN EIGENBAU (25.09.2026) ══════
+            # src/deploy.sh stempelt `eigeneCommits` aus `@{upstream}..HEAD`
+            # des Baus — das eingecheckte Paket trug am 23.09. eine 2. Die
+            # Box urteilt ueber IHRE installierte Herkunft: steht dort
+            # eigeneCommits > 0, heisst es `eigenbau`, und jedes weitere
+            # Update wird verweigert (aktualisierung.ts, mixpi-zieher.py
+            # `beurteile`). Eine Box, die diese Fassung einspielt, saesse
+            # danach fest. Was hier geschnitten wird, IST der Stand der
+            # Quelle — also null, beides (AUDIT-2026-09-25 Rang 7).
+            stempel["eigeneCommits"] = 0
+            stempel["unsauber"] = 0
+            stempel.update(felder or {})
             neu_inhalt = (json.dumps(stempel, indent=2) + "\n").encode("utf-8")
             with zipfile.ZipFile(ziel, "w", zipfile.ZIP_DEFLATED) as neu:
                 for eintrag in alt.infolist():

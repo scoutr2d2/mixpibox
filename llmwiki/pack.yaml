@@ -1,5 +1,5 @@
 id: mupibox
-version: "615"
+version: "616"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -64010,3 +64010,80 @@ entries:
       PHP/lighttpd -> Angular) und eine Messtabelle mit den Gewinnen aus dem
       Wissenspaket ([[mupi-startzeiten-gemessen]], [[mupi-boot-32s-auf-13s]],
       [[grundmessung-zeit-bis-zum-bild]]) — jede Zahl mit Geraet und Datum.
+  - id: fassungen-ueber-github-kanaele-und-lokale-signatur
+    kind: architektur
+    title: 'Fassungen ueber GitHub: auf dem Runner gebaut, lokal signiert, Kanaele auf Pages — und der Zieher, der drei Wochen lang jedes echte Paket ablehnte'
+    tags: [update, zieher, github, kanaele, signatur, ci, ausrollen, 2026]
+    source: >
+      Gebaut 25.09.2026 (tools/mixpi-github-fassung.py,
+      .github/workflows/fassung.yml und kanaele.yml, Handbuch 7.16).
+      Betreiberentscheid am selben Tag: Artefakt „auf GitHub gebaut",
+      Signatur „lokal". Ende-zu-Ende gefahren: echter Bau ueber
+      src/deploy.sh, Wegwerf-Schluessel, Verzeichnis, Schein-Box, der
+      ECHTE Zieher mit --holen (Summe, Signatur, Paket, node --check).
+    related: [halbmigration-die-naht-steht-die-altstellen-bleiben, drei-fehler-die-erst-die-echte-box-zeigte, erster-rollout-nach-dem-schnitt, arbeitsbereich-der-nichts-deklariert-ist-unsichtbar, github-veroeffentlichung-kuratiert-elternlos-und-die-wache-in-beide-richtungen, vierzehn-kopien-und-die-abweichung-ist-der-fehler, mupi-update-knopf-loescht-den-fork, gegenprobe-statt-gruen-glauben]
+    body: |
+      DER WEG, DREI ORTE:
+        1 bauen      Runner, Actions → „Fassung bauen" (von Hand). src/deploy.sh
+                     wie am Arbeitsrechner, dann umgestempelt: quelle =
+                     https://github.com/<repo>, version = Fassung,
+                     eigeneCommits = unsauber = 0. Landet als ENTWURF — fuer
+                     keine Box sichtbar. Mit „von" statt bauen: BEFOERDERN
+                     (das signierte Paket der Vorstufe, nur umbenannt).
+        2 signieren  lokal: tools/mixpi-github-fassung.py signieren --fassung
+                     v1.2.0 --veroeffentlichen. Prueft VOR jedem Kontakt mit
+                     GitHub, dass der private Schluessel zum eingecheckten
+                     config/mixpi-release.pub passt.
+        3 kanaele    Runner, bei jedem Release-Ereignis: version.json aus ALLEN
+                     veroeffentlichten Releases, jede Signatur nachgeprueft,
+                     auf GitHub Pages (<besitzer>.github.io/<repo>/version.json).
+
+      KANAL = NAME. v1.2.0 stable, -beta.N beta, -dev.N dev. Die Listen
+      schliessen sich ein (beta fuehrt stable, dev alles): die Box nimmt den
+      LETZTEN Eintrag ihres Kanals, ohne Einschluss saesse eine Beta-Box auf
+      der alten Beta. Geordnet mit zerlege() AUS DEM ZIEHER, per importlib
+      geholt — der Selbsttest liest das erzeugte Verzeichnis mit
+      neuestes_angebot() der Box, nicht mit einem eigenen Leser.
+
+      DREI ENTSCHEIDUNGEN, DIE MAN SPAETER NICHT MEHR VERSTEHT:
+      * Pages statt main: main schreibt allein github-veroeffentlichen.py
+        ohne --force; ein Workflow-Commit dort liesse die naechste
+        Veroeffentlichung abweisen. Aus demselben Grund: KEINEN PR auf main
+        mergen — Workflow-Aenderungen kommen ueber den internen Baum.
+      * Das Tag entsteht auf GitHub (gh release create --target). Ein
+        internes Tag per git push truege die ganze private Geschichte hinaus.
+      * Release-Ereignisse laufen auf refs/tags/…, die Umgebung github-pages
+        rollt nur vom Standardzweig aus. kanaele.yml stoesst sich deshalb per
+        `gh workflow run --ref main` selbst an — workflow_dispatch ist das
+        eine Ereignis, das der GITHUB_TOKEN ausloesen darf.
+
+      DER FUND BEIM ERSTEN ENDE-ZU-ENDE-LAUF: mixpi-zieher.py verlangte
+      `www/index.html` im Paket. Seit E118/1e (05.09.) liegt die Oberflaeche
+      unter www/neu/ — ausliefern.py wurde am selben Tag umgestellt
+      ([[erster-rollout-nach-dem-schnitt]]), der Zieher nicht. Er lehnte also
+      JEDES echte Paket ab, und tools/mixpi-zieher-probe.py blieb 21/21 gruen,
+      weil sie ihr Schein-Paket in der ALTEN Form baute. Behoben: ZIELE traegt
+      je Baum ein `index` (www → neu/index.html), die Probe baut die echte
+      Form. GEGENPROBE: neue Probe gegen den alten Zieher = 9 rot. Die Probe
+      laeuft jetzt in der CI. LEHRE: ein Sandkasten, der sein Eingangsmaterial
+      selbst erfindet, prueft die eigene Erinnerung an das Format, nicht das
+      Format — ab und zu ein ECHTES Artefakt hindurchschicken.
+
+      ZWEITER FUND DESSELBEN TAGES: das eingecheckte deploy.zip trug
+      eigeneCommits=2 (aus @{upstream}..HEAD des Baus), und
+      mixpi-fassung-schneiden.py stempelte nur `version` um. Eine Box, die so
+      eine Fassung einspielt, urteilt danach fuer immer `eigenbau` und nimmt
+      kein Update mehr. Beide Schnittwege stempeln jetzt 0.
+
+      ERSTER WECHSEL EINER BESTEHENDEN BOX: Herkunft git.local, Angebot
+      GitHub → `fremdeQuelle`. Einmal bewusst `mixpi-zieher.py --einspielen
+      --erzwingen`, danach traegt die Box die GitHub-Herkunft.
+      `box-einrichten` sagt das, wenn es zutrifft.
+
+      NEBENFUND BEIM GRUENMACHEN DER CI: mpv-wrapper.spec.ts war in 1 von 6
+      Laeufen rot (ENOTEMPTY im after()). close() schickt mpv nur `quit`, das
+      sofortige rmSync lief gegen den Doppelgaenger, der noch schrieb. Jetzt
+      wartet after() auf das 'close' jedes Spielers (Versprechen beim
+      ERZEUGEN angelegt) — und raeumt die 5-s-Frist danach ab: ein stehender
+      setTimeout hielt den Testprozess sonst jedes Mal volle 5 s am Leben,
+      obwohl alle Spieler laengst zu waren. 20/20 gruen, 3,2 s wie vorher.

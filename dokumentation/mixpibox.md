@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1113 Einträge,
-Fassung 615). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1114 Einträge,
+Fassung 616). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -2308,9 +2308,18 @@ Drei Aufträge, alle auf `ubuntu-latest` mit Node 22 und `npm ci`:
 
 | Auftrag | Was er ruft | Was das deckt |
 |---|---|---|
-| `Lint (Biome)` | `npm run lint` | Biome über die Bereiche — **ohne `frontend-admin`**, siehe Kasten |
-| `Backend tests + types` | `npm run check-types` (nur `backend-player`), dann `npm run test` für `backend-api` und `backend-player` | 126 der 200 Testdateien |
-| `Build all workspaces` | `npm run build` | alle vier Bereiche; darüber läuft auch der Angular-Compiler beider Oberflächen |
+| `Lint (Biome)` | `npm run lint` | Biome über die Bereiche — **ohne `frontend-admin`**, und **nicht blockierend**, siehe Kasten |
+| `Tests + types` | `npm run check-types` (nur `backend-player`), dann `npm run test` für `backend-api` und `backend-player`, `npm run test:plugins`, dazu der Selbsttest von `tools/mixpi-github-fassung.py` und der Zieher-Sandkasten `tools/mixpi-zieher-probe.py` | die Testdateien beider Backends und aller Plugins, dazu die Fassungs-Pipeline (7.16) |
+| `Build all workspaces` | `npm run build` | alle drei Bereiche mit Bau (`backend-api`, `backend-player`, `frontend-admin`); darüber läuft auch der Angular-Compiler der Verwaltung |
+
+**Rot von der ersten Veröffentlichung bis zum 25.09.2026.** Alle drei Läufe
+auf GitHub scheiterten an Lint und Bau: `src/frontend-admin/package.json`
+deklarierte keine einzige Abhängigkeit (Abschnitt 7.13), ein frisches `npm ci`
+hatte also kein `ng`, und `backend-api` fehlte `@types/cors` aus demselben
+Grund. Auf keinem Arbeitsrechner fiel das auf — dort lag das alte
+`node_modules`. Seit dem 25.09. ist beides deklariert und die Aktionen stehen
+auf `actions/checkout@v7`/`actions/setup-node@v7` (Node 24 statt der
+abgekündigten Node-20-Laufzeit).
 
 **Warum `check-types` nur einmal dasteht:** `backend-api` hängt es sich selbst
 vor den Bau (`"build": "npm run check-types && esbuild …"`), `backend-player`
@@ -2330,11 +2339,16 @@ Rest, sondern die Ergänzung.
 > * **`lint` für `frontend-admin`.** Der Bereich hat gar kein `lint`-Skript;
 >   `npm run lint --workspaces` überspringt ihn kommentarlos (Abschnitt 7.4).
 >   Die CI erbt das Loch und meldet trotzdem grün.
-> * **die Plugin-Tests** — dazu der Absatz unten. Sie stehen bewusst *nicht*
->   in diesem Kasten als Skriptname: seit dem 26.08.2026 ruft `pruefen.sh`
->   sie, und ein Name in diesem Kasten entschuldigt ihn bei
->   `tools/ci-deckung.py`. Stünde er hier, könnte der Schritt aus
->   `pruefen.sh` verschwinden, ohne dass die Wache es meldet.
+> * **Lint überhaupt — seit dem 25.09.2026 nicht blockierend**
+>   (`continue-on-error` am Schritt in `ci.yml`, nicht am Auftrag: am Auftrag
+>   hielt der Lauf zwar, der Check stand aber rot und jeder PR auf
+>   „unstable“; jetzt ist der Check grün und der Befund eine Warnung in den
+>   Anmerkungen des Laufs). Biome meldete an dem Tag 145 Fehler,
+>   fast alle Formatierung und Import-Reihenfolge. Die Massenformatierung
+>   gehört in den internen Baum, in dem parallele Sitzungen dieselben Dateien
+>   bearbeiten; wer `npm run lint` grün macht, streicht die Zeile im selben
+>   Commit. Biome ist seitdem auf `2.5.11` gepinnt — mit `"*"` brachte jede
+>   neue Biome-Fassung neue Regeln und damit neues Rot.
 
 **Die 14 Testdateien unter `plugins/*/` liefen in keinem Läufer** (gefunden
 26.08.2026). 367 Tests, alle grün, zusammen 230 Millisekunden — und niemand
@@ -2354,7 +2368,8 @@ Das ist die bekannte Bauart eine Ebene höher: nicht eine Wache hängt in
 keinem Läufer, sondern eine ganze **Testmenge** (llmwiki
 `wache-stirbt-still-wenn-sie-nirgends-haengt`, `testmenge-in-keinem-laeufer`).
 Sie war grün, weil niemand fragte.
-Seit dem 26.08.2026 ruft `tools/pruefen.sh` sie als eigenen Schritt.
+Seit dem 26.08.2026 ruft `tools/pruefen.sh` sie als eigenen Schritt, seit dem
+25.09.2026 auch die CI (`npm run test:plugins` im Auftrag `Tests + types`).
 
 Gewacht von `tools/ci-deckung.py` (läuft in `tools/doku-luecken-probe.sh`):
 es hält jeden Auftrag und jedes `npm run` aus `ci.yml` gegen diesen
@@ -2871,12 +2886,23 @@ den istanbul-Reporter. Kaputt ging die **Verwaltung**: sie hat gar keine
 `ef946f34` hat das Paket in die Wurzel gestellt, wo geteiltes Werkzeug
 hingehört — der Ausfall war behoben, die Buchhaltung nicht.
 
-**`src/frontend-admin/package.json` führt bis heute null Abhängigkeiten.**
-Kein `@angular/core`, kein `rxjs`, kein `karma`. Jede Inventur über
-`package.json` misst dort eine leere Menge und meldet grün; gebaut und
-getestet wird trotzdem. Ein Bereich, der nichts deklariert, ist für eine
-Paket-Wache nicht sauber, sondern **unsichtbar** — dieselbe Bauart wie ein
+**`src/frontend-admin/package.json` führte bis zum 25.09.2026 null
+Abhängigkeiten.** Kein `@angular/core`, kein `rxjs`, kein `karma`. Jede
+Inventur über `package.json` maß dort eine leere Menge und meldete grün;
+gebaut und getestet wurde trotzdem. Ein Bereich, der nichts deklariert, ist für
+eine Paket-Wache nicht sauber, sondern **unsichtbar** — dieselbe Bauart wie ein
 Ordner, den kein Handbuch nennt.
+
+**Und so ging es aus:** Mit E118 (05.09.2026) fiel der Verleiher, das
+`package.json` der alten Box-Oberfläche unter `src/frontend-box`. Auf jedem Arbeitsrechner lag Angular weiter
+im alten `node_modules`, nichts wurde rot. Aus einem frischen `npm ci` aber
+endete `ng build` mit `ng: not found`, und `tsc` für das Backend fand
+`@types/cors` nicht mehr (kam transitiv über karma/engine.io). Die GitHub-CI war
+deshalb ab ihrer ersten Veröffentlichung (23.09.2026) rot, 3 von 3 Läufen.
+Seit dem 25.09.2026 deklariert die Verwaltung ihre Pakete selbst, in den
+Fassungen, die das Lockfile damals trug, und `@types/cors` steht bei
+`src/backend-api`. **Wer eine Abhängigkeit streicht, baut danach einmal aus
+`npm ci` in einem leeren Ordner** — das alte `node_modules` beweist nichts.
 
 Gemessen von `tools/arbeitsbereich-abhaengigkeiten-deckung.py` (läuft in
 `tools/doku-luecken-probe.sh`). Es fragt drei Sorten Benutzung ab, denn die
@@ -2890,35 +2916,20 @@ teuerste steht in keiner Zeile Quelltext:
 Als Deklaration zählt der eigene `package.json` **oder** die Wurzel, bewusst
 nicht der Schwesterbereich — der ist der Gegenstand.
 
-Die dreizehn offenen Leihen. Sie stehen hier und nicht als Ausnahmeliste im
-Skript, damit sie findet, wer die `package.json` aufmacht; das Aufräumen ist
-Arbeit am Bau und steht im `BACKLOG.md`:
+Die offenen Leihen. Sie stehen hier und nicht als Ausnahmeliste im Skript,
+damit sie findet, wer die `package.json` aufmacht; das Aufräumen ist Arbeit am
+Bau und steht im `BACKLOG.md`. **Stand 25.09.2026: keine.** Bis dahin standen
+hier dreizehn Zeilen — zwölf Leihen der Verwaltung aus `src/frontend-box`
+(Angular, `rxjs`, `karma` samt der drei vom Bauer fest geladenen Plugins) und
+`ionicons`, das kein Bereich deklarierte. Die zwölf sind seit dem 25.09.
+deklariert (siehe oben), `ionicons` fiel mit der alten Box-Oberfläche (E118).
 
 <!-- GELIEHENE-ABHAENGIGKEITEN:ANFANG -->
 
 | Paket | Bereich | Woher es heute kommt |
 |---|---|---|
-| `@angular-devkit/build-angular` | `src/frontend-admin` | `src/frontend-box` — der Bauer aus `angular.json` |
-| `@angular/cli` | `src/frontend-admin` | `src/frontend-box` — `ng` in `scripts.build` |
-| `@angular/common` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/core` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/forms` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/platform-browser` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/router` | `src/frontend-admin` | `src/frontend-box` |
-| `rxjs` | `src/frontend-admin` | `src/frontend-box` |
-| `karma` | `src/frontend-admin` | `src/frontend-box` — Läufer des `:karma`-Ziels |
-| `karma-chrome-launcher` | `src/frontend-admin` | `src/frontend-box` — vom Bauer fest geladen |
-| `karma-jasmine` | `src/frontend-admin` | `src/frontend-box` — vom Bauer fest geladen |
-| `karma-jasmine-html-reporter` | `src/frontend-admin` | `src/frontend-box` — vom Bauer fest geladen |
-| `ionicons` | `src/frontend-box` | **niemand** — nur mitgezogen von `@ionic/angular` |
 
 <!-- GELIEHENE-ABHAENGIGKEITEN:ENDE -->
-
-Die letzte Zeile ist die andere Sorte und die härtere: `ionicons` deklariert
-**kein** Bereich und auch die Wurzel nicht. `add.page.ts` importiert es
-direkt; im Baum liegt es, weil `@ionic/angular` es mitbringt. Ein
-Nebenwerkzeug, das seine Abhängigkeit einmal ändert, nimmt der Box-Oberfläche
-einen Import weg, den sie für ihren eigenen hielt.
 
 Die Wache prüft die Tabelle **in beide Richtungen**: wer eine Leihe endlich
 deklariert oder ihren letzten Nutzer löscht, ohne die Zeile hier zu streichen,
@@ -3070,6 +3081,111 @@ python3 tools/github-veroeffentlichen.py --liste         # jede Datei einzeln
 python3 tools/github-veroeffentlichen.py --bauen         # Commit anlegen
 python3 tools/github-veroeffentlichen.py --bauen --push  # und hochladen
 ```
+
+### 7.16 Fassungen über GitHub: Kanäle, Bauen, Signieren
+
+*Eingerichtet am 25.09.2026; zu diesem Zeitpunkt ist noch keine Fassung
+veröffentlicht.*
+
+Die Box kann sich ihre Fassung längst selbst holen (`scripts/box/mixpi-zieher.py`,
+Abschnitt 7.7.7): Kanal aus `/etc/mupibox/mixpi-update.json`, den neuesten
+Eintrag dieses Kanals, `sha256` Pflicht, Signatur Pflicht sobald
+`/etc/mupibox/mixpi-release.pub` liegt, unteilbarer Tausch, Frist, lokaler
+Rückweg. Es fehlte die Gegenseite — ein Ort, der Artefakte und Verzeichnis
+ausliefert. Das ist GitHub: Das Repo ist öffentlich, die Box lädt ohne
+Zugangsdaten. Betreiber, 25.09.2026: Artefakt **auf GitHub gebaut**, signiert
+wird **lokal**.
+
+**Die Kanäle stehen im Namen** — dieselbe Form wie bei
+`tools/mixpi-fassung-schneiden.py`:
+
+| Name | Kanal | auf GitHub |
+|---|---|---|
+| `v1.2.0` | stable | normales Release |
+| `v1.2.0-beta.3` | beta | Vorabversion |
+| `v1.2.0-dev.7` | dev | Vorabversion |
+
+Die Listen **schließen sich ein**: beta führt stable mit, dev führt alles. Die
+Box nimmt den letzten Eintrag ihres Kanals; ohne Einschluss säße eine Beta-Box
+auf der alten Beta, während stable längst weiter ist. Geordnet wird mit
+`zerlege()` aus dem Zieher selbst (dev < beta < fertig, nicht alphabetisch).
+
+**Drei Schritte, drei Orte:**
+
+| Schritt | Wo | Was |
+|---|---|---|
+| 1. bauen | GitHub: Actions → „Fassung bauen“ (`.github/workflows/fassung.yml`) | `src/deploy.sh` baut wie am Arbeitsrechner; das Paket bekommt `herkunft.json` mit `quelle` = GitHub-Adresse, `version` = Fassung, `eigeneCommits`/`unsauber` = 0; es landet als **Entwurf** mit `.zip` und `.zip.sha256`. Ein Entwurf ist für keine Box sichtbar. |
+| 2. signieren | lokal | `python3 tools/mixpi-github-fassung.py signieren --fassung v1.2.0 --veroeffentlichen` — holt den Entwurf, prüft Summe und Herkunft, signiert, prüft die Signatur gegen den **eingecheckten** `config/mixpi-release.pub`, lädt die `.sig` hoch und veröffentlicht. |
+| 3. Kanäle | GitHub: „Kanaele veroeffentlichen“ (`.github/workflows/kanaele.yml`), läuft von selbst bei jedem Release-Ereignis | baut `version.json` aus allen veröffentlichten Releases, prüft **jede** Signatur nach und rollt nach GitHub Pages aus: `https://scoutr2d2.github.io/mixpibox/version.json`. Was nicht besteht, kommt nicht hinein; der Lauf wird rot, aber erst nach dem Ausrollen der übrigen. |
+
+**Einmalig einrichten:**
+
+1. GitHub: *Settings → Pages → Source: GitHub Actions.*
+2. Lokal den Signierschlüssel anlegen:
+   `python3 tools/mixpi-github-fassung.py schluessel-erzeugen`. Der private
+   Schlüssel landet unter `~/.config/mixpibox/mixpi-release.key` (0600, **nie**
+   im Baum — das Werkzeug verweigert einen Pfad darin), der öffentliche unter
+   `config/mixpi-release.pub`. Den öffentlichen einchecken und veröffentlichen
+   (7.15). Den privaten offline sichern: verloren heißt, jede eingerichtete Box
+   braucht einen neuen öffentlichen.
+3. Lokal `gh` (GitHub CLI) mit `gh auth login` anmelden.
+4. Auf jeder Box, als root:
+   `python3 tools/mixpi-github-fassung.py box-einrichten --kanal stable`.
+   Das schreibt `/etc/mupibox/mixpi-update.json` (Verzeichnis, Quelle, Kanal)
+   und legt den öffentlichen Schlüssel ab — ab dann ist die Signatur Pflicht.
+   Den Kanal wechselt danach die Verwaltung (Aktualisierung).
+
+**Der erste Wechsel einer bestehenden Box.** Wer heute über
+`tools/ausliefern.py` oder die Karte aus dem internen Baum läuft, trägt die
+Herkunft `http://git.local:3000/achim/box.git`. Das erste Angebot von GitHub
+urteilt deshalb `fremdeQuelle` — richtig so, es ist ein Quellwechsel. Einmal
+bewusst `sudo python3 scripts/box/mixpi-zieher.py --einspielen --erzwingen`;
+danach trägt die Box die GitHub-Herkunft, und es geht ohne weiter.
+`box-einrichten` sagt das, wenn es zutrifft.
+
+**Befördern und Zurückziehen.** Aus `v1.2.0-beta.3` wird stable über
+denselben Workflow mit dem Feld **„von“** = `v1.2.0-beta.3` und Fassung
+`v1.2.0`. Dann wird **nicht** gebaut: das signierte Paket der Beta wird geholt,
+gegen `config/mixpi-release.pub` geprüft und nur in `version` umgestempelt —
+dieselben Bytes, die als Beta draußen liefen, nicht der heutige Stand von
+`main`. Befördert wird nur innerhalb einer Nummer und nur nach oben
+(dev → beta → fertig); danach wird wieder lokal signiert, denn der Name steht
+im Paket, also sind es neue Bytes. Zurückgezogen wird ein Release,
+indem man es löscht oder wieder zum Entwurf macht; das Verzeichnis folgt von
+selbst. Boxen, die die Fassung schon haben, behalten sie (der Zieher geht nur
+vorwärts); zurück geht es auf der Box mit `mixpi-zieher.py --zurueckdrehen`.
+
+**Warum so und nicht einfacher:**
+
+* **Lokal signieren.** Die `sha256` steht im selben Verzeichnis wie die
+  Adresse — wer das GitHub-Konto übernimmt, fälscht beide. Mit dem Schlüssel
+  als GitHub-Secret hätte er auch die Signatur. Liegt er nur am
+  Arbeitsrechner, lehnt jede eingerichtete Box ab.
+* **Pages statt `main`.** `main` schreibt allein `tools/github-veroeffentlichen.py`,
+  ohne `--force`. Ein Workflow-Commit dort ließe die nächste Veröffentlichung
+  abweisen.
+* **Das Tag entsteht auf GitHub.** Ein internes Tag per `git push` trüge die
+  ganze Geschichte der eigenen Ablagen hinaus (7.15).
+* **Änderungen an den Workflows** kommen deshalb nur über den internen Baum und
+  die nächste Veröffentlichung nach GitHub — **keinen PR auf `main` mergen**,
+  sonst ist die Veröffentlichungskette nicht mehr vorspulbar.
+* **Eine Fassung ist die Quelle, kein Eigenbau.** `eigeneCommits` stammt aus
+  `@{upstream}..HEAD` des Baus; das eingecheckte Paket trug am 23.09. eine 2.
+  Eine Box, die das einspielt, urteilt danach für immer `eigenbau`. Beide
+  Schnittwege (`mixpi-fassung-schneiden.py` und dieser) stempeln deshalb 0.
+
+**Der Zieher lehnte bis zum 25.09.2026 jedes echte Paket ab.** Er verlangte
+`www/index.html`; seit E118/1e (05.09.) liegt die Box-Oberfläche aber unter
+`www/neu/`. `tools/ausliefern.py` war am 05.09. umgestellt worden, der Zieher
+nicht — und sein Sandkasten blieb grün, weil er ein Paket in der alten Form
+baute. Gefunden beim ersten Ende-zu-Ende-Lauf dieser Pipeline; beide sind
+jetzt auf `www/neu/index.html`, und der Sandkasten läuft in der CI.
+
+**Wachen:** `python3 tools/mixpi-github-fassung.py --selbsttest` (Kanal aus dem
+Namen, Einschluss und Ordnung gelesen mit dem Leser der Box, Umstempeln,
+Signaturfälle: fehlend, fremd, falsche Summe, falsche Fassung im Paket,
+Entwurf) hängt in der CI und in `tools/doku-luecken-probe.sh`;
+`tools/mixpi-zieher-probe.py` in der CI und in `tools/pruefen.sh`.
 
 ---
 
