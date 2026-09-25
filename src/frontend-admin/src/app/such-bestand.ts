@@ -50,6 +50,8 @@ export const SUCH_BESTAND: SuchEintrag[] = [
   { text: '30 Tage', seite: 'Profile', weg: '/kinderzeit', bereich: '' },
   { text: 'ein Jahr', seite: 'Profile', weg: '/kinderzeit', bereich: '' },
   { text: 'alle Profile', seite: 'Profile', weg: '/kinderzeit', bereich: '' },
+  { text: 'Zurück zur Hausregel', seite: 'Profile', weg: '/kinderzeit', bereich: '' },
+  { text: 'Eigene Regeln für', seite: 'Profile', weg: '/kinderzeit', bereich: '' },
   { text: 'Spielzeiten einschalten Kinderzeit', seite: 'Profile', weg: '/kinderzeit', bereich: '' },
   { text: 'Geburtstag', seite: 'Profile', weg: '/kinderzeit', bereich: '' },
   { text: 'Montag auf alle Wochentage übertragen', seite: 'Profile', weg: '/kinderzeit', bereich: '' },

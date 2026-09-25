@@ -840,6 +840,90 @@ steps:
       echo "  Sicherung: $(systemctl is-enabled mupibox-sicherung.path) / Probe: $(systemctl is-enabled mupibox-sicherungsprobe.timer)"
     check: "test -x /usr/local/bin/mupibox/mupibox-sicherung.py && systemctl is-enabled mupibox-sicherung.path && systemctl is-enabled mupibox-kioskwache.timer"
 
+  - id: fernbedienung
+    name: "Fernbedienung und Controller ausrollen (Leser + Zuordnung + Geraeteprofile)"
+    note: >-
+      SIE FEHLTE AUF DEM REZEPT-WEG (README 3.9, nachgeprueft 25.09.2026):
+      autosetup.sh und der Update-Weg legten Leser, Zuordnung und
+      Geraeteprofile seit E134/E137 ab - dieses Rezept keins davon. Der
+      Dienste-Schritt oben kopiert zwar mixpi-fernbedienung.service mit
+      (*.service), schaltet ihn aber nicht ein, und sein ExecStart zeigt auf
+      /opt/mupibox-tools/fernbedienung.py, das der Schritt 'extras' mit
+      Absicht NICHT legt (scripts/box bleibt dort draussen). Auf einer
+      Rezept-Box haette der Dienst also mit 203/EXEC geendet, sobald ihn
+      jemand von Hand einschaltet - und ohne ihn steuert eine gekoppelte
+      Fernbedienung den KIOSK-BROWSER (Home oeffnet dessen Startseite).
+
+      DIESELBE AUFTEILUNG WIE IN autosetup.sh: die Zuordnung
+      (/etc/mupibox/fernbedienung.json) ist Betreiber-Arbeit und wird nur
+      angelegt, nie ueberschrieben (cp -n); die Geraeteprofile samt
+      SVG-Schemata sind AUSGELIEFERTE Daten und werden ueberschrieben. Ohne
+      das Profilverzeichnis ist /api/eingabegeraete/profile leer.
+
+      EINGESCHALTET, NICHT GESTARTET, wie in autosetup.sh: ohne gekoppeltes
+      Geraet gibt es nichts zu greifen, und der Schritt 'neustart' am Ende
+      bzw. der naechste Boot holt ihn hoch.
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/box/fernbedienung.py
+        dest: /opt/mupibox-tools/fernbedienung.py
+        mode: "0755"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/services/mixpi-fernbedienung.service
+        dest: /etc/systemd/system/mixpi-fernbedienung.service
+        mode: "0644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/fernbedienung.json
+        dest: /tmp/mupi-fernbedienung.json
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/fernbedienungen
+        dest: /tmp/mupi-fernbedienungen.tgz          # Verzeichnis -> wird unterwegs gepackt
+    run: |
+      set -e
+      chown root:root /opt/mupibox-tools/fernbedienung.py /etc/systemd/system/mixpi-fernbedienung.service
+      python3 -c 'import py_compile; py_compile.compile("/opt/mupibox-tools/fernbedienung.py", doraise=True)'
+      # Die Zuordnung: nur anlegen, nie ueberschreiben.
+      if [ -f /etc/mupibox/fernbedienung.json ]; then
+        echo "  Zuordnung vorhanden - bleibt unangetastet"
+      else
+        install -m 644 /tmp/mupi-fernbedienung.json /etc/mupibox/fernbedienung.json
+        echo "  Zuordnung angelegt (Vorlage)"
+      fi
+      # Die Geraeteprofile: ausgeliefert, also ueberschreibend.
+      cd /tmp && rm -rf mupi-fb && mkdir mupi-fb
+      tar xzf /tmp/mupi-fernbedienungen.tgz -C mupi-fb
+      mkdir -p /etc/mupibox/fernbedienungen
+      cp -rf mupi-fb/fernbedienungen/. /etc/mupibox/fernbedienungen/
+      rm -rf /tmp/mupi-fb /tmp/mupi-fernbedienungen.tgz /tmp/mupi-fernbedienung.json
+      systemctl daemon-reload
+      systemctl enable mixpi-fernbedienung.service
+      echo "  Profile: $(ls /etc/mupibox/fernbedienungen/*.json 2>/dev/null | wc -l)   Dienst: $(systemctl is-enabled mixpi-fernbedienung.service)"
+    check: "test -x /opt/mupibox-tools/fernbedienung.py && test -f /etc/mupibox/fernbedienung.json && ls /etc/mupibox/fernbedienungen/*.json >/dev/null 2>&1 && systemctl is-enabled mixpi-fernbedienung.service"
+
+  - id: piper
+    name: "Piper einrichten (Vorlesen auf der Box, ohne Netz)"
+    note: >-
+      DERSELBE AUFRUF WIE IN autosetup.sh UND IM UPDATE-WEG. Bis zum
+      25.09.2026 fehlte er hier: das Skript kam mit 'extras' zwar nach
+      /usr/local/bin/mupibox/, aber niemand rief es - eine Rezept-Box fiel
+      beim Vorlesen auf die Browser-Stimme (espeak-ng) zurueck (README 3.9).
+
+      OPTIONAL MIT ABSICHT, wie in den beiden Schalen-Wegen: der Schritt
+      holt rund 244 MB aus dem Netz (venv mit onnxruntime + Stimme von
+      HuggingFace). Eine Box ohne Piper liest nicht vor - kaputt ist sie
+      nicht, und die Verwaltung sagt es offen ("bereit: false"). Lieber ohne
+      dieses Merkmal fertig werden als gar nicht.
+
+      NACHHOLBAR, ohne die Karte neu zu bespielen:
+        sudo /usr/local/bin/mupibox/piper-einrichten.sh
+        sudo /usr/local/bin/mupibox/piper-einrichten.sh --pruefen
+    optional: true
+    # 1200 s wie in autosetup.sh/Update (timeout -k 30 1200).
+    timeout: 1200
+    put:
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/mupibox/piper-einrichten.sh
+        dest: /usr/local/bin/mupibox/piper-einrichten.sh
+        mode: "0755"
+    run: |
+      /usr/local/bin/mupibox/piper-einrichten.sh
+    check: "/usr/local/bin/mupibox/piper-einrichten.sh --pruefen >/dev/null"
+
   - id: librespot
     name: "librespot ausrollen (fertiges Binaer 0.8.0 + Dienst + Waechter)"
     note: >-

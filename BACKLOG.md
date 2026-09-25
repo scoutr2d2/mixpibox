@@ -60,7 +60,7 @@ zweites Mal untersucht — jede Zeile ist am Code oder am Gerät belegt):
 | **E12/X11** | `piper-einrichten.sh:90` **benennt** die Lizenzfrage, beantwortet sie nicht |
 | **E14** | `tools/umbenennung-inventur.py` hängt **nicht** in `tools/pruefen.sh` (0 Treffer) |
 | **E15/S2**, zweite Hälfte | `jfBefehle` (`server.ts:5460`) baut weiterhin die direkte Jellyfin-Adresse **mit `api_key`**; `/api/jellyfin/strom/:kennung` hat außer seinem Test keinen Aufrufer |
-| **E18**, Stufe 2 | ~~`resume.json` weiter box-weit (der Kommentar steht jetzt in `server.ts:7063`, nicht mehr `:6498` — **Zeilennummern wandern, der Befund nicht**); `listen.json` und die Kinderzeit-*Regeln* ohne Kennung~~ — **ÜBERHOLT (24.08.2026):** `resume.json` und `listen.json` liegen in `BEREICH_ABLAGEN`, also je Kind (`/api/resume` nimmt `resumeLesePfad(profilAktiv())`, Stufe 3). Die Kinderzeit-Regeln kann der Server je Kind (`?profil=`, seit 02.08.2026) — offen ist nur das **Feld in der Verwaltung** |
+| **E18**, Stufe 2 | ~~`resume.json` weiter box-weit (der Kommentar steht jetzt in `server.ts:7063`, nicht mehr `:6498` — **Zeilennummern wandern, der Befund nicht**); `listen.json` und die Kinderzeit-*Regeln* ohne Kennung~~ — **ÜBERHOLT (24.08.2026):** `resume.json` und `listen.json` liegen in `BEREICH_ABLAGEN`, also je Kind (`/api/resume` nimmt `resumeLesePfad(profilAktiv())`, Stufe 3). Die Kinderzeit-Regeln kann der Server je Kind (`?profil=`, seit 02.08.2026) — ~~offen ist nur das **Feld in der Verwaltung**~~ **auch das steht seit dem 25.09.2026** (E143/1) |
 | **E23/P1** | `/jellyfin` und `/spotify` haben in `app.routes.ts` weiterhin **kein** `canActivate` |
 
 **Eine Beobachtung, die nicht berichtigt wurde, weil sie dem Betreiber gehört:**
@@ -2389,6 +2389,11 @@ laufen sie auseinander, merkt es niemand; hängt als Schritt in
 >   `speichern()` den `wemAnhang()` nicht an. **Der Bau ist das Feld, nicht der
 >   Endpunkt.** Wer hier „Liam und Kalea teilen sich dieselben Grenzen" liest
 >   und daraufhin den Server anfasst, baut etwas nach, das steht.
+>   **NACHTRAG 25.09.2026: auch in der Verwaltung GEBAUT** (E143/1). Nicht
+>   durch den Anhang allein — der hätte beim ersten Speichern still eine
+>   Kopie der Hausregel für das Kind eingefroren —, sondern mit
+>   `GET /api/kinderzeit/satz` (zeigt, wer eigene Regeln hat) und
+>   `DELETE /api/kinderzeit?profil=` (zurück zur Hausregel).
 * **Fällt das aktive Profil je auf Gast zurück?** Noch nicht entschieden. Ohne
   Rückfall läuft Kaleas Zeitkonto weiter, wenn Liam die Box anmacht und niemand
   umstellt — genau der Fall, in dem eine Kinderzeit als kaputt erlebt wird.
@@ -14220,3 +14225,99 @@ Verschmelzungs-Vorgabe (seit 06.09. ist AN die Vorgabe).
 AUDIT-2026-09-12 Rang 10 (Zeile ~9285): `@property` in `conic-gradient`
 läuft nicht am Compositor vorbei, 2600-ms-Endlosschleife auf einer
 wackligen Pi-Kiosk-GPU. **Messauftrag, kein Umbau vorher.**
+
+## E143 — README 3.9 abtragen: jeder Punkt nachgeprüft, und der Weg bis zum Löschen des Abschnitts (2026-09-25, TEILERLEDIGT)
+
+Betreiber: „3.9 Was halb fertig ist — arbeite die punkte ab, kontrolliere was
+wirklich offen ist und mache ein plan das wir die sektion löschen können."
+
+**NACHGEPRÜFT AM 25.09.2026, AM BAUM, NICHT AM GERÄT.** Neun Punkte standen in
+README 3.9 (Stand der Veröffentlichung 75da4de). Jeder wurde gegen Code,
+Rezepte, Wissenspaket und BACKLOG gelesen:
+
+| Punkt in 3.9 | stimmte er? | was jetzt gilt |
+|---|---|---|
+| Vorlesen kommt nicht auf jede Karte | ja — der Schritt `extras` legte `piper-einrichten.sh` ab, aber kein Schritt **rief** es | behoben: Rezeptschritt `piper` (optional, 1200 s, wie autosetup und der Update-Weg) |
+| Leersenke des Mitschnitts in keinem Weg | ja (AUDIT-2026-08-22 Rang 2, seit einem Monat gebucht) | behoben: `62-mixpi-mitschnitt.conf` auf allen drei Wegen |
+| Kinderzeit-Regeln je Kind nur am Server | ja | gebaut (E143/1) |
+| Anmeldung greift nur ohne Gast | ja — `NewDesign/app.js` fragt `/api/start` nur bei `gastAktiv === false` | **Entscheidung nötig** (E143/4) |
+| Zuordnungsseite für Eingabegeräte fehlt | ja — drei lesende Routen, **keine** schreibende; `fernbedienung.py` liest die Zuordnung nur beim Start | offen (E143/6) |
+| Fernbedienung fehlt auf dem Rezept-Weg | ja — Unit kam mit, Leser, Zuordnung und Profile nicht, eingeschaltet wurde nichts | behoben: Rezeptschritt `fernbedienung` |
+| Einrichtungsassistent „nicht verdrahtet" | **nein, veraltet** — seit 08.08.2026 verdrahtet (E11b/I9–I13 FERTIG): `sdstart` → Vorstart → eigenes WLAN ohne hostapd (`wpa_supplicant mode=2` + `kleiner-dhcp.py`) → Übergabe → Selbstlauf | es bleiben drei lose Enden **nach** der Einrichtung (E143/8–10) |
+| Die Verwaltung hat nicht für jede Seite Zeugen | ja — 8 von 28 Seiten direkt, 6 über Dienst/Helfer, 14 gar nicht; kein Aussehens-Vergleich der Box | keine halbe Funktion, sondern Qualität: nach README 3.8 umgezogen (E143/14) |
+| Lautstärkesprung beim Quellenwechsel | **nur mit Soloist** — librespot (die Vorgabe) läuft mit `LIBRESPOT_ENABLE_VOLUME_NORMALISATION=1`; ob gleich laut, ist ungemessen | offen (E143/11–13) |
+
+**Beifang derselben Fehlerklasse** (stand nicht in 3.9, gefunden mit
+`tools/ausgerollte-vorlagen-deckung.py`): `61-entzerrer.conf` fehlte auf dem
+Rezept-Weg — auf einer Rezept-Box gab es die Senke `entzerrer` nicht, und die
+Regler der Ton-Seite stellten nichts. Umgekehrt legte **nur** das Rezept
+`82-karte-software-regler.conf` ab; autosetup- und Update-Boxen behielten den
+Attrappen-Regler vom 05.09. (Anzeige stimmt, Ton nicht). Beides nachgezogen.
+
+**Was E143/2 NICHT beweist:** gebaut und in einer Attrappe durchgefahren
+(Paket 30 + 26 Schritte, keine fehlende Quelle; Fernbedienungs-Schritt legt an,
+lässt eine eigene Zuordnung beim zweiten Lauf stehen, seine Probe wird ohne
+Profile oder ohne +x rot) — aber auf keiner Karte gelaufen. Das ist E143/3.
+
+| # | Art | Punkt | Status | Abhängig von |
+|---|-----|-------|--------|--------------|
+| 1 | U | Kinderzeit-Regeln je Kind in der Verwaltung: `GET /api/kinderzeit/satz`, `DELETE /api/kinderzeit?profil=`, Profilseite bearbeitet, was für das gewählte Kind gilt | FERTIG — 25.09.2026; 8 Server- und 8 Seitenzeugen, beide gegen Sabotage rot gesehen; Gerätebeweis steht aus | — |
+| 2 | U | Ausrollwege angleichen: Rezept bekommt `piper`, `fernbedienung`, 61 + 62; autosetup und Update bekommen 62 + 82 | FERTIG — 25.09.2026 im Baum; Kartenlauf ist E143/3 | — |
+| 3 | M | Frischer Kartenlauf mit dem Stand von E143/2, Pi 5 **und** Pi 4: `piper-einrichten.sh --pruefen`, `/api/eingabegeraete/profile` nicht leer, `pw-cli ls Node` zeigt `entzerrer` und `mixpi-mitschnitt`, `tools/box/leersenke-bleibt-probe.py` | OFFEN | 2 |
+| 4 | V | Anmeldung bei eingeschaltetem Gast — welcher der drei Wege (unten) | ENTSCHEIDUNG — Betreiber; Empfehlung (a) | — |
+| 5 | U | Die gewählte Anmeldung bauen, dazu `start.ts:10-17` und den Text der Start-Modus-Wahl richtigstellen, Gast-an-Fälle in `tools/start-modus-schau.mjs` | OFFEN — rund ½ Tag | 4 |
+| 6 | U | Zuordnungsseite Eingabegeräte, Mindestfassung: `GET /api/eingabegeraete/alle` (auch Geräte ohne Profil), `GET /api/eingabegeraete/aktionen` (`BOX_AKTIONEN`), `GET/PUT /api/eingabegeraete/zuordnung` (prüft mit `istBoxAktion`, schreibt atomar); `fernbedienung.py` liest bei geänderter mtime neu; Seite unter „Bluetooth" mit anklickbarem SVG (`data-taste`) | OFFEN — rund 3 Tage | — |
+| 7 | U | Zuordnung je Gerät und mehrere Geräte zugleich (E137/2 und /5) | OFFEN — **kein** Hindernis für das Löschen von 3.9 (steht dann als Grenze in 3.7) | 6; E137/5 (Gerät oder Kind?) |
+| 8 | U | Der Assistent räumt nach der Einrichtung auf: der Zweig „kein Netz" im Vorstart fragt die `fertig`-Marke (heute nur `schirm_sicherstellen`), der Selbstlauf schaltet `step-agent.service` vor seinem Neustart ab — heute lauscht er danach weiter als root auf 0.0.0.0 (Pair-Deckel 8 Versuche hält, trotzdem ungewollt) | OFFEN — 1–2 h + Messung | — |
+| 9 | V | hostapd/dnsmasq: aus `mupibox.yaml` streichen (der AP braucht sie seit I9 nicht) oder `weg_waehlen()` auf den wpa-Weg festlegen — mit hostapd scheitert `wechsel_aus_ap()` | ENTSCHEIDUNG — Empfehlung: streichen | — |
+| 10 | M | Assistent ohne Kabel und ohne WLAN-Vorgabe am **Pi 4** durchspielen (am Pi 5 belegt, Wiki `ap-ohne-hostapd-wpa-mode2`); danach die Zeilen „nicht gemessen (S5)" in E11b richtigstellen | OFFEN | 8, 9 |
+| 11 | U | `tools/box/pegelvergleich.py`: `messen()` repariert (Fehler nicht mehr nach `/dev/null`, Aufnahme als Datei statt WAV durch die Pipe, `pw-record --target <senke> -P '{stream.capture.sink=true}'`), Befehlsketten mit Zeugen | OFFEN — 2–4 h | — |
+| 12 | M | Lautheit messen (LUFS): Soloist und librespot gegen getaggte lokale Dateien — und nachsehen, ob librespot 0.8.0 die Umgebungsvariable wirklich nimmt | OFFEN | 11 |
+| 13 | U | Den gemessenen Versatz als Vorgabe setzen (Ort nach der Messung: Dämpfung je Anwendung vom Server oder librespot-Vorverstärkung); `mpv-wrapper.ts:150` („soloist normalisiert selbst") richtigstellen | OFFEN | 12 |
+| 14 | U | Zeugen: Rauchtests für die 14 Verwaltungsseiten ohne Test (zuerst Sicherung, Aktualisierung, Bluetooth), Karma in die CI, Aussehens-Vergleich der Box gegen Referenzbilder | OFFEN — **kein** Hindernis für das Löschen von 3.9 (steht seit heute in 3.8) | — |
+| 15 | U | README 3.9 und README.en 3.9 löschen, samt aller Verweise „(3.9)" in beiden; `tools/readme-paritaet-pruefen.py` und `tools/readme-behauptungen-pruefen.sh` grün | OFFEN | 5, 6, 8, 13 |
+
+Der Status steht in der Tabelle und NUR dort (`tools/backlog-status-schau.py`).
+Was folgt, ist die Begründung.
+
+**WANN 3.9 FÄLLT — das Kriterium, damit es niemand neu verhandeln muss.** Der
+Abschnitt warnt vor Funktionen, die es halb gibt. Er fällt, wenn jede seiner
+Zeilen entweder FERTIG ist oder als ehrliche **Grenze** in den Abschnitt ihrer
+Funktion zieht (so wie 3.7 heute schon „Grenze: nur ein Gerät zugleich" trägt).
+Eine Grenze ist etwas, das so bleiben darf; eine halbe Funktion ist etwas, auf
+das jemand bauen könnte. Deshalb sind E143/7 und /14 keine Hindernisse — sie
+stehen als Grenze bzw. Qualitätsangabe am richtigen Ort. Der Rest braucht Bau:
+/5, /6, /8, /13. Die Messungen /3 und /10 gehören zum Beweis, blockieren das
+Löschen aber nicht, solange die Rezepte gebaut sind.
+
+**Wenn es schneller gehen soll:** /13 kann als Grenze nach 3.4 ziehen („mit
+Soloist springt die Lautstärke beim Quellenwechsel; der Regler je Quelle gleicht
+von Hand aus"), falls der Betreiber die Messung nicht abwarten will. Dann hängt
+das Löschen nur noch an /5, /6 und /8.
+
+**Empfohlene Reihenfolge:** /8 (klein, und der Agent im LAN ist der einzige
+Punkt mit Sicherheitsbezug) → /4 + /5 (eine Entscheidung, ein halber Tag) →
+/6 (der größte Brocken) → /11–/13 (brauchen die Box) → /3 und /10 in einem
+gemeinsamen Kartenlauf → /15.
+
+**E143/4 — die drei Wege für die Anmeldung bei eingeschaltetem Gast.** Heute
+startet eine Box mit Gast an (die Vorgabe) wortlos im zuletzt aktiven Profil —
+**auch wenn dieses Profil ein Schloss hat**. Das ist der Teil, den kein Eintrag
+als Absicht führt.
+
+* **(a) Nur das Schloss (empfohlen).** Gast an und das aktive Profil ist
+  geschützt → beim Kaltstart das Schloss zeigen; „Ich bin jemand anderes"
+  führt zu „Wer hört?" samt Gast-Kachel. Ungeschützte Profile starten weiter
+  wortlos. Rund zehn Zeilen in `app.js:31224-31268`; ändert nichts für Boxen
+  ohne Schloss.
+* **(b) Der Start-Modus gilt immer.** Die `/api/start`-Abfrage aus der
+  `gastAktiv`-Klammer holen. Weil die Vorgabe `fragen` ist, fragte danach
+  **jede** Box mit Vorgabewerten beim Start „Wer hört?" — das widerspricht der
+  Regel in `start.ts:30-35`, dass ein Update kein Verhalten still ändert. Nur mit
+  einem dritten Modus oder einer anderen Vorgabe.
+* **(c) Rückfall auf den Gast beim Kaltstart.** Beantwortet die offene Frage in
+  E18 („Fällt das aktive Profil je auf Gast zurück?"): Kaleas Zeit läuft nicht
+  weiter, wenn Liam die Box anmacht. Kostet: jeder Start beginnt beim Gast.
+
+**Messbar gemacht:** jede Zeile oben trägt die Stelle, an der man sie nachprüft.
+Die Befunde der drei Prüfläufe im Wissenspaket: `readme-3-9-nachgeprueft`.

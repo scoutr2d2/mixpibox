@@ -1021,6 +1021,11 @@ Was zu tun ist: das vollstaendige Paket verwenden, oder librespot 0.8.0 selbst b
 		# Nur A2DP, kein Freisprech-Profil: HFP-Nachverbinde-Versuche hacken
 		# den laufenden Ton ab (Begruendung in der Vorlage selbst).
 		cp -f ${MUPI_SRC}/config/templates/81-bluez-nur-a2dp.conf /etc/wireplumber/wireplumber.conf.d/81-bluez-nur-a2dp.conf >&3 2>&3
+		# Die Tonkarte regelt in Software — ihr Hardware-Regler ist eine
+		# Attrappe (Begruendung in der Vorlage). Stand bis zum 25.09.2026 nur
+		# im Rezept; eine autosetup-Box hatte den Regler, dessen Anzeige
+		# stimmt und dessen Ton nicht.
+		cp -f ${MUPI_SRC}/config/templates/82-karte-software-regler.conf /etc/wireplumber/wireplumber.conf.d/82-karte-software-regler.conf >&3 2>&3
 		# /etc/asound.conf BEISEITE, nicht loeschen: erst dann greift
 		# /usr/share/alsa/alsa.conf.d/99-pipewire-default.conf, und die legt
 		# pcm.!default UND ctl.!default auf PipeWire. Genau deshalb wirkt auf
@@ -1046,6 +1051,10 @@ Was zu tun ist: das vollstaendige Paket verwenden, oder librespot 0.8.0 selbst b
 		# Der Equalizer ist eine Filterkette mit fuenf Baendern; die Regler
 		# stellt der Server zur Laufzeit (Begruendung in der Vorlage selbst).
 		cp -f ${MUPI_SRC}/config/templates/61-entzerrer.conf /etc/pipewire/pipewire.conf.d/61-entzerrer.conf >&3 2>&3
+		# Die Leersenke des Mitschnitts (E66). Sie stand bis zum 25.09.2026 in
+		# KEINEM Ausrollweg (AUDIT-2026-08-22 Rang 2) — der Leerlauf-Arbeiter
+		# lief auf jeder ausgerollten Box ins Leere (Begruendung in der Vorlage).
+		cp -f ${MUPI_SRC}/config/templates/62-mixpi-mitschnitt.conf /etc/pipewire/pipewire.conf.d/62-mixpi-mitschnitt.conf >&3 2>&3
 		# DIE PLUGINS standen bis zum 22.08.2026 HIER, im PipeWire-Zweig —
 		# eine Box, die bei ALSA/PulseAudio blieb, bekam gar keine
 		# Erweiterungen. Der Aufruf steht jetzt NACH diesem if, wo er vom

@@ -16907,6 +16907,47 @@ app.put('/api/kinderzeit', express.json({ limit: '64kb' }), async (req, res) => 
 })
 
 /**
+ * Der GANZE Regelsatz — Hausregel und die Ausnahmen je Kind (25.09.2026).
+ *
+ * WOZU NEBEN `GET /api/kinderzeit?profil=`: jene Antwort ist ein blankes
+ * Regeln-Objekt und sagt nicht, ob das Kind EIGENE Regeln hat oder die
+ * Hausregel erbt. Genau das braucht die Verwaltung, um zu zeigen, was sie
+ * gerade bearbeitet — sonst friert der erste Speichern-Klick bei einem Kind
+ * still eine Kopie der Hausregel fuer dieses Kind ein, und spaetere
+ * Aenderungen an der Hausregel erreichen es nie mehr.
+ */
+app.get('/api/kinderzeit/satz', (_req, res) => {
+  res.json(kzSatz)
+})
+
+/**
+ * Die eigenen Regeln eines Kindes verwerfen — danach gilt fuer es wieder die
+ * Hausregel. Bis zum 25.09.2026 gab es diesen Weg nicht: `PUT` kann nur
+ * setzen, und ein Eintrag in `je` verschwand allein mit dem Kind selbst.
+ *
+ * OHNE `?profil=` EIN 400: die Hausregel ist kein Ausnahme-Eintrag und laesst
+ * sich nicht loeschen, nur aendern.
+ */
+app.delete('/api/kinderzeit', async (req, res) => {
+  const roh = req.query.profil
+  if (roh === undefined) return res.status(400).json({ error: 'hausregelBleibt' })
+  const k = String(roh)
+  if (!profilStand.profile.some((p) => p.kennung === k)) return res.status(400).json({ error: 'unbekanntesProfil' })
+  if (Object.hasOwn(kzSatz.je, k)) {
+    const { [k]: _weg, ...rest } = kzSatz.je
+    kzSatz = { ...kzSatz, je: rest }
+    kzUeberSeit = 0
+    try {
+      await kzSchreiben(kinderzeitFile, kzSatz)
+    } catch (e) {
+      return res.status(500).json({ error: (e as Error)?.message ?? 'nicht gespeichert' })
+    }
+  }
+  // Was jetzt fuer das Kind gilt — also die Hausregel.
+  res.json(regelnFuer(kzSatz, k))
+})
+
+/**
  * Der aktuelle Stand - fuer die BOX (Anzeige) und die Verwaltung.
  *
  * Bewusst ohne Regeln im Ergebnis: die Box braucht nur zu wissen, ob sie darf,

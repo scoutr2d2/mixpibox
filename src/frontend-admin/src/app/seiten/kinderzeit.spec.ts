@@ -38,6 +38,11 @@ interface Innen {
   standText: (s: { grund: string; fensterAb?: string; fensterBis?: string }) => string
   aufWochentage: () => void
   aufAlleTage: () => void
+  eigeneRegeln: () => boolean
+  eigeneAnlegen: () => Promise<void>
+  eigeneVerwerfen: () => Promise<void>
+  werWaehlen: (kennung: string) => Promise<void>
+  speichern: () => Promise<void>
   schlummerMinuten: number
   schlummerLaeuft: () => boolean
   schlummerMax: () => number
@@ -98,7 +103,9 @@ describe('KinderzeitSeite', () => {
     innen = fixture.componentInstance as unknown as Innen
     http.expectOne('/api/start').flush({ modus: startModus })
     http.expectOne('/api/profile').flush({ profile: [], aktiv: '' })
-    http.expectOne('/api/kinderzeit').flush(regeln)
+    // Seit dem 25.09.2026 der GANZE Satz (Hausregel + Ausnahmen je Kind),
+    // nicht mehr die blanke Regel — siehe „Regeln je Kind" unten.
+    http.expectOne('/api/kinderzeit/satz').flush({ standard: regeln, je: {} })
     http.expectOne('/api/schlummer').flush(schlummer)
     // `laden()` awaitet die Regeln und fragt ERST DANN den Stand ab.
     await takt()
@@ -236,7 +243,7 @@ describe('KinderzeitSeite', () => {
     innen = fixture.componentInstance as unknown as Innen
     http.expectOne('/api/start').error(new ProgressEvent('netzwerk'))
     http.expectOne('/api/profile').error(new ProgressEvent('netzwerk'))
-    http.expectOne('/api/kinderzeit').error(new ProgressEvent('netzwerk'))
+    http.expectOne('/api/kinderzeit/satz').error(new ProgressEvent('netzwerk'))
     http.expectOne('/api/schlummer').error(new ProgressEvent('netzwerk'))
     await takt()
     http.expectOne('/api/kinderzeit/stand').flush({ grund: 'aus' })
@@ -247,6 +254,140 @@ describe('KinderzeitSeite', () => {
     // Und der Timer meldet „laeuft nicht" statt gar nichts: sonst stuende der
     // Knopf zum Abbrechen da, obwohl niemand etwas gestellt hat.
     expect(innen.schlummerLaeuft()).toBe(false)
+  })
+
+  /**
+   * REGELN JE KIND (25.09.2026, README 3.9).
+   *
+   * Der Server kennt seit dem 02.08.2026 eine Hausregel und eigene Regeln je
+   * Kind; die Seite schrieb bis heute nur die Hausregel. Geprueft werden die
+   * Zusagen, die man dem Code nicht ansieht:
+   *   1. Die Tabelle zeigt, was fuer das gewaehlte Kind GILT.
+   *   2. Speichern schreibt dorthin, wo es herkam — ein Kind OHNE eigene
+   *      Regeln aendert die Hausregel und friert KEINE Kopie fuer sich ein
+   *      (die Falle, wenn man den Anhang einfach an `speichern()` haengt).
+   *   3. Anlegen und Verwerfen sind eigene Handgriffe mit eigenem Aufruf.
+   */
+  describe('Regeln je Kind', () => {
+    const HAUS = { aktiv: true, nachsichtMin: 5, tage: { mo: REGEL({ minuten: 60 }) } }
+    const KALEA = { aktiv: true, nachsichtMin: 5, tage: { mo: REGEL({ minuten: 15 }) } }
+
+    /**
+     * Zwei Kinder, Kalea aktiv. `satzZuerst` dreht die Reihenfolge der
+     * Antworten: Profile und Regeln laden nebeneinander, und die Tabelle muss
+     * in BEIDEN Faellen dem gewaehlten Kind gehoeren.
+     */
+    async function mitZweiKindern(je: Record<string, unknown>, satzZuerst = false): Promise<void> {
+      fixture = TestBed.createComponent(KinderzeitSeite)
+      innen = fixture.componentInstance as unknown as Innen
+      http.expectOne('/api/start').flush({ modus: 'fragen' })
+      const profile = () =>
+        http.expectOne('/api/profile').flush({
+          profile: [
+            { kennung: 'kalea', name: 'Kalea', figur: '' },
+            { kennung: 'liam', name: 'Liam', figur: '' },
+          ],
+          aktiv: 'kalea',
+        })
+      const satz = () => http.expectOne('/api/kinderzeit/satz').flush({ standard: HAUS, je })
+      if (satzZuerst) {
+        satz()
+        await takt()
+        profile()
+      } else {
+        profile()
+        await takt()
+        satz()
+      }
+      http.expectOne('/api/schlummer').flush({ laeuft: false, maxMinuten: 600 })
+      await takt()
+      for (const r of http.match((req) => req.url.startsWith('/api/kinderzeit/stand'))) r.flush({ grund: 'aus' })
+      await takt()
+    }
+
+    /** Ein PUT beantworten und den Stand danach abraeumen. */
+    async function putBeantworten(url: string): Promise<{ tage: Record<Tag, TagesRegel> }> {
+      const put = http.expectOne(url)
+      expect(put.request.method).toBe('PUT')
+      const geschickt = put.request.body as { tage: Record<Tag, TagesRegel> }
+      put.flush(geschickt)
+      await takt()
+      for (const r of http.match((req) => req.url.startsWith('/api/kinderzeit/stand'))) r.flush({ grund: 'aus' })
+      await takt()
+      return geschickt
+    }
+
+    it('zeigt die eigenen Regeln des gewaehlten Kindes', async () => {
+      await mitZweiKindern({ kalea: KALEA })
+      expect(innen.eigeneRegeln()).toBe(true)
+      expect(innen.regeln().tage.mo.minuten).toBe(15)
+    })
+
+    it('… auch wenn der Satz VOR den Profilen ankommt', async () => {
+      await mitZweiKindern({ kalea: KALEA }, true)
+      expect(innen.eigeneRegeln()).toBe(true)
+      expect(innen.regeln().tage.mo.minuten).toBe(15)
+    })
+
+    it('speichert eigene Regeln unter der Kennung des Kindes', async () => {
+      await mitZweiKindern({ kalea: KALEA })
+      innen.regeln().tage.mo.minuten = 20
+      void innen.speichern()
+      const geschickt = await putBeantworten('/api/kinderzeit?profil=kalea')
+      expect(geschickt.tage.mo.minuten).toBe(20)
+    })
+
+    it('ein Kind OHNE eigene Regeln aendert die Hausregel — und friert keine Kopie ein', async () => {
+      await mitZweiKindern({})
+      expect(innen.eigeneRegeln()).toBe(false)
+      expect(innen.regeln().tage.mo.minuten).toBe(60)
+      innen.regeln().tage.mo.minuten = 50
+      void innen.speichern()
+      // OHNE Anhang: genau das unterscheidet „Hausregel aendern" von „fuer
+      // Kalea still eine eigene Regel anlegen".
+      await putBeantworten('/api/kinderzeit')
+      http.expectNone('/api/kinderzeit?profil=kalea')
+      expect(innen.eigeneRegeln()).toBe(false)
+    })
+
+    it('der Wechsel zu einem anderen Kind wechselt die Tabelle', async () => {
+      await mitZweiKindern({ kalea: KALEA })
+      void innen.werWaehlen('liam')
+      for (const r of http.match((req) => req.url.startsWith('/api/kinderzeit/stand'))) r.flush({ grund: 'aus' })
+      await takt()
+      expect(innen.eigeneRegeln()).toBe(false)
+      expect(innen.regeln().tage.mo.minuten).toBe(60, 'Liam sieht die Hausregel, nicht Kaleas')
+    })
+
+    it('eigene Regeln anlegen: eine Kopie der Hausregel unter der Kennung', async () => {
+      await mitZweiKindern({})
+      void innen.eigeneAnlegen()
+      const geschickt = await putBeantworten('/api/kinderzeit?profil=kalea')
+      expect(geschickt.tage.mo.minuten).toBe(60)
+      expect(innen.eigeneRegeln()).toBe(true)
+    })
+
+    it('eigene Regeln verwerfen: DELETE — danach steht die Hausregel da', async () => {
+      await mitZweiKindern({ kalea: KALEA })
+      spyOn(window, 'confirm').and.returnValue(true)
+      void innen.eigeneVerwerfen()
+      const del = http.expectOne('/api/kinderzeit?profil=kalea')
+      expect(del.request.method).toBe('DELETE')
+      del.flush(HAUS)
+      await takt()
+      for (const r of http.match((req) => req.url.startsWith('/api/kinderzeit/stand'))) r.flush({ grund: 'aus' })
+      await takt()
+      expect(innen.eigeneRegeln()).toBe(false)
+      expect(innen.regeln().tage.mo.minuten).toBe(60)
+    })
+
+    it('verwirft nichts, wenn die Rueckfrage verneint wird', async () => {
+      await mitZweiKindern({ kalea: KALEA })
+      spyOn(window, 'confirm').and.returnValue(false)
+      await innen.eigeneVerwerfen()
+      http.expectNone('/api/kinderzeit?profil=kalea')
+      expect(innen.eigeneRegeln()).toBe(true)
+    })
   })
 
   /**
@@ -316,7 +457,7 @@ describe('KinderzeitSeite', () => {
       innen = fixture.componentInstance as unknown as Innen
       http.expectOne('/api/start').flush({ modus: 'fragen' })
       http.expectOne('/api/profile').flush({ profile: [], aktiv: '' })
-      http.expectOne('/api/kinderzeit').error(new ProgressEvent('netzwerk'))
+      http.expectOne('/api/kinderzeit/satz').error(new ProgressEvent('netzwerk'))
       http.expectOne('/api/schlummer').flush({ laeuft: false, maxMinuten: 600 })
       await takt()
       http.expectOne('/api/kinderzeit/stand').flush({ grund: 'aus' })
@@ -373,7 +514,7 @@ describe('KinderzeitSeite', () => {
         figuren: ['mixpi-panda.png', 'mixpi-katze.png'],
       })
       await takt()
-      http.expectOne('/api/kinderzeit').flush({ aktiv: false, nachsichtMin: 5, tage: {} })
+      http.expectOne('/api/kinderzeit/satz').flush({ standard: { aktiv: false, nachsichtMin: 5, tage: {} }, je: {} })
       http.expectOne('/api/schlummer').flush({ laeuft: false, maxMinuten: 600 })
       await takt()
       http.expectOne('/api/kinderzeit/stand?profil=kalea').flush({ grund: 'aus' })
