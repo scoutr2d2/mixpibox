@@ -2340,7 +2340,10 @@ Rest, sondern die Ergänzung.
 >   `npm run lint --workspaces` überspringt ihn kommentarlos (Abschnitt 7.4).
 >   Die CI erbt das Loch und meldet trotzdem grün.
 > * **Lint überhaupt — seit dem 25.09.2026 nicht blockierend**
->   (`continue-on-error` in `ci.yml`). Biome meldete an dem Tag 145 Fehler,
+>   (`continue-on-error` am Schritt in `ci.yml`, nicht am Auftrag: am Auftrag
+>   hielt der Lauf zwar, der Check stand aber rot und jeder PR auf
+>   „unstable“; jetzt ist der Check grün und der Befund eine Warnung in den
+>   Anmerkungen des Laufs). Biome meldete an dem Tag 145 Fehler,
 >   fast alle Formatierung und Import-Reihenfolge. Die Massenformatierung
 >   gehört in den internen Baum, in dem parallele Sitzungen dieselben Dateien
 >   bearbeiten; wer `npm run lint` grün macht, streicht die Zeile im selben
