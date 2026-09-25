@@ -1,0 +1,84 @@
+name: Kanaele veroeffentlichen
+
+# Baut das Fassungsverzeichnis (version.json) aus ALLEN veroeffentlichten
+# Releases und legt es auf GitHub Pages:
+#     https://<besitzer>.github.io/<repo>/version.json
+# Dort liest es jede Box, die mit
+#     python3 tools/mixpi-github-fassung.py box-einrichten --kanal <kanal>
+# eingerichtet ist. Jede Signatur wird HIER noch einmal gegen den
+# eingecheckten config/mixpi-release.pub geprueft; was nicht besteht, kommt
+# nicht hinein, und der Lauf wird am Ende rot — NACH dem Veroeffentlichen der
+# uebrigen, damit ein falsches Release nicht alle anderen blockiert.
+#
+# WARUM ZWEI AUFTRAEGE: ein Release-Ereignis laeuft auf dem TAG
+# (refs/tags/v1.2.0). Die Umgebung `github-pages` laesst aber nur vom
+# Standardzweig ausrollen. Der erste Auftrag stoesst deshalb nur denselben
+# Workflow auf `main` an — `workflow_dispatch` ist das eine Ereignis, das der
+# GITHUB_TOKEN ausloesen darf.
+#
+# NICHT AUF `main` GESCHRIEBEN: main schreibt allein
+# tools/github-veroeffentlichen.py, ohne --force. Ein Commit von hier liesse
+# die naechste Veroeffentlichung abweisen.
+#
+# Einmalig in den Repo-Einstellungen: Settings → Pages → Source: GitHub Actions.
+
+on:
+  release:
+    types: [published, unpublished, edited, deleted]
+  workflow_dispatch:
+
+concurrency:
+  group: kanaele
+  cancel-in-progress: false
+
+jobs:
+  anstossen:
+    name: Auf main anstossen
+    if: github.event_name == 'release'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - run: gh workflow run kanaele.yml --repo "$GITHUB_REPOSITORY" --ref main
+
+  kanaele:
+    name: Verzeichnis bauen und ausrollen
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.ausrollen.outputs.page_url }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Releases lesen
+        run: gh api --paginate --slurp "repos/$GITHUB_REPOSITORY/releases" > "$RUNNER_TEMP/releases.json"
+
+      - name: Verzeichnis bauen, jede Signatur pruefen
+        id: bau
+        run: python3 tools/mixpi-github-fassung.py kanaele --releases "$RUNNER_TEMP/releases.json" --aus "$RUNNER_TEMP/seite"
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: ${{ runner.temp }}/seite
+
+      - id: ausrollen
+        uses: actions/deploy-pages@v5
+
+      - name: Ausgeschlossene Releases melden
+        if: steps.bau.outputs.ausgeschlossen != '0'
+        env:
+          ANZAHL: ${{ steps.bau.outputs.ausgeschlossen }}
+        run: |
+          echo "::error::$ANZAHL Release(s) NICHT im Verzeichnis — Gruende im Schritt 'Verzeichnis bauen, jede Signatur pruefen'."
+          exit 1

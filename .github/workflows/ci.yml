@@ -1,43 +1,57 @@
 name: CI
 
-# Lint (Biome, per workspace), backend unit tests + type-check, and a full
-# build of all workspaces. See MODERNIZATION.md (B0 — foundation).
+# Lint (Biome, per workspace), tests + type-check, and a full build of all
+# workspaces. See MODERNIZATION.md (B0 — foundation) and
+# dokumentation/mixpibox.md, section 7.5 (what a push really enforces).
 #
 # The frontend Karma test (`ng test`) is intentionally NOT run here yet — it
 # needs a headless browser. The production `ng build` in the "build" job already
 # exercises the whole frontend compile, so regressions are still caught.
+#
+# RED FROM THE FIRST PUBLICATION UNTIL 25.09.2026: `src/frontend-admin`
+# declared no dependencies at all (Angular came from the package.json of the
+# old box UI, deleted with E118), so a fresh `npm ci` had no `ng`, and
+# backend-api lost `@types/cors` the same way. Both are declared now.
 
 on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint (Biome)
     runs-on: ubuntu-latest
-    # NOT BLOCKING, on purpose and dated: on 25.09.2026 Biome reported 145
-    # errors, nearly all formatting and import order. The mass reformat
-    # belongs in the internal tree, where parallel sessions edit the same
-    # files — a reformat pushed from here would collide with all of them.
-    # Remove this line in the same commit that makes `npm run lint` green.
-    # (Taken over from scoutr2d2/mixpibox#2, which also declares the
-    # frontend-admin dependencies; on merge, main's ci.yml wins.)
-    continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
       - run: npm ci
-      - run: npm run lint
+      # NOT BLOCKING, on purpose and dated: on 25.09.2026 Biome reported 145
+      # errors, nearly all formatting and import order. The mass reformat
+      # belongs in the internal tree, where parallel sessions edit the same
+      # files — a reformat pushed from here would collide with all of them.
+      # ON THE STEP, NOT THE JOB: a job-level continue-on-error keeps the run
+      # green but still shows the check red and marks every PR "unstable".
+      # The finding stays visible as a warning annotation (next step).
+      # Remove both in the same commit that makes `npm run lint` green.
+      - id: lint
+        continue-on-error: true
+        run: npm run lint
+      - name: Report lint findings (not blocking)
+        if: steps.lint.outcome == 'failure'
+        run: echo "::warning title=Lint (Biome)::Biome reports errors — not blocking since 25.09.2026, see the comment in ci.yml and dokumentation/mixpibox.md 7.5."
 
   test:
-    name: Backend tests + types
+    name: Tests + types
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -45,13 +59,18 @@ jobs:
       - run: npm run check-types --workspace=mupibox-backend-player
       - run: npm run test --workspace=mupibox-backend-api
       - run: npm run test --workspace=mupibox-backend-player
+      - run: npm run test:plugins
+      - name: Release pipeline self-test (channels, signatures, stamping)
+        run: python3 tools/mixpi-github-fassung.py --selbsttest
+      - name: Puller sandbox (the box side of the release pipeline)
+        run: python3 tools/mixpi-zieher-probe.py
 
   build:
     name: Build all workspaces
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm

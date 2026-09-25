@@ -169,9 +169,17 @@ ZIELE = [
      "ziel": f"{APPDIR}/plugin-laufwerk.js", "dienst": "mupibox-server.service"},
     {"name": "player", "art": "datei", "im_paket": "spotify-control.js",
      "ziel": f"{PLAYERDIR}/spotify-control.js", "dienst": "mupibox-player.service"},
-    {"name": "www", "art": "baum", "im_paket": "www",
+    # `index`: woran ein Baum als lebende Oberflaeche erkannt wird. SEIT
+    # E118/1e (05.09.2026) liegt die EINE Box-Oberflaeche unter www/neu/ — eine
+    # index.html an der www-WURZEL gab es nur fuer die geloeschte Angular-App.
+    # tools/ausliefern.py wurde am selben Tag umgestellt, dieser Zieher nicht:
+    # bis zum 25.09.2026 lehnte er JEDES echte Paket ab („www/index.html fehlt
+    # im Paket"), und sein Sandkasten blieb gruen, weil er ein Paket in der
+    # alten Form baute (AUDIT-2026-09-25; Wiki
+    # halbmigration-die-naht-steht-die-altstellen-bleiben).
+    {"name": "www", "art": "baum", "im_paket": "www", "index": "neu/index.html",
      "ziel": f"{APPDIR}/www", "dienst": None},
-    {"name": "admin", "art": "baum", "im_paket": "www-admin",
+    {"name": "admin", "art": "baum", "im_paket": "www-admin", "index": "index.html",
      "ziel": f"{APPDIR}/www-admin", "dienst": None},
     # Der Stempel zuletzt: er behauptet, was installiert IST. Stuende er vorn
     # und der Lauf braeche danach ab, behauptete die Box eine Fassung, die sie
@@ -623,8 +631,8 @@ def inhalt_pruefen(b: Bericht, aus: Path) -> bool:
     for z in ZIELE:
         p = aus / z["im_paket"]
         if z["art"] == "baum":
-            if not (p / "index.html").is_file():
-                b.fehler_(f"{z['im_paket']}/index.html fehlt im Paket")
+            if not (p / z["index"]).is_file():
+                b.fehler_(f"{z['im_paket']}/{z['index']} fehlt im Paket")
                 gut = False
         elif not p.is_file():
             b.fehler_(f"{z['im_paket']} fehlt im Paket")
