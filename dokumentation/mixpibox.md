@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1116 Einträge,
-Fassung 618). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1117 Einträge,
+Fassung 619). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -2888,9 +2888,11 @@ Grund:
 
 ### 7.13 Wer leiht bei wem: die Abhängigkeiten der Arbeitsbereiche
 
-Die vier Bereiche teilen sich **ein** `node_modules` in der Wurzel — das ist
-der Sinn eines npm-Arbeitsbereichs. Die Kehrseite: **ein Bereich läuft auch
-mit Paketen, die er nirgends deklariert**, solange irgendein anderer sie holt.
+Die Bereiche (seit E118/1e am 05.09.2026 drei: `backend-api`,
+`backend-player`, `frontend-admin` — bis dahin vier) teilen sich **ein**
+`node_modules` in der Wurzel — das ist der Sinn eines npm-Arbeitsbereichs.
+Die Kehrseite: **ein Bereich läuft auch mit Paketen, die er nirgends
+deklariert**, solange irgendein anderer sie holt.
 Fällt der Verleiher weg, fällt der Entleiher aus, und der Fehler erscheint an
 der Stelle, an der niemand etwas geändert hat.
 
@@ -2921,6 +2923,11 @@ Seit dem 25.09.2026 deklariert die Verwaltung ihre Pakete selbst, in den
 Fassungen, die das Lockfile damals trug, und `@types/cors` steht bei
 `src/backend-api`. **Wer eine Abhängigkeit streicht, baut danach einmal aus
 `npm ci` in einem leeren Ordner** — das alte `node_modules` beweist nichts.
+Einen Rest trug `package-lock.json` danach noch: den Eintrag
+`packages["src/frontend-box"]`, einen Arbeitsbereich ohne Manifest. npm 10
+schreibt ihn beim `npm install` als `extraneous` weiter statt ihn zu streichen;
+seit dem 25.09.2026 ist das Lock mit npm 11 neu geschrieben und kennt ihn
+nicht mehr (kein gelockter Stand geändert).
 
 Gemessen von `tools/arbeitsbereich-abhaengigkeiten-deckung.py` (läuft in
 `tools/doku-luecken-probe.sh`). Es fragt drei Sorten Benutzung ab, denn die

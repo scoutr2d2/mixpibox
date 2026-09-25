@@ -13,12 +13,15 @@ hatte sie diese Pakete nie selbst, sondern ueber das gemeinsame
 Wurzel-`node_modules` aus der SCHWESTER.
 
 **Ein Arbeitsbereich, der nichts deklariert, ist fuer jede Paket-Wache
-unsichtbar.** `src/frontend-admin/package.json` fuehrt bis heute **null**
-Abhaengigkeiten — kein `@angular/core`, kein `rxjs`, kein `karma`. Jede
-Inventur ueber `package.json` misst dort eine leere Menge und meldet gruen;
-gebaut und getestet wird trotzdem, weil npm alles in die Wurzel hebt. Die
-Leihe faellt erst auf, wenn der Verleiher aufraeumt — und dann sieht es aus
-wie ein Fehler im Aufraeumen, nicht wie ein Fehler in der Buchhaltung.
+unsichtbar.** `src/frontend-admin/package.json` fuehrte bis zum 25.09.2026
+**null** Abhaengigkeiten — kein `@angular/core`, kein `rxjs`, kein `karma`.
+Jede Inventur ueber `package.json` mass dort eine leere Menge und meldete
+gruen; gebaut und getestet wurde trotzdem, weil npm alles in die Wurzel hebt.
+Die Leihe faellt erst auf, wenn der Verleiher aufraeumt — und dann sieht es
+aus wie ein Fehler im Aufraeumen, nicht wie ein Fehler in der Buchhaltung.
+Genau so kam es: E118/1e (05.09.2026) loeschte den Verleiher samt
+`package.json`, und ein frischer Klon hatte danach kein `ng` mehr. Seit dem
+25.09.2026 deklariert die Verwaltung selbst (`dokumentation/mixpibox.md` 7.13).
 
 WAS ALS DEKLARATION ZAEHLT: der eigene `package.json` des Bereichs ODER die
 Wurzel. Bewusst NICHT der Schwesterbereich — genau das ist der Gegenstand.
@@ -115,9 +118,18 @@ BLOCKKOMMENTAR = re.compile(r"/\*.*?\*/", re.S)
 ZEILENKOMMENTAR = re.compile(r"(?<!:)//[^\n]*")
 
 # `import x from 'y'`, `import 'y'`, `export … from 'y'`, `require('y')`.
+#
+# EIN WEG, DER AUF `import` ENDET, IST KEIN IMPORT (25.09.2026). Mit dem
+# Themen-Tausch kam `'/api/thema/import'` in Server, Spec und Verwaltung — und
+# `import'` liest sich fuer `\bimport\s*['"]` wie `import 'paket'`: `\b` steht
+# auch zwischen `/` und `i`. Gefangen wurde dann alles bis zum naechsten
+# Anfuehrungszeichen, ueber Zeilen hinweg, und die Wache meldete acht
+# „Pakete" wie `).send({ dokument }).expect(200)…`. Zwei Riegel: vor dem
+# Schluesselwort darf kein `/` oder `.` stehen, und ein Modulname enthaelt
+# keinen Zeilenumbruch.
 IMPORT = re.compile(
-    r"""(?:\bimport\b[^;'"\n]*?\bfrom\s*|\bexport\b[^;'"\n]*?\bfrom\s*|"""
-    r"""\bimport\s*|\brequire\s*\(\s*)['"]([^'"]+)['"]"""
+    r"""(?<![./])(?:\bimport\b[^;'"\n]*?\bfrom\s*|\bexport\b[^;'"\n]*?\bfrom\s*|"""
+    r"""\bimport\s*|\brequire\s*\(\s*)['"]([^'"\n]+)['"]"""
 )
 
 

@@ -1,5 +1,5 @@
 id: mupibox
-version: "618"
+version: "619"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -64237,3 +64237,91 @@ entries:
       Zeilen Lockfile geraeumt — den frontend-box-Eintrag ohne Manifest. Wer
       eine einzelne Abhaengigkeit anfasst, liest den Lockfile-Diff, bevor er
       ihn committet.
+  - id: lock-kennt-bereich-ohne-manifest-npm-ci-holt-still-nichts
+    title: "Verleiher geloescht, Lock fuehrt ihn weiter: npm ci holt still NICHTS, frischer Klon ohne ng"
+    kind: falle
+    match: "ng: not found|could not determine executable to run|npm ci installiert kein Angular|kein ng in node_modules/.bin|Build all workspaces rot|Arbeitsbereich ohne package.json im Lock"
+    sev: high
+    tags: [npm, arbeitsbereich, abhaengigkeiten, lockfile, frontend-admin, ci, 2026]
+    stand: "25.09.2026 behoben (#2 und #3 parallel): src/frontend-admin deklariert 8+12 Pakete, Lock ohne src/frontend-box (#3), Tabelle in dokumentation/mixpibox.md 7.13 leer"
+    source: "Sauberer Cloud-Checkout 25.09.2026: npm ci RC=0, danach npm run build:frontend-admin -> `sh: 1: ng: not found`. GitHub-CI: Auftrag Build all workspaces in allen drei Laeufen seit 23.09.2026 rot."
+    cause: >
+      E118/1e (05.09.2026) loeschte src/frontend-box samt package.json. Das
+      Lock fuehrte den Bereich mit voller Paketliste weiter; ohne Manifest
+      ist er fuer npm aber kein Arbeitsbereich mehr, und npm ci holt keines
+      seiner Pakete - ohne Fehler, ohne Warnung. frontend-admin, das alles
+      von dort lieh ([[arbeitsbereich-der-nichts-deklariert-ist-unsichtbar]]),
+      stand ohne Angular da. Auf der Arbeitsmaschine verdeckte das alte
+      node_modules den Ausfall zwanzig Tage lang.
+    fix: >
+      Die Verwaltung deklariert selbst (src/frontend-admin/package.json),
+      Staende aus dem alten Lock-Eintrag packages["src/frontend-box"], nicht
+      geraten. Dann npm install mit npm 11 - npm 10 laesst den toten
+      Bereich als `extraneous` im Lock stehen.
+      Nachmessen IMMER ab `rm -rf node_modules && npm ci`, nie auf einem
+      gewachsenen node_modules.
+    body: |
+      DIE LEHRE: EIN GEWACHSENES node_modules IST KEIN BEWEIS. Der Ausfall
+      war fuer jeden unsichtbar, der seit dem 05.09. einmal `npm install`
+      gemacht hatte - die Pakete lagen ja noch da. Erst ein frischer Klon
+      (Cloud-Sitzung) und die GitHub-CI sahen ihn, und auf GitHub lief die CI erst ab dem
+      23.09. Wer einen Bereich loescht, prueft danach
+      `rm -rf node_modules && npm ci && npm run build` - das ist der Weg,
+      den jeder Neue und jede CI geht.
+
+      WAS DIE WACHE NICHT SAH, UND WARUM: tools/arbeitsbereich-abhaengigkeiten-
+      deckung.py meldete die zwoelf Leihen seit dem 29.08. als VERMERKT -
+      richtig, aber sie fragt nur, OB deklariert ist, nicht OB DER VERLEIHER
+      NOCH EXISTIERT. Ihre Liste der Bereiche kommt aus `workspaces` der
+      Wurzel plus vorhandener package.json; der geloeschte Bereich fiel damit
+      still aus der Messung, und die Leihen blieben VERMERKT statt
+      NIRGENDS DEKLARIERT. Nur die ionicons-Zeile kippte auf DOKU VERALTET -
+      das einzige Signal, und es ging im Rauschen unter (naechster Absatz).
+
+      DIE WACHE WAR SCHON VORHER ROT, AUS EINEM ANDEREN GRUND: mit dem
+      Themen-Tausch kam '/api/thema/import' in server.ts, die Spec und die
+      Verwaltung. `\bimport\s*['"]` las `import'` als `import 'paket'` (\b
+      steht auch zwischen `/` und `i`) und fing bis zum naechsten
+      Anfuehrungszeichen, ueber Zeilen hinweg: acht Muell-"Pakete". Das
+      Audit vom 23.09. (Rang 10 h) vermutete Template-Literale - die
+      Ursache war der Weg. Zwei Riegel: kein `/` oder `.` vor dem
+      Schluesselwort, kein Zeilenumbruch im Modulnamen. Gemessen: die
+      echten Importe aller drei Bereiche unveraendert, nur der Muell weg.
+      Eine dauerrote Wache meldet den echten Fund nicht lauter
+      ([[dauerrote-wache-ist-keine]]).
+
+      WAS DAZUKAM GEGENUEBER DER BACKLOG-LISTE (zwoelf Pakete): tslib
+      (tsconfig `importHelpers`), zone.js (`polyfills` in angular.json),
+      @angular/compiler + @angular/compiler-cli (der Bauer), jasmine-core
+      (Peer von karma-jasmine), @types/jasmine + @types/node
+      (tsconfig.spec `types`), typescript. Keines davon wird importiert
+      oder steht als Bauer-Literal in der Wache - Sorte 2 misst nur Karma.
+      karma-coverage bleibt in der Wurzel (ef946f34).
+
+      DAS LOCK: npm 10 (Node 22, auch in der CI) laesst einen Arbeitsbereich
+      ohne Manifest beim `npm install` als `extraneous` im Lock stehen;
+      `npx npm@11 install` streicht ihn. Am Ausgangsstand 75da4de raeumte
+      das den Bereich, seinen Link und 101 verwaiste Eintraege (Ionic,
+      swiper, qrcode, ... und Reste wie ky, protobufjs, xml-js, die die
+      Backend-Manifeste laengst nicht mehr fuehrten). Kein gelockter Stand
+      geaendert (per Skript verglichen).
+
+      ZWEIMAL GELOEST, AM SELBEN TAG: scoutr2d2/mixpibox#2 (ueber fe8f9ee
+      auf main) und #3 haben denselben Fund parallel behoben, mit
+      byte-gleicher Paketliste — genau der Fall, vor dem AGENTS.md warnt.
+      Beim Zusammenfuehren blieb von #3 uebrig, was #2 nicht hatte: der
+      Lock-Eintrag src/frontend-box (npm 10 schrieb ihn als `extraneous`
+      weiter), die Wachen-Reparatur unten und dieser Eintrag. Wer einen
+      Fund aus einem sauberen Checkout hat, sieht vor dem Bauen in die
+      offenen PRs.
+
+      NACHGEMESSEN ab `rm -rf node_modules && npm ci` (npm 10.9.7):
+      `npm run build` gruen, `ng test --configuration ci --browsers=
+      ChromeHeadless` 257/257 (als root braucht Chromium `--no-sandbox`,
+      per CHROME_BIN-Huelle), src/frontend-admin/node_modules entsteht
+      nicht. GEGENGEPROBT an einer Kopie: rxjs gestrichen -> NIRGENDS
+      DEKLARIERT, karma-jasmine gestrichen -> NIRGENDS DEKLARIERT (Bauer),
+      erfundene Tabellenzeile -> DOKU VERALTET, Lookbehind weg -> Muell
+      aus server.ts zurueck (der eine Fall, den der Zeilenumbruch-Riegel
+      allein nicht faengt).
+    related: ["arbeitsbereich-der-nichts-deklariert-ist-unsichtbar", "dauerrote-wache-ist-keine", "gegenprobe-statt-gruen-glauben"]

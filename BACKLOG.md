@@ -9371,7 +9371,7 @@ Buchung des Kritiker-Laufs 23.09.2026 (AUDIT-2026-09-23.md, Drei-Tages-Diff 8a71
 - AUDIT-2026-09-23 Rang 7: Die Verwaltung raet Fehlertexte, die der Server gesagt hat — dritte zeichengleiche grundAus-Kopie (netzwerk:160, vpn:58, netzlaufwerk:75 neu); seiten/videos.ts wirft mit sieben leeren catch den Servergrund weg ("vielleicht ist die Liste voll" statt "hoechstens 60 Videos je Profil"); vierte sag()-Variante mit unbegruendet verschiedenem Verfall (spiele 2,5 s, videos nie). Fix: freie Funktion grundAus in fehlergrund.ts, meldungSetzen mit bewusster Frist — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-23 Rang 8: Getestete Regeln ohne Rufer — spiele.ts:232 darfGespieltWerden (nur Definition+Spec; die echte Tuer steht handgeschrieben app.js:27637 in ANDERER Schreibweise: zwei Regelwerke, getestet ist das unbenutzte; /api/spiele um spielbar erweitern oder streichen); videofreigabe.ts:345 stueckeVon exportiert+getestet+nie gerufen (die Elternflaeche gruppiert nicht) — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-23 Rang 9: NAS-Nachlese — (a) nas-spiegel.json (mupibox-sicherung.py:2123) hat repoweit keinen Leser, dabei ist es bei ExecStart=- der einzige Ort fuer "wann zuletzt gespiegelt": /api/netzlaufwerk liefern + Seite zeigen, oder streichen; (b) nasAbbauen (server.ts:5946-5961) vier catch ohne warn, DELETE meldet ok:true auch wenn stop an busy scheitert und rm -f die Units trotzdem loescht — eingehaengte Freigabe ohne Unit, unsichtbar; (c) nasEinheitStand:5632 = Handkopie von vpnEinheitStand:5387 (einzige is-enabled-Stellen) -> einheitStand(einheit); (d) signalNummer geht ungestrichen an jeden Kiosk-Browser (konfiguration.ts:1511 vs. eigener Massstab :1525); (e) nachrichten-Block im Template mit 2er-Einzug in der 4er-Datei, mqtt mitgezogen (atomar.ts:66-73 nennt genau diesen Ganzdatei-Diff als Regelgrund) — offen — Sammelpunkt E91, unbewertet uebernommen
-- AUDIT-2026-09-23 Rang 10: Wachen-Haertung gesammelt — (a) schreibstelle-und-fehlerleck.py Muster zu eng + leere Zielmenge gruen (Vorbild im SELBEN Diff: menue-schalter-deckung.py:115, spiele-liste-deckung.py:126); (b) tdz-schatten-schau ohne Untergrenze, Parserfehler nicht im Exit; (c) auffindbarkeit-deckung.py:111 prueft Wortlaut statt Sorte; (d) video-belohnung-schau 0-Kacheln-Kante; (e) fuenf Browser-Wachen exit(0) ohne Browser — Zaehlzeile "N uebersprungen" am Laeufer-Ende; (f) index.html 110.168 B ueber Deckel 110.000 — schrumpfen oder begruendet anheben; (g) Leitplanken-Zahl --schreiben; (h) arbeitsbereich-abhaengigkeiten-deckung.py liest Template-Literal-Inhalte als Abhaengigkeiten (8 Muell-Eintraege aus thema-tausch.integration.spec.ts) — Backtick-Spannen ausblenden; (i) Shellcheck SC2041 readme-behauptungen-pruefen.sh:354; (j) drei WEITERE Phantom-Zitate neben app.js:1045: app.js:11671 eltern-zwei-ebenen-messen, app.css:7169 mupi-variablen-abgleich (nur im Nebenworktree), app.css:329/:1358+index.html:363 schublade-messen — offen — Sammelpunkt E91, unbewertet uebernommen
+- AUDIT-2026-09-23 Rang 10: Wachen-Haertung gesammelt — (a) schreibstelle-und-fehlerleck.py Muster zu eng + leere Zielmenge gruen (Vorbild im SELBEN Diff: menue-schalter-deckung.py:115, spiele-liste-deckung.py:126); (b) tdz-schatten-schau ohne Untergrenze, Parserfehler nicht im Exit; (c) auffindbarkeit-deckung.py:111 prueft Wortlaut statt Sorte; (d) video-belohnung-schau 0-Kacheln-Kante; (e) fuenf Browser-Wachen exit(0) ohne Browser — Zaehlzeile "N uebersprungen" am Laeufer-Ende; (f) index.html 110.168 B ueber Deckel 110.000 — schrumpfen oder begruendet anheben; (g) Leitplanken-Zahl --schreiben; (h) arbeitsbereich-abhaengigkeiten-deckung.py liest Template-Literal-Inhalte als Abhaengigkeiten (8 Muell-Eintraege aus thema-tausch.integration.spec.ts) — Backtick-Spannen ausblenden [ERLEDIGT 25.09.2026, anders als vorgeschlagen: die Ursache war nicht das Template-Literal, sondern `import'` am Ende von '/api/thema/import' (Server, Spec, Verwaltung), das `\bimport\s*['"]` fuer `import 'paket'` hielt — Riegel: kein `/`/`.` vor dem Schluesselwort, kein Zeilenumbruch im Modulnamen; echte Importe aller drei Bereiche unveraendert]; (i) Shellcheck SC2041 readme-behauptungen-pruefen.sh:354; (j) drei WEITERE Phantom-Zitate neben app.js:1045: app.js:11671 eltern-zwei-ebenen-messen, app.css:7169 mupi-variablen-abgleich (nur im Nebenworktree), app.css:329/:1358+index.html:363 schublade-messen — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-23 Rang 11: Von draussen — (a) MediathekViewWeb-API primaer vor eigene Scraper; (b) ARD-Sounds-Drift-Sonde; (c) WebDAV: rclone mount statt davfs2 erwaegen (davfs2 holt Dateien VOLLSTAENDIG in den Karten-Cache — der in B4 gebuchte Nachteil; rclone cached partiell, reconnected selbst); (d) N9-Entscheid: Jellyfin per API statt Mount (Mount ist das Server-Modell, die API uebersteht WLAN-Abriss als abgebrochenen HTTP-Stream); (e) Pi 5 hat KEINEN H.264-Hardware-Decoder — Mediathek-MP4s laufen im Kiosk-video-Tag immer in Software; falls am Geraet Ruckeln GEMESSEN wird, ist mpv als Vollbild-Overlay (--start/--end fuer die Stuecke; --wid nur X11) der effizientere Ausspielweg; (f) knip als zweite Totcode-Wache neben tote-funktionen-schau.mjs (ersetzt den Eigenbau nicht) — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-23 Rang 12: Prozess — die Belohnungs-Video-Welle (15+ Commits, zwei Plugins, eigene Seite) hat KEINEN Backlog-Eintrag (grep -i belohnung: 0 Treffer), Geraete-Messungen (Sprung, Deckel) stehen aus und niemand misst den Rueckstand; dazu Regel-Kandidat: ein Rang, der drei Audits lang "offen — unbewertet uebernommen" bleibt, gehoert dem Betreiber als Entscheidungsfrage vorgelegt statt weitergebucht (heute betroffen: 09-20 R1 Tonweg-Rezept = Einzeiler, seit vier Tagen offen an einem Geraetefehler; R3 funkHolen; R7 clearresume; R8 Phantom-Zitat; R10c Ausfuehrbit) — offen — Sammelpunkt E91, unbewertet uebernommen
 
@@ -9385,7 +9385,40 @@ weiterhoeren.ts serverseitig Plugins schon traegt. Ein Kind kann ein
 Plugin-Werk starten, aber nicht in seinen Folgen blaettern und nicht
 dort weiterhoeren, wo es aufgehoert hat.
 
-## Aufräumen — `frontend-admin` deklariert null Abhängigkeiten (2026-08-29, OFFEN)
+## Aufräumen — `frontend-admin` deklariert null Abhängigkeiten (2026-08-29, FERTIG 2026-09-25)
+
+> **Nachtrag 25.09.2026 — FERTIG, und der Ausfall kam vorher doch noch.**
+> Alles unterhalb dieses Kastens beschreibt den Stand vor dem 25.09.2026.
+> Mit E118/1e (05.09.2026) fiel `src/frontend-box/package.json` ganz weg;
+> `package-lock.json` führte den Bereich samt Paketliste weiter, aber ohne
+> Manifest holt `npm ci` davon **nichts** — ohne Fehler. Ein frischer Klon
+> hatte kein `ng`, `npm run build:frontend-admin` und `test:frontend-admin`
+> scheiterten, der CI-Auftrag „Build all workspaces" (`npm run build`) war
+> rot (auf GitHub alle drei Läufe seit dem 23.09.2026). Gefunden in einem
+> sauberen Cloud-Checkout; auf der Arbeitsmaschine verdeckte es das alte
+> `node_modules`.
+>
+> **Gebaut — zweimal, am selben Tag, byte-gleich.** Zwei Sitzungen haben den
+> Fund parallel behoben: scoutr2d2/mixpibox#2 (über `fe8f9ee` auf `main`)
+> und scoutr2d2/mixpibox#3. Beide leiten dieselbe Liste aus dem Lock-Eintrag
+> `packages["src/frontend-box"]` ab, nicht geraten:
+> `src/frontend-admin/package.json` deklariert 8 `dependencies` und 12
+> `devDependencies`. Gegenüber der Liste unten kommen `tslib`
+> (`importHelpers`), `zone.js` (`polyfills`), `@angular/compiler(-cli)`,
+> `jasmine-core`, `@types/jasmine`, `@types/node` und `typescript` dazu —
+> Pakete, die die Wache nicht sieht, weil sie weder importiert noch als
+> Bauer-Literal geführt werden. `karma-coverage` bleibt in der Wurzel. #2
+> ergänzte dazu `@types/cors` bei `src/backend-api`.
+> Das Lock von #2 (npm 10) räumte die verwaisten Pakete, ließ aber den
+> Arbeitsbereich ohne Manifest als `extraneous` stehen. #3 schrieb es mit
+> npm 11 neu, danach ist auch `packages["src/frontend-box"]` weg; kein
+> gelockter Stand geändert. Die `ionicons`-Zeile unten ist mit der
+> Box-Oberfläche gegenstandslos. Nachgemessen ab
+> `rm -rf node_modules && npm ci`: `npm run build` grün,
+> `ng test --configuration ci` 257/257, `src/frontend-admin/node_modules`
+> entsteht nicht, `tools/arbeitsbereich-abhaengigkeiten-deckung.py`
+> „KEINE LUECKE" (dafür auch Punkt (h) aus AUDIT-2026-09-23 Rang 10
+> behoben, #3). Doku: `dokumentation/mixpibox.md` 7.13.
 
 Kein E-Punkt: hier wird nichts gebaut, hier wird etwas eingetragen. Gefunden
 im Doku-Lauf 29.08.2026 als Nachwehe von `390880f5`/`ef946f34`, dokumentiert
