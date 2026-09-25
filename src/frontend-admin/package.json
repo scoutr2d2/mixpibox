@@ -7,7 +7,10 @@
   "scripts": {
     "build": "ng build",
     "serve": "ng serve",
-    "test": "ng test"
+    "test": "ng test",
+    "_kommentar:lint": "Bis 25.09.2026 fehlte `lint` hier, und `npm run lint --workspaces` brach mit `Missing script` ab (npm ueberspringt NICHT still). Woertlich wie die Backends, samt der zwei Schalter - Begruendung im `_kommentar:lint` von mupibox-backend-api und im Handbuch 7.5.",
+    "lint": "npx @biomejs/biome check --formatter-enabled=false --assist-enabled=false .",
+    "lint:fix": "npx @biomejs/biome check --formatter-enabled=false --assist-enabled=false --fix ."
   },
   "dependencies": {
     "@angular/common": "^20.3.1",

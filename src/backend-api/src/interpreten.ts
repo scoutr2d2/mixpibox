@@ -561,7 +561,7 @@ export function suchtrefferAus(treffer: readonly SpotifyInterpret[] | null): Suc
       name,
       bild: bildDurchgereicht(roh),
       bildRoh: roh,
-      genres: (Array.isArray(t?.genres) ? (t?.genres as unknown[]) : []).map((g) => String(g)).slice(0, 2),
+      genres: (Array.isArray(t?.genres) ? (t.genres as unknown[]) : []).map((g) => String(g)).slice(0, 2),
       follower: Number(t?.followers?.total) || 0,
     })
   }

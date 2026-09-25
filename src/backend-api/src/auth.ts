@@ -193,11 +193,23 @@ export const OFFENE_PFADE = [
 export function torBauen(o: TorEinstellungen) {
   const offen = new Set(o.offenePfade ?? OFFENE_PFADE)
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (!o.anmeldungNoetig()) return next()
-    if (istRueckschleife(req.socket?.remoteAddress)) return next()
-    if (offen.has(req.path)) return next()
+    if (!o.anmeldungNoetig()) {
+      next()
+      return
+    }
+    if (istRueckschleife(req.socket?.remoteAddress)) {
+      next()
+      return
+    }
+    if (offen.has(req.path)) {
+      next()
+      return
+    }
     const id = cookiesLesen(req.headers.cookie)[COOKIE_NAME]
-    if (o.sitzungen.gueltig(id)) return next()
+    if (o.sitzungen.gueltig(id)) {
+      next()
+      return
+    }
     res.status(401).json({ error: 'anmeldung erforderlich' })
   }
 }
