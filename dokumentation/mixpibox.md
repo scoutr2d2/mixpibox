@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1113 Einträge,
-Fassung 615). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1114 Einträge,
+Fassung 616). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -2855,9 +2855,11 @@ Grund:
 
 ### 7.13 Wer leiht bei wem: die Abhängigkeiten der Arbeitsbereiche
 
-Die vier Bereiche teilen sich **ein** `node_modules` in der Wurzel — das ist
-der Sinn eines npm-Arbeitsbereichs. Die Kehrseite: **ein Bereich läuft auch
-mit Paketen, die er nirgends deklariert**, solange irgendein anderer sie holt.
+Die Bereiche (seit E118/1e am 05.09.2026 drei: `backend-api`,
+`backend-player`, `frontend-admin` — bis dahin vier) teilen sich **ein**
+`node_modules` in der Wurzel — das ist der Sinn eines npm-Arbeitsbereichs.
+Die Kehrseite: **ein Bereich läuft auch mit Paketen, die er nirgends
+deklariert**, solange irgendein anderer sie holt.
 Fällt der Verleiher weg, fällt der Entleiher aus, und der Fehler erscheint an
 der Stelle, an der niemand etwas geändert hat.
 
@@ -2871,12 +2873,36 @@ den istanbul-Reporter. Kaputt ging die **Verwaltung**: sie hat gar keine
 `ef946f34` hat das Paket in die Wurzel gestellt, wo geteiltes Werkzeug
 hingehört — der Ausfall war behoben, die Buchhaltung nicht.
 
-**`src/frontend-admin/package.json` führt bis heute null Abhängigkeiten.**
-Kein `@angular/core`, kein `rxjs`, kein `karma`. Jede Inventur über
-`package.json` misst dort eine leere Menge und meldet grün; gebaut und
-getestet wird trotzdem. Ein Bereich, der nichts deklariert, ist für eine
-Paket-Wache nicht sauber, sondern **unsichtbar** — dieselbe Bauart wie ein
-Ordner, den kein Handbuch nennt.
+**`src/frontend-admin/package.json` führte bis zum 25.09.2026 null
+Abhängigkeiten.** Kein `@angular/core`, kein `rxjs`, kein `karma`. Jede
+Inventur über `package.json` maß dort eine leere Menge und meldete grün;
+gebaut und getestet wurde trotzdem. Ein Bereich, der nichts deklariert, ist
+für eine Paket-Wache nicht sauber, sondern **unsichtbar** — dieselbe Bauart
+wie ein Ordner, den kein Handbuch nennt.
+
+**Dann fiel der Verleiher ganz weg, und zwanzig Tage merkte es niemand.**
+E118/1e (05.09.2026) löschte die alte Box-Oberfläche samt ihrer
+`package.json`. `package-lock.json` führte den Bereich weiter, mit seiner
+vollen Paketliste — aber ohne Manifest ist er für npm kein Arbeitsbereich mehr, und `npm ci` holt **nichts** davon, ohne Fehler und ohne
+Warnung. Ein frischer Klon hatte danach kein `@angular/*` und kein `ng`:
+`npm run build:frontend-admin` endete mit `ng: not found`, der CI-Auftrag
+„Build all workspaces" (`npm run build`) war rot. Auf der Arbeitsmaschine
+lag das alte `node_modules` und verdeckte es. Gefunden am 25.09.2026 in einem
+sauberen Cloud-Checkout.
+
+**Behoben am 25.09.2026:** die Verwaltung deklariert jetzt, was sie braucht —
+die Angular-Pakete, `rxjs`, `tslib` (wegen `importHelpers`), `zone.js` (die
+`polyfills` in `angular.json`), `@angular/cli`, den Bauer
+`@angular-devkit/build-angular` samt `@angular/compiler(-cli)`, `typescript`
+und den Jasmine/Karma-Satz. Die Stände sind **nicht geraten**, sondern die
+geforderten Bereiche aus dem alten Lock-Eintrag `packages["src/frontend-box"]`;
+das Lock ist neu geschrieben (mit npm 11, das die `libc`-Felder behält) und
+kennt `src/frontend-box` nicht mehr. Kein gelockter Stand hat sich geändert,
+alles bleibt in die Wurzel gehoben, `src/frontend-admin/node_modules` entsteht
+nicht. `karma-coverage` bleibt in der Wurzel-`package.json`, wo `ef946f34` es
+hingestellt hat — die Wache zählt die Wurzel als Deklaration.
+Nachgemessen ab `rm -rf node_modules && npm ci`: `npm run build` grün,
+`ng test --configuration ci` 257/257.
 
 Gemessen von `tools/arbeitsbereich-abhaengigkeiten-deckung.py` (läuft in
 `tools/doku-luecken-probe.sh`). Es fragt drei Sorten Benutzung ab, denn die
@@ -2890,35 +2916,27 @@ teuerste steht in keiner Zeile Quelltext:
 Als Deklaration zählt der eigene `package.json` **oder** die Wurzel, bewusst
 nicht der Schwesterbereich — der ist der Gegenstand.
 
-Die dreizehn offenen Leihen. Sie stehen hier und nicht als Ausnahmeliste im
-Skript, damit sie findet, wer die `package.json` aufmacht; das Aufräumen ist
-Arbeit am Bau und steht im `BACKLOG.md`:
+Die offenen Leihen. Sie stehen hier und nicht als Ausnahmeliste im Skript,
+damit sie findet, wer die `package.json` aufmacht; das Aufräumen ist Arbeit am
+Bau und gehört ins `BACKLOG.md`. Eine neue Zeile nennt Paket und
+Bereichsordner je in Backticks in den ersten beiden Spalten — nur solche
+Zeilen liest die Wache:
 
 <!-- GELIEHENE-ABHAENGIGKEITEN:ANFANG -->
 
 | Paket | Bereich | Woher es heute kommt |
 |---|---|---|
-| `@angular-devkit/build-angular` | `src/frontend-admin` | `src/frontend-box` — der Bauer aus `angular.json` |
-| `@angular/cli` | `src/frontend-admin` | `src/frontend-box` — `ng` in `scripts.build` |
-| `@angular/common` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/core` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/forms` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/platform-browser` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/router` | `src/frontend-admin` | `src/frontend-box` |
-| `rxjs` | `src/frontend-admin` | `src/frontend-box` |
-| `karma` | `src/frontend-admin` | `src/frontend-box` — Läufer des `:karma`-Ziels |
-| `karma-chrome-launcher` | `src/frontend-admin` | `src/frontend-box` — vom Bauer fest geladen |
-| `karma-jasmine` | `src/frontend-admin` | `src/frontend-box` — vom Bauer fest geladen |
-| `karma-jasmine-html-reporter` | `src/frontend-admin` | `src/frontend-box` — vom Bauer fest geladen |
-| `ionicons` | `src/frontend-box` | **niemand** — nur mitgezogen von `@ionic/angular` |
+| — | — | keine offene Leihe (Stand 25.09.2026) |
 
 <!-- GELIEHENE-ABHAENGIGKEITEN:ENDE -->
 
-Die letzte Zeile ist die andere Sorte und die härtere: `ionicons` deklariert
-**kein** Bereich und auch die Wurzel nicht. `add.page.ts` importiert es
-direkt; im Baum liegt es, weil `@ionic/angular` es mitbringt. Ein
-Nebenwerkzeug, das seine Abhängigkeit einmal ändert, nimmt der Box-Oberfläche
-einen Import weg, den sie für ihren eigenen hielt.
+Bis zum 25.09.2026 standen hier dreizehn Zeilen: zwölf Pakete, die
+`src/frontend-admin` von `src/frontend-box` lieh (Angular, `rxjs`,
+`@angular/cli`, der Bauer und der Karma-Satz), und `ionicons`, das
+`src/frontend-box` selbst nirgends deklarierte — `add.page.ts` importierte es
+direkt, im Baum lag es nur, weil `@ionic/angular` es mitzog. Die zwölf sind
+seit dem 25.09.2026 deklariert (siehe oben); `ionicons` ist mit der
+Box-Oberfläche gefallen.
 
 Die Wache prüft die Tabelle **in beide Richtungen**: wer eine Leihe endlich
 deklariert oder ihren letzten Nutzer löscht, ohne die Zeile hier zu streichen,

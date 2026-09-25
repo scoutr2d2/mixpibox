@@ -865,10 +865,10 @@ if ! eingriffe_ausgabe=$(python3 tools/ausgerollte-eingriffe-deckung.py 2>&1); t
 fi
 
 # ARBEITSBEREICHS-ABHAENGIGKEITEN (29.08.2026): wieder eine neue Datei-SORTE —
-# der `package.json` eines Arbeitsbereichs. `src/frontend-admin` deklariert
-# NULL Abhaengigkeiten und laeuft trotzdem, weil npm alles in die Wurzel hebt;
-# eine Inventur ueber `package.json` misst dort eine leere Menge und meldet
-# gruen. Aufgefallen ist es erst, als `390880f5` bei der Schwester aufraeumte
+# der `package.json` eines Arbeitsbereichs. `src/frontend-admin` deklarierte
+# bis zum 25.09.2026 NULL Abhaengigkeiten und lief trotzdem, weil npm alles in
+# die Wurzel hebt; eine Inventur ueber `package.json` mass dort eine leere
+# Menge und meldete gruen. Aufgefallen ist es erst, als `390880f5` bei der Schwester aufraeumte
 # und das `ng test` der VERWALTUNG stehenblieb. Die Wache fragt auch die zwei
 # Benutzungen ab, die in keiner Zeile Quelltext stehen: was der Bauer aus
 # `angular.json` voraussetzt und was ein npm-Skript aufruft.
