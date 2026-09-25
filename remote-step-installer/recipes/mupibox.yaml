@@ -923,6 +923,21 @@ steps:
       - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/82-karte-software-regler.conf
         dest: /etc/wireplumber/wireplumber.conf.d/82-karte-software-regler.conf
         mode: "644"
+      # 61 UND 62 FEHLTEN HIER BIS ZUM 25.09.2026 — beide legten nur
+      # autosetup.sh und der Update-Weg ab (tools/ausgerollte-vorlagen-deckung.py
+      # meldete 61 als "nicht auf einer heute frisch aufgesetzten Box", 62
+      # stand in GAR keinem Weg, AUDIT-2026-08-22 Rang 2).
+      # 61: der Fuenfband-Entzerrer. Ohne die Datei gibt es die Senke
+      #     `entzerrer` nicht, und die Regler der Ton-Seite stellen nichts.
+      # 62: die Leersenke des Mitschnitts. Ohne sie laeuft der
+      #     Leerlauf-Arbeiter (E66) ins Leere; Soloist bekaeme mit
+      #     `-d mixpi-mitschnitt` kein Ziel und spielte auf den Lautsprecher.
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/61-entzerrer.conf
+        dest: /etc/pipewire/pipewire.conf.d/61-entzerrer.conf
+        mode: "644"
+      - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/config/templates/62-mixpi-mitschnitt.conf
+        dest: /etc/pipewire/pipewire.conf.d/62-mixpi-mitschnitt.conf
+        mode: "644"
     run: |
       set -e
       mkdir -p /root/ton-vor-pipewire
@@ -941,7 +956,7 @@ steps:
       command -v wpctl >/dev/null || { echo "FEHLER: wpctl fehlt — pipewire-bin nicht installiert"; exit 1; }
       echo "PipeWire eingerichtet. Wirkt nach dem naechsten Neustart."
       echo "Rueckweg: bluealsa wieder enablen + asound.conf zurueckkopieren."
-    check: "command -v wpctl >/dev/null && test -f /etc/wireplumber/wireplumber.conf.d/80-bluez-ohne-seat.conf && test -f /etc/wireplumber/wireplumber.conf.d/81-bluez-nur-a2dp.conf && test -f /etc/wireplumber/wireplumber.conf.d/82-karte-software-regler.conf && ! systemctl is-enabled bluealsa 2>/dev/null"
+    check: "command -v wpctl >/dev/null && test -f /etc/wireplumber/wireplumber.conf.d/80-bluez-ohne-seat.conf && test -f /etc/wireplumber/wireplumber.conf.d/81-bluez-nur-a2dp.conf && test -f /etc/wireplumber/wireplumber.conf.d/82-karte-software-regler.conf && test -f /etc/pipewire/pipewire.conf.d/61-entzerrer.conf && test -f /etc/pipewire/pipewire.conf.d/62-mixpi-mitschnitt.conf && ! systemctl is-enabled bluealsa 2>/dev/null"
 
   - id: mpv
     name: "mpv (der Player, den die Konfiguration nennt)"

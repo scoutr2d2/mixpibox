@@ -48,6 +48,9 @@ dessen Leute diesen Code nie gesehen haben.
 
 Aus dem Commit-Log, nicht aus dem Gedächtnis. Was davon halb ist, steht in 3.9.
 
+* **25.09.** **Kinderzeit-Regeln je Kind** jetzt auch in der Verwaltung: je Kind
+  „wie die Hausregel" oder eigene Regeln. Der Ein-Knopf-Weg richtet Vorlesen,
+  Fernbedienung, Entzerrer und die Mitschnitt-Senke ein wie die anderen Wege.
 * **21.09.** Nachrichten an das Kind — nur von Absendern auf der Liste, angezeigt
   dort, wo das Kind hinsieht.
 * **20.09.** Ein **Netzlaufwerk** (SMB oder WebDAV) als Ablage für Sicherungen
@@ -102,8 +105,9 @@ Was erst halb da ist, steht in 3.9 — und nur dort.
   meist kein Text — das ist der Normalfall und wird als solcher gemeldet
   (gemessen 05.09.2026: Pop 5/5, Kinderlied 3/5, Hörspiel 0/5).
 * **Vorlesen.** Ein Tipp auf eine Kachel liest den Namen vor, im **Lernmodus**
-  Silbe für Silbe. Gerechnet wird auf der Box (Piper), ohne Netz — siehe aber
-  die Einschränkung in 3.9.
+  Silbe für Silbe. Gerechnet wird auf der Box (Piper), ohne Netz. Eingerichtet
+  wird Piper auf allen drei Ausrollwegen; scheitert dabei der Download (rund
+  244 MB), fällt die Box auf die Browser-Stimme (espeak-ng) zurück.
 * **Profile.** Bis zu zwölf Kinder, jedes mit Name, Figur, Geburtstag und
   eigenen Ablagen (Verlauf, Weiterhören, Listen, Medienauswahl, Aussehen,
   Videofreigaben, Zeitverbrauch). Angemeldet wird ohne Tastatur: ein Fenster
@@ -235,7 +239,7 @@ vollständig auf.
 
 Das ist ausdrücklich eine **Testfunktion**: standardmäßig aus, je Dienst ein
 eigener Schalter, und ohne einen zweiten Haken zur Rechtslage schneidet gar
-nichts mit. Aufnehmbar ist heute nur Spotify. Siehe auch 3.9.
+nichts mit. Aufnehmbar ist heute nur Spotify.
 
 ### 3.7 Bedienen ohne Touch — Fernbedienung und Controller
 
@@ -274,38 +278,32 @@ Gerät exklusiv (sonst schluckt Chromium die Tasten).
   der FAT-Partition der Karte genügt.
 * **Nachrichten an die Box** (Matrix, Signal, Telegram) und ein
   MQTT-Dienst für Home Assistant — geerbt und in Betrieb.
+* **Tests:** Die Verwaltung hat Zeugen für Anmeldeweg, Kinderzeit, die Suche
+  und einige weitere Seiten — längst nicht für jede. Die Box-Oberfläche hat
+  Verhaltenstests für Abspielweg und Zustände, **nicht** fürs Aussehen.
 
 ### 3.9 Was halb fertig ist
 
 Damit niemand darauf baut — die lange Fassung steht in
-`dokumentation/mixpibox.md`, Abschnitt 9:
+`dokumentation/mixpibox.md`, Abschnitt 9. Der Plan, nach dem dieser Abschnitt
+verschwindet, steht in `BACKLOG.md`, E143 (nachgeprüft am 25.09.2026):
 
-* **Vorlesen kommt nicht auf jede Karte.** Piper richten nur
-  `autosetup/autosetup.sh` und der Update-Weg ein; der in Abschnitt 5
-  beschriebene Ein-Knopf-Weg tut es **nicht** — eine so bespielte Box fällt auf
-  die Browser-Stimme (espeak-ng) zurück.
-* **Die Leersenke des Mitschnitts wird von keinem Ausrollweg installiert**
-  (`config/templates/62-mixpi-mitschnitt.conf` steht in keinem der drei Wege).
-  Auf einer frisch aufgesetzten Box fehlt sie; die Aufnahme braucht sie.
-* **Kinderzeit-Regeln je Kind** kann der Server längst (Hausregel plus
-  Ausnahmen je Profil), die Verwaltungsseite schreibt aber weiterhin nur die
-  Hausregel. Konto, Bonus und Zurücksetzen gehen schon je Kind.
 * **Die Anmeldung greift nur bei abgeschaltetem Gast.** Solange der Gast an ist
-  — die Vorgabe —, startet die Box wortlos im zuletzt aktiven Profil, und der
-  Start-Modus hat keine Wirkung.
+  — die Vorgabe —, startet die Box wortlos im zuletzt aktiven Profil, auch wenn
+  es ein Schloss hat, und der Start-Modus hat keine Wirkung.
 * **Ein neues Eingabegerät zuzuordnen ist Handarbeit.** Die Verwaltungsseite
-  dafür fehlt; zwei Routen und die SVG-Schemata liegen bereit.
-* **Fernbedienung und Controller fehlen auf dem Rezept-Weg.** Die Rezepte legen
-  weder `/etc/mupibox/fernbedienung.json` noch die Geräteprofile ab und schalten
-  `mixpi-fernbedienung.service` nicht ein — nur `autosetup.sh` und der
-  Update-Weg tun das. Auf einer Karte aus 5.4 muss man beides nachholen.
-* **Der Einrichtungsassistent** für den allerersten Start (QR, eigenes WLAN,
-  Seite fürs Handy) steht als Gerüst, ist aber noch nicht verdrahtet.
-* **Die Verwaltung** hat Zeugen für Anmeldeweg, Kinderzeit, die Suche und
-  einige weitere Seiten — längst nicht für jede. Die Box-Oberfläche hat Verhaltenstests für
-  Abspielweg und Zustände, **nicht** fürs Aussehen.
-* **Der Lautstärkesprung beim Quellenwechsel** ist real und nicht ausgeglichen:
-  lokale Dateien laufen über ReplayGain, Spotify nicht.
+  dafür fehlt; die Geräteprofile samt SVG-Schemata legen seit dem 25.09.2026
+  alle drei Ausrollwege ab, eine Route, die die Zuordnung schreibt, gibt es
+  noch nicht.
+* **Der Einrichtungsassistent räumt nicht hinter sich auf.** Der Weg übers
+  Handy (eigenes WLAN, QR, Seite fürs Handy) ist verdrahtet und am Pi 5
+  durchgespielt, am Pi 4 nicht. Nach der Einrichtung bleiben aber der
+  Installations-Agent im Netz und der Vorstart eingeschaltet — eine fertige
+  Box, die ohne Router startet, öffnet wieder das Einrichtungs-WLAN.
+* **Der Lautstärkesprung beim Quellenwechsel** ist real und nicht
+  ausgeglichen, wenn Spotify über Soloist spielt: lokale Dateien laufen über
+  ReplayGain, Soloist kennt keine Normalisierung. librespot (die Vorgabe)
+  normalisiert; gleich laut ist damit nicht gemessen.
 
 ---
 
@@ -324,13 +322,13 @@ halbfertig zu benennen, statt es wegzulassen (dann fehlt es) oder mitzuzählen
 | **Neue Verwaltung** in Angular, 27 Seiten + Anmeldung, unter `/admin`, mit Suche über alle Einstellungen. | `src/frontend-admin/` | löst den PHP-Admin ab (ausgebaut 19.08.2026); Zeugen für Anmeldeweg, Kinderzeit, Suche und einige weitere Seiten |
 | **Backends in TypeScript** statt gewachsenem JS/PHP. | `src/backend-api/` (142 Testdateien), `src/backend-player/` (15) | in Benutzung |
 | **Profile für mehrere Kinder** — bis zwölf, mit Figur, Geburtstag, Schloss in fünf Eingabearten und eigenen Ablagen je Kind. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | fertig; die Anmeldung greift nur bei abgeschaltetem Gast (3.9) |
-| **Kinderzeit** — wie lange, wann und an welchen Tagen; serverseitig gezählt, nicht im Browser. | `src/backend-api/src/kinderzeit.ts` | fertig; Regeln je Kind kann der Server, die Verwaltung noch nicht (3.9) |
+| **Kinderzeit** — wie lange, wann und an welchen Tagen; serverseitig gezählt, nicht im Browser. | `src/backend-api/src/kinderzeit.ts` | fertig; Regeln je Kind seit 25.09.2026 auch in der Verwaltung |
 | **Belohnungs-Videos** — Eltern geben einzelne Mediathek-Videos frei, in Stücken, mit Zähler. | `NewDesign/video.js`, Verwaltungsseite „Videos" | fertig |
 | **Spiele und Lernen** — sechs Apps in der Schublade, vier Spiele in der Spielecke, jedes einzeln abschaltbar. | `NewDesign/apps.js`, `NewDesign/app.js`, `src/backend-api/src/spiele.ts` | fertig |
 | **Bedienung per Fernbedienung/Controller** — vier Geräteprofile, 16 Aktionen, ohne X. | `scripts/box/fernbedienung.py`, `config/fernbedienungen/` | fertig; die Zuordnungsseite fehlt (3.9) |
 | **Verschmelzung mehrerer Quellen** — dasselbe Album aus Spotify *und* Jellyfin wird EINE Kachel, seit 06.09.2026 als Vorgabe. | `src/backend-api/src/verschmelzung.ts` | fertig, am Gerät gemessen (44 → 35 Kacheln) |
 | **Interpretenseiten** und **Weiterhören** — alle Alben eines Interpreten; „wo war ich stehengeblieben?". | `src/backend-api/src/interpretenseite.ts`, `weiterhoeren.ts` | fertig, getestet |
-| **Eine Tonkette, die man stellen kann** — mehrere Bluetooth-Senken zugleich, Fünfband-Entzerrer, Stereobasis, Kompressor/Begrenzer, Lautstärke je Quelle. | `config/templates/61-entzerrer.conf`, Plugin `mixpi-klang`, Verwaltungsseite „Ton" | fertig; kein Auto-EQ, Lautheit zwischen den Diensten offen (3.9) |
+| **Eine Tonkette, die man stellen kann** — mehrere Bluetooth-Senken zugleich, Fünfband-Entzerrer, Stereobasis, Kompressor/Begrenzer, Lautstärke je Quelle. | `config/templates/61-entzerrer.conf`, Plugin `mixpi-klang`, Verwaltungsseite „Ton" | fertig; kein Auto-EQ, Lautheit zwischen den Diensten mit Soloist offen (3.9) |
 | **Cover liegen auf der Box.** Gemessen: 1,69 s kalt → 0,03 s danach. | `src/backend-api/src/server.ts` (`coverspeicher`) | fertig (Classic hat das seit 5.0.0 ebenfalls) |
 | **systemd statt pm2** — 20 s früher bereit; seit 14.08.2026 auf **allen** Wegen. | `config/services/` | umgestellt |
 | **Ein Plugin-System** — alles jenseits des Kerns ist ein Plugin, ohne Bau-Schritt, in einem eigenen Worker-Faden. | `plugins/` (14 Stück) | in Benutzung; eine eigene Fläche im Kinderschirm fehlt bewusst (Abschnitt 7) |
@@ -375,8 +373,8 @@ eine Sekunde. Die Messungen stehen im Wissenspaket
 
 Was daran **nicht** besser wurde, steht ehrlich dabei: die rund 9 s, die
 Chromium vom Prozessstart bis zum fertigen Bild braucht, sind echte Arbeit und
-bleiben; und der Lautstärkesprung zwischen den Diensten ist nicht ausgeglichen
-(3.9).
+bleiben; und der Lautstärkesprung zwischen den Diensten ist mit Soloist nicht
+ausgeglichen (3.9).
 
 ---
 
@@ -467,7 +465,7 @@ nimmt `./sdgui` (grafisch) oder `./sdtui` (Terminal).
 ### 5.5 Schritt 4 — die Box aufsetzen
 
 **Der Regelfall: sie macht es selbst.** Die Karte trägt das Rezept als JSON
-plus alle Dateien mit (30 + 24 Schritte aus `recipes/mupibox.yaml` und
+plus alle Dateien mit (30 + 26 Schritte aus `recipes/mupibox.yaml` und
 `recipes/mupibox-app.yaml`). Karte einstecken, Strom dran — der Lauf überlebt
 die Neustarts, die im Rezept stehen, schreibt seinen Stand vor jedem Schritt
 auf die Platte und **hält an**, wenn ein Schritt scheitert, statt halb fertig
@@ -707,7 +705,7 @@ Ohne diesen Befehl liegen die Haken zwar im Baum, laufen aber **nie** —
 **Wo das Wissen steht.** Die teuer erkauften Einzelheiten — welche Messung
 welche Vermutung widerlegt hat, welcher Workaround warum nötig war — stehen
 nicht im Code und nicht in dieser Datei, sondern im Wissenspaket
-**`llmwiki/pack.yaml`** (1114 Einträge, Fassung 616). Es ist bewusst Daten,
+**`llmwiki/pack.yaml`** (1115 Einträge, Fassung 617). Es ist bewusst Daten,
 kein Code, und wird nie ausgeführt. Gelesen wird es nicht von Hand:
 
 ```bash

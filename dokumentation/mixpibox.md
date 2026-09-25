@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1114 Einträge,
-Fassung 616). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1115 Einträge,
+Fassung 617). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -1226,7 +1226,9 @@ jemand `/tmp` aufräumt.
 | `GET/PUT /api/profil/auswahl`, `GET /api/profil/auswahlen`, `POST /api/profil/auswahl/werk` | die Auswahl je Profil (der Gast hat keine und bekommt keine) |
 | `GET/POST /api/profil/aussehen` | Aussehen je Profil; **nur was genannt wird, wird gesetzt** |
 | `GET /api/figuren` | die Figuren zur Wahl — bewusst ohne Aufzählung im Code |
-| `GET/PUT /api/kinderzeit` | die Regeln. **Mit `?profil=<kennung>` je Kind** (`RegelSatz.je`, seit 02.08.2026), ohne den Anhang der `standard`-Satz; `regelnFuer` nimmt beim Stand den eigenen Satz, sonst `standard`. Die Kinderzeit-Seite der Verwaltung hängt den Anhang **nicht** an und bearbeitet deshalb immer `standard` — das ist der offene Rest, nicht eine Grenze des Servers |
+| `GET/PUT /api/kinderzeit` | die Regeln. **Mit `?profil=<kennung>` je Kind** (`RegelSatz.je`, seit 02.08.2026), ohne den Anhang der `standard`-Satz (die Hausregel); `regelnFuer` nimmt beim Stand den eigenen Satz, sonst `standard`. Die Antwort mit `?profil=` sagt **nicht**, ob die Regel eigen oder geerbt ist — dafür gibt es `/satz` |
+| `GET /api/kinderzeit/satz` | der **ganze** Regelsatz `{standard, je}` (seit 25.09.2026). Daraus liest die Profilseite der Verwaltung, ob das gewählte Kind eigene Regeln hat, und bearbeitet genau das, was für es gilt |
+| `DELETE /api/kinderzeit?profil=<kennung>` | eigene Regeln eines Kindes verwerfen — danach gilt die Hausregel (seit 25.09.2026; vorher verschwand ein `je`-Eintrag nur mit dem Kind). Ohne `?profil=` ein 400 `hausregelBleibt` |
 | `GET /api/kinderzeit/stand`, `POST /api/kinderzeit/bonus`, `POST /api/kinderzeit/zuruecksetzen` | Konto, geschenkte Minuten und Tages-Reset — **immer je Kind** (`?profil=`, ohne Anhang das aktive Profil) |
 
 **Belohnungs-Videos aus der Mediathek** (`videofreigabe.ts` + `plugins/mixpi-mediathek`, seit 20.09.2026)
@@ -1817,8 +1819,8 @@ Befehle als root aus, streamt jede Ausgabezeile, killt einen hängenden Schritt
 
 | Rezept | Schritte | Wofür |
 |---|---|---|
-| `mupibox.yaml` | 29 | das System: Pakete, Node, Audio, Kiosk, Netz |
-| `mupibox-app.yaml` | 23 | die App: Dateien, Dienste, Konfiguration |
+| `mupibox.yaml` | 30 | das System: Pakete, Node, Audio, Kiosk, Netz |
+| `mupibox-app.yaml` | 26 | die App: Dateien, Dienste, Konfiguration, Fernbedienung, Vorlesen |
 | `perf-tune.yaml` | 9 | Startzeit und Speicher |
 | `demo.yaml` | 5 | Beispiel |
 
@@ -1831,7 +1833,7 @@ Sichtbar gemacht wird die Drift stattdessen: `tools/stueckliste.py` schreibt
 auf, was eine funktionierende Box hatte, und der Rezeptschritt `stueckliste`
 **meldet** Abweichungen, ohne sie zu verhindern.
 
-### 5.2 Der neue Einrichtungsassistent (im Bau)
+### 5.2 Der Einrichtungsassistent (verdrahtet seit 08.08.2026; was danach offen bleibt: Abschnitt 9)
 
 Ziel: beim ersten Start braucht niemand mehr einen Laptop.
 
@@ -3228,18 +3230,30 @@ behauptete im Kopf aber, er täte es.
 
 ## 9. Was gerade im Bau ist
 
-Ehrlich benannt, damit niemand darauf baut:
+Ehrlich benannt, damit niemand darauf baut. **Nachgeprüft am 25.09.2026**
+gegen den Baum; was davon wie abgetragen wird, steht in `BACKLOG.md`, E143.
 
-* **Der Einrichtungsassistent** steht als Gerüst (QR, Bildschirm, Seite fürs
-  Handy, WLAN von Hand und per WPS, eigenes WLAN mit Captive Portal), ist aber
-  **noch nicht verdrahtet**: es fehlt die Entscheidung beim Booten, wann der AP
-  aufgeht, und die Übergabe an die eigentliche Installation.
-* **`hostapd` und `dnsmasq` fehlen auf dem Image** und lassen sich ohne Netz
-  nicht holen. Der AP funktioniert erst, wenn sie bei der SD-Vorbereitung
-  mitkommen oder einmal über Kabel nachinstalliert wurden. Ein Hühnerei-Problem,
-  das nicht wegdiskutiert werden kann.
-* **Die neue Verwaltung** hat Tests für den Anmeldeweg und die Kinderzeit — die
-  übrigen Seiten sind ungetestet.
+* **Der Einrichtungsassistent ist verdrahtet — er räumt nur nicht auf.** Seit
+  dem 08.08.2026 (E11b/I9–I13) läuft der Weg ohne Laptop durch: `sdstart`
+  bestückt die Karte, `mixpibox-vorstart.service` entscheidet beim Booten
+  (Netz da → DietPi macht weiter; kein Netz → eigenes WLAN „MixPi Start",
+  Agent und Schirm), die Seite fürs Handy übergibt das WLAN, und der Selbstlauf
+  fährt das Rezept. Am Pi 5 durchgespielt, am Pi 4 nicht. **Offen ist, was
+  danach bleibt** (E143/8–10): der Zweig „kein Netz" im Vorstart fragt die
+  `fertig`-Marke nicht — eine fertige Box, die ohne Router startet, öffnet nach
+  45 s wieder das Einrichtungs-WLAN —, und `step-agent.service` lauscht nach
+  dem Selbstlauf weiter als root auf 0.0.0.0 (der Pair-Deckel aus 5.2 hält,
+  gewollt ist es trotzdem nicht).
+* **`hostapd` und `dnsmasq` braucht der AP nicht mehr** — er läuft über
+  `wpa_supplicant` im Modus 2 und `kleiner-dhcp.py` (llmwiki
+  `ap-ohne-hostapd-wpa-mode2`); das Hühnerei-Problem, das hier bis zum
+  25.09.2026 stand, ist damit seit dem 08.08. gelöst. Die Kehrseite: das Rezept
+  installiert beide trotzdem (und maskiert sie), und `weg_waehlen()` bevorzugt
+  hostapd, sobald es da ist — mit dem Übergang, den `wechsel_aus_ap()` über
+  `wpa_cli` macht, passt das nicht zusammen (E143/9).
+* **Die neue Verwaltung** hat Zeugen für 8 ihrer 28 Seiten direkt, für 6
+  weitere über Dienst oder Helfer; 14 sind ungetestet (gezählt 25.09.2026). In
+  der CI laufen die Karma-Tests nicht.
 * **Die neue Box-Oberfläche** hat Verhaltenstests für Abspielweg und Zustände,
   **nicht** für das Aussehen.
 * **Bei den Plugins** (4.7) fehlt noch **eine *eigene* Fläche, die der
@@ -3264,25 +3278,22 @@ Ehrlich benannt, damit niemand darauf baut:
   „kein Strom frei" und bricht sauber ab) — zwei gleichzeitige Aufnahmen gibt es
   erst mit einem dritten Zugang.
 * **Der Lautstärkesprung beim Quellenwechsel** ist real und **nicht
-  ausgeglichen**: lokale Dateien laufen seit dem 21.08. über ReplayGain,
-  Spotify über soloist — und soloist kennt keine Normalisierung, nur
-  `--initial-volume`. Der Regler dafür ist da („Wie laut — je Quelle"), die
-  **Zahl fehlt**. `tools/box/pegelvergleich.py` soll sie stumm messen (Null-Senke
-  + `ebur128`); die Einzelteile tragen, die Verkettung in `messen()` noch nicht
-  (llmwiki `pegelsprung-quellenwechsel-noch-ungemessen`).
-* **Die `klangwerk`-Senke nimmt keine Lautstärke an** — offen und **nicht
-  verstanden**, am 23.08.2026 am Gerät gemessen. Sie ist die Vorgabe-Senke, dort
-  greift der Regler der Box; `wpctl set-volume`, `pactl set-sink-volume` und der
-  Weg über `@DEFAULT_AUDIO_SINK@` melden alle Erfolg, danach steht sie wieder
-  auf 1.00. Kein Rechte- oder Sitzungsproblem (dieselbe Sitzung setzt die
-  Tonkarte problemlos), keine Schleife. Eine **frühere Ausgabe derselben Kette**
-  hat denselben Aufruf angenommen — der Unterschied zwischen den beiden Knoten
-  ist der offene Punkt. Wenn das der Normalfall ist, bewegt der Regler der Box
-  nichts, solange das Klangwerk vorne steht; das wäre die eigentliche Antwort
-  auf „die Lautstärke ist gedeckelt". Der Gerätezustand dazu (Tonkarte von Hand
-  auf 0.50 als Bremse, **nicht im Code**) steht in llmwiki
-  `klangwerk-senke-nimmt-keine-lautstaerke` und gehört vor dem Weiterarbeiten am
-  Gerät nachgeprüft.
+  ausgeglichen, wenn Spotify über soloist spielt**: lokale Dateien laufen seit
+  dem 21.08. über ReplayGain, und soloist kennt keine Normalisierung, nur
+  `--initial-volume`. librespot — die Vorgabe-Maschine — startet mit
+  `LIBRESPOT_ENABLE_VOLUME_NORMALISATION=1` (`config/templates/env-librespot`);
+  ob das am Gerät wirkt und gleich laut ergibt, ist ungemessen. Der Regler dafür
+  ist da („Wie laut — je Quelle"), die **Zahl fehlt**.
+  `tools/box/pegelvergleich.py` soll sie stumm messen (Null-Senke + `ebur128`);
+  die Einzelteile tragen, die Verkettung in `messen()` noch nicht (llmwiki
+  `pegelsprung-quellenwechsel-noch-ungemessen`, E143/11–13).
+* **Erledigt und deshalb nicht mehr hier: „Die `klangwerk`-Senke nimmt keine
+  Lautstärke an".** Am 05.09.2026 am Gerät aufgelöst — es war nie die Senke,
+  sondern der Attrappen-Regler der Tonkarte dahinter; `82-karte-software-regler.conf`
+  lässt sie in Software regeln, und die Nutzerlautstärke wohnt seither auf der
+  Hardware-Senke (llmwiki `klangwerk-senke-nimmt-keine-lautstaerke`, Abschnitt
+  AUFLÖSUNG). Die Vorlage legte bis zum 25.09.2026 nur das Rezept ab; seither
+  alle drei Wege.
 * **Bluetooth als Zugangsweg** wurde erwogen und verworfen: auf iPhones gibt es
   weder Web-Bluetooth noch BT-PAN, der Schritt ist historisch der hängefreudigste,
   und er teilt sich die Antenne mit dem WLAN.

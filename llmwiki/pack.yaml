@@ -1,5 +1,5 @@
 id: mupibox
-version: "616"
+version: "617"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -64087,3 +64087,71 @@ entries:
       ERZEUGEN angelegt) — und raeumt die 5-s-Frist danach ab: ein stehender
       setTimeout hielt den Testprozess sonst jedes Mal volle 5 s am Leben,
       obwohl alle Spieler laengst zu waren. 20/20 gruen, 3,2 s wie vorher.
+  - id: readme-3-9-nachgeprueft
+    kind: note
+    title: README 3.9 "Was halb fertig ist" nachgeprueft - vier Punkte behoben, zwei veraltet, der Rest mit Plan (E143)
+    tags: [readme, doku, ausrollweg, rezept, kinderzeit, einrichtung, lautheit, 2026]
+    quelle:
+      - 25.09.2026, Betreiberauftrag "arbeite die punkte ab, kontrolliere was wirklich offen ist und mache ein plan das wir die sektion loeschen koennen"
+      - drei parallele Pruefer (Kinderzeit/Gast, Eingabegeraete/Zeugen, Assistent/Lautheit) plus eigene Laeufe von tools/ausgerollte-vorlagen-deckung.py
+    body: |
+      STAND 25.09.2026 (Zustandsaussage - nachmessen, nicht glauben). Am
+      BAUM geprueft, nicht am Geraet. Plan und Status: BACKLOG E143.
+
+      ══ DER BEFUND JE PUNKT ═════════════════════════════════════════════
+      Von neun Punkten in README 3.9 stimmten sieben, zwei waren falsch:
+
+        VERALTET  "Einrichtungsassistent nicht verdrahtet" - seit 08.08.2026
+                  verdrahtet (E11b/I9-I13): sdstart -> mixpibox-vorstart ->
+                  eigenes WLAN "MixPi Start" OHNE hostapd (wpa_supplicant
+                  mode=2 + kleiner-dhcp.py) -> Uebergabe -> Selbstlauf. Der
+                  Satz stand sieben Wochen nach dem Verdrahten noch da.
+        ZU BREIT  "Lautstaerkesprung: Spotify nicht normalisiert" - gilt nur
+                  fuer soloist. librespot (die Vorgabe) startet mit
+                  LIBRESPOT_ENABLE_VOLUME_NORMALISATION=1 (env-librespot).
+
+      Behoben am selben Tag: Vorlesen/Piper, Leersenke 62, Fernbedienung auf
+      dem Rezept-Weg, Kinderzeit-Regeln je Kind in der Verwaltung. Offen mit
+      Plan: Anmeldung bei Gast an (Entscheidung), Zuordnungsseite, der
+      Assistent raeumt nicht auf (Vorstart + step-agent auf 0.0.0.0 nach
+      "fertig"), Lautheit mit soloist (Messung). Die Zeugen-Zeile ist keine
+      halbe Funktion und zog nach README 3.8.
+
+      ══ DIE LEHRE 1: ABGELEGT IST NICHT AUFGERUFEN ═══════════════════════
+      Der Rezept-Schritt `extras` kopiert scripts/mupibox/* nach
+      /usr/local/bin/mupibox/ - piper-einrichten.sh lag also auf jeder
+      Rezept-Box. Gerufen hat es kein Schritt. Dieselbe Klasse wie in
+      tools/ausrollweg-deckung.py ("angefasst" ist nicht "aufgerufen"), nur
+      fuer den dritten Weg, den jenes Werkzeug nicht liest. Genauso bei der
+      Fernbedienung: die Unit kam mit (*.service), der Leser nicht, und
+      eingeschaltet wurde nichts.
+
+      ══ DIE LEHRE 2: DIE WACHE KANNTE DIE LUECKE, NUR FRAGTE NIEMAND ═════
+      tools/ausgerollte-vorlagen-deckung.py meldete 61-entzerrer.conf und
+      fernbedienung.json laengst unter "Nicht auf einer heute frisch
+      aufgesetzten Box" - als Auskunft, nicht als Fehler, deshalb blieb der
+      Lauf gruen. 61 stand dabei nicht einmal in README 3.9: auf einer
+      Rezept-Box gab es die Senke `entzerrer` nicht, die Regler der Ton-Seite
+      stellten nichts. Umgekehrt legte NUR das Rezept 82-karte-software-
+      regler.conf ab. Wer eine Liste "was halb ist" pflegt, sollte diese
+      Auskunft mitlesen.
+
+      ══ DIE LEHRE 3: EINE KOPIE FRIERT STILL EIN ═════════════════════════
+      Der naheliegende Kinderzeit-Fix - `wemAnhang()` an laden()/speichern()
+      haengen, wie es der Kommentar in kinderzeit.ts selbst vorschlug - haette
+      beim ersten Speichern fuer JEDES gewaehlte Kind eine Kopie der Hausregel
+      in `je` geschrieben. Spaetere Aenderungen an der Hausregel erreichten
+      dieses Kind nie mehr, und nichts am Schirm zeigte es. Deshalb
+      GET /api/kinderzeit/satz (wer hat eigene Regeln?) und
+      DELETE /api/kinderzeit?profil= (zurueck zur Hausregel); die Seite
+      bearbeitet, was fuer das gewaehlte Kind GILT. Der Zeuge "ein Kind OHNE
+      eigene Regeln aendert die Hausregel" ist genau gegen diese Falle
+      gebaut und wurde mit ihr sabotiert rot.
+
+      ══ BEIFANG ══════════════════════════════════════════════════════════
+      Ein frischer Klon baut die Verwaltung nicht: `npm ci` installiert kein
+      Angular, seit src/frontend-box/package.json mit E118/1e (05.09.2026)
+      fiel - frontend-admin deklariert keine Abhaengigkeiten (BACKLOG
+      "Aufraeumen - frontend-admin deklariert null Abhaengigkeiten").
+      Karma als root im Container braucht zusaetzlich --no-sandbox und
+      --browsers=ChromeHeadless.

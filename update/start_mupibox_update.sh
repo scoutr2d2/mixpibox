@@ -1361,6 +1361,10 @@ echo "==========================================================================
 		# Nur A2DP, kein Freisprech-Profil: HFP-Nachverbinde-Versuche hacken
 		# den laufenden Ton ab (Begruendung in der Vorlage selbst).
 		cp -f ${MUPI_SRC}/config/templates/81-bluez-nur-a2dp.conf /etc/wireplumber/wireplumber.conf.d/81-bluez-nur-a2dp.conf >&3 2>&3
+		# Die Tonkarte regelt in Software — ihr Hardware-Regler ist eine
+		# Attrappe (Begruendung in der Vorlage). Stand bis zum 25.09.2026 nur
+		# im Rezept; wirkt nach dem naechsten WirePlumber-Start.
+		cp -f ${MUPI_SRC}/config/templates/82-karte-software-regler.conf /etc/wireplumber/wireplumber.conf.d/82-karte-software-regler.conf >&3 2>&3
 		# 3. Die beiden ins Leere zeigenden pulseaudio-Verweise wegraeumen.
 		#    Heute harmlos, weil das Ziel fehlt — sobald aber irgendetwas das
 		#    Paket pulseaudio nachzieht, haben sie wieder eines und starten
@@ -1377,6 +1381,10 @@ echo "==========================================================================
 		mkdir -p /etc/pipewire/pipewire.conf.d >&3 2>&3
 		rm -f /etc/pipewire/pipewire.conf.d/60-ueberall.conf >&3 2>&3
 		cp -f ${MUPI_SRC}/config/templates/61-entzerrer.conf /etc/pipewire/pipewire.conf.d/61-entzerrer.conf >&3 2>&3
+		# Die Leersenke des Mitschnitts (E66) — bis zum 25.09.2026 auf keinem
+		# Weg ausgerollt (AUDIT-2026-08-22 Rang 2). Wirkt wie 61 erst nach dem
+		# naechsten PipeWire-Start; Begruendung in der Vorlage.
+		cp -f ${MUPI_SRC}/config/templates/62-mixpi-mitschnitt.conf /etc/pipewire/pipewire.conf.d/62-mixpi-mitschnitt.conf >&3 2>&3
 		echo "## Tonstapel ${AUDIO_STAPEL}: Benutzerebene und wireplumber nachgezogen ##" >&3 2>&3
 		# DIE PLUGINS standen bis zum 22.08.2026 HIER, im pipewire-Zweig des
 		# case — eine PulseAudio-Box bekam beim Update gar keine
