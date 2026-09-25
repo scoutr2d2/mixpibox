@@ -1065,6 +1065,17 @@ if ! ghmuster_ausgabe=$(python3 tools/github-veroeffentlichen.py --selbsttest 2>
   luecken=$((luecken + 1))
 fi
 
+# Die Fassungs-Pipeline ueber GitHub (25.09.2026, Abschnitt 7.16): Kanal aus
+# dem Namen, Einschluss und Ordnung (gelesen mit dem Leser der BOX), das
+# Umstempeln auf eigeneCommits=0 und die Signaturfaelle. Faellt einer davon
+# still, bekaeme eine Box eine Fassung angeboten, die sie fuer aelter haelt —
+# oder eine, die niemand signiert hat.
+echo "── Fassungen, Kanaele, Signaturen (tools/mixpi-github-fassung.py --selbsttest) ──"
+if ! fassung_ausgabe=$(python3 tools/mixpi-github-fassung.py --selbsttest 2>&1); then
+  echo "$fassung_ausgabe"
+  luecken=$((luecken + 1))
+fi
+
 # Zwei README-Fassungen seit dem 23.09.2026 (deutsch massgeblich, englisch
 # uebersetzt). Was man nachrechnen kann — Zahlen, Pfade, Befehle, Bilder —
 # muss in beiden gleich sein; die Prosa darf abweichen.

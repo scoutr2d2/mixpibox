@@ -103,7 +103,12 @@ def paket_bauen(ziel: Path, inhalt: str) -> Path:
             "commit": "0" * 40, "zweig": "main", "version": "v1.1.0",
             "eigeneCommits": 0, "unsauber": 0, "gebautAm": "2026-08-31T00:00:00Z",
         }))
-        z.writestr("www/index.html", f"<!-- {inhalt} -->")
+        # DIE FORM DES ECHTEN PAKETS, nicht die von gestern: seit E118/1e
+        # (05.09.2026) liegt die Box-Oberflaeche unter www/neu/, eine
+        # index.html an der www-Wurzel gibt es nicht mehr. Bis zum 25.09.2026
+        # schrieb diese Probe noch www/index.html — und blieb gruen, waehrend
+        # der Zieher jedes echte Paket ablehnte (AUDIT-2026-09-25).
+        z.writestr("www/neu/index.html", f"<!-- {inhalt} -->")
         z.writestr("www-admin/index.html", f"<!-- {inhalt} -->")
     return ziel
 
@@ -111,13 +116,13 @@ def paket_bauen(ziel: Path, inhalt: str) -> Path:
 def box_bauen(wurzel: Path, eigene: int = 0) -> tuple[Path, Path]:
     app = wurzel / "app"
     player = wurzel / "player"
-    (app / "www").mkdir(parents=True)
+    (app / "www" / "neu").mkdir(parents=True)
     (app / "www-admin").mkdir(parents=True)
     player.mkdir(parents=True)
     (app / "server.js").write_text(f"// {ALT}\n")
     (app / "plugin-laufwerk.js").write_text(f"// {ALT}\n")
     (player / "spotify-control.js").write_text(f"// {ALT}\n")
-    (app / "www" / "index.html").write_text(f"<!-- {ALT} -->")
+    (app / "www" / "neu" / "index.html").write_text(f"<!-- {ALT} -->")
     (app / "www-admin" / "index.html").write_text(f"<!-- {ALT} -->")
     (app / "herkunft.json").write_text(json.dumps({
         "quelle": "http://git.local:3000/achim/box.git",
@@ -194,7 +199,7 @@ def lies(p: Path) -> str:
 
 def stand(app: Path, player: Path) -> str:
     return (lies(app / "server.js") + lies(player / "spotify-control.js")
-            + lies(app / "www" / "index.html"))
+            + lies(app / "www" / "neu" / "index.html"))
 
 
 def main() -> int:

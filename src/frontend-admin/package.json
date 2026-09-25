@@ -3,9 +3,34 @@
   "version": "0.1.0",
   "private": true,
   "description": "Verwaltungsoberflaeche der MuPiBox (loest den PHP-Admin ab)",
+  "_warum_die_abhaengigkeiten_hier_stehen": "Bis zum 25.09.2026 stand hier KEINE einzige Abhaengigkeit. Angular kam aus dem package.json der alten Box-Oberflaeche (src/frontend-box), und als die mit E118 (05.09.2026) fiel, fiel es mit - unbemerkt, weil jeder Arbeitsrechner sein altes node_modules behielt. Aus einem frischen `npm ci` endete `ng build` mit `ng: not found`, und die GitHub-CI war seit der ersten Veroeffentlichung rot. Die Fassungen sind die, die das Lockfile damals trug.",
   "scripts": {
     "build": "ng build",
     "serve": "ng serve",
     "test": "ng test"
+  },
+  "dependencies": {
+    "@angular/common": "^20.3.1",
+    "@angular/core": "^20.3.1",
+    "@angular/forms": "^20.3.1",
+    "@angular/platform-browser": "^20.3.1",
+    "@angular/router": "^20.3.1",
+    "rxjs": "~7.8.2",
+    "tslib": "^2.8.1",
+    "zone.js": "~0.15.1"
+  },
+  "devDependencies": {
+    "@angular-devkit/build-angular": "^20.3.2",
+    "@angular/cli": "20.3.2",
+    "@angular/compiler": "^20.3.1",
+    "@angular/compiler-cli": "^20.3.1",
+    "@types/jasmine": "~5.1.9",
+    "@types/node": "^24",
+    "jasmine-core": "~5.10.0",
+    "karma": "~6.4.4",
+    "karma-chrome-launcher": "~3.2.0",
+    "karma-jasmine": "~5.1.0",
+    "karma-jasmine-html-reporter": "^2.1.0",
+    "typescript": "~5.8.3"
   }
 }

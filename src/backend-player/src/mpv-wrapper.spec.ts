@@ -22,6 +22,13 @@ type Player = ReturnType<typeof import('./mpv-wrapper')>
 let ordner = ''
 let pfadVorher = ''
 const spieler: Player[] = []
+// Je Spieler ein Versprechen auf sein 'close' — beim ERZEUGEN angelegt, denn
+// ein Spieler, der im Test schon beendet wurde, meldet 'close' kein zweites Mal.
+const beendet: Promise<void>[] = []
+function anmelden(p: Player): void {
+  spieler.push(p)
+  beendet.push(new Promise<void>((fertig) => p.once('close', () => fertig())))
+}
 
 // Der Doppelgänger. Er ist bewusst KEIN Mock im Testprozess, sondern ein
 // eigener Prozess mit echtem Socket — sonst prüfte der Test die Verkabelung
@@ -135,7 +142,7 @@ function neuerSpieler(mitEreignissen = false, altesLoadfile = false): Player {
     programm: path.join(ordner, 'mpv'),
     socket: path.join(aktuell, 'ipc.sock'),
   })
-  spieler.push(p)
+  anmelden(p)
   return p
 }
 
@@ -150,7 +157,7 @@ before(async () => {
   pfadVorher = process.env.PATH || ''
 })
 
-after(() => {
+after(async () => {
   for (const p of spieler) {
     try {
       p.close()
@@ -158,6 +165,19 @@ after(() => {
       /* egal */
     }
   }
+  // ERST WARTEN, DANN LOESCHEN (25.09.2026): close() schickt mpv nur ein
+  // `quit` — der Doppelgaenger schreibt es noch in seinen lauf-Ordner, und
+  // der Wrapper raeumt beim Prozessende noch den Socket weg. Das sofortige
+  // rmSync lief dazwischen und scheiterte mit ENOTEMPTY (gemessen: 1 von 6
+  // Laeufen, und in der CI waere es ein zufaellig rotes Bauteil gewesen).
+  // Gewartet wird auf das 'close' jedes Spielers, das der Wrapper erst nach
+  // dem Prozessende meldet — mit Frist, damit ein haengender Doppelgaenger
+  // den Lauf nicht festhaelt.
+  // Die Frist wird wieder abgeraeumt: ein stehender Timer hielte den
+  // Testprozess sonst volle 5 s am Leben, auch wenn alle laengst zu sind.
+  let frist: ReturnType<typeof setTimeout> | undefined
+  await Promise.race([Promise.all(beendet), new Promise((r) => (frist = setTimeout(r, 5000)))])
+  clearTimeout(frist)
   process.env.PATH = pfadVorher
   fs.rmSync(ordner, { recursive: true, force: true })
 })
@@ -314,7 +334,7 @@ describe('wenn mpv gar nicht da ist', () => {
       programm: path.join(ordner, 'gibt-es-nicht'),
       socket: path.join(ordner, 'tot.sock'),
     })
-    spieler.push(p)
+    anmelden(p)
 
     let meldung = ''
     let zu = false
@@ -433,7 +453,7 @@ describe('gegen ECHTES mpv', { skip: mpvLaeuft() ? false : 'mpv nicht lauffähig
       argumente: ['--ao=null'], // kein Ton auf dem Entwicklungsrechner
       socket: path.join(echtOrdner, 'ipc.sock'),
     })
-    spieler.push(p)
+    anmelden(p)
 
     let wechsel = false
     let dauer: unknown

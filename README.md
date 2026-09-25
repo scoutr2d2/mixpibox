@@ -707,7 +707,7 @@ Ohne diesen Befehl liegen die Haken zwar im Baum, laufen aber **nie** —
 **Wo das Wissen steht.** Die teuer erkauften Einzelheiten — welche Messung
 welche Vermutung widerlegt hat, welcher Workaround warum nötig war — stehen
 nicht im Code und nicht in dieser Datei, sondern im Wissenspaket
-**`llmwiki/pack.yaml`** (1113 Einträge, Fassung 615). Es ist bewusst Daten,
+**`llmwiki/pack.yaml`** (1114 Einträge, Fassung 616). Es ist bewusst Daten,
 kein Code, und wird nie ausgeführt. Gelesen wird es nicht von Hand:
 
 ```bash
