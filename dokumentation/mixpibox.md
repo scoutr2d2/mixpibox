@@ -2873,12 +2873,23 @@ den istanbul-Reporter. Kaputt ging die **Verwaltung**: sie hat gar keine
 `ef946f34` hat das Paket in die Wurzel gestellt, wo geteiltes Werkzeug
 hingehört — der Ausfall war behoben, die Buchhaltung nicht.
 
-**`src/frontend-admin/package.json` führt bis heute null Abhängigkeiten.**
-Kein `@angular/core`, kein `rxjs`, kein `karma`. Jede Inventur über
-`package.json` misst dort eine leere Menge und meldet grün; gebaut und
-getestet wird trotzdem. Ein Bereich, der nichts deklariert, ist für eine
-Paket-Wache nicht sauber, sondern **unsichtbar** — dieselbe Bauart wie ein
+**`src/frontend-admin/package.json` führte bis zum 25.09.2026 null
+Abhängigkeiten.** Kein `@angular/core`, kein `rxjs`, kein `karma`. Jede
+Inventur über `package.json` maß dort eine leere Menge und meldete grün;
+gebaut und getestet wurde trotzdem. Ein Bereich, der nichts deklariert, ist für
+eine Paket-Wache nicht sauber, sondern **unsichtbar** — dieselbe Bauart wie ein
 Ordner, den kein Handbuch nennt.
+
+**Und so ging es aus:** Mit E118 (05.09.2026) fiel der Verleiher, das
+`package.json` der alten Box-Oberfläche unter `src/frontend-box`. Auf jedem Arbeitsrechner lag Angular weiter
+im alten `node_modules`, nichts wurde rot. Aus einem frischen `npm ci` aber
+endete `ng build` mit `ng: not found`, und `tsc` für das Backend fand
+`@types/cors` nicht mehr (kam transitiv über karma/engine.io). Die GitHub-CI war
+deshalb ab ihrer ersten Veröffentlichung (23.09.2026) rot, 3 von 3 Läufen.
+Seit dem 25.09.2026 deklariert die Verwaltung ihre Pakete selbst, in den
+Fassungen, die das Lockfile damals trug, und `@types/cors` steht bei
+`src/backend-api`. **Wer eine Abhängigkeit streicht, baut danach einmal aus
+`npm ci` in einem leeren Ordner** — das alte `node_modules` beweist nichts.
 
 Gemessen von `tools/arbeitsbereich-abhaengigkeiten-deckung.py` (läuft in
 `tools/doku-luecken-probe.sh`). Es fragt drei Sorten Benutzung ab, denn die
@@ -2892,35 +2903,20 @@ teuerste steht in keiner Zeile Quelltext:
 Als Deklaration zählt der eigene `package.json` **oder** die Wurzel, bewusst
 nicht der Schwesterbereich — der ist der Gegenstand.
 
-Die dreizehn offenen Leihen. Sie stehen hier und nicht als Ausnahmeliste im
-Skript, damit sie findet, wer die `package.json` aufmacht; das Aufräumen ist
-Arbeit am Bau und steht im `BACKLOG.md`:
+Die offenen Leihen. Sie stehen hier und nicht als Ausnahmeliste im Skript,
+damit sie findet, wer die `package.json` aufmacht; das Aufräumen ist Arbeit am
+Bau und steht im `BACKLOG.md`. **Stand 25.09.2026: keine.** Bis dahin standen
+hier dreizehn Zeilen — zwölf Leihen der Verwaltung aus `src/frontend-box`
+(Angular, `rxjs`, `karma` samt der drei vom Bauer fest geladenen Plugins) und
+`ionicons`, das kein Bereich deklarierte. Die zwölf sind seit dem 25.09.
+deklariert (siehe oben), `ionicons` fiel mit der alten Box-Oberfläche (E118).
 
 <!-- GELIEHENE-ABHAENGIGKEITEN:ANFANG -->
 
 | Paket | Bereich | Woher es heute kommt |
 |---|---|---|
-| `@angular-devkit/build-angular` | `src/frontend-admin` | `src/frontend-box` — der Bauer aus `angular.json` |
-| `@angular/cli` | `src/frontend-admin` | `src/frontend-box` — `ng` in `scripts.build` |
-| `@angular/common` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/core` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/forms` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/platform-browser` | `src/frontend-admin` | `src/frontend-box` |
-| `@angular/router` | `src/frontend-admin` | `src/frontend-box` |
-| `rxjs` | `src/frontend-admin` | `src/frontend-box` |
-| `karma` | `src/frontend-admin` | `src/frontend-box` — Läufer des `:karma`-Ziels |
-| `karma-chrome-launcher` | `src/frontend-admin` | `src/frontend-box` — vom Bauer fest geladen |
-| `karma-jasmine` | `src/frontend-admin` | `src/frontend-box` — vom Bauer fest geladen |
-| `karma-jasmine-html-reporter` | `src/frontend-admin` | `src/frontend-box` — vom Bauer fest geladen |
-| `ionicons` | `src/frontend-box` | **niemand** — nur mitgezogen von `@ionic/angular` |
 
 <!-- GELIEHENE-ABHAENGIGKEITEN:ENDE -->
-
-Die letzte Zeile ist die andere Sorte und die härtere: `ionicons` deklariert
-**kein** Bereich und auch die Wurzel nicht. `add.page.ts` importiert es
-direkt; im Baum liegt es, weil `@ionic/angular` es mitbringt. Ein
-Nebenwerkzeug, das seine Abhängigkeit einmal ändert, nimmt der Box-Oberfläche
-einen Import weg, den sie für ihren eigenen hielt.
 
 Die Wache prüft die Tabelle **in beide Richtungen**: wer eine Leihe endlich
 deklariert oder ihren letzten Nutzer löscht, ohne die Zeile hier zu streichen,
