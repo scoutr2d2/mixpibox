@@ -347,11 +347,15 @@ function zeichneVerlauf(
 
   // Eingangsstrom hinter der Spannung, damit die Spannung obenauf liegt.
   t.push('0.2 0.5 0.9 RG', '0.8 w')
-  werte.forEach((z, k) => t.push(`${px(z).toFixed(1)} ${pyI(Number(z.ibus ?? 0)).toFixed(1)} ${k ? 'l' : 'm'}`))
+  werte.forEach((z, k) => {
+    t.push(`${px(z).toFixed(1)} ${pyI(Number(z.ibus ?? 0)).toFixed(1)} ${k ? 'l' : 'm'}`)
+  })
   t.push('S')
 
   t.push('0.85 0.2 0.2 RG', '1.4 w')
-  werte.forEach((z, k) => t.push(`${px(z).toFixed(1)} ${pyV(Number(z.vbus)).toFixed(1)} ${k ? 'l' : 'm'}`))
+  werte.forEach((z, k) => {
+    t.push(`${px(z).toFixed(1)} ${pyV(Number(z.vbus)).toFixed(1)} ${k ? 'l' : 'm'}`)
+  })
   t.push('S')
 
   t.push('0 0 0 RG', '0 0 0 rg')
@@ -443,13 +447,17 @@ export function alsPdf(
     y -= 16
     // Kopfzeile fett, darunter ein Strich — sonst verschwimmen die Spalten.
     t.push('BT', '/F2 7 Tf')
-    SPALTEN.forEach((c, i) => t.push(`1 0 0 1 ${xs[i].toFixed(1)} ${y} Tm`, `(${pdfEsc(c.kopf)}) Tj`))
+    SPALTEN.forEach((c, i) => {
+      t.push(`1 0 0 1 ${xs[i].toFixed(1)} ${y} Tm`, `(${pdfEsc(c.kopf)}) Tj`)
+    })
     t.push('ET')
     t.push('0.5 w', `${rand} ${y - 3} m`, `${breite - rand} ${y - 3} l`, 'S')
     y -= zeilenHoehe + 2
     t.push('BT', '/F1 7 Tf')
     for (const z of teil) {
-      SPALTEN.forEach((c, i) => t.push(`1 0 0 1 ${xs[i].toFixed(1)} ${y} Tm`, `(${pdfEsc(c.hol(z))}) Tj`))
+      SPALTEN.forEach((c, i) => {
+        t.push(`1 0 0 1 ${xs[i].toFixed(1)} ${y} Tm`, `(${pdfEsc(c.hol(z))}) Tj`)
+      })
       y -= zeilenHoehe
     }
     t.push('ET')

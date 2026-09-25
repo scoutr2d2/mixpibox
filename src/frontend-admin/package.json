@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "description": "Verwaltungsoberflaeche der MuPiBox (loest den PHP-Admin ab)",
+  "_warum_die_abhaengigkeiten_hier_stehen": "Bis zum 25.09.2026 stand hier KEINE einzige Abhaengigkeit. Angular kam aus dem package.json der alten Box-Oberflaeche (src/frontend-box), und als die mit E118 (05.09.2026) fiel, fiel es mit - unbemerkt, weil jeder Arbeitsrechner sein altes node_modules behielt. Aus einem frischen `npm ci` endete `ng build` mit `ng: not found`, und die GitHub-CI war seit der ersten Veroeffentlichung rot. Die Fassungen sind die, die das Lockfile damals trug.",
   "scripts": {
     "build": "ng build",
     "serve": "ng serve",
-    "test": "ng test"
+    "test": "ng test",
+    "_kommentar:lint": "Bis 25.09.2026 fehlte `lint` hier, und `npm run lint --workspaces` brach mit `Missing script` ab (npm ueberspringt NICHT still). Woertlich wie die Backends, samt der zwei Schalter - Begruendung im `_kommentar:lint` von mupibox-backend-api und im Handbuch 7.5.",
+    "lint": "npx @biomejs/biome check --formatter-enabled=false --assist-enabled=false .",
+    "lint:fix": "npx @biomejs/biome check --formatter-enabled=false --assist-enabled=false --fix ."
   },
   "dependencies": {
     "@angular/common": "^20.3.1",

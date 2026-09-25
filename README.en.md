@@ -48,6 +48,9 @@ whose people have never seen this code.
 
 From the commit log, not from memory. Which of this is half-done is in 3.9.
 
+* **25.09.** **Screen-time (Kinderzeit) rules per child** now in the admin too:
+  per child "like the house rule" or own rules. The one-button path sets up
+  read-aloud, remote control, equalizer and the recording sink like the other paths.
 * **21.09.** Messages to the child — only from senders on the list, shown
   where the child is looking.
 * **20.09.** A **network share** (SMB or WebDAV) as storage for backups
@@ -101,8 +104,9 @@ What is only half there is in 3.9 — and only there.
   usually no text — that is the normal case and is reported as such
   (measured 05.09.2026: pop 5/5, children's song 3/5, audio play 0/5).
 * **Read aloud.** A tap on a tile reads the name aloud, in **learning mode**
-  syllable by syllable. Computed on the box (Piper), without network — but see
-  the limitation in 3.9.
+  syllable by syllable. Computed on the box (Piper), without network. All three
+  rollout paths set Piper up; if the download fails there (around 244 MB), the
+  box falls back to the browser voice (espeak-ng).
 * **Profiles.** Up to twelve children, each with name, character, birthday and
   their own stores (history, resume, lists, media selection, appearance,
   video approvals, time used). Sign-in works without a keyboard: a
@@ -231,7 +235,7 @@ idle.
 
 This is explicitly a **test feature**: off by default, a separate switch per
 service, and without a second checkbox on the legal situation nothing records
-at all. Today only Spotify can be recorded. See also 3.9.
+at all. Today only Spotify can be recorded.
 
 ### 3.7 Operating without touch — remote control and controller
 
@@ -270,38 +274,31 @@ dedicated service reads `/dev/input/event*` with the Python standard library,
   partition of the card is enough.
 * **Messages to the box** (Matrix, Signal, Telegram) and an MQTT service for
   Home Assistant — inherited and in operation.
+* **Tests:** the admin has witnesses for the login path, screen time, search
+  and a few more pages — far from every page. The box UI has behaviour tests
+  for the playback path and states, **not** for the appearance.
 
 ### 3.9 What is half finished
 
 So that nobody builds on it — the long version is in
-`dokumentation/mixpibox.md`, section 9:
+`dokumentation/mixpibox.md`, section 9. The plan by which this section goes
+away is in `BACKLOG.md`, E143 (re-checked on 25.09.2026):
 
-* **Read-aloud does not make it onto every card.** Only
-  `autosetup/autosetup.sh` and the update path set up Piper; the one-button
-  path described in section 5 does **not** — a box written that way falls back
-  to the browser voice (espeak-ng).
-* **The recording's null sink is installed by no rollout path**
-  (`config/templates/62-mixpi-mitschnitt.conf` is in none of the three paths).
-  On a freshly set-up box it is missing; recording needs it.
-* **Screen-time (Kinderzeit) rules per child** — the server has long been able
-  to do them (house rule plus exceptions per profile), but the admin page still
-  writes only the house rule. Account, bonus and reset already work per child.
 * **Login only takes effect with the guest switched off.** As long as the
   guest is on — the default — the box starts silently in the last active
-  profile, and the start mode has no effect.
+  profile, even if it has a lock, and the start mode has no effect.
 * **Assigning a new input device is manual work.** The admin page for it is
-  missing; two routes and the SVG schematics are ready.
-* **Remote and controller are missing on the recipe path.** The recipes create
-  neither `/etc/mupibox/fernbedienung.json` nor the device profiles and do not
-  enable `mixpi-fernbedienung.service` — only `autosetup.sh` and the update
-  path do. On a card from 5.4 both have to be added by hand.
-* **The setup wizard** for the very first start (QR, own Wi-Fi, page for the
-  phone) exists as a scaffold but is not wired up yet.
-* **The admin** has witnesses for the login path, screen time, search and a
-  few more pages — far from every page. The box UI has behaviour tests for the
-  playback path and states, **not** for the appearance.
-* **The volume jump when switching sources** is real and not compensated:
-  local files run through ReplayGain, Spotify does not.
+  missing; since 25.09.2026 all three rollout paths put the device profiles and
+  SVG schematics on the box, but no route writes the mapping yet.
+* **The setup wizard does not clean up after itself.** The phone path (own
+  Wi-Fi, QR, page for the phone) is wired up and was played through on the
+  Pi 5, not on the Pi 4. After setup, however, the installation agent stays on
+  the network and the pre-start stays enabled — a finished box that boots
+  without a router opens the setup Wi-Fi again.
+* **The volume jump when switching sources** is real and not compensated when
+  Spotify plays through Soloist: local files run through ReplayGain, Soloist
+  has no normalisation. librespot (the default) normalises; that this makes
+  them equally loud has not been measured.
 
 ---
 ## 4. What this branch does differently
@@ -319,13 +316,13 @@ counting them in (then the list lies).
 | **New admin (Verwaltung)** in Angular, 27 pages + sign-in, under `/admin`, with search across all settings. | `src/frontend-admin/` | replaces the PHP admin (removed 19.08.2026); witnesses for the sign-in path, screen time, search and a few more pages |
 | **Backends in TypeScript** instead of grown JS/PHP. | `src/backend-api/` (142 test files), `src/backend-player/` (15) | in use |
 | **Profiles for several children** — up to twelve, with character, birthday, lock in five input modes and own storage per child. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | done; sign-in only takes effect with guest switched off (3.9) |
-| **Kinderzeit** — how long, when and on which days; counted server-side, not in the browser. | `src/backend-api/src/kinderzeit.ts` | done; per-child rules: the server can, the admin cannot yet (3.9) |
+| **Kinderzeit** — how long, when and on which days; counted server-side, not in the browser. | `src/backend-api/src/kinderzeit.ts` | done; per-child rules in the admin too since 25.09.2026 |
 | **Reward videos** — parents release individual Mediathek videos, in pieces, with a counter. | `NewDesign/video.js`, admin page „Videos" | done |
 | **Games and learning** — six apps in the drawer, four games in the game corner, each individually switchable off. | `NewDesign/apps.js`, `NewDesign/app.js`, `src/backend-api/src/spiele.ts` | done |
 | **Control via remote/controller** — four device profiles, 16 actions, without X. | `scripts/box/fernbedienung.py`, `config/fernbedienungen/` | done; the mapping page is missing (3.9) |
 | **Merging of several sources** — the same album from Spotify *and* Jellyfin becomes ONE tile, the default since 06.09.2026. | `src/backend-api/src/verschmelzung.ts` | done, measured on the device (44 → 35 tiles) |
 | **Artist pages** and **Continue listening** — all albums of an artist; „where did I leave off?". | `src/backend-api/src/interpretenseite.ts`, `weiterhoeren.ts` | done, tested |
-| **An audio chain you can adjust** — several Bluetooth sinks at once, five-band equalizer, stereo width, compressor/limiter, volume per source. | `config/templates/61-entzerrer.conf`, plugin `mixpi-klang`, admin page „Ton" | done; no auto-EQ, loudness between the services still open (3.9) |
+| **An audio chain you can adjust** — several Bluetooth sinks at once, five-band equalizer, stereo width, compressor/limiter, volume per source. | `config/templates/61-entzerrer.conf`, plugin `mixpi-klang`, admin page „Ton" | done; no auto-EQ, loudness between the services still open with Soloist (3.9) |
 | **Covers live on the box.** Measured: 1.69 s cold → 0.03 s afterwards. | `src/backend-api/src/server.ts` (`coverspeicher`) | done (Classic has this too since 5.0.0) |
 | **systemd instead of pm2** — ready 20 s earlier; on **all** paths since 14.08.2026. | `config/services/` | switched over |
 | **A plugin system** — everything beyond the core is a plugin, no build step, in its own worker thread. | `plugins/` (14 of them) | in use; a dedicated area in the child screen is deliberately missing (section 7) |
@@ -370,8 +367,8 @@ one second. The measurements are in the knowledge pack
 
 What did **not** get better is stated honestly alongside: the roughly 9 s that
 Chromium needs from process start to the finished picture are real work and
-remain; and the volume jump between the services is not evened out
-(3.9).
+remain; and the volume jump between the services is not evened out with
+Soloist (3.9).
 
 ---
 ## 5. Installation from scratch
@@ -459,7 +456,7 @@ uses `./sdgui` (graphical) or `./sdtui` (terminal).
 ### 5.5 Step 4 — setting up the box
 
 **The normal case: it does it itself.** The card carries the recipe as JSON
-plus all the files (30 + 24 steps from `recipes/mupibox.yaml` and
+plus all the files (30 + 26 steps from `recipes/mupibox.yaml` and
 `recipes/mupibox-app.yaml`). Insert the card, apply power — the run survives
 the reboots that are in the recipe, writes its state to disk before every step
 and **stops** when a step fails, instead of carrying on half finished.
@@ -696,7 +693,7 @@ Without this command the hooks sit in the tree but **never** run —
 **Where the knowledge is.** The dearly bought details — which measurement
 refuted which assumption, which workaround was necessary and why — are
 neither in the code nor in this file but in the knowledge pack
-**`llmwiki/pack.yaml`** (1114 entries, version 616). It is deliberately data,
+**`llmwiki/pack.yaml`** (1117 entries, version 619). It is deliberately data,
 not code, and is never executed. It is not read by hand:
 
 ```bash

@@ -868,8 +868,8 @@ fi
 # der `package.json` eines Arbeitsbereichs. `src/frontend-admin` deklarierte
 # bis zum 25.09.2026 NULL Abhaengigkeiten und lief trotzdem, weil npm alles in
 # die Wurzel hebt; eine Inventur ueber `package.json` mass dort eine leere
-# Menge und meldete gruen. Aufgefallen ist es erst, als `390880f5` bei der Schwester aufraeumte
-# und das `ng test` der VERWALTUNG stehenblieb. Die Wache fragt auch die zwei
+# Menge und meldete gruen. Aufgefallen ist es erst, als `390880f5` bei der
+# Schwester aufraeumte und das `ng test` der VERWALTUNG stehenblieb. Die Wache fragt auch die zwei
 # Benutzungen ab, die in keiner Zeile Quelltext stehen: was der Bauer aus
 # `angular.json` voraussetzt und was ein npm-Skript aufruft.
 echo "── Geliehene Abhaengigkeiten (tools/arbeitsbereich-abhaengigkeiten-deckung.py) ──"
@@ -1062,6 +1062,17 @@ fi
 echo "── Muster der GitHub-Ausschlussliste (tools/github-veroeffentlichen.py --selbsttest) ──"
 if ! ghmuster_ausgabe=$(python3 tools/github-veroeffentlichen.py --selbsttest 2>&1); then
   echo "$ghmuster_ausgabe"
+  luecken=$((luecken + 1))
+fi
+
+# Die Fassungs-Pipeline ueber GitHub (25.09.2026, Abschnitt 7.16): Kanal aus
+# dem Namen, Einschluss und Ordnung (gelesen mit dem Leser der BOX), das
+# Umstempeln auf eigeneCommits=0 und die Signaturfaelle. Faellt einer davon
+# still, bekaeme eine Box eine Fassung angeboten, die sie fuer aelter haelt —
+# oder eine, die niemand signiert hat.
+echo "── Fassungen, Kanaele, Signaturen (tools/mixpi-github-fassung.py --selbsttest) ──"
+if ! fassung_ausgabe=$(python3 tools/mixpi-github-fassung.py --selbsttest 2>&1); then
+  echo "$fassung_ausgabe"
   luecken=$((luecken + 1))
 fi
 

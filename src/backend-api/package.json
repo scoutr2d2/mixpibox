@@ -9,8 +9,9 @@
     "_kommentar:build:plugin-laufwerk": "ZWEITER AUSGANG, ABSICHTLICH GETRENNT. Der Worker-Einstieg darf NICHT in server.js hineingebuendelt werden - ein Worker braucht eine eigene Datei auf der Platte. Wer diese Zeile streicht, baut ein server.js, das startet, aber jedes Plugin still liegen laesst: plugin-wirt.ts findet das Laufwerk nicht und meldet es nur im Journal.",
     "build:plugin-laufwerk": "esbuild src/plugin-laufwerk.ts --bundle --minify --platform=node --target=node22 --log-level=error --outfile=../deploy/plugin-laufwerk.js",
     "test": "cross-env NODE_ENV=test tsx --test src/*.spec.ts",
-    "lint": "npx @biomejs/biome check .",
-    "lint:fix": "npx @biomejs/biome check --fix .",
+    "_kommentar:lint": "Formatierung und Import-Reihenfolge sind seit 25.09.2026 AUS dem Lint-Tor genommen (die zwei Schalter), nicht aus biome.json: die Massenformatierung gehoert in den internen Baum, in dem parallele Sitzungen dieselben Dateien bearbeiten. Dort `npx @biomejs/biome check --fix .` in jedem Bereich, danach die zwei Schalter in allen drei Bereichen streichen. Handbuch 7.5.",
+    "lint": "npx @biomejs/biome check --formatter-enabled=false --assist-enabled=false .",
+    "lint:fix": "npx @biomejs/biome check --formatter-enabled=false --assist-enabled=false --fix .",
     "check-types": "npx tsc --noEmit"
   },
   "dependencies": {
@@ -23,6 +24,7 @@
   },
   "devDependencies": {
     "@types/compression": "^1.8.1",
+    "@types/cors": "2.8.19",
     "@types/express": "5.0.3",
     "@types/jsonfile": "6.1.4",
     "@types/node": "24.5.2",

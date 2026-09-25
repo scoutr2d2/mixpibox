@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1114 Einträge,
-Fassung 616). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1117 Einträge,
+Fassung 619). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -1226,7 +1226,9 @@ jemand `/tmp` aufräumt.
 | `GET/PUT /api/profil/auswahl`, `GET /api/profil/auswahlen`, `POST /api/profil/auswahl/werk` | die Auswahl je Profil (der Gast hat keine und bekommt keine) |
 | `GET/POST /api/profil/aussehen` | Aussehen je Profil; **nur was genannt wird, wird gesetzt** |
 | `GET /api/figuren` | die Figuren zur Wahl — bewusst ohne Aufzählung im Code |
-| `GET/PUT /api/kinderzeit` | die Regeln. **Mit `?profil=<kennung>` je Kind** (`RegelSatz.je`, seit 02.08.2026), ohne den Anhang der `standard`-Satz; `regelnFuer` nimmt beim Stand den eigenen Satz, sonst `standard`. Die Kinderzeit-Seite der Verwaltung hängt den Anhang **nicht** an und bearbeitet deshalb immer `standard` — das ist der offene Rest, nicht eine Grenze des Servers |
+| `GET/PUT /api/kinderzeit` | die Regeln. **Mit `?profil=<kennung>` je Kind** (`RegelSatz.je`, seit 02.08.2026), ohne den Anhang der `standard`-Satz (die Hausregel); `regelnFuer` nimmt beim Stand den eigenen Satz, sonst `standard`. Die Antwort mit `?profil=` sagt **nicht**, ob die Regel eigen oder geerbt ist — dafür gibt es `/satz` |
+| `GET /api/kinderzeit/satz` | der **ganze** Regelsatz `{standard, je}` (seit 25.09.2026). Daraus liest die Profilseite der Verwaltung, ob das gewählte Kind eigene Regeln hat, und bearbeitet genau das, was für es gilt |
+| `DELETE /api/kinderzeit?profil=<kennung>` | eigene Regeln eines Kindes verwerfen — danach gilt die Hausregel (seit 25.09.2026; vorher verschwand ein `je`-Eintrag nur mit dem Kind). Ohne `?profil=` ein 400 `hausregelBleibt` |
 | `GET /api/kinderzeit/stand`, `POST /api/kinderzeit/bonus`, `POST /api/kinderzeit/zuruecksetzen` | Konto, geschenkte Minuten und Tages-Reset — **immer je Kind** (`?profil=`, ohne Anhang das aktive Profil) |
 
 **Belohnungs-Videos aus der Mediathek** (`videofreigabe.ts` + `plugins/mixpi-mediathek`, seit 20.09.2026)
@@ -1817,8 +1819,8 @@ Befehle als root aus, streamt jede Ausgabezeile, killt einen hängenden Schritt
 
 | Rezept | Schritte | Wofür |
 |---|---|---|
-| `mupibox.yaml` | 29 | das System: Pakete, Node, Audio, Kiosk, Netz |
-| `mupibox-app.yaml` | 23 | die App: Dateien, Dienste, Konfiguration |
+| `mupibox.yaml` | 30 | das System: Pakete, Node, Audio, Kiosk, Netz |
+| `mupibox-app.yaml` | 26 | die App: Dateien, Dienste, Konfiguration, Fernbedienung, Vorlesen |
 | `perf-tune.yaml` | 9 | Startzeit und Speicher |
 | `demo.yaml` | 5 | Beispiel |
 
@@ -1831,7 +1833,7 @@ Sichtbar gemacht wird die Drift stattdessen: `tools/stueckliste.py` schreibt
 auf, was eine funktionierende Box hatte, und der Rezeptschritt `stueckliste`
 **meldet** Abweichungen, ohne sie zu verhindern.
 
-### 5.2 Der neue Einrichtungsassistent (im Bau)
+### 5.2 Der Einrichtungsassistent (verdrahtet seit 08.08.2026; was danach offen bleibt: Abschnitt 9)
 
 Ziel: beim ersten Start braucht niemand mehr einen Laptop.
 
@@ -2212,7 +2214,7 @@ Die `README.md` verweist für diese Liste seit jeher hierher; bis zum
 | `npm run test` | alle drei Bereiche **plus** `test:plugins` — siehe die Warnung unten |
 | `npm run test:frontend-admin` | die Angular-Verwaltung |
 | `npm run test:plugins` | `node --test plugins/*/*.spec.mjs` |
-| `npm run lint` · `lint:fix` | Biome über die Bereiche |
+| `npm run lint` · `lint:fix` | Biome über alle drei Bereiche — seit 25.09.2026 nur die Lint-Regeln, ohne Formatierung und Import-Reihenfolge (7.5) |
 | `npm run plugin:neu` · `plugin:pruefen` | Plugin-Gerüst anlegen, Manifest prüfen |
 | `npm run docker:build` · `docker:start` | das Docker-Abbild aus dem Ursprungsprojekt — **bricht ab, siehe unten** |
 
@@ -2224,11 +2226,17 @@ Die `README.md` verweist für diese Liste seit jeher hierher; bis zum
 > löst den Browser selbst auf (`CHROME_BIN`, notfalls das Playwright-Binary)
 > und ruft `ng test --watch=false` bzw. `--configuration ci`.
 >
-> Ebenso still: `npm run lint` und `lint:fix` fächern über alle Bereiche,
-> **`frontend-admin` hat gar kein `lint`** — npm überspringt es kommentarlos.
-> Die Verwaltung wird also von der Wurzel aus nie geprüft. Gemessen am
-> 25.08.2026 meldete `npm run lint` 130 Fehler und 48 Warnungen aus den beiden
-> Backends; der Zustand hat Haltbarkeit, die Ursache nicht.
+> **Berichtigt am 25.09.2026:** Hier stand bis dahin, `npm run lint` fächere
+> über alle Bereiche und npm überspringe `frontend-admin` „kommentarlos", weil
+> der Bereich kein `lint` hatte. **Das war nie gemessen und ist falsch.** npm
+> (nachgemessen mit 10.9.7) bricht die Fächerung mit `Missing script: "lint"`
+> ab — still schweigt es nur mit `--if-present`. Der CI-Auftrag `Lint (Biome)`
+> war genau daran rot, zusätzlich zu 145 Biome-Fehlern in den Backends. Seit
+> dem 25.09. hat `frontend-admin` `lint` und `lint:fix`, wörtlich wie die
+> Backends, und `tools/npm-skripte-deckung.py` zählt einen Bereich, dem ein
+> gefächertes Skript fehlt, als Lücke. `--if-present` in der Wurzel wäre die
+> kürzere Behebung gewesen — sie hätte die Verwaltung wieder ungeprüft
+> gelassen.
 
 Bis zum 25.08.2026 stand hier ein **totes Skript**: `test:frontend-api` rief
 den Arbeitsbereich `mupibox-frontend-api`, den es nie gab (`npm error No
@@ -2308,9 +2316,18 @@ Drei Aufträge, alle auf `ubuntu-latest` mit Node 22 und `npm ci`:
 
 | Auftrag | Was er ruft | Was das deckt |
 |---|---|---|
-| `Lint (Biome)` | `npm run lint` | Biome über die Bereiche — **ohne `frontend-admin`**, siehe Kasten |
-| `Backend tests + types` | `npm run check-types` (nur `backend-player`), dann `npm run test` für `backend-api` und `backend-player` | 126 der 200 Testdateien |
-| `Build all workspaces` | `npm run build` | alle vier Bereiche; darüber läuft auch der Angular-Compiler beider Oberflächen |
+| `Lint (Biome)` | `npm run lint` | die Biome-Lint-Regeln in allen drei Bereichen, **blockierend** — Formatierung und Import-Reihenfolge nicht, siehe Kasten |
+| `Tests + types` | `npm run check-types` (nur `backend-player`), dann `npm run test` für `backend-api` und `backend-player`, `npm run test:plugins`, dazu der Selbsttest von `tools/mixpi-github-fassung.py` und der Zieher-Sandkasten `tools/mixpi-zieher-probe.py` | die Testdateien beider Backends und aller Plugins, dazu die Fassungs-Pipeline (7.16) |
+| `Build all workspaces` | `npm run build` | alle drei Bereiche mit Bau (`backend-api`, `backend-player`, `frontend-admin`); darüber läuft auch der Angular-Compiler der Verwaltung |
+
+**Rot von der ersten Veröffentlichung bis zum 25.09.2026.** Alle drei Läufe
+auf GitHub scheiterten an Lint und Bau: `src/frontend-admin/package.json`
+deklarierte keine einzige Abhängigkeit (Abschnitt 7.13), ein frisches `npm ci`
+hatte also kein `ng`, und `backend-api` fehlte `@types/cors` aus demselben
+Grund. Auf keinem Arbeitsrechner fiel das auf — dort lag das alte
+`node_modules`. Seit dem 25.09. ist beides deklariert und die Aktionen stehen
+auf `actions/checkout@v7`/`actions/setup-node@v7` (Node 24 statt der
+abgekündigten Node-20-Laufzeit).
 
 **Warum `check-types` nur einmal dasteht:** `backend-api` hängt es sich selbst
 vor den Bau (`"build": "npm run check-types && esbuild …"`), `backend-player`
@@ -2327,14 +2344,29 @@ Rest, sondern die Ergänzung.
 >   `ng build` im Bau-Auftrag den ganzen Compiler durchläuft — Tippfehler und
 >   Typfehler fallen also, das *Verhalten* nicht. Geprüft wird es über
 >   `tools/pruefen.sh`, das den Browser selbst auflöst.
-> * **`lint` für `frontend-admin`.** Der Bereich hat gar kein `lint`-Skript;
->   `npm run lint --workspaces` überspringt ihn kommentarlos (Abschnitt 7.4).
->   Die CI erbt das Loch und meldet trotzdem grün.
-> * **die Plugin-Tests** — dazu der Absatz unten. Sie stehen bewusst *nicht*
->   in diesem Kasten als Skriptname: seit dem 26.08.2026 ruft `pruefen.sh`
->   sie, und ein Name in diesem Kasten entschuldigt ihn bei
->   `tools/ci-deckung.py`. Stünde er hier, könnte der Schritt aus
->   `pruefen.sh` verschwinden, ohne dass die Wache es meldet.
+> * **Formatierung und Import-Reihenfolge — seit dem 25.09.2026 nicht im
+>   Lint-Tor.** Das `lint` jedes Bereichs ruft
+>   `biome check --formatter-enabled=false --assist-enabled=false`; die
+>   Lint-Regeln aus `biome.json` gelten voll und blockieren. Biome meldete an
+>   dem Tag 145 Fehler, davon 136 Formatierung und Import-Reihenfolge (die
+>   übrigen neun sind behoben). Die Massenformatierung gehört in den internen
+>   Baum, in dem parallele Sitzungen dieselben Dateien bearbeiten — von hier
+>   aus gepusht, kollidierte sie mit allen (gemessen 25.09.2026: 148 Dateien,
+>   +1190/−1075 Zeilen). **Der Rückweg:** im internen Baum in jedem Bereich
+>   `npx @biomejs/biome check --fix .`, dann die zwei Schalter aus `lint` und
+>   `lint:fix` aller drei Bereiche streichen; steht im `BACKLOG.md`. Am selben
+>   Tag in einer Wegwerf-Kopie durchgespielt: danach meldet das volle
+>   `biome check` in allen drei Bereichen null Fehler. Die
+>   Schalter sitzen bewusst in den Skripten, nicht in `biome.json` — so
+>   formatieren Editoren weiter nach den Regeln des Baums.
+>
+>   Davor, vom 25.09. bis zu dieser Änderung am selben Tag, war der
+>   Lint-Schritt über `continue-on-error` ganz nicht blockierend. Biome ist
+>   auf `2.5.11` gepinnt — mit `"*"` brachte jede neue Biome-Fassung neue
+>   Regeln und damit neues Rot. `biome.json` verträgt **keine Kommentare**:
+>   einer genügte, und Biome las die Konfiguration aus einem Bereich heraus
+>   gar nicht mehr — ohne Fehlermeldung, mit Tabs und doppelten
+>   Anführungszeichen als Vorgabe (llmwiki `lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still`).
 
 **Die 14 Testdateien unter `plugins/*/` liefen in keinem Läufer** (gefunden
 26.08.2026). 367 Tests, alle grün, zusammen 230 Millisekunden — und niemand
@@ -2354,7 +2386,8 @@ Das ist die bekannte Bauart eine Ebene höher: nicht eine Wache hängt in
 keinem Läufer, sondern eine ganze **Testmenge** (llmwiki
 `wache-stirbt-still-wenn-sie-nirgends-haengt`, `testmenge-in-keinem-laeufer`).
 Sie war grün, weil niemand fragte.
-Seit dem 26.08.2026 ruft `tools/pruefen.sh` sie als eigenen Schritt.
+Seit dem 26.08.2026 ruft `tools/pruefen.sh` sie als eigenen Schritt, seit dem
+25.09.2026 auch die CI (`npm run test:plugins` im Auftrag `Tests + types`).
 
 Gewacht von `tools/ci-deckung.py` (läuft in `tools/doku-luecken-probe.sh`):
 es hält jeden Auftrag und jedes `npm run` aus `ci.yml` gegen diesen
@@ -2876,33 +2909,25 @@ hingehört — der Ausfall war behoben, die Buchhaltung nicht.
 **`src/frontend-admin/package.json` führte bis zum 25.09.2026 null
 Abhängigkeiten.** Kein `@angular/core`, kein `rxjs`, kein `karma`. Jede
 Inventur über `package.json` maß dort eine leere Menge und meldete grün;
-gebaut und getestet wurde trotzdem. Ein Bereich, der nichts deklariert, ist
-für eine Paket-Wache nicht sauber, sondern **unsichtbar** — dieselbe Bauart
-wie ein Ordner, den kein Handbuch nennt.
+gebaut und getestet wurde trotzdem. Ein Bereich, der nichts deklariert, ist für
+eine Paket-Wache nicht sauber, sondern **unsichtbar** — dieselbe Bauart wie ein
+Ordner, den kein Handbuch nennt.
 
-**Dann fiel der Verleiher ganz weg, und zwanzig Tage merkte es niemand.**
-E118/1e (05.09.2026) löschte die alte Box-Oberfläche samt ihrer
-`package.json`. `package-lock.json` führte den Bereich weiter, mit seiner
-vollen Paketliste — aber ohne Manifest ist er für npm kein Arbeitsbereich mehr, und `npm ci` holt **nichts** davon, ohne Fehler und ohne
-Warnung. Ein frischer Klon hatte danach kein `@angular/*` und kein `ng`:
-`npm run build:frontend-admin` endete mit `ng: not found`, der CI-Auftrag
-„Build all workspaces" (`npm run build`) war rot. Auf der Arbeitsmaschine
-lag das alte `node_modules` und verdeckte es. Gefunden am 25.09.2026 in einem
-sauberen Cloud-Checkout.
-
-**Behoben am 25.09.2026:** die Verwaltung deklariert jetzt, was sie braucht —
-die Angular-Pakete, `rxjs`, `tslib` (wegen `importHelpers`), `zone.js` (die
-`polyfills` in `angular.json`), `@angular/cli`, den Bauer
-`@angular-devkit/build-angular` samt `@angular/compiler(-cli)`, `typescript`
-und den Jasmine/Karma-Satz. Die Stände sind **nicht geraten**, sondern die
-geforderten Bereiche aus dem alten Lock-Eintrag `packages["src/frontend-box"]`;
-das Lock ist neu geschrieben (mit npm 11, das die `libc`-Felder behält) und
-kennt `src/frontend-box` nicht mehr. Kein gelockter Stand hat sich geändert,
-alles bleibt in die Wurzel gehoben, `src/frontend-admin/node_modules` entsteht
-nicht. `karma-coverage` bleibt in der Wurzel-`package.json`, wo `ef946f34` es
-hingestellt hat — die Wache zählt die Wurzel als Deklaration.
-Nachgemessen ab `rm -rf node_modules && npm ci`: `npm run build` grün,
-`ng test --configuration ci` 257/257.
+**Und so ging es aus:** Mit E118 (05.09.2026) fiel der Verleiher, das
+`package.json` der alten Box-Oberfläche unter `src/frontend-box`. Auf jedem Arbeitsrechner lag Angular weiter
+im alten `node_modules`, nichts wurde rot. Aus einem frischen `npm ci` aber
+endete `ng build` mit `ng: not found`, und `tsc` für das Backend fand
+`@types/cors` nicht mehr (kam transitiv über karma/engine.io). Die GitHub-CI war
+deshalb ab ihrer ersten Veröffentlichung (23.09.2026) rot, 3 von 3 Läufen.
+Seit dem 25.09.2026 deklariert die Verwaltung ihre Pakete selbst, in den
+Fassungen, die das Lockfile damals trug, und `@types/cors` steht bei
+`src/backend-api`. **Wer eine Abhängigkeit streicht, baut danach einmal aus
+`npm ci` in einem leeren Ordner** — das alte `node_modules` beweist nichts.
+Einen Rest trug `package-lock.json` danach noch: den Eintrag
+`packages["src/frontend-box"]`, einen Arbeitsbereich ohne Manifest. npm 10
+schreibt ihn beim `npm install` als `extraneous` weiter statt ihn zu streichen;
+seit dem 25.09.2026 ist das Lock mit npm 11 neu geschrieben und kennt ihn
+nicht mehr (kein gelockter Stand geändert).
 
 Gemessen von `tools/arbeitsbereich-abhaengigkeiten-deckung.py` (läuft in
 `tools/doku-luecken-probe.sh`). Es fragt drei Sorten Benutzung ab, denn die
@@ -2918,25 +2943,18 @@ nicht der Schwesterbereich — der ist der Gegenstand.
 
 Die offenen Leihen. Sie stehen hier und nicht als Ausnahmeliste im Skript,
 damit sie findet, wer die `package.json` aufmacht; das Aufräumen ist Arbeit am
-Bau und gehört ins `BACKLOG.md`. Eine neue Zeile nennt Paket und
-Bereichsordner je in Backticks in den ersten beiden Spalten — nur solche
-Zeilen liest die Wache:
+Bau und steht im `BACKLOG.md`. **Stand 25.09.2026: keine.** Bis dahin standen
+hier dreizehn Zeilen — zwölf Leihen der Verwaltung aus `src/frontend-box`
+(Angular, `rxjs`, `karma` samt der drei vom Bauer fest geladenen Plugins) und
+`ionicons`, das kein Bereich deklarierte. Die zwölf sind seit dem 25.09.
+deklariert (siehe oben), `ionicons` fiel mit der alten Box-Oberfläche (E118).
 
 <!-- GELIEHENE-ABHAENGIGKEITEN:ANFANG -->
 
 | Paket | Bereich | Woher es heute kommt |
 |---|---|---|
-| — | — | keine offene Leihe (Stand 25.09.2026) |
 
 <!-- GELIEHENE-ABHAENGIGKEITEN:ENDE -->
-
-Bis zum 25.09.2026 standen hier dreizehn Zeilen: zwölf Pakete, die
-`src/frontend-admin` von `src/frontend-box` lieh (Angular, `rxjs`,
-`@angular/cli`, der Bauer und der Karma-Satz), und `ionicons`, das
-`src/frontend-box` selbst nirgends deklarierte — `add.page.ts` importierte es
-direkt, im Baum lag es nur, weil `@ionic/angular` es mitzog. Die zwölf sind
-seit dem 25.09.2026 deklariert (siehe oben); `ionicons` ist mit der
-Box-Oberfläche gefallen.
 
 Die Wache prüft die Tabelle **in beide Richtungen**: wer eine Leihe endlich
 deklariert oder ihren letzten Nutzer löscht, ohne die Zeile hier zu streichen,
@@ -3089,6 +3107,111 @@ python3 tools/github-veroeffentlichen.py --bauen         # Commit anlegen
 python3 tools/github-veroeffentlichen.py --bauen --push  # und hochladen
 ```
 
+### 7.16 Fassungen über GitHub: Kanäle, Bauen, Signieren
+
+*Eingerichtet am 25.09.2026; zu diesem Zeitpunkt ist noch keine Fassung
+veröffentlicht.*
+
+Die Box kann sich ihre Fassung längst selbst holen (`scripts/box/mixpi-zieher.py`,
+Abschnitt 7.7.7): Kanal aus `/etc/mupibox/mixpi-update.json`, den neuesten
+Eintrag dieses Kanals, `sha256` Pflicht, Signatur Pflicht sobald
+`/etc/mupibox/mixpi-release.pub` liegt, unteilbarer Tausch, Frist, lokaler
+Rückweg. Es fehlte die Gegenseite — ein Ort, der Artefakte und Verzeichnis
+ausliefert. Das ist GitHub: Das Repo ist öffentlich, die Box lädt ohne
+Zugangsdaten. Betreiber, 25.09.2026: Artefakt **auf GitHub gebaut**, signiert
+wird **lokal**.
+
+**Die Kanäle stehen im Namen** — dieselbe Form wie bei
+`tools/mixpi-fassung-schneiden.py`:
+
+| Name | Kanal | auf GitHub |
+|---|---|---|
+| `v1.2.0` | stable | normales Release |
+| `v1.2.0-beta.3` | beta | Vorabversion |
+| `v1.2.0-dev.7` | dev | Vorabversion |
+
+Die Listen **schließen sich ein**: beta führt stable mit, dev führt alles. Die
+Box nimmt den letzten Eintrag ihres Kanals; ohne Einschluss säße eine Beta-Box
+auf der alten Beta, während stable längst weiter ist. Geordnet wird mit
+`zerlege()` aus dem Zieher selbst (dev < beta < fertig, nicht alphabetisch).
+
+**Drei Schritte, drei Orte:**
+
+| Schritt | Wo | Was |
+|---|---|---|
+| 1. bauen | GitHub: Actions → „Fassung bauen“ (`.github/workflows/fassung.yml`) | `src/deploy.sh` baut wie am Arbeitsrechner; das Paket bekommt `herkunft.json` mit `quelle` = GitHub-Adresse, `version` = Fassung, `eigeneCommits`/`unsauber` = 0; es landet als **Entwurf** mit `.zip` und `.zip.sha256`. Ein Entwurf ist für keine Box sichtbar. |
+| 2. signieren | lokal | `python3 tools/mixpi-github-fassung.py signieren --fassung v1.2.0 --veroeffentlichen` — holt den Entwurf, prüft Summe und Herkunft, signiert, prüft die Signatur gegen den **eingecheckten** `config/mixpi-release.pub`, lädt die `.sig` hoch und veröffentlicht. |
+| 3. Kanäle | GitHub: „Kanaele veroeffentlichen“ (`.github/workflows/kanaele.yml`), läuft von selbst bei jedem Release-Ereignis | baut `version.json` aus allen veröffentlichten Releases, prüft **jede** Signatur nach und rollt nach GitHub Pages aus: `https://scoutr2d2.github.io/mixpibox/version.json`. Was nicht besteht, kommt nicht hinein; der Lauf wird rot, aber erst nach dem Ausrollen der übrigen. |
+
+**Einmalig einrichten:**
+
+1. GitHub: *Settings → Pages → Source: GitHub Actions.*
+2. Lokal den Signierschlüssel anlegen:
+   `python3 tools/mixpi-github-fassung.py schluessel-erzeugen`. Der private
+   Schlüssel landet unter `~/.config/mixpibox/mixpi-release.key` (0600, **nie**
+   im Baum — das Werkzeug verweigert einen Pfad darin), der öffentliche unter
+   `config/mixpi-release.pub`. Den öffentlichen einchecken und veröffentlichen
+   (7.15). Den privaten offline sichern: verloren heißt, jede eingerichtete Box
+   braucht einen neuen öffentlichen.
+3. Lokal `gh` (GitHub CLI) mit `gh auth login` anmelden.
+4. Auf jeder Box, als root:
+   `python3 tools/mixpi-github-fassung.py box-einrichten --kanal stable`.
+   Das schreibt `/etc/mupibox/mixpi-update.json` (Verzeichnis, Quelle, Kanal)
+   und legt den öffentlichen Schlüssel ab — ab dann ist die Signatur Pflicht.
+   Den Kanal wechselt danach die Verwaltung (Aktualisierung).
+
+**Der erste Wechsel einer bestehenden Box.** Wer heute über
+`tools/ausliefern.py` oder die Karte aus dem internen Baum läuft, trägt die
+Herkunft `http://git.local:3000/achim/box.git`. Das erste Angebot von GitHub
+urteilt deshalb `fremdeQuelle` — richtig so, es ist ein Quellwechsel. Einmal
+bewusst `sudo python3 scripts/box/mixpi-zieher.py --einspielen --erzwingen`;
+danach trägt die Box die GitHub-Herkunft, und es geht ohne weiter.
+`box-einrichten` sagt das, wenn es zutrifft.
+
+**Befördern und Zurückziehen.** Aus `v1.2.0-beta.3` wird stable über
+denselben Workflow mit dem Feld **„von“** = `v1.2.0-beta.3` und Fassung
+`v1.2.0`. Dann wird **nicht** gebaut: das signierte Paket der Beta wird geholt,
+gegen `config/mixpi-release.pub` geprüft und nur in `version` umgestempelt —
+dieselben Bytes, die als Beta draußen liefen, nicht der heutige Stand von
+`main`. Befördert wird nur innerhalb einer Nummer und nur nach oben
+(dev → beta → fertig); danach wird wieder lokal signiert, denn der Name steht
+im Paket, also sind es neue Bytes. Zurückgezogen wird ein Release,
+indem man es löscht oder wieder zum Entwurf macht; das Verzeichnis folgt von
+selbst. Boxen, die die Fassung schon haben, behalten sie (der Zieher geht nur
+vorwärts); zurück geht es auf der Box mit `mixpi-zieher.py --zurueckdrehen`.
+
+**Warum so und nicht einfacher:**
+
+* **Lokal signieren.** Die `sha256` steht im selben Verzeichnis wie die
+  Adresse — wer das GitHub-Konto übernimmt, fälscht beide. Mit dem Schlüssel
+  als GitHub-Secret hätte er auch die Signatur. Liegt er nur am
+  Arbeitsrechner, lehnt jede eingerichtete Box ab.
+* **Pages statt `main`.** `main` schreibt allein `tools/github-veroeffentlichen.py`,
+  ohne `--force`. Ein Workflow-Commit dort ließe die nächste Veröffentlichung
+  abweisen.
+* **Das Tag entsteht auf GitHub.** Ein internes Tag per `git push` trüge die
+  ganze Geschichte der eigenen Ablagen hinaus (7.15).
+* **Änderungen an den Workflows** kommen deshalb nur über den internen Baum und
+  die nächste Veröffentlichung nach GitHub — **keinen PR auf `main` mergen**,
+  sonst ist die Veröffentlichungskette nicht mehr vorspulbar.
+* **Eine Fassung ist die Quelle, kein Eigenbau.** `eigeneCommits` stammt aus
+  `@{upstream}..HEAD` des Baus; das eingecheckte Paket trug am 23.09. eine 2.
+  Eine Box, die das einspielt, urteilt danach für immer `eigenbau`. Beide
+  Schnittwege (`mixpi-fassung-schneiden.py` und dieser) stempeln deshalb 0.
+
+**Der Zieher lehnte bis zum 25.09.2026 jedes echte Paket ab.** Er verlangte
+`www/index.html`; seit E118/1e (05.09.) liegt die Box-Oberfläche aber unter
+`www/neu/`. `tools/ausliefern.py` war am 05.09. umgestellt worden, der Zieher
+nicht — und sein Sandkasten blieb grün, weil er ein Paket in der alten Form
+baute. Gefunden beim ersten Ende-zu-Ende-Lauf dieser Pipeline; beide sind
+jetzt auf `www/neu/index.html`, und der Sandkasten läuft in der CI.
+
+**Wachen:** `python3 tools/mixpi-github-fassung.py --selbsttest` (Kanal aus dem
+Namen, Einschluss und Ordnung gelesen mit dem Leser der Box, Umstempeln,
+Signaturfälle: fehlend, fremd, falsche Summe, falsche Fassung im Paket,
+Entwurf) hängt in der CI und in `tools/doku-luecken-probe.sh`;
+`tools/mixpi-zieher-probe.py` in der CI und in `tools/pruefen.sh`.
+
 ---
 
 ## 8. Fehlersuche
@@ -3130,18 +3253,30 @@ behauptete im Kopf aber, er täte es.
 
 ## 9. Was gerade im Bau ist
 
-Ehrlich benannt, damit niemand darauf baut:
+Ehrlich benannt, damit niemand darauf baut. **Nachgeprüft am 25.09.2026**
+gegen den Baum; was davon wie abgetragen wird, steht in `BACKLOG.md`, E143.
 
-* **Der Einrichtungsassistent** steht als Gerüst (QR, Bildschirm, Seite fürs
-  Handy, WLAN von Hand und per WPS, eigenes WLAN mit Captive Portal), ist aber
-  **noch nicht verdrahtet**: es fehlt die Entscheidung beim Booten, wann der AP
-  aufgeht, und die Übergabe an die eigentliche Installation.
-* **`hostapd` und `dnsmasq` fehlen auf dem Image** und lassen sich ohne Netz
-  nicht holen. Der AP funktioniert erst, wenn sie bei der SD-Vorbereitung
-  mitkommen oder einmal über Kabel nachinstalliert wurden. Ein Hühnerei-Problem,
-  das nicht wegdiskutiert werden kann.
-* **Die neue Verwaltung** hat Tests für den Anmeldeweg und die Kinderzeit — die
-  übrigen Seiten sind ungetestet.
+* **Der Einrichtungsassistent ist verdrahtet — er räumt nur nicht auf.** Seit
+  dem 08.08.2026 (E11b/I9–I13) läuft der Weg ohne Laptop durch: `sdstart`
+  bestückt die Karte, `mixpibox-vorstart.service` entscheidet beim Booten
+  (Netz da → DietPi macht weiter; kein Netz → eigenes WLAN „MixPi Start",
+  Agent und Schirm), die Seite fürs Handy übergibt das WLAN, und der Selbstlauf
+  fährt das Rezept. Am Pi 5 durchgespielt, am Pi 4 nicht. **Offen ist, was
+  danach bleibt** (E143/8–10): der Zweig „kein Netz" im Vorstart fragt die
+  `fertig`-Marke nicht — eine fertige Box, die ohne Router startet, öffnet nach
+  45 s wieder das Einrichtungs-WLAN —, und `step-agent.service` lauscht nach
+  dem Selbstlauf weiter als root auf 0.0.0.0 (der Pair-Deckel aus 5.2 hält,
+  gewollt ist es trotzdem nicht).
+* **`hostapd` und `dnsmasq` braucht der AP nicht mehr** — er läuft über
+  `wpa_supplicant` im Modus 2 und `kleiner-dhcp.py` (llmwiki
+  `ap-ohne-hostapd-wpa-mode2`); das Hühnerei-Problem, das hier bis zum
+  25.09.2026 stand, ist damit seit dem 08.08. gelöst. Die Kehrseite: das Rezept
+  installiert beide trotzdem (und maskiert sie), und `weg_waehlen()` bevorzugt
+  hostapd, sobald es da ist — mit dem Übergang, den `wechsel_aus_ap()` über
+  `wpa_cli` macht, passt das nicht zusammen (E143/9).
+* **Die neue Verwaltung** hat Zeugen für 8 ihrer 28 Seiten direkt, für 6
+  weitere über Dienst oder Helfer; 14 sind ungetestet (gezählt 25.09.2026). In
+  der CI laufen die Karma-Tests nicht.
 * **Die neue Box-Oberfläche** hat Verhaltenstests für Abspielweg und Zustände,
   **nicht** für das Aussehen.
 * **Bei den Plugins** (4.7) fehlt noch **eine *eigene* Fläche, die der
@@ -3166,25 +3301,22 @@ Ehrlich benannt, damit niemand darauf baut:
   „kein Strom frei" und bricht sauber ab) — zwei gleichzeitige Aufnahmen gibt es
   erst mit einem dritten Zugang.
 * **Der Lautstärkesprung beim Quellenwechsel** ist real und **nicht
-  ausgeglichen**: lokale Dateien laufen seit dem 21.08. über ReplayGain,
-  Spotify über soloist — und soloist kennt keine Normalisierung, nur
-  `--initial-volume`. Der Regler dafür ist da („Wie laut — je Quelle"), die
-  **Zahl fehlt**. `tools/box/pegelvergleich.py` soll sie stumm messen (Null-Senke
-  + `ebur128`); die Einzelteile tragen, die Verkettung in `messen()` noch nicht
-  (llmwiki `pegelsprung-quellenwechsel-noch-ungemessen`).
-* **Die `klangwerk`-Senke nimmt keine Lautstärke an** — offen und **nicht
-  verstanden**, am 23.08.2026 am Gerät gemessen. Sie ist die Vorgabe-Senke, dort
-  greift der Regler der Box; `wpctl set-volume`, `pactl set-sink-volume` und der
-  Weg über `@DEFAULT_AUDIO_SINK@` melden alle Erfolg, danach steht sie wieder
-  auf 1.00. Kein Rechte- oder Sitzungsproblem (dieselbe Sitzung setzt die
-  Tonkarte problemlos), keine Schleife. Eine **frühere Ausgabe derselben Kette**
-  hat denselben Aufruf angenommen — der Unterschied zwischen den beiden Knoten
-  ist der offene Punkt. Wenn das der Normalfall ist, bewegt der Regler der Box
-  nichts, solange das Klangwerk vorne steht; das wäre die eigentliche Antwort
-  auf „die Lautstärke ist gedeckelt". Der Gerätezustand dazu (Tonkarte von Hand
-  auf 0.50 als Bremse, **nicht im Code**) steht in llmwiki
-  `klangwerk-senke-nimmt-keine-lautstaerke` und gehört vor dem Weiterarbeiten am
-  Gerät nachgeprüft.
+  ausgeglichen, wenn Spotify über soloist spielt**: lokale Dateien laufen seit
+  dem 21.08. über ReplayGain, und soloist kennt keine Normalisierung, nur
+  `--initial-volume`. librespot — die Vorgabe-Maschine — startet mit
+  `LIBRESPOT_ENABLE_VOLUME_NORMALISATION=1` (`config/templates/env-librespot`);
+  ob das am Gerät wirkt und gleich laut ergibt, ist ungemessen. Der Regler dafür
+  ist da („Wie laut — je Quelle"), die **Zahl fehlt**.
+  `tools/box/pegelvergleich.py` soll sie stumm messen (Null-Senke + `ebur128`);
+  die Einzelteile tragen, die Verkettung in `messen()` noch nicht (llmwiki
+  `pegelsprung-quellenwechsel-noch-ungemessen`, E143/11–13).
+* **Erledigt und deshalb nicht mehr hier: „Die `klangwerk`-Senke nimmt keine
+  Lautstärke an".** Am 05.09.2026 am Gerät aufgelöst — es war nie die Senke,
+  sondern der Attrappen-Regler der Tonkarte dahinter; `82-karte-software-regler.conf`
+  lässt sie in Software regeln, und die Nutzerlautstärke wohnt seither auf der
+  Hardware-Senke (llmwiki `klangwerk-senke-nimmt-keine-lautstaerke`, Abschnitt
+  AUFLÖSUNG). Die Vorlage legte bis zum 25.09.2026 nur das Rezept ab; seither
+  alle drei Wege.
 * **Bluetooth als Zugangsweg** wurde erwogen und verworfen: auf iPhones gibt es
   weder Web-Bluetooth noch BT-PAN, der Schritt ist historisch der hängefreudigste,
   und er teilt sich die Antenne mit dem WLAN.

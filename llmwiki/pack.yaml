@@ -1,5 +1,5 @@
 id: mupibox
-version: "616"
+version: "619"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -46339,6 +46339,9 @@ entries:
           KOMMENTARLOS — die Verwaltung wird von der Wurzel aus nie geprueft.
           (Zustand 25.08.2026: die beiden Backends melden 130 Fehler und 48
           Warnungen. Der Zustand hat Haltbarkeit, die Ursache nicht.)
+          BERICHTIGT 25.09.2026: „kommentarlos" war nie gemessen und ist
+          falsch — npm bricht mit `Missing script` ab; die Verwaltung hat
+          seitdem `lint`. [[lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still]]
 
       Beide zu schliessen ist eine Aenderung am BAU, nicht an der Doku. Die
       Wache zaehlt sie darum nicht rot, sondern druckt sie als HINWEIS — eine
@@ -47302,7 +47305,9 @@ entries:
       der 197. Nicht durchgesetzt sind `ng test` beider Oberflaechen (42 + 19
       Dateien, Browser fehlt - begruendet), `lint` fuer `frontend-admin` (der
       Bereich hat gar kein `lint`, `--workspaces` ueberspringt ihn stumm) und
-      eben die Plugin-Tests.
+      eben die Plugin-Tests. (BERICHTIGT 25.09.2026: „stumm" ist falsch, npm
+      bricht mit `Missing script` ab —
+      [[lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still]].)
 
       ══ DIE FALLE IM AUSNAHME-KASTEN ════════════════════════════════════════
       `tools/ci-deckung.py` liest die ABSICHT aus einem Kasten im Handbuch
@@ -49244,6 +49249,8 @@ entries:
       frontend-admin deklariert NULL Abhaengigkeiten bei sechs Importen.
       npm run serve startet drei von vier Diensten; lint --workspaces
       ueberspringt den Admin STILL (npm schweigt bei fehlendem Skript).
+      [BERICHTIGT 25.09.2026: npm schweigt NICHT, es bricht mit `Missing
+      script` ab — [[lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still]].]
       Tote Abhaengigkeiten neu: baseline-browser-mapping (Wurzel),
       jasmine-spec-reporter, @types/bcryptjs (redundant zu bcryptjs 3.x
       UND in dependencies statt dev). mupictl hwapply schreibt in die
@@ -64010,13 +64017,233 @@ entries:
       PHP/lighttpd -> Angular) und eine Messtabelle mit den Gewinnen aus dem
       Wissenspaket ([[mupi-startzeiten-gemessen]], [[mupi-boot-32s-auf-13s]],
       [[grundmessung-zeit-bis-zum-bild]]) — jede Zahl mit Geraet und Datum.
+  - id: fassungen-ueber-github-kanaele-und-lokale-signatur
+    kind: architektur
+    title: 'Fassungen ueber GitHub: auf dem Runner gebaut, lokal signiert, Kanaele auf Pages — und der Zieher, der drei Wochen lang jedes echte Paket ablehnte'
+    tags: [update, zieher, github, kanaele, signatur, ci, ausrollen, 2026]
+    source: >
+      Gebaut 25.09.2026 (tools/mixpi-github-fassung.py,
+      .github/workflows/fassung.yml und kanaele.yml, Handbuch 7.16).
+      Betreiberentscheid am selben Tag: Artefakt „auf GitHub gebaut",
+      Signatur „lokal". Ende-zu-Ende gefahren: echter Bau ueber
+      src/deploy.sh, Wegwerf-Schluessel, Verzeichnis, Schein-Box, der
+      ECHTE Zieher mit --holen (Summe, Signatur, Paket, node --check).
+    related: [halbmigration-die-naht-steht-die-altstellen-bleiben, drei-fehler-die-erst-die-echte-box-zeigte, erster-rollout-nach-dem-schnitt, arbeitsbereich-der-nichts-deklariert-ist-unsichtbar, github-veroeffentlichung-kuratiert-elternlos-und-die-wache-in-beide-richtungen, vierzehn-kopien-und-die-abweichung-ist-der-fehler, mupi-update-knopf-loescht-den-fork, gegenprobe-statt-gruen-glauben]
+    body: |
+      DER WEG, DREI ORTE:
+        1 bauen      Runner, Actions → „Fassung bauen" (von Hand). src/deploy.sh
+                     wie am Arbeitsrechner, dann umgestempelt: quelle =
+                     https://github.com/<repo>, version = Fassung,
+                     eigeneCommits = unsauber = 0. Landet als ENTWURF — fuer
+                     keine Box sichtbar. Mit „von" statt bauen: BEFOERDERN
+                     (das signierte Paket der Vorstufe, nur umbenannt).
+        2 signieren  lokal: tools/mixpi-github-fassung.py signieren --fassung
+                     v1.2.0 --veroeffentlichen. Prueft VOR jedem Kontakt mit
+                     GitHub, dass der private Schluessel zum eingecheckten
+                     config/mixpi-release.pub passt.
+        3 kanaele    Runner, bei jedem Release-Ereignis: version.json aus ALLEN
+                     veroeffentlichten Releases, jede Signatur nachgeprueft,
+                     auf GitHub Pages (<besitzer>.github.io/<repo>/version.json).
+
+      KANAL = NAME. v1.2.0 stable, -beta.N beta, -dev.N dev. Die Listen
+      schliessen sich ein (beta fuehrt stable, dev alles): die Box nimmt den
+      LETZTEN Eintrag ihres Kanals, ohne Einschluss saesse eine Beta-Box auf
+      der alten Beta. Geordnet mit zerlege() AUS DEM ZIEHER, per importlib
+      geholt — der Selbsttest liest das erzeugte Verzeichnis mit
+      neuestes_angebot() der Box, nicht mit einem eigenen Leser.
+
+      DREI ENTSCHEIDUNGEN, DIE MAN SPAETER NICHT MEHR VERSTEHT:
+      * Pages statt main: main schreibt allein github-veroeffentlichen.py
+        ohne --force; ein Workflow-Commit dort liesse die naechste
+        Veroeffentlichung abweisen. Aus demselben Grund: KEINEN PR auf main
+        mergen — Workflow-Aenderungen kommen ueber den internen Baum.
+      * Das Tag entsteht auf GitHub (gh release create --target). Ein
+        internes Tag per git push truege die ganze private Geschichte hinaus.
+      * Release-Ereignisse laufen auf refs/tags/…, die Umgebung github-pages
+        rollt nur vom Standardzweig aus. kanaele.yml stoesst sich deshalb per
+        `gh workflow run --ref main` selbst an — workflow_dispatch ist das
+        eine Ereignis, das der GITHUB_TOKEN ausloesen darf.
+
+      DER FUND BEIM ERSTEN ENDE-ZU-ENDE-LAUF: mixpi-zieher.py verlangte
+      `www/index.html` im Paket. Seit E118/1e (05.09.) liegt die Oberflaeche
+      unter www/neu/ — ausliefern.py wurde am selben Tag umgestellt
+      ([[erster-rollout-nach-dem-schnitt]]), der Zieher nicht. Er lehnte also
+      JEDES echte Paket ab, und tools/mixpi-zieher-probe.py blieb 21/21 gruen,
+      weil sie ihr Schein-Paket in der ALTEN Form baute. Behoben: ZIELE traegt
+      je Baum ein `index` (www → neu/index.html), die Probe baut die echte
+      Form. GEGENPROBE: neue Probe gegen den alten Zieher = 9 rot. Die Probe
+      laeuft jetzt in der CI. LEHRE: ein Sandkasten, der sein Eingangsmaterial
+      selbst erfindet, prueft die eigene Erinnerung an das Format, nicht das
+      Format — ab und zu ein ECHTES Artefakt hindurchschicken.
+
+      ZWEITER FUND DESSELBEN TAGES: das eingecheckte deploy.zip trug
+      eigeneCommits=2 (aus @{upstream}..HEAD des Baus), und
+      mixpi-fassung-schneiden.py stempelte nur `version` um. Eine Box, die so
+      eine Fassung einspielt, urteilt danach fuer immer `eigenbau` und nimmt
+      kein Update mehr. Beide Schnittwege stempeln jetzt 0.
+
+      ERSTER WECHSEL EINER BESTEHENDEN BOX: Herkunft git.local, Angebot
+      GitHub → `fremdeQuelle`. Einmal bewusst `mixpi-zieher.py --einspielen
+      --erzwingen`, danach traegt die Box die GitHub-Herkunft.
+      `box-einrichten` sagt das, wenn es zutrifft.
+
+      NEBENFUND BEIM GRUENMACHEN DER CI: mpv-wrapper.spec.ts war in 1 von 6
+      Laeufen rot (ENOTEMPTY im after()). close() schickt mpv nur `quit`, das
+      sofortige rmSync lief gegen den Doppelgaenger, der noch schrieb. Jetzt
+      wartet after() auf das 'close' jedes Spielers (Versprechen beim
+      ERZEUGEN angelegt) — und raeumt die 5-s-Frist danach ab: ein stehender
+      setTimeout hielt den Testprozess sonst jedes Mal volle 5 s am Leben,
+      obwohl alle Spieler laengst zu waren. 20/20 gruen, 3,2 s wie vorher.
+  - id: readme-3-9-nachgeprueft
+    kind: note
+    title: README 3.9 "Was halb fertig ist" nachgeprueft - vier Punkte behoben, zwei veraltet, der Rest mit Plan (E143)
+    tags: [readme, doku, ausrollweg, rezept, kinderzeit, einrichtung, lautheit, 2026]
+    quelle:
+      - 25.09.2026, Betreiberauftrag "arbeite die punkte ab, kontrolliere was wirklich offen ist und mache ein plan das wir die sektion loeschen koennen"
+      - drei parallele Pruefer (Kinderzeit/Gast, Eingabegeraete/Zeugen, Assistent/Lautheit) plus eigene Laeufe von tools/ausgerollte-vorlagen-deckung.py
+    body: |
+      STAND 25.09.2026 (Zustandsaussage - nachmessen, nicht glauben). Am
+      BAUM geprueft, nicht am Geraet. Plan und Status: BACKLOG E143.
+
+      ══ DER BEFUND JE PUNKT ═════════════════════════════════════════════
+      Von neun Punkten in README 3.9 stimmten sieben, zwei waren falsch:
+
+        VERALTET  "Einrichtungsassistent nicht verdrahtet" - seit 08.08.2026
+                  verdrahtet (E11b/I9-I13): sdstart -> mixpibox-vorstart ->
+                  eigenes WLAN "MixPi Start" OHNE hostapd (wpa_supplicant
+                  mode=2 + kleiner-dhcp.py) -> Uebergabe -> Selbstlauf. Der
+                  Satz stand sieben Wochen nach dem Verdrahten noch da.
+        ZU BREIT  "Lautstaerkesprung: Spotify nicht normalisiert" - gilt nur
+                  fuer soloist. librespot (die Vorgabe) startet mit
+                  LIBRESPOT_ENABLE_VOLUME_NORMALISATION=1 (env-librespot).
+
+      Behoben am selben Tag: Vorlesen/Piper, Leersenke 62, Fernbedienung auf
+      dem Rezept-Weg, Kinderzeit-Regeln je Kind in der Verwaltung. Offen mit
+      Plan: Anmeldung bei Gast an (Entscheidung), Zuordnungsseite, der
+      Assistent raeumt nicht auf (Vorstart + step-agent auf 0.0.0.0 nach
+      "fertig"), Lautheit mit soloist (Messung). Die Zeugen-Zeile ist keine
+      halbe Funktion und zog nach README 3.8.
+
+      ══ DIE LEHRE 1: ABGELEGT IST NICHT AUFGERUFEN ═══════════════════════
+      Der Rezept-Schritt `extras` kopiert scripts/mupibox/* nach
+      /usr/local/bin/mupibox/ - piper-einrichten.sh lag also auf jeder
+      Rezept-Box. Gerufen hat es kein Schritt. Dieselbe Klasse wie in
+      tools/ausrollweg-deckung.py ("angefasst" ist nicht "aufgerufen"), nur
+      fuer den dritten Weg, den jenes Werkzeug nicht liest. Genauso bei der
+      Fernbedienung: die Unit kam mit (*.service), der Leser nicht, und
+      eingeschaltet wurde nichts.
+
+      ══ DIE LEHRE 2: DIE WACHE KANNTE DIE LUECKE, NUR FRAGTE NIEMAND ═════
+      tools/ausgerollte-vorlagen-deckung.py meldete 61-entzerrer.conf und
+      fernbedienung.json laengst unter "Nicht auf einer heute frisch
+      aufgesetzten Box" - als Auskunft, nicht als Fehler, deshalb blieb der
+      Lauf gruen. 61 stand dabei nicht einmal in README 3.9: auf einer
+      Rezept-Box gab es die Senke `entzerrer` nicht, die Regler der Ton-Seite
+      stellten nichts. Umgekehrt legte NUR das Rezept 82-karte-software-
+      regler.conf ab. Wer eine Liste "was halb ist" pflegt, sollte diese
+      Auskunft mitlesen.
+
+      ══ DIE LEHRE 3: EINE KOPIE FRIERT STILL EIN ═════════════════════════
+      Der naheliegende Kinderzeit-Fix - `wemAnhang()` an laden()/speichern()
+      haengen, wie es der Kommentar in kinderzeit.ts selbst vorschlug - haette
+      beim ersten Speichern fuer JEDES gewaehlte Kind eine Kopie der Hausregel
+      in `je` geschrieben. Spaetere Aenderungen an der Hausregel erreichten
+      dieses Kind nie mehr, und nichts am Schirm zeigte es. Deshalb
+      GET /api/kinderzeit/satz (wer hat eigene Regeln?) und
+      DELETE /api/kinderzeit?profil= (zurueck zur Hausregel); die Seite
+      bearbeitet, was fuer das gewaehlte Kind GILT. Der Zeuge "ein Kind OHNE
+      eigene Regeln aendert die Hausregel" ist genau gegen diese Falle
+      gebaut und wurde mit ihr sabotiert rot.
+
+      ══ BEIFANG ══════════════════════════════════════════════════════════
+      Ein frischer Klon baut die Verwaltung nicht: `npm ci` installiert kein
+      Angular, seit src/frontend-box/package.json mit E118/1e (05.09.2026)
+      fiel - frontend-admin deklariert keine Abhaengigkeiten (BACKLOG
+      "Aufraeumen - frontend-admin deklariert null Abhaengigkeiten").
+      Karma als root im Container braucht zusaetzlich --no-sandbox und
+      --browsers=ChromeHeadless.
+  - kind: falle
+    id: lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still
+    title: "npm ueberspringt ein fehlendes Bereichs-Skript NICHT still — der Lint-Auftrag war daran rot, und das Lint-Tor prueft seit 25.09.2026 die Regeln, nicht die Form"
+    tags: ['lint', 'biome', 'npm', 'ci', 'wachen', 'arbeitsbereiche', 2026]
+    source: "Betreiber-Auftrag 25.09.2026 (CI-Auftrag „Lint (Biome)“ seit der Veroeffentlichung am 23.09. rot); gemessen im Cloud-Checkout mit npm 10.9.7, Node 22.22.2, Biome 2.5.11"
+    body: |
+      BERICHTIGUNG ZUERST. Drei Eintraege und das Handbuch sagten seit dem
+      25.08.2026: `npm run lint --workspaces` ueberspringe `frontend-admin`
+      „still" oder „kommentarlos", weil der Bereich kein `lint` hat
+      ([[audit-liste-ist-keine-dokumentation]],
+      [[testmenge-in-keinem-laeufer]], [[audit-2026-08-28-kritiker]]). Das
+      war NIE GEMESSEN und ist falsch. npm 10.9.7 bricht die Faecherung mit
+      `npm error Missing script: "lint"` ab und endet mit 1. Still ist es
+      nur mit `--if-present` (gemessen: Exit 0, der Bereich faellt
+      ungeprueft durch). Die Behauptung stand in zwei Wachen als HINWEIS
+      („zaehlt nicht") — eine Wache, die einen Abbruch als Schweigen
+      beschreibt, haelt genau den Fehler fuer harmlos, an dem die CI rot war.
+      `tools/npm-skripte-deckung.py` zaehlt ein fehlendes gefaechertes Skript
+      seit 25.09. als LUECKE; nur `--if-present` bleibt ein Hinweis.
+      Gegengeprobt: `lint` aus der Verwaltung genommen -> `npm run lint`
+      Exit 1 UND Wache rot; mit `--if-present` in der Wurzel -> Wache
+      HINWEIS, `npm run lint` Exit 0.
+
+      WARUM ES NIEMAND SAH (die naheliegende Erklaerung, nicht gemessen):
+      `npm run lint` scheiterte ohnehin schon an 145 Biome-Fehlern der
+      Backends. Die `Missing script`-Zeile steht ganz unten unter zwei
+      langen Fehlerbloecken. Ein Befund versteckt den naechsten, solange
+      niemand die Ursachen EINZELN zaehlt.
+
+      DIE ENTSCHEIDUNG (25.09.2026): die Verwaltung bekommt `lint` und
+      `lint:fix`, woertlich wie die Backends. `--if-present` in der Wurzel
+      waere kuerzer gewesen und haette die Verwaltung wieder ungeprueft
+      gelassen — das Loch, das das Handbuch seit dem 25.08. beklagte.
+
+      DAS LINT-TOR PRUEFT SEIT 25.09. NUR DIE REGELN. Von den 145 Fehlern
+      waren 136 Formatierung und Import-Reihenfolge, neun echte Lint-Fehler
+      (4x noVoidTypeReturn in auth.ts, 4x useIterableCallbackReturn in
+      protokollexport.ts, 1x noUnsafeOptionalChaining in interpreten.ts —
+      alle verhaltensgleich behoben). Die Massenformatierung gehoert laut
+      der Entscheidung in scoutr2d2/mixpibox#2 in den internen Baum, in dem
+      parallele Sitzungen dieselben Dateien bearbeiten (gemessen: 148
+      Dateien, +1190/-1075). Deshalb ruft das `lint` jedes Bereichs
+      `biome check --formatter-enabled=false --assist-enabled=false` — die
+      Schalter in den SKRIPTEN, nicht in biome.json, damit Editoren weiter
+      nach den Baumregeln formatieren. `continue-on-error` in ci.yml ist
+      gefallen, der Auftrag blockiert wieder. Rueckweg und Messung stehen
+      im BACKLOG („Aufräumen — Formatierung und Import-Reihenfolge zurück
+      ins Lint-Tor") und im Handbuch 7.5; in einer Wegwerf-Kopie
+      durchgespielt: nach `biome check --fix .` meldet das volle
+      `biome check` in allen drei Bereichen null Fehler.
+
+      DREI BIOME-FALLEN, alle am 25.09. gemessen:
+      (1) biome.json vertraegt KEINE Kommentare — und wer aus einem Bereich
+      heraus ruft (`cd src/backend-api && biome check .`, so rufen es die
+      Skripte), bekommt KEINE Fehlermeldung: Biome nimmt still die Vorgabe
+      (Tabs, doppelte Anfuehrungszeichen, Semikolons). Ein `lint:fix` haette
+      so jede Datei umgeschrieben. Nur `biome check biome.json` aus der
+      Wurzel zeigt den Parse-Fehler. Begruendungen gehoeren deshalb in
+      `_kommentar:`-Schluessel der package.json (Vorbild backend-api) oder
+      ins Handbuch.
+      (2) Der SICHERE Fix von useSimpleNumberKeys schreibt Hex-Schluessel
+      dezimal um — in hatdiagnose.ts die BQ25792-Registertabellen (REG
+      0x1C, 0x20/0x21). Gleiche Schluessel, aber nicht mehr gegen das
+      Datenblatt nachschlagbar. biome.json schaltet die Regel dort per
+      `overrides` ab; sonst haette die Massenformatierung sie mitgenommen.
+      (3) `biome lint --only=<regel>` fuehrt eine Regel auch dann aus, wenn
+      die Konfiguration sie abschaltet. Wer so pruefen will, ob ein override
+      greift, sieht die Befunde weiter und haelt den override fuer kaputt.
+      Nachsehen mit einem normalen Lauf (`--reporter=summary`).
+
+      NEBENBEI GEMESSEN: auf dem Stand vor #2 haette
+      `npm install --save-exact @biomejs/biome@2.5.11` zugleich ~18.000
+      Zeilen Lockfile geraeumt — den frontend-box-Eintrag ohne Manifest. Wer
+      eine einzelne Abhaengigkeit anfasst, liest den Lockfile-Diff, bevor er
+      ihn committet.
   - id: lock-kennt-bereich-ohne-manifest-npm-ci-holt-still-nichts
     title: "Verleiher geloescht, Lock fuehrt ihn weiter: npm ci holt still NICHTS, frischer Klon ohne ng"
     kind: falle
     match: "ng: not found|could not determine executable to run|npm ci installiert kein Angular|kein ng in node_modules/.bin|Build all workspaces rot|Arbeitsbereich ohne package.json im Lock"
     sev: high
     tags: [npm, arbeitsbereich, abhaengigkeiten, lockfile, frontend-admin, ci, 2026]
-    stand: "25.09.2026 behoben: src/frontend-admin deklariert 8+12 Pakete, Lock ohne src/frontend-box, Tabelle in dokumentation/mixpibox.md 7.13 leer"
+    stand: "25.09.2026 behoben (#2 und #3 parallel): src/frontend-admin deklariert 8+12 Pakete, Lock ohne src/frontend-box (#3), Tabelle in dokumentation/mixpibox.md 7.13 leer"
     source: "Sauberer Cloud-Checkout 25.09.2026: npm ci RC=0, danach npm run build:frontend-admin -> `sh: 1: ng: not found`. GitHub-CI: Auftrag Build all workspaces in allen drei Laeufen seit 23.09.2026 rot."
     cause: >
       E118/1e (05.09.2026) loeschte src/frontend-box samt package.json. Das
@@ -64029,8 +64256,8 @@ entries:
     fix: >
       Die Verwaltung deklariert selbst (src/frontend-admin/package.json),
       Staende aus dem alten Lock-Eintrag packages["src/frontend-box"], nicht
-      geraten. Dann npm install (mit npm 11 - npm 10 wirft die `libc`-Felder
-      raus und laesst den toten Bereich als `extraneous` im Lock stehen).
+      geraten. Dann npm install mit npm 11 - npm 10 laesst den toten
+      Bereich als `extraneous` im Lock stehen.
       Nachmessen IMMER ab `rm -rf node_modules && npm ci`, nie auf einem
       gewachsenen node_modules.
     body: |
@@ -64071,13 +64298,22 @@ entries:
       oder steht als Bauer-Literal in der Wache - Sorte 2 misst nur Karma.
       karma-coverage bleibt in der Wurzel (ef946f34).
 
-      DAS LOCK: npm 11 schreibt, npm 10 (Node 22, auch in der CI) liest.
-      Mit npm 10 neu geschrieben fielen 34 `libc`-Felder weg und
-      src/frontend-box blieb als `extraneous` stehen; mit `npx npm@11
-      install` beides nicht. Entfernt: der Bereich, sein Link und 101
-      verwaiste Eintraege (Ionic, swiper, qrcode, ... und Reste wie ky,
-      protobufjs, xml-js, die die Backend-Manifeste laengst nicht mehr
-      fuehrten). Kein gelockter Stand geaendert (per Skript verglichen).
+      DAS LOCK: npm 10 (Node 22, auch in der CI) laesst einen Arbeitsbereich
+      ohne Manifest beim `npm install` als `extraneous` im Lock stehen;
+      `npx npm@11 install` streicht ihn. Am Ausgangsstand 75da4de raeumte
+      das den Bereich, seinen Link und 101 verwaiste Eintraege (Ionic,
+      swiper, qrcode, ... und Reste wie ky, protobufjs, xml-js, die die
+      Backend-Manifeste laengst nicht mehr fuehrten). Kein gelockter Stand
+      geaendert (per Skript verglichen).
+
+      ZWEIMAL GELOEST, AM SELBEN TAG: scoutr2d2/mixpibox#2 (ueber fe8f9ee
+      auf main) und #3 haben denselben Fund parallel behoben, mit
+      byte-gleicher Paketliste — genau der Fall, vor dem AGENTS.md warnt.
+      Beim Zusammenfuehren blieb von #3 uebrig, was #2 nicht hatte: der
+      Lock-Eintrag src/frontend-box (npm 10 schrieb ihn als `extraneous`
+      weiter), die Wachen-Reparatur unten und dieser Eintrag. Wer einen
+      Fund aus einem sauberen Checkout hat, sieht vor dem Bauen in die
+      offenen PRs.
 
       NACHGEMESSEN ab `rm -rf node_modules && npm ci` (npm 10.9.7):
       `npm run build` gruen, `ng test --configuration ci --browsers=

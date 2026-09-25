@@ -1,0 +1,102 @@
+name: Fassung bauen
+
+# Baut eine MixPiBox-Fassung auf GitHub und legt sie als ENTWURF eines
+# Releases ab. Ein Entwurf ist fuer keine Box sichtbar: erst die LOKALE
+# Signatur veroeffentlicht ihn —
+#     python3 tools/mixpi-github-fassung.py signieren --fassung <name> --veroeffentlichen
+# Danach nimmt ihn „Kanaele veroeffentlichen" (kanaele.yml) ins Verzeichnis auf.
+#
+# Der Kanal steht im Namen: v1.2.0 = stable, v1.2.0-beta.N = beta,
+# v1.2.0-dev.N = dev. Mit „von" wird nicht gebaut, sondern BEFOERDERT: das
+# signierte Paket der Vorstufe, umbenannt — dieselben Bytes, die als Beta
+# draussen liefen. Ablauf und Gruende: dokumentation/mixpibox.md, 7.16.
+#
+# DAS TAG ENTSTEHT HIER, AUF GITHUB — nie per `git push` eines internen Tags:
+# ein internes Tag zeigt auf die volle Geschichte der eigenen Ablagen, und ein
+# Push truege sie mit hinaus (tools/github-veroeffentlichen.py, Abschnitt 7.15).
+
+on:
+  workflow_dispatch:
+    inputs:
+      fassung:
+        description: 'Fassung: v1.2.0 (stable) · v1.2.0-beta.1 (beta) · v1.2.0-dev.1 (dev)'
+        required: true
+        type: string
+      info:
+        description: 'Kurzbeschreibung (erscheint auf der Aktualisierungsseite der Box)'
+        required: false
+        type: string
+      von:
+        description: 'Befoerdern statt bauen: signierte Vorstufe, z. B. v1.2.0-beta.3 (leer = neu bauen)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fassung-${{ inputs.fassung }}
+  cancel-in-progress: false
+
+jobs:
+  bauen:
+    name: Fassung bauen
+    runs-on: ubuntu-latest
+    # Nur vom veroeffentlichten Stand: ein Zweig, den tools/github-veroeffentlichen.py
+    # nicht geschrieben hat, ist kein Stand des Projekts.
+    if: github.ref == 'refs/heads/main'
+    env:
+      # Eingaben NUR ueber die Umgebung, nie per ${{ }} in ein Skript: ein
+      # Name mit `"; …` waere sonst Code.
+      FASSUNG: ${{ inputs.fassung }}
+      INFO: ${{ inputs.info }}
+      VON: ${{ inputs.von }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        if: inputs.von == ''
+        with:
+          node-version: '22'
+          cache: npm
+      - if: inputs.von == ''
+        run: npm ci
+
+      - name: Gibt es die Fassung schon?
+        run: |
+          if gh release view "$FASSUNG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "::error::Release $FASSUNG gibt es schon. Eine Fassung, die auf zwei Staende zeigt, ist schlimmer als keine."
+            exit 1
+          fi
+
+      - name: Bauen (oder befoerdern) und auf die Fassung stempeln
+        id: bau
+        run: |
+          if [ -z "$VON" ]; then
+            python3 tools/mixpi-github-fassung.py bauen --fassung "$FASSUNG" --aus "$RUNNER_TEMP/fassung"
+          else
+            python3 tools/mixpi-github-fassung.py befoerdern --von "$VON" --fassung "$FASSUNG" --aus "$RUNNER_TEMP/fassung"
+          fi
+
+      - name: Entwurf anlegen
+        env:
+          VORAB: ${{ steps.bau.outputs.vorab }}
+        run: |
+          vorab=()
+          if [ "$VORAB" = "true" ]; then vorab=(--prerelease); fi
+          gh release create "$FASSUNG" \
+            "$RUNNER_TEMP/fassung/$FASSUNG.zip" \
+            "$RUNNER_TEMP/fassung/$FASSUNG.zip.sha256" \
+            --repo "$GITHUB_REPOSITORY" --draft "${vorab[@]}" \
+            --target "$GITHUB_SHA" \
+            --title "MixPiBox $FASSUNG" \
+            --notes "${INFO:-MixPiBox $FASSUNG}"
+          {
+            echo "### Entwurf $FASSUNG angelegt"
+            echo
+            echo "Noch unsichtbar. Signieren und veroeffentlichen, lokal:"
+            echo
+            echo '```'
+            echo "python3 tools/mixpi-github-fassung.py signieren --fassung $FASSUNG --veroeffentlichen"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

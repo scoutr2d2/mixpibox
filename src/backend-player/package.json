@@ -8,8 +8,9 @@
     "build": "esbuild src/spotify-control.ts --bundle --minify --platform=node --target=node22 --log-level=error --outfile=../deploy/spotify-control.js",
     "test": "cross-env NODE_ENV=test tsx --test src/*.spec.ts",
     "check-types": "tsc --noEmit",
-    "lint": "npx @biomejs/biome check .",
-    "lint:fix": "npx @biomejs/biome check --fix ."
+    "_kommentar:lint": "Die zwei Schalter nehmen Formatierung und Import-Reihenfolge aus dem Lint-Tor - Begruendung und Rueckweg im `_kommentar:lint` von mupibox-backend-api und im Handbuch 7.5.",
+    "lint": "npx @biomejs/biome check --formatter-enabled=false --assist-enabled=false .",
+    "lint:fix": "npx @biomejs/biome check --formatter-enabled=false --assist-enabled=false --fix ."
   },
   "dependencies": {
     "byline": "^5.0.0",

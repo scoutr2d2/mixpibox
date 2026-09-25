@@ -41,16 +41,22 @@ WAS GEPRUEFT WIRD (alle drei zaehlen als Luecke):
     entstehen ja erst beim Bau. Sternchen werden als Muster aufgeloest, ein
     Muster ohne einen einzigen Treffer zaehlt als Loch.
 
-WAS NUR GEMELDET, ABER NICHT GEZAEHLT WIRD (HINWEIS-Zeilen): die Loecher der
-`--workspaces`-Faecherung. `npm run lint --workspaces` ueberspringt
-`frontend-admin` stumm, weil der Arbeitsbereich gar kein `lint` hat — npm
-sagt dazu nichts. Und `npm run test --workspaces` faechert in zwei
-Angular-Bereiche, deren eigenes `test` das nackte `ng test` ist: das laeuft im
-Beobachtungsmodus und endet nie, ausserdem braucht Karma ein Chrome, das hier
-nicht installiert ist. Diese beiden Loecher zu SCHLIESSEN ist eine Aenderung
-am Bau, nicht an der Doku; die Wache zaehlt sie deshalb nicht rot, sondern
-haelt sie sichtbar. Der Weg, der wirklich prueft, ist `tools/pruefen.sh` —
-es loest den Browser selbst auf und ruft `ng test --watch=false`.
+SEIT 25.09.2026 AUCH ROT: ein Skript, das die Wurzel ueber `--workspaces`
+faechert und das ein Arbeitsbereich nicht hat. Bis dahin stand hier, npm
+ueberspringe das „stumm" — das war nie gemessen und ist falsch: npm 10.9.7
+bricht mit `Missing script: "lint"` ab, und genau daran war der CI-Auftrag
+`Lint (Biome)` seit der ersten Veroeffentlichung rot (`frontend-admin` hatte
+kein `lint`). Nur mit `--if-present` schweigt npm wirklich; dann bleibt es
+ein HINWEIS, weil der Bereich ungeprueft durchfaellt.
+
+WAS NUR GEMELDET, ABER NICHT GEZAEHLT WIRD (HINWEIS-Zeilen): `npm run test
+--workspaces` faechert in einen Angular-Bereich, dessen eigenes `test` das
+nackte `ng test` ist: das laeuft im Beobachtungsmodus und endet nie,
+ausserdem braucht Karma ein Chrome, das hier nicht installiert ist. Das zu
+SCHLIESSEN ist eine Aenderung am Bau, nicht an der Doku; die Wache zaehlt es
+deshalb nicht rot, sondern haelt es sichtbar. Der Weg, der wirklich prueft,
+ist `tools/pruefen.sh` — es loest den Browser selbst auf und ruft
+`ng test --watch=false`.
 
 WAS ES NICHT TUT: es fuehrt kein einziges Skript aus, misst keine Laufzeit
 und aendert nichts. Es liest `package.json` und Text.
@@ -238,8 +244,14 @@ if angemeldet and not backlog_traf_zu:
     luecken.append("backlog/veraltet")
 
 
-# ── 4. Die Loecher der Faecherung — gemeldet, nicht gezaehlt ────────────────
-print("── Faecherung ueber --workspaces (HINWEIS, zaehlt nicht) ──")
+# ── 4. Die Loecher der Faecherung ───────────────────────────────────────────
+# Ein fehlendes Skript ist eine LUECKE, kein Hinweis: npm bricht die ganze
+# Faecherung mit `Missing script` ab (gemessen 25.09.2026, npm 10.9.7). Bis
+# dahin stand hier „npm ueberspringt still" — ungemessen, und falsch; der
+# CI-Auftrag `Lint (Biome)` war genau daran rot. Nur `--if-present` laesst
+# npm wirklich schweigen, und dann faellt der Bereich ungeprueft durch — das
+# bleibt als HINWEIS sichtbar.
+print("── Faecherung ueber --workspaces ──")
 for name, befehl in skripte.items():
     treffer = re.search(r"npm run ([\w:-]+) --workspaces", befehl)
     if not treffer:
@@ -247,10 +259,17 @@ for name, befehl in skripte.items():
     gefaechert = treffer.group(1)
     for bereich, bereich_skripte in sorted(bereiche.items()):
         if gefaechert not in bereich_skripte:
-            print(
-                f"  HINWEIS: `npm run {name}` faechert `{gefaechert}` aus, "
-                f"{bereich} hat es nicht — npm ueberspringt still"
-            )
+            if "--if-present" in befehl:
+                print(
+                    f"  HINWEIS: `npm run {name}` faechert `{gefaechert}` mit "
+                    f"--if-present aus, {bereich} hat es nicht — faellt ungeprueft durch"
+                )
+            else:
+                print(
+                    f"  LUECKE: `npm run {name}` faechert `{gefaechert}` aus, "
+                    f"{bereich} hat es nicht — npm bricht mit `Missing script` ab"
+                )
+                luecken.append(f"faecherung/{name}/{bereich}")
             continue
         # Das nackte `ng test` endet nie: Karma bleibt im Beobachtungsmodus
         # stehen. Wer `npm run test` in der Wurzel ruft, wartet unbegrenzt.

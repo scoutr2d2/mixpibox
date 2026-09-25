@@ -60,7 +60,7 @@ zweites Mal untersucht — jede Zeile ist am Code oder am Gerät belegt):
 | **E12/X11** | `piper-einrichten.sh:90` **benennt** die Lizenzfrage, beantwortet sie nicht |
 | **E14** | `tools/umbenennung-inventur.py` hängt **nicht** in `tools/pruefen.sh` (0 Treffer) |
 | **E15/S2**, zweite Hälfte | `jfBefehle` (`server.ts:5460`) baut weiterhin die direkte Jellyfin-Adresse **mit `api_key`**; `/api/jellyfin/strom/:kennung` hat außer seinem Test keinen Aufrufer |
-| **E18**, Stufe 2 | ~~`resume.json` weiter box-weit (der Kommentar steht jetzt in `server.ts:7063`, nicht mehr `:6498` — **Zeilennummern wandern, der Befund nicht**); `listen.json` und die Kinderzeit-*Regeln* ohne Kennung~~ — **ÜBERHOLT (24.08.2026):** `resume.json` und `listen.json` liegen in `BEREICH_ABLAGEN`, also je Kind (`/api/resume` nimmt `resumeLesePfad(profilAktiv())`, Stufe 3). Die Kinderzeit-Regeln kann der Server je Kind (`?profil=`, seit 02.08.2026) — offen ist nur das **Feld in der Verwaltung** |
+| **E18**, Stufe 2 | ~~`resume.json` weiter box-weit (der Kommentar steht jetzt in `server.ts:7063`, nicht mehr `:6498` — **Zeilennummern wandern, der Befund nicht**); `listen.json` und die Kinderzeit-*Regeln* ohne Kennung~~ — **ÜBERHOLT (24.08.2026):** `resume.json` und `listen.json` liegen in `BEREICH_ABLAGEN`, also je Kind (`/api/resume` nimmt `resumeLesePfad(profilAktiv())`, Stufe 3). Die Kinderzeit-Regeln kann der Server je Kind (`?profil=`, seit 02.08.2026) — ~~offen ist nur das **Feld in der Verwaltung**~~ **auch das steht seit dem 25.09.2026** (E143/1) |
 | **E23/P1** | `/jellyfin` und `/spotify` haben in `app.routes.ts` weiterhin **kein** `canActivate` |
 
 **Eine Beobachtung, die nicht berichtigt wurde, weil sie dem Betreiber gehört:**
@@ -2389,6 +2389,11 @@ laufen sie auseinander, merkt es niemand; hängt als Schritt in
 >   `speichern()` den `wemAnhang()` nicht an. **Der Bau ist das Feld, nicht der
 >   Endpunkt.** Wer hier „Liam und Kalea teilen sich dieselben Grenzen" liest
 >   und daraufhin den Server anfasst, baut etwas nach, das steht.
+>   **NACHTRAG 25.09.2026: auch in der Verwaltung GEBAUT** (E143/1). Nicht
+>   durch den Anhang allein — der hätte beim ersten Speichern still eine
+>   Kopie der Hausregel für das Kind eingefroren —, sondern mit
+>   `GET /api/kinderzeit/satz` (zeigt, wer eigene Regeln hat) und
+>   `DELETE /api/kinderzeit?profil=` (zurück zur Hausregel).
 * **Fällt das aktive Profil je auf Gast zurück?** Noch nicht entschieden. Ohne
   Rückfall läuft Kaleas Zeitkonto weiter, wenn Liam die Box anmacht und niemand
   umstellt — genau der Fall, in dem eine Kinderzeit als kaputt erlebt wird.
@@ -8992,7 +8997,7 @@ Frontend-Entscheidung C4, install-common.sh, wachen_lib.py.
 - AUDIT-2026-08-22 Rang 3: shutdown/reboot auf SYS_AKTIONEN (fortgeschrieben von 21.08.) — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-08-22 Rang 4: Spotify-Modus messen (Dev vs Extended Quota) — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-08-22 Rang 5: Regler aus GET /api/ton/klangwerk liefern — offen — Sammelpunkt E91, unbewertet uebernommen
-- AUDIT-2026-08-22 Rang 6: Biome festnageln plus 19 neue Fehler ansehen — offen — Sammelpunkt E91, unbewertet uebernommen
+- AUDIT-2026-08-22 Rang 6: Biome festnageln plus 19 neue Fehler ansehen — ERLEDIGT 25.09.2026: gepinnt auf 2.5.11 (369136e, #2); die neun echten Lint-Fehler behoben, das Lint-Tor blockiert wieder; Formatierung und Import-Reihenfolge stehen im Abschnitt „Aufräumen — Formatierung und Import-Reihenfolge zurück ins Lint-Tor" am Ende — Sammelpunkt E91
 - AUDIT-2026-08-22 Rang 7: Löschliste Posten 1–8 abarbeiten — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-08-22 Rang 8: gemeinsame Ausrolltabelle für autosetup plus update — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-08-22 Rang 9: Entzerrer in die Frequenzgang-Kurve aufnehmen — offen — Sammelpunkt E91, unbewertet uebernommen
@@ -9253,7 +9258,7 @@ Buchung des Kritiker-Laufs 09.09.2026 (AUDIT-2026-09-09.md):
 - AUDIT-2026-09-09 Rang 8: 13 Meshy-Beinahe-Doppel als waehlbare Figuren im Kinder-Angebot (bilder/figuren, Ordner entscheidet) — Betreiber fragen: Angebot oder Versehen — Entscheid beim Betreiber — Sammelpunkt E91
 - AUDIT-2026-09-09 Rang 9: tote Assets — 7 von 14 media/images-Bildern (PNG-Zwillinge, 1st_version-Altstaende) und screenshots/ komplett (23 Dateien, gefallene Oberflaeche) ohne Verweis im Baum; vor dem Faellen upstream auf Hotlinks pruefen — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-09 Rang 10: sieben versteckte Dot-Werkzeuge in tools/ getrackt, fuer Shell-Globs unsichtbar — normal benennen oder als geparkte Messreihen ausweisen — offen — Sammelpunkt E91, unbewertet uebernommen
-- AUDIT-2026-09-09 Rang 11: biome auf "*" gepinnt (still wechselnde Minors koennen Lint roeten) und Schema-URL auf 2.2.4 zurueck — pinnen und nachziehen; Wurzel-Skripte des frontend-box-Risses erst nach Entscheid der parallelen Arbeit — offen — Sammelpunkt E91, unbewertet uebernommen
+- AUDIT-2026-09-09 Rang 11: biome auf "*" gepinnt (still wechselnde Minors koennen Lint roeten) und Schema-URL auf 2.2.4 zurueck — pinnen und nachziehen; Wurzel-Skripte des frontend-box-Risses erst nach Entscheid der parallelen Arbeit — ERLEDIGT 25.09.2026: Pin 2.5.11 mit #2, Schema-URL 2.5.11 und `preset: "recommended"` per `biome migrate --write`; der frontend-box-Riss ist hier NICHT angefasst — Sammelpunkt E91
 - AUDIT-2026-09-09 Rang 12: NEUE-OBERFLAECHE-PLAN.md und BOX-MENUE-ANALYSE.md ohne Vollzugs-Kopf (lesen sich als Vorhaben statt Geschichte); audits/-Ordner moeglich, aber zwei Wurzel-Globs und Links haengen dran — Kopfzeilen Minuten, Ordner Entscheid — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-09 Rang 13: wachen_lib-Entscheid — 29 deckung-Werkzeuge gleiche Mechanik, 47 eigene LUECKE-Protokolle, doku-pfade-pruefen.py fuehrt die nie gebaute Bibliothek als uneingeloesten Vorschlag — bauen oder foermlich widerrufen — Entscheid beim Betreiber — Sammelpunkt E91
 
@@ -9393,24 +9398,27 @@ dort weiterhoeren, wo es aufgehoert hat.
 > sauberen Cloud-Checkout; auf der Arbeitsmaschine verdeckte es das alte
 > `node_modules`.
 >
-> **Gebaut:** `src/frontend-admin/package.json` deklariert 8 `dependencies`
-> und 12 `devDependencies` — die geforderten Stände aus dem Lock-Eintrag
-> `packages["src/frontend-box"]`, nicht geraten. Gegenüber der Liste unten
-> kommen `tslib` (`importHelpers`), `zone.js` (`polyfills`),
-> `@angular/compiler(-cli)`, `jasmine-core`, `@types/jasmine`, `@types/node`
-> und `typescript` dazu — Pakete, die die Wache nicht sieht, weil sie weder
-> importiert noch als Bauer-Literal geführt werden. `karma-coverage` bleibt
-> in der Wurzel. Lock neu geschrieben (npm 11, behält `libc`): der Eintrag
-> `src/frontend-box` ist weg (samt Link `mupibox-frontend-box`), dazu 101
-> verwaiste Paketeinträge (Ionic, swiper,
-> qrcode, …, und Reste wie `ky`/`protobufjs`, die die Backend-Manifeste
-> längst nicht mehr führten); kein gelockter Stand geändert. Die
-> `ionicons`-Zeile unten ist mit der Box-Oberfläche gegenstandslos.
-> Nachgemessen ab `rm -rf node_modules && npm ci`: `npm run build` grün,
+> **Gebaut — zweimal, am selben Tag, byte-gleich.** Zwei Sitzungen haben den
+> Fund parallel behoben: scoutr2d2/mixpibox#2 (über `fe8f9ee` auf `main`)
+> und scoutr2d2/mixpibox#3. Beide leiten dieselbe Liste aus dem Lock-Eintrag
+> `packages["src/frontend-box"]` ab, nicht geraten:
+> `src/frontend-admin/package.json` deklariert 8 `dependencies` und 12
+> `devDependencies`. Gegenüber der Liste unten kommen `tslib`
+> (`importHelpers`), `zone.js` (`polyfills`), `@angular/compiler(-cli)`,
+> `jasmine-core`, `@types/jasmine`, `@types/node` und `typescript` dazu —
+> Pakete, die die Wache nicht sieht, weil sie weder importiert noch als
+> Bauer-Literal geführt werden. `karma-coverage` bleibt in der Wurzel. #2
+> ergänzte dazu `@types/cors` bei `src/backend-api`.
+> Das Lock von #2 (npm 10) räumte die verwaisten Pakete, ließ aber den
+> Arbeitsbereich ohne Manifest als `extraneous` stehen. #3 schrieb es mit
+> npm 11 neu, danach ist auch `packages["src/frontend-box"]` weg; kein
+> gelockter Stand geändert. Die `ionicons`-Zeile unten ist mit der
+> Box-Oberfläche gegenstandslos. Nachgemessen ab
+> `rm -rf node_modules && npm ci`: `npm run build` grün,
 > `ng test --configuration ci` 257/257, `src/frontend-admin/node_modules`
 > entsteht nicht, `tools/arbeitsbereich-abhaengigkeiten-deckung.py`
 > „KEINE LUECKE" (dafür auch Punkt (h) aus AUDIT-2026-09-23 Rang 10
-> behoben). Doku: `dokumentation/mixpibox.md` 7.13.
+> behoben, #3). Doku: `dokumentation/mixpibox.md` 7.13.
 
 Kein E-Punkt: hier wird nichts gebaut, hier wird etwas eingetragen. Gefunden
 im Doku-Lauf 29.08.2026 als Nachwehe von `390880f5`/`ef946f34`, dokumentiert
@@ -14250,3 +14258,137 @@ Verschmelzungs-Vorgabe (seit 06.09. ist AN die Vorgabe).
 AUDIT-2026-09-12 Rang 10 (Zeile ~9285): `@property` in `conic-gradient`
 läuft nicht am Compositor vorbei, 2600-ms-Endlosschleife auf einer
 wackligen Pi-Kiosk-GPU. **Messauftrag, kein Umbau vorher.**
+
+## E143 — README 3.9 abtragen: jeder Punkt nachgeprüft, und der Weg bis zum Löschen des Abschnitts (2026-09-25, TEILERLEDIGT)
+
+Betreiber: „3.9 Was halb fertig ist — arbeite die punkte ab, kontrolliere was
+wirklich offen ist und mache ein plan das wir die sektion löschen können."
+
+**NACHGEPRÜFT AM 25.09.2026, AM BAUM, NICHT AM GERÄT.** Neun Punkte standen in
+README 3.9 (Stand der Veröffentlichung 75da4de). Jeder wurde gegen Code,
+Rezepte, Wissenspaket und BACKLOG gelesen:
+
+| Punkt in 3.9 | stimmte er? | was jetzt gilt |
+|---|---|---|
+| Vorlesen kommt nicht auf jede Karte | ja — der Schritt `extras` legte `piper-einrichten.sh` ab, aber kein Schritt **rief** es | behoben: Rezeptschritt `piper` (optional, 1200 s, wie autosetup und der Update-Weg) |
+| Leersenke des Mitschnitts in keinem Weg | ja (AUDIT-2026-08-22 Rang 2, seit einem Monat gebucht) | behoben: `62-mixpi-mitschnitt.conf` auf allen drei Wegen |
+| Kinderzeit-Regeln je Kind nur am Server | ja | gebaut (E143/1) |
+| Anmeldung greift nur ohne Gast | ja — `NewDesign/app.js` fragt `/api/start` nur bei `gastAktiv === false` | **Entscheidung nötig** (E143/4) |
+| Zuordnungsseite für Eingabegeräte fehlt | ja — drei lesende Routen, **keine** schreibende; `fernbedienung.py` liest die Zuordnung nur beim Start | offen (E143/6) |
+| Fernbedienung fehlt auf dem Rezept-Weg | ja — Unit kam mit, Leser, Zuordnung und Profile nicht, eingeschaltet wurde nichts | behoben: Rezeptschritt `fernbedienung` |
+| Einrichtungsassistent „nicht verdrahtet" | **nein, veraltet** — seit 08.08.2026 verdrahtet (E11b/I9–I13 FERTIG): `sdstart` → Vorstart → eigenes WLAN ohne hostapd (`wpa_supplicant mode=2` + `kleiner-dhcp.py`) → Übergabe → Selbstlauf | es bleiben drei lose Enden **nach** der Einrichtung (E143/8–10) |
+| Die Verwaltung hat nicht für jede Seite Zeugen | ja — 8 von 28 Seiten direkt, 6 über Dienst/Helfer, 14 gar nicht; kein Aussehens-Vergleich der Box | keine halbe Funktion, sondern Qualität: nach README 3.8 umgezogen (E143/14) |
+| Lautstärkesprung beim Quellenwechsel | **nur mit Soloist** — librespot (die Vorgabe) läuft mit `LIBRESPOT_ENABLE_VOLUME_NORMALISATION=1`; ob gleich laut, ist ungemessen | offen (E143/11–13) |
+
+**Beifang derselben Fehlerklasse** (stand nicht in 3.9, gefunden mit
+`tools/ausgerollte-vorlagen-deckung.py`): `61-entzerrer.conf` fehlte auf dem
+Rezept-Weg — auf einer Rezept-Box gab es die Senke `entzerrer` nicht, und die
+Regler der Ton-Seite stellten nichts. Umgekehrt legte **nur** das Rezept
+`82-karte-software-regler.conf` ab; autosetup- und Update-Boxen behielten den
+Attrappen-Regler vom 05.09. (Anzeige stimmt, Ton nicht). Beides nachgezogen.
+
+**Was E143/2 NICHT beweist:** gebaut und in einer Attrappe durchgefahren
+(Paket 30 + 26 Schritte, keine fehlende Quelle; Fernbedienungs-Schritt legt an,
+lässt eine eigene Zuordnung beim zweiten Lauf stehen, seine Probe wird ohne
+Profile oder ohne +x rot) — aber auf keiner Karte gelaufen. Das ist E143/3.
+
+| # | Art | Punkt | Status | Abhängig von |
+|---|-----|-------|--------|--------------|
+| 1 | U | Kinderzeit-Regeln je Kind in der Verwaltung: `GET /api/kinderzeit/satz`, `DELETE /api/kinderzeit?profil=`, Profilseite bearbeitet, was für das gewählte Kind gilt | FERTIG — 25.09.2026; 8 Server- und 8 Seitenzeugen, beide gegen Sabotage rot gesehen; Gerätebeweis steht aus | — |
+| 2 | U | Ausrollwege angleichen: Rezept bekommt `piper`, `fernbedienung`, 61 + 62; autosetup und Update bekommen 62 + 82 | FERTIG — 25.09.2026 im Baum; Kartenlauf ist E143/3 | — |
+| 3 | M | Frischer Kartenlauf mit dem Stand von E143/2, Pi 5 **und** Pi 4: `piper-einrichten.sh --pruefen`, `/api/eingabegeraete/profile` nicht leer, `pw-cli ls Node` zeigt `entzerrer` und `mixpi-mitschnitt`, `tools/box/leersenke-bleibt-probe.py` | OFFEN | 2 |
+| 4 | V | Anmeldung bei eingeschaltetem Gast — welcher der drei Wege (unten) | ENTSCHEIDUNG — Betreiber; Empfehlung (a) | — |
+| 5 | U | Die gewählte Anmeldung bauen, dazu `start.ts:10-17` und den Text der Start-Modus-Wahl richtigstellen, Gast-an-Fälle in `tools/start-modus-schau.mjs` | OFFEN — rund ½ Tag | 4 |
+| 6 | U | Zuordnungsseite Eingabegeräte, Mindestfassung: `GET /api/eingabegeraete/alle` (auch Geräte ohne Profil), `GET /api/eingabegeraete/aktionen` (`BOX_AKTIONEN`), `GET/PUT /api/eingabegeraete/zuordnung` (prüft mit `istBoxAktion`, schreibt atomar); `fernbedienung.py` liest bei geänderter mtime neu; Seite unter „Bluetooth" mit anklickbarem SVG (`data-taste`) | OFFEN — rund 3 Tage | — |
+| 7 | U | Zuordnung je Gerät und mehrere Geräte zugleich (E137/2 und /5) | OFFEN — **kein** Hindernis für das Löschen von 3.9 (steht dann als Grenze in 3.7) | 6; E137/5 (Gerät oder Kind?) |
+| 8 | U | Der Assistent räumt nach der Einrichtung auf: der Zweig „kein Netz" im Vorstart fragt die `fertig`-Marke (heute nur `schirm_sicherstellen`), der Selbstlauf schaltet `step-agent.service` vor seinem Neustart ab — heute lauscht er danach weiter als root auf 0.0.0.0 (Pair-Deckel 8 Versuche hält, trotzdem ungewollt) | OFFEN — 1–2 h + Messung | — |
+| 9 | V | hostapd/dnsmasq: aus `mupibox.yaml` streichen (der AP braucht sie seit I9 nicht) oder `weg_waehlen()` auf den wpa-Weg festlegen — mit hostapd scheitert `wechsel_aus_ap()` | ENTSCHEIDUNG — Empfehlung: streichen | — |
+| 10 | M | Assistent ohne Kabel und ohne WLAN-Vorgabe am **Pi 4** durchspielen (am Pi 5 belegt, Wiki `ap-ohne-hostapd-wpa-mode2`); danach die Zeilen „nicht gemessen (S5)" in E11b richtigstellen | OFFEN | 8, 9 |
+| 11 | U | `tools/box/pegelvergleich.py`: `messen()` repariert (Fehler nicht mehr nach `/dev/null`, Aufnahme als Datei statt WAV durch die Pipe, `pw-record --target <senke> -P '{stream.capture.sink=true}'`), Befehlsketten mit Zeugen | OFFEN — 2–4 h | — |
+| 12 | M | Lautheit messen (LUFS): Soloist und librespot gegen getaggte lokale Dateien — und nachsehen, ob librespot 0.8.0 die Umgebungsvariable wirklich nimmt | OFFEN | 11 |
+| 13 | U | Den gemessenen Versatz als Vorgabe setzen (Ort nach der Messung: Dämpfung je Anwendung vom Server oder librespot-Vorverstärkung); `mpv-wrapper.ts:150` („soloist normalisiert selbst") richtigstellen | OFFEN | 12 |
+| 14 | U | Zeugen: Rauchtests für die 14 Verwaltungsseiten ohne Test (zuerst Sicherung, Aktualisierung, Bluetooth), Karma in die CI, Aussehens-Vergleich der Box gegen Referenzbilder | OFFEN — **kein** Hindernis für das Löschen von 3.9 (steht seit heute in 3.8) | — |
+| 15 | U | README 3.9 und README.en 3.9 löschen, samt aller Verweise „(3.9)" in beiden; `tools/readme-paritaet-pruefen.py` und `tools/readme-behauptungen-pruefen.sh` grün | OFFEN | 5, 6, 8, 13 |
+
+Der Status steht in der Tabelle und NUR dort (`tools/backlog-status-schau.py`).
+Was folgt, ist die Begründung.
+
+**WANN 3.9 FÄLLT — das Kriterium, damit es niemand neu verhandeln muss.** Der
+Abschnitt warnt vor Funktionen, die es halb gibt. Er fällt, wenn jede seiner
+Zeilen entweder FERTIG ist oder als ehrliche **Grenze** in den Abschnitt ihrer
+Funktion zieht (so wie 3.7 heute schon „Grenze: nur ein Gerät zugleich" trägt).
+Eine Grenze ist etwas, das so bleiben darf; eine halbe Funktion ist etwas, auf
+das jemand bauen könnte. Deshalb sind E143/7 und /14 keine Hindernisse — sie
+stehen als Grenze bzw. Qualitätsangabe am richtigen Ort. Der Rest braucht Bau:
+/5, /6, /8, /13. Die Messungen /3 und /10 gehören zum Beweis, blockieren das
+Löschen aber nicht, solange die Rezepte gebaut sind.
+
+**Wenn es schneller gehen soll:** /13 kann als Grenze nach 3.4 ziehen („mit
+Soloist springt die Lautstärke beim Quellenwechsel; der Regler je Quelle gleicht
+von Hand aus"), falls der Betreiber die Messung nicht abwarten will. Dann hängt
+das Löschen nur noch an /5, /6 und /8.
+
+**Empfohlene Reihenfolge:** /8 (klein, und der Agent im LAN ist der einzige
+Punkt mit Sicherheitsbezug) → /4 + /5 (eine Entscheidung, ein halber Tag) →
+/6 (der größte Brocken) → /11–/13 (brauchen die Box) → /3 und /10 in einem
+gemeinsamen Kartenlauf → /15.
+
+**E143/4 — die drei Wege für die Anmeldung bei eingeschaltetem Gast.** Heute
+startet eine Box mit Gast an (die Vorgabe) wortlos im zuletzt aktiven Profil —
+**auch wenn dieses Profil ein Schloss hat**. Das ist der Teil, den kein Eintrag
+als Absicht führt.
+
+* **(a) Nur das Schloss (empfohlen).** Gast an und das aktive Profil ist
+  geschützt → beim Kaltstart das Schloss zeigen; „Ich bin jemand anderes"
+  führt zu „Wer hört?" samt Gast-Kachel. Ungeschützte Profile starten weiter
+  wortlos. Rund zehn Zeilen in `app.js:31224-31268`; ändert nichts für Boxen
+  ohne Schloss.
+* **(b) Der Start-Modus gilt immer.** Die `/api/start`-Abfrage aus der
+  `gastAktiv`-Klammer holen. Weil die Vorgabe `fragen` ist, fragte danach
+  **jede** Box mit Vorgabewerten beim Start „Wer hört?" — das widerspricht der
+  Regel in `start.ts:30-35`, dass ein Update kein Verhalten still ändert. Nur mit
+  einem dritten Modus oder einer anderen Vorgabe.
+* **(c) Rückfall auf den Gast beim Kaltstart.** Beantwortet die offene Frage in
+  E18 („Fällt das aktive Profil je auf Gast zurück?"): Kaleas Zeit läuft nicht
+  weiter, wenn Liam die Box anmacht. Kostet: jeder Start beginnt beim Gast.
+
+**Messbar gemacht:** jede Zeile oben trägt die Stelle, an der man sie nachprüft.
+Die Befunde der drei Prüfläufe im Wissenspaket: `readme-3-9-nachgeprueft`.
+
+## Aufräumen — Formatierung und Import-Reihenfolge zurück ins Lint-Tor (2026-09-25, OFFEN)
+
+Kein E-Punkt: hier wird nichts gebaut, hier wird ein Tor wieder ganz
+geschlossen. Entstanden 25.09.2026 mit dem Auftrag „CI-Auftrag `Lint (Biome)`
+seit der Veröffentlichung rot"; dokumentiert in `dokumentation/mixpibox.md`
+7.4 und 7.5, llmwiki `lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still`.
+
+**Stand 25.09.2026:** `npm run lint` endet auf einem frischen `npm ci` mit 0,
+der CI-Auftrag blockiert wieder, alle drei Bereiche haben `lint`/`lint:fix`.
+Das Tor prüft aber nur die LINT-REGELN: jedes Bereichs-`lint` ruft
+`biome check --formatter-enabled=false --assist-enabled=false`. Formatierung
+und Import-Reihenfolge (136 der 145 Fehler) sind draußen, weil die
+Massenformatierung laut #2 in den internen Baum gehört — dort bearbeiten
+parallele Sitzungen dieselben Dateien, ein Umformat von GitHub aus kollidierte
+mit allen.
+
+**Zu tun, im internen Baum, in EINEM Zug:**
+
+1. In `src/backend-api`, `src/backend-player`, `src/frontend-admin` je
+   `npx @biomejs/biome check --fix .` — gemessen 25.09.2026 (main nach #1 und #2): 148 Dateien,
+   +1190/−1075 Zeilen (93 + 10 + 45 Dateien). Nur sichere Fixes; die
+   Hex-Registertabellen in `hatdiagnose.ts` bleiben dank des `overrides` in
+   `biome.json` hexadezimal.
+2. Die zwei Schalter aus `lint` und `lint:fix` aller drei `package.json`
+   streichen, die drei `_kommentar:lint` mit.
+3. `.github/workflows/ci.yml` (Kommentar am Lint-Schritt) und den Kasten in
+   Handbuch 7.5 nachziehen.
+4. Gegenprobe: danach muss `npm run lint` mit 0 enden (in einer Wegwerf-Kopie
+   am 25.09. durchgespielt: volles `biome check` null Fehler in allen drei
+   Bereichen), und eine absichtlich verrutschte Einrückung muss es rot machen.
+
+**Vorher lesen:** Backend-Tests, die Quelltext wörtlich lesen, und
+Zeilenzitate (`datei.ts:1234`) im Handbuch und im Wissenspaket verrutschen
+mit jeder Umformatierung. `tools/doku-zeilenzitate-pruefen.py` sieht nur
+Zeilen, die es nicht mehr gibt, nicht Zeilen, die jetzt etwas anderes
+zeigen. Nach dem Umformat die Suite laufen lassen und die Zitate der
+umformatierten Dateien stichprobenhaft nachsehen.

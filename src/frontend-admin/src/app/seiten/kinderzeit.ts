@@ -53,6 +53,12 @@ interface Regeln {
   nachsichtMin: number
 }
 
+/** Wie der Server es fuehrt: die Hausregel und die Ausnahmen je Kind (`GET /api/kinderzeit/satz`). */
+interface RegelSatz {
+  standard: Regeln
+  je: Record<string, Regeln>
+}
+
 interface Stand {
   erlaubt: boolean
   grund: 'aus' | 'frei' | 'tagGesperrt' | 'zuFrueh' | 'zuSpaet' | 'aufgebraucht'
@@ -738,6 +744,26 @@ export function kennungAus(name: string): string {
     }
 
     <div class="karte">
+      <!-- ══ WESSEN REGELN? (25.09.2026) ══════════════════════════════════
+           Der Server kennt seit dem 02.08.2026 eine Hausregel und eigene
+           Regeln je Kind; die Seite bearbeitete bis heute nur die Hausregel.
+           Hier steht jetzt, WAS die Tabelle darunter bearbeitet — und der Weg
+           hin und zurueck. Ein Knopf statt eines Umschalters: das Zurueck
+           verwirft Regeln und fragt deshalb nach; ein Umschalter, der nach
+           „Abbrechen" falsch stehen bliebe, behauptete einen Zustand, den
+           die Box nicht hat. Ohne geladenen Satz keine Wahl: dann steht oben
+           die Warnung, und ein Knopf, der still nichts tut, hilft niemandem. -->
+      @if (wer() && !regelnFehler()) {
+        <p class="wessen regelwahl">
+          @if (eigeneRegeln()) {
+            Regeln für <b>{{ nameVon(wer()) }}</b>: <b>eigene</b>
+            <button type="button" (click)="eigeneVerwerfen()">Zurück zur Hausregel</button>
+          } @else {
+            Regeln für <b>{{ nameVon(wer()) }}</b>: wie die <b>Hausregel</b>
+            <button type="button" (click)="eigeneAnlegen()">Eigene Regeln für {{ nameVon(wer()) }}</button>
+          }
+        </p>
+      }
       <label class="schalter">
         <input type="checkbox" [(ngModel)]="regeln().aktiv" (change)="speichern()" />
         <b>Spielzeiten einschalten</b>
@@ -859,8 +885,15 @@ export function kennungAus(name: string): string {
         </tbody>
       </table>
       <p class="hinweis">
-        <b>Diese Tabelle gilt für alle Kinder.</b> Nur Konto, Bonus und Zurücksetzen darunter
-        gehören dem oben gewählten Kind.
+        @if (eigeneRegeln()) {
+          <b>Diese Tabelle gilt nur für {{ nameVon(wer()) }}.</b> Die Hausregel für alle anderen
+          bleibt, wie sie ist.
+        } @else {
+          <b>Diese Tabelle ist die Hausregel</b> — sie gilt für jedes Kind ohne eigene Regeln.
+          @if (mitEigenenRegeln().length) {
+            Eigene Regeln haben: {{ namenVon(mitEigenenRegeln()) }}.
+          }
+        }
       </p>
       <p class="hinweis">
         Leere Zeiten heißen „keine Grenze", Dauer 0 heißt „unbegrenzt" — das Zeitfenster gilt
@@ -951,24 +984,33 @@ export class KinderzeitSeite implements OnDestroy {
    * spielt, und genau dafuer gibt es die Wahl. Die Vorgabe ist trotzdem das
    * aktive — das ist der Fall, in dem jemand danebensteht und fragt.
    *
-   * DIE REGELN SIND HIER BOXWEIT — AM SERVER SIND SIE ES NICHT. Hier stand
-   * bis zum 24.08.2026 „`/api/kinderzeit` kennt kein Profil; das hier
-   * vorzugeben waere eine Zusage, die der Server nicht einloest". Das war
-   * falsch, und zwar seit dem 02.08.2026 (d66ee6fc): `GET` UND `PUT
-   * /api/kinderzeit?profil=<kennung>` schreiben und lesen `RegelSatz.je`,
-   * `regelnFuer` zieht sie beim Stand heran, und
-   * `erbschaft.integration.spec.ts` misst genau das nach.
+   * DIE REGELN GIBT ES JE KIND — SEIT DEM 25.09.2026 AUCH AUF DIESER SEITE.
+   * Der Server fuehrt seit dem 02.08.2026 (d66ee6fc) eine Hausregel
+   * (`standard`) und Ausnahmen je Kind (`je`); bis heute bearbeitete die
+   * Wochentabelle hier trotzdem nur die Hausregel (README 3.9).
    *
-   * BOXWEIT IST ALSO NUR DIESE SEITE: `laden()` und `speichern()` haengen den
-   * `wemAnhang()` NICHT an, deshalb bearbeitet die Wochentabelle immer
-   * `standard`. Das ist ein offener Bau, keine Grenze des Servers — wer ihn
-   * macht, haengt den Anhang an diese zwei Aufrufe und braucht daneben eine
-   * Anzeige „eigene Regeln / wie alle" je Kind. Bis dahin sagt die Tabelle
-   * unten selbst, dass sie fuer alle gilt.
+   * GELADEN WIRD DER GANZE SATZ (`GET /api/kinderzeit/satz`), nicht die
+   * Einzelregel mit `?profil=`: jene Antwort sagt nicht, ob das Kind EIGENE
+   * Regeln hat oder die Hausregel erbt. Haengte man den Anhang einfach an
+   * `speichern()`, fror der erste Klick bei einem Kind still eine Kopie der
+   * Hausregel ein — und spaetere Aenderungen an ihr erreichten dieses Kind
+   * nie mehr. Deshalb bearbeitet die Tabelle, was fuer das gewaehlte Kind
+   * GILT: seine eigenen Regeln, wenn es welche hat, sonst die Hausregel —
+   * und das Anlegen und Verwerfen eigener Regeln ist ein eigener Handgriff.
    */
   protected readonly profile = signal<Profil[]>([])
   protected readonly aktivesProfil = signal('')
   protected readonly wer = signal('')
+
+  /** Der ganze Regelsatz der Box — `null`, solange er nicht geladen ist. */
+  private readonly satz = signal<RegelSatz | null>(null)
+  /** Hat das gewaehlte Kind eigene Regeln? */
+  protected readonly eigeneRegeln = computed(() => {
+    const w = this.wer()
+    return !!w && Object.hasOwn(this.satz()?.je ?? {}, w)
+  })
+  /** Wer ueberhaupt eigene Regeln hat — fuer den Hinweis unter der Hausregel. */
+  protected readonly mitEigenenRegeln = computed(() => Object.keys(this.satz()?.je ?? {}))
 
   /**
    * Der Schlummer-Timer — eigener Endpunkt, eigener Zustand.
@@ -1039,8 +1081,9 @@ export class KinderzeitSeite implements OnDestroy {
 
   private async laden(): Promise<void> {
     try {
-      const r = await firstValueFrom(this.http.get<Regeln>('/api/kinderzeit'))
-      this.regeln.set(vollstaendig(r))
+      const s = await firstValueFrom(this.http.get<RegelSatz>('/api/kinderzeit/satz'))
+      this.satz.set({ standard: vollstaendig(s?.standard ?? null), je: { ...(s?.je ?? {}) } })
+      this.regelnZeigen()
       this.regelnFehler.set('')
     } catch {
       this.regelnFehler.set(
@@ -1065,7 +1108,12 @@ export class KinderzeitSeite implements OnDestroy {
       )
       this.profile.set(Array.isArray(d?.profile) ? d.profile : [])
       this.aktivesProfil.set(String(d?.aktiv ?? ''))
-      if (!this.wer()) this.wer.set(String(d?.aktiv ?? ''))
+      if (!this.wer()) {
+        this.wer.set(String(d?.aktiv ?? ''))
+        // Profile und Regeln laden nebeneinander; wer zuletzt ankommt,
+        // entscheidet, welche Tabelle steht — also hier noch einmal.
+        this.regelnZeigen()
+      }
       // Die Figur traegt der Typ `Profil` nicht — sie kommt trotzdem mit,
       // also hier abgreifen statt den Typ ueberall zu erweitern.
       const bilder: Record<string, string> = {}
@@ -1549,7 +1597,66 @@ export class KinderzeitSeite implements OnDestroy {
     void this.medienStandHolen()
     this.wer.set(kennung)
     this.meldung.set('')
+    this.regelnZeigen()
     await this.standHolen()
+  }
+
+  /**
+   * Die Tabelle auf das stellen, was fuer das gewaehlte Kind GILT.
+   *
+   * EINE KOPIE, KEIN VERWEIS: `ngModel` schreibt direkt in `regeln()`. Zeigte
+   * das auf den Satz, stuende eine Eingabe schon vor dem Speichern darin —
+   * und ein misslungenes Speichern sähe trotzdem gespeichert aus.
+   */
+  private regelnZeigen(): void {
+    const s = this.satz()
+    if (!s) return
+    const w = this.wer()
+    this.regeln.set(vollstaendig(w && Object.hasOwn(s.je, w) ? s.je[w] : s.standard))
+  }
+
+  /** Eigene Regeln fuer das gewaehlte Kind — zunaechst als Kopie der Hausregel. */
+  protected async eigeneAnlegen(): Promise<void> {
+    const w = this.wer()
+    const s = this.satz()
+    if (!w || !s) return
+    this.meldung.set('')
+    try {
+      const r = vollstaendig(
+        await firstValueFrom(this.http.put<Regeln>(`/api/kinderzeit${this.wemAnhang()}`, vollstaendig(s.standard))),
+      )
+      this.satz.set({ ...s, je: { ...s.je, [w]: r } })
+      this.regelnZeigen()
+      this.meldung.set(`${this.nameVon(w)} hat jetzt eigene Regeln — zunächst dieselben wie die Hausregel.`)
+      await this.standHolen()
+    } catch {
+      this.meldung.set('Nicht gespeichert.')
+    }
+  }
+
+  /** Die eigenen Regeln verwerfen — danach gilt fuer das Kind wieder die Hausregel. */
+  protected async eigeneVerwerfen(): Promise<void> {
+    const w = this.wer()
+    const s = this.satz()
+    if (!w || !s) return
+    if (!confirm(`Die eigenen Regeln von „${this.nameVon(w)}" verwerfen?\n\nDanach gilt für dieses Kind wieder die Hausregel.`)) {
+      return
+    }
+    this.meldung.set('')
+    try {
+      await firstValueFrom(this.http.delete(`/api/kinderzeit${this.wemAnhang()}`))
+      const { [w]: _weg, ...rest } = s.je
+      this.satz.set({ ...s, je: rest })
+      this.regelnZeigen()
+      await this.standHolen()
+    } catch {
+      this.meldung.set('Hat nicht geklappt.')
+    }
+  }
+
+  /** Mehrere Kennungen als lesbare Namen. */
+  protected namenVon(kennungen: string[]): string {
+    return kennungen.map((k) => this.nameVon(k)).join(', ')
   }
 
   /** Die Abfrage `?profil=…`, wenn eine Wahl getroffen ist. */
@@ -1570,11 +1677,19 @@ export class KinderzeitSeite implements OnDestroy {
 
   protected async speichern(): Promise<void> {
     this.meldung.set('')
+    // Eigene Regeln des Kindes ODER die Hausregel — nie still die eine statt
+    // der anderen (siehe `regelnZeigen`).
+    const w = this.wer()
+    const eigen = this.eigeneRegeln()
     try {
-      const r = await firstValueFrom(this.http.put<Regeln>('/api/kinderzeit', this.regeln()))
+      const r = vollstaendig(
+        await firstValueFrom(this.http.put<Regeln>(`/api/kinderzeit${eigen ? this.wemAnhang() : ''}`, this.regeln())),
+      )
       // Was der Server daraus gemacht hat, ist die Wahrheit — er biegt
       // Unsinniges zurecht. Also übernehmen statt hoffen.
       this.regeln.set(vollstaendig(r))
+      const s = this.satz()
+      if (s) this.satz.set(eigen ? { ...s, je: { ...s.je, [w]: r } } : { ...s, standard: r })
       await this.standHolen()
     } catch {
       this.meldung.set('Nicht gespeichert.')

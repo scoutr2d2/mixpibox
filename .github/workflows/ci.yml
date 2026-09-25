@@ -1,35 +1,51 @@
 name: CI
 
-# Lint (Biome, per workspace), backend unit tests + type-check, and a full
-# build of all workspaces. See MODERNIZATION.md (B0 — foundation).
+# Lint (Biome, per workspace), tests + type-check, and a full build of all
+# workspaces. See MODERNIZATION.md (B0 — foundation) and
+# dokumentation/mixpibox.md, section 7.5 (what a push really enforces).
 #
 # The frontend Karma test (`ng test`) is intentionally NOT run here yet — it
 # needs a headless browser. The production `ng build` in the "build" job already
 # exercises the whole frontend compile, so regressions are still caught.
+#
+# RED FROM THE FIRST PUBLICATION UNTIL 25.09.2026: `src/frontend-admin`
+# declared no dependencies at all (Angular came from the package.json of the
+# old box UI, deleted with E118), so a fresh `npm ci` had no `ng`, and
+# backend-api lost `@types/cors` the same way. Both are declared now.
 
 on:
   push:
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   lint:
     name: Lint (Biome)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
       - run: npm ci
+      # BLOCKING AGAIN since 25.09.2026, for all three workspaces (frontend-admin
+      # had no `lint` script, and npm aborts on a missing one — it does NOT
+      # skip it). The gate checks the LINT RULES only: each workspace's `lint`
+      # runs `biome check --formatter-enabled=false --assist-enabled=false`.
+      # Formatting and import order stay out until the mass reformat has been
+      # done in the internal tree, where parallel sessions edit the same files;
+      # after that, drop the two switches. dokumentation/mixpibox.md 7.5.
       - run: npm run lint
 
   test:
-    name: Backend tests + types
+    name: Tests + types
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -37,13 +53,18 @@ jobs:
       - run: npm run check-types --workspace=mupibox-backend-player
       - run: npm run test --workspace=mupibox-backend-api
       - run: npm run test --workspace=mupibox-backend-player
+      - run: npm run test:plugins
+      - name: Release pipeline self-test (channels, signatures, stamping)
+        run: python3 tools/mixpi-github-fassung.py --selbsttest
+      - name: Puller sandbox (the box side of the release pipeline)
+        run: python3 tools/mixpi-zieher-probe.py
 
   build:
     name: Build all workspaces
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
