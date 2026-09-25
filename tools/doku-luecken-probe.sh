@@ -869,9 +869,9 @@ fi
 # bis zum 25.09.2026 NULL Abhaengigkeiten und lief trotzdem, weil npm alles in
 # die Wurzel hebt; eine Inventur ueber `package.json` mass dort eine leere
 # Menge und meldete gruen. Aufgefallen ist es erst, als `390880f5` bei der
-# Schwester aufraeumte und das `ng test` der VERWALTUNG stehenblieb. Die Wache fragt auch die zwei
-# Benutzungen ab, die in keiner Zeile Quelltext stehen: was der Bauer aus
-# `angular.json` voraussetzt und was ein npm-Skript aufruft.
+# Schwester aufraeumte und das `ng test` der VERWALTUNG stehenblieb. Die Wache
+# fragt auch die zwei Benutzungen ab, die in keiner Zeile Quelltext stehen:
+# was der Bauer aus `angular.json` voraussetzt und was ein npm-Skript aufruft.
 echo "── Geliehene Abhaengigkeiten (tools/arbeitsbereich-abhaengigkeiten-deckung.py) ──"
 if ! leihe_ausgabe=$(python3 tools/arbeitsbereich-abhaengigkeiten-deckung.py 2>&1); then
   echo "$leihe_ausgabe" | grep -vE "^KEINE LUECKE|^  VERMERKT|^$"
