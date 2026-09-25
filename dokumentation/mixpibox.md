@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1115 Einträge,
-Fassung 617). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1116 Einträge,
+Fassung 618). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -2214,7 +2214,7 @@ Die `README.md` verweist für diese Liste seit jeher hierher; bis zum
 | `npm run test` | alle drei Bereiche **plus** `test:plugins` — siehe die Warnung unten |
 | `npm run test:frontend-admin` | die Angular-Verwaltung |
 | `npm run test:plugins` | `node --test plugins/*/*.spec.mjs` |
-| `npm run lint` · `lint:fix` | Biome über die Bereiche |
+| `npm run lint` · `lint:fix` | Biome über alle drei Bereiche — seit 25.09.2026 nur die Lint-Regeln, ohne Formatierung und Import-Reihenfolge (7.5) |
 | `npm run plugin:neu` · `plugin:pruefen` | Plugin-Gerüst anlegen, Manifest prüfen |
 | `npm run docker:build` · `docker:start` | das Docker-Abbild aus dem Ursprungsprojekt — **bricht ab, siehe unten** |
 
@@ -2226,11 +2226,17 @@ Die `README.md` verweist für diese Liste seit jeher hierher; bis zum
 > löst den Browser selbst auf (`CHROME_BIN`, notfalls das Playwright-Binary)
 > und ruft `ng test --watch=false` bzw. `--configuration ci`.
 >
-> Ebenso still: `npm run lint` und `lint:fix` fächern über alle Bereiche,
-> **`frontend-admin` hat gar kein `lint`** — npm überspringt es kommentarlos.
-> Die Verwaltung wird also von der Wurzel aus nie geprüft. Gemessen am
-> 25.08.2026 meldete `npm run lint` 130 Fehler und 48 Warnungen aus den beiden
-> Backends; der Zustand hat Haltbarkeit, die Ursache nicht.
+> **Berichtigt am 25.09.2026:** Hier stand bis dahin, `npm run lint` fächere
+> über alle Bereiche und npm überspringe `frontend-admin` „kommentarlos", weil
+> der Bereich kein `lint` hatte. **Das war nie gemessen und ist falsch.** npm
+> (nachgemessen mit 10.9.7) bricht die Fächerung mit `Missing script: "lint"`
+> ab — still schweigt es nur mit `--if-present`. Der CI-Auftrag `Lint (Biome)`
+> war genau daran rot, zusätzlich zu 145 Biome-Fehlern in den Backends. Seit
+> dem 25.09. hat `frontend-admin` `lint` und `lint:fix`, wörtlich wie die
+> Backends, und `tools/npm-skripte-deckung.py` zählt einen Bereich, dem ein
+> gefächertes Skript fehlt, als Lücke. `--if-present` in der Wurzel wäre die
+> kürzere Behebung gewesen — sie hätte die Verwaltung wieder ungeprüft
+> gelassen.
 
 Bis zum 25.08.2026 stand hier ein **totes Skript**: `test:frontend-api` rief
 den Arbeitsbereich `mupibox-frontend-api`, den es nie gab (`npm error No
@@ -2310,7 +2316,7 @@ Drei Aufträge, alle auf `ubuntu-latest` mit Node 22 und `npm ci`:
 
 | Auftrag | Was er ruft | Was das deckt |
 |---|---|---|
-| `Lint (Biome)` | `npm run lint` | Biome über die Bereiche — **ohne `frontend-admin`**, und **nicht blockierend**, siehe Kasten |
+| `Lint (Biome)` | `npm run lint` | die Biome-Lint-Regeln in allen drei Bereichen, **blockierend** — Formatierung und Import-Reihenfolge nicht, siehe Kasten |
 | `Tests + types` | `npm run check-types` (nur `backend-player`), dann `npm run test` für `backend-api` und `backend-player`, `npm run test:plugins`, dazu der Selbsttest von `tools/mixpi-github-fassung.py` und der Zieher-Sandkasten `tools/mixpi-zieher-probe.py` | die Testdateien beider Backends und aller Plugins, dazu die Fassungs-Pipeline (7.16) |
 | `Build all workspaces` | `npm run build` | alle drei Bereiche mit Bau (`backend-api`, `backend-player`, `frontend-admin`); darüber läuft auch der Angular-Compiler der Verwaltung |
 
@@ -2338,19 +2344,29 @@ Rest, sondern die Ergänzung.
 >   `ng build` im Bau-Auftrag den ganzen Compiler durchläuft — Tippfehler und
 >   Typfehler fallen also, das *Verhalten* nicht. Geprüft wird es über
 >   `tools/pruefen.sh`, das den Browser selbst auflöst.
-> * **`lint` für `frontend-admin`.** Der Bereich hat gar kein `lint`-Skript;
->   `npm run lint --workspaces` überspringt ihn kommentarlos (Abschnitt 7.4).
->   Die CI erbt das Loch und meldet trotzdem grün.
-> * **Lint überhaupt — seit dem 25.09.2026 nicht blockierend**
->   (`continue-on-error` am Schritt in `ci.yml`, nicht am Auftrag: am Auftrag
->   hielt der Lauf zwar, der Check stand aber rot und jeder PR auf
->   „unstable“; jetzt ist der Check grün und der Befund eine Warnung in den
->   Anmerkungen des Laufs). Biome meldete an dem Tag 145 Fehler,
->   fast alle Formatierung und Import-Reihenfolge. Die Massenformatierung
->   gehört in den internen Baum, in dem parallele Sitzungen dieselben Dateien
->   bearbeiten; wer `npm run lint` grün macht, streicht die Zeile im selben
->   Commit. Biome ist seitdem auf `2.5.11` gepinnt — mit `"*"` brachte jede
->   neue Biome-Fassung neue Regeln und damit neues Rot.
+> * **Formatierung und Import-Reihenfolge — seit dem 25.09.2026 nicht im
+>   Lint-Tor.** Das `lint` jedes Bereichs ruft
+>   `biome check --formatter-enabled=false --assist-enabled=false`; die
+>   Lint-Regeln aus `biome.json` gelten voll und blockieren. Biome meldete an
+>   dem Tag 145 Fehler, davon 136 Formatierung und Import-Reihenfolge (die
+>   übrigen neun sind behoben). Die Massenformatierung gehört in den internen
+>   Baum, in dem parallele Sitzungen dieselben Dateien bearbeiten — von hier
+>   aus gepusht, kollidierte sie mit allen (gemessen 25.09.2026: 148 Dateien,
+>   +1190/−1075 Zeilen). **Der Rückweg:** im internen Baum in jedem Bereich
+>   `npx @biomejs/biome check --fix .`, dann die zwei Schalter aus `lint` und
+>   `lint:fix` aller drei Bereiche streichen; steht im `BACKLOG.md`. Am selben
+>   Tag in einer Wegwerf-Kopie durchgespielt: danach meldet das volle
+>   `biome check` in allen drei Bereichen null Fehler. Die
+>   Schalter sitzen bewusst in den Skripten, nicht in `biome.json` — so
+>   formatieren Editoren weiter nach den Regeln des Baums.
+>
+>   Davor, vom 25.09. bis zu dieser Änderung am selben Tag, war der
+>   Lint-Schritt über `continue-on-error` ganz nicht blockierend. Biome ist
+>   auf `2.5.11` gepinnt — mit `"*"` brachte jede neue Biome-Fassung neue
+>   Regeln und damit neues Rot. `biome.json` verträgt **keine Kommentare**:
+>   einer genügte, und Biome las die Konfiguration aus einem Bereich heraus
+>   gar nicht mehr — ohne Fehlermeldung, mit Tabs und doppelten
+>   Anführungszeichen als Vorgabe (llmwiki `lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still`).
 
 **Die 14 Testdateien unter `plugins/*/` liefen in keinem Läufer** (gefunden
 26.08.2026). 367 Tests, alle grün, zusammen 230 Millisekunden — und niemand

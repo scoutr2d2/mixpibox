@@ -31,20 +31,14 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
-      # NOT BLOCKING, on purpose and dated: on 25.09.2026 Biome reported 145
-      # errors, nearly all formatting and import order. The mass reformat
-      # belongs in the internal tree, where parallel sessions edit the same
-      # files — a reformat pushed from here would collide with all of them.
-      # ON THE STEP, NOT THE JOB: a job-level continue-on-error keeps the run
-      # green but still shows the check red and marks every PR "unstable".
-      # The finding stays visible as a warning annotation (next step).
-      # Remove both in the same commit that makes `npm run lint` green.
-      - id: lint
-        continue-on-error: true
-        run: npm run lint
-      - name: Report lint findings (not blocking)
-        if: steps.lint.outcome == 'failure'
-        run: echo "::warning title=Lint (Biome)::Biome reports errors — not blocking since 25.09.2026, see the comment in ci.yml and dokumentation/mixpibox.md 7.5."
+      # BLOCKING AGAIN since 25.09.2026, for all three workspaces (frontend-admin
+      # had no `lint` script, and npm aborts on a missing one — it does NOT
+      # skip it). The gate checks the LINT RULES only: each workspace's `lint`
+      # runs `biome check --formatter-enabled=false --assist-enabled=false`.
+      # Formatting and import order stay out until the mass reformat has been
+      # done in the internal tree, where parallel sessions edit the same files;
+      # after that, drop the two switches. dokumentation/mixpibox.md 7.5.
+      - run: npm run lint
 
   test:
     name: Tests + types

@@ -8997,7 +8997,7 @@ Frontend-Entscheidung C4, install-common.sh, wachen_lib.py.
 - AUDIT-2026-08-22 Rang 3: shutdown/reboot auf SYS_AKTIONEN (fortgeschrieben von 21.08.) — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-08-22 Rang 4: Spotify-Modus messen (Dev vs Extended Quota) — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-08-22 Rang 5: Regler aus GET /api/ton/klangwerk liefern — offen — Sammelpunkt E91, unbewertet uebernommen
-- AUDIT-2026-08-22 Rang 6: Biome festnageln plus 19 neue Fehler ansehen — offen — Sammelpunkt E91, unbewertet uebernommen
+- AUDIT-2026-08-22 Rang 6: Biome festnageln plus 19 neue Fehler ansehen — ERLEDIGT 25.09.2026: gepinnt auf 2.5.11 (369136e, #2); die neun echten Lint-Fehler behoben, das Lint-Tor blockiert wieder; Formatierung und Import-Reihenfolge stehen im Abschnitt „Aufräumen — Formatierung und Import-Reihenfolge zurück ins Lint-Tor" am Ende — Sammelpunkt E91
 - AUDIT-2026-08-22 Rang 7: Löschliste Posten 1–8 abarbeiten — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-08-22 Rang 8: gemeinsame Ausrolltabelle für autosetup plus update — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-08-22 Rang 9: Entzerrer in die Frequenzgang-Kurve aufnehmen — offen — Sammelpunkt E91, unbewertet uebernommen
@@ -9258,7 +9258,7 @@ Buchung des Kritiker-Laufs 09.09.2026 (AUDIT-2026-09-09.md):
 - AUDIT-2026-09-09 Rang 8: 13 Meshy-Beinahe-Doppel als waehlbare Figuren im Kinder-Angebot (bilder/figuren, Ordner entscheidet) — Betreiber fragen: Angebot oder Versehen — Entscheid beim Betreiber — Sammelpunkt E91
 - AUDIT-2026-09-09 Rang 9: tote Assets — 7 von 14 media/images-Bildern (PNG-Zwillinge, 1st_version-Altstaende) und screenshots/ komplett (23 Dateien, gefallene Oberflaeche) ohne Verweis im Baum; vor dem Faellen upstream auf Hotlinks pruefen — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-09 Rang 10: sieben versteckte Dot-Werkzeuge in tools/ getrackt, fuer Shell-Globs unsichtbar — normal benennen oder als geparkte Messreihen ausweisen — offen — Sammelpunkt E91, unbewertet uebernommen
-- AUDIT-2026-09-09 Rang 11: biome auf "*" gepinnt (still wechselnde Minors koennen Lint roeten) und Schema-URL auf 2.2.4 zurueck — pinnen und nachziehen; Wurzel-Skripte des frontend-box-Risses erst nach Entscheid der parallelen Arbeit — offen — Sammelpunkt E91, unbewertet uebernommen
+- AUDIT-2026-09-09 Rang 11: biome auf "*" gepinnt (still wechselnde Minors koennen Lint roeten) und Schema-URL auf 2.2.4 zurueck — pinnen und nachziehen; Wurzel-Skripte des frontend-box-Risses erst nach Entscheid der parallelen Arbeit — ERLEDIGT 25.09.2026: Pin 2.5.11 mit #2, Schema-URL 2.5.11 und `preset: "recommended"` per `biome migrate --write`; der frontend-box-Riss ist hier NICHT angefasst — Sammelpunkt E91
 - AUDIT-2026-09-09 Rang 12: NEUE-OBERFLAECHE-PLAN.md und BOX-MENUE-ANALYSE.md ohne Vollzugs-Kopf (lesen sich als Vorhaben statt Geschichte); audits/-Ordner moeglich, aber zwei Wurzel-Globs und Links haengen dran — Kopfzeilen Minuten, Ordner Entscheid — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-09 Rang 13: wachen_lib-Entscheid — 29 deckung-Werkzeuge gleiche Mechanik, 47 eigene LUECKE-Protokolle, doku-pfade-pruefen.py fuehrt die nie gebaute Bibliothek als uneingeloesten Vorschlag — bauen oder foermlich widerrufen — Entscheid beim Betreiber — Sammelpunkt E91
 
@@ -14321,3 +14321,41 @@ als Absicht führt.
 
 **Messbar gemacht:** jede Zeile oben trägt die Stelle, an der man sie nachprüft.
 Die Befunde der drei Prüfläufe im Wissenspaket: `readme-3-9-nachgeprueft`.
+
+## Aufräumen — Formatierung und Import-Reihenfolge zurück ins Lint-Tor (2026-09-25, OFFEN)
+
+Kein E-Punkt: hier wird nichts gebaut, hier wird ein Tor wieder ganz
+geschlossen. Entstanden 25.09.2026 mit dem Auftrag „CI-Auftrag `Lint (Biome)`
+seit der Veröffentlichung rot"; dokumentiert in `dokumentation/mixpibox.md`
+7.4 und 7.5, llmwiki `lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still`.
+
+**Stand 25.09.2026:** `npm run lint` endet auf einem frischen `npm ci` mit 0,
+der CI-Auftrag blockiert wieder, alle drei Bereiche haben `lint`/`lint:fix`.
+Das Tor prüft aber nur die LINT-REGELN: jedes Bereichs-`lint` ruft
+`biome check --formatter-enabled=false --assist-enabled=false`. Formatierung
+und Import-Reihenfolge (136 der 145 Fehler) sind draußen, weil die
+Massenformatierung laut #2 in den internen Baum gehört — dort bearbeiten
+parallele Sitzungen dieselben Dateien, ein Umformat von GitHub aus kollidierte
+mit allen.
+
+**Zu tun, im internen Baum, in EINEM Zug:**
+
+1. In `src/backend-api`, `src/backend-player`, `src/frontend-admin` je
+   `npx @biomejs/biome check --fix .` — gemessen 25.09.2026 (main nach #1 und #2): 148 Dateien,
+   +1190/−1075 Zeilen (93 + 10 + 45 Dateien). Nur sichere Fixes; die
+   Hex-Registertabellen in `hatdiagnose.ts` bleiben dank des `overrides` in
+   `biome.json` hexadezimal.
+2. Die zwei Schalter aus `lint` und `lint:fix` aller drei `package.json`
+   streichen, die drei `_kommentar:lint` mit.
+3. `.github/workflows/ci.yml` (Kommentar am Lint-Schritt) und den Kasten in
+   Handbuch 7.5 nachziehen.
+4. Gegenprobe: danach muss `npm run lint` mit 0 enden (in einer Wegwerf-Kopie
+   am 25.09. durchgespielt: volles `biome check` null Fehler in allen drei
+   Bereichen), und eine absichtlich verrutschte Einrückung muss es rot machen.
+
+**Vorher lesen:** Backend-Tests, die Quelltext wörtlich lesen, und
+Zeilenzitate (`datei.ts:1234`) im Handbuch und im Wissenspaket verrutschen
+mit jeder Umformatierung. `tools/doku-zeilenzitate-pruefen.py` sieht nur
+Zeilen, die es nicht mehr gibt, nicht Zeilen, die jetzt etwas anderes
+zeigen. Nach dem Umformat die Suite laufen lassen und die Zitate der
+umformatierten Dateien stichprobenhaft nachsehen.

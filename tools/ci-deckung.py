@@ -43,10 +43,13 @@ WAS GEPRUEFT WIRD (jedes zaehlt als Luecke):
 
 Punkt 4 ist der einzige, der ueber Text hinausgeht: er liest, WER ruft.
 
-DAUERROT IST KEINE WACHE (llmwiki `dauerrote-wache-ist-keine`): die drei
-Loecher, die das Handbuch in 7.5 begruendet — `ng test` braucht einen Browser,
-den ein Runner nicht hat; `lint` ueberspringt `frontend-admin` still — sind
-ABSICHT und stehen im AUSNAHMEN-Kasten des Handbuchs. Die Wache liest diesen
+DAUERROT IST KEINE WACHE (llmwiki `dauerrote-wache-ist-keine`): die Loecher,
+die das Handbuch in 7.5 begruendet — `ng test` braucht einen Browser, den ein
+Runner nicht hat; `lint` prueft seit 25.09.2026 nur die Lint-Regeln, nicht
+Formatierung und Import-Reihenfolge — sind ABSICHT und stehen im
+AUSNAHMEN-Kasten des Handbuchs. (Bis zum 25.09. stand hier auch „`lint`
+ueberspringt `frontend-admin` still" — das war falsch, npm bricht bei einem
+fehlenden Skript ab; `tools/npm-skripte-deckung.py` zaehlt das jetzt rot.) Die Wache liest diesen
 Kasten aus der Doku, statt ihn im Code zu fuehren. Wer die Absicht aendert,
 aendert den Kasten, und die Wache zieht mit.
 

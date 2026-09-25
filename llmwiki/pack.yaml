@@ -1,5 +1,5 @@
 id: mupibox
-version: "617"
+version: "618"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -46339,6 +46339,9 @@ entries:
           KOMMENTARLOS — die Verwaltung wird von der Wurzel aus nie geprueft.
           (Zustand 25.08.2026: die beiden Backends melden 130 Fehler und 48
           Warnungen. Der Zustand hat Haltbarkeit, die Ursache nicht.)
+          BERICHTIGT 25.09.2026: „kommentarlos" war nie gemessen und ist
+          falsch — npm bricht mit `Missing script` ab; die Verwaltung hat
+          seitdem `lint`. [[lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still]]
 
       Beide zu schliessen ist eine Aenderung am BAU, nicht an der Doku. Die
       Wache zaehlt sie darum nicht rot, sondern druckt sie als HINWEIS — eine
@@ -47302,7 +47305,9 @@ entries:
       der 197. Nicht durchgesetzt sind `ng test` beider Oberflaechen (42 + 19
       Dateien, Browser fehlt - begruendet), `lint` fuer `frontend-admin` (der
       Bereich hat gar kein `lint`, `--workspaces` ueberspringt ihn stumm) und
-      eben die Plugin-Tests.
+      eben die Plugin-Tests. (BERICHTIGT 25.09.2026: „stumm" ist falsch, npm
+      bricht mit `Missing script` ab —
+      [[lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still]].)
 
       ══ DIE FALLE IM AUSNAHME-KASTEN ════════════════════════════════════════
       `tools/ci-deckung.py` liest die ABSICHT aus einem Kasten im Handbuch
@@ -49244,6 +49249,8 @@ entries:
       frontend-admin deklariert NULL Abhaengigkeiten bei sechs Importen.
       npm run serve startet drei von vier Diensten; lint --workspaces
       ueberspringt den Admin STILL (npm schweigt bei fehlendem Skript).
+      [BERICHTIGT 25.09.2026: npm schweigt NICHT, es bricht mit `Missing
+      script` ab — [[lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still]].]
       Tote Abhaengigkeiten neu: baseline-browser-mapping (Wurzel),
       jasmine-spec-reporter, @types/bcryptjs (redundant zu bcryptjs 3.x
       UND in dependencies statt dev). mupictl hwapply schreibt in die
@@ -64155,3 +64162,78 @@ entries:
       "Aufraeumen - frontend-admin deklariert null Abhaengigkeiten").
       Karma als root im Container braucht zusaetzlich --no-sandbox und
       --browsers=ChromeHeadless.
+  - kind: falle
+    id: lint-tor-ohne-formatierung-und-npm-ueberspringt-nicht-still
+    title: "npm ueberspringt ein fehlendes Bereichs-Skript NICHT still — der Lint-Auftrag war daran rot, und das Lint-Tor prueft seit 25.09.2026 die Regeln, nicht die Form"
+    tags: ['lint', 'biome', 'npm', 'ci', 'wachen', 'arbeitsbereiche', 2026]
+    source: "Betreiber-Auftrag 25.09.2026 (CI-Auftrag „Lint (Biome)“ seit der Veroeffentlichung am 23.09. rot); gemessen im Cloud-Checkout mit npm 10.9.7, Node 22.22.2, Biome 2.5.11"
+    body: |
+      BERICHTIGUNG ZUERST. Drei Eintraege und das Handbuch sagten seit dem
+      25.08.2026: `npm run lint --workspaces` ueberspringe `frontend-admin`
+      „still" oder „kommentarlos", weil der Bereich kein `lint` hat
+      ([[audit-liste-ist-keine-dokumentation]],
+      [[testmenge-in-keinem-laeufer]], [[audit-2026-08-28-kritiker]]). Das
+      war NIE GEMESSEN und ist falsch. npm 10.9.7 bricht die Faecherung mit
+      `npm error Missing script: "lint"` ab und endet mit 1. Still ist es
+      nur mit `--if-present` (gemessen: Exit 0, der Bereich faellt
+      ungeprueft durch). Die Behauptung stand in zwei Wachen als HINWEIS
+      („zaehlt nicht") — eine Wache, die einen Abbruch als Schweigen
+      beschreibt, haelt genau den Fehler fuer harmlos, an dem die CI rot war.
+      `tools/npm-skripte-deckung.py` zaehlt ein fehlendes gefaechertes Skript
+      seit 25.09. als LUECKE; nur `--if-present` bleibt ein Hinweis.
+      Gegengeprobt: `lint` aus der Verwaltung genommen -> `npm run lint`
+      Exit 1 UND Wache rot; mit `--if-present` in der Wurzel -> Wache
+      HINWEIS, `npm run lint` Exit 0.
+
+      WARUM ES NIEMAND SAH (die naheliegende Erklaerung, nicht gemessen):
+      `npm run lint` scheiterte ohnehin schon an 145 Biome-Fehlern der
+      Backends. Die `Missing script`-Zeile steht ganz unten unter zwei
+      langen Fehlerbloecken. Ein Befund versteckt den naechsten, solange
+      niemand die Ursachen EINZELN zaehlt.
+
+      DIE ENTSCHEIDUNG (25.09.2026): die Verwaltung bekommt `lint` und
+      `lint:fix`, woertlich wie die Backends. `--if-present` in der Wurzel
+      waere kuerzer gewesen und haette die Verwaltung wieder ungeprueft
+      gelassen — das Loch, das das Handbuch seit dem 25.08. beklagte.
+
+      DAS LINT-TOR PRUEFT SEIT 25.09. NUR DIE REGELN. Von den 145 Fehlern
+      waren 136 Formatierung und Import-Reihenfolge, neun echte Lint-Fehler
+      (4x noVoidTypeReturn in auth.ts, 4x useIterableCallbackReturn in
+      protokollexport.ts, 1x noUnsafeOptionalChaining in interpreten.ts —
+      alle verhaltensgleich behoben). Die Massenformatierung gehoert laut
+      der Entscheidung in scoutr2d2/mixpibox#2 in den internen Baum, in dem
+      parallele Sitzungen dieselben Dateien bearbeiten (gemessen: 148
+      Dateien, +1190/-1075). Deshalb ruft das `lint` jedes Bereichs
+      `biome check --formatter-enabled=false --assist-enabled=false` — die
+      Schalter in den SKRIPTEN, nicht in biome.json, damit Editoren weiter
+      nach den Baumregeln formatieren. `continue-on-error` in ci.yml ist
+      gefallen, der Auftrag blockiert wieder. Rueckweg und Messung stehen
+      im BACKLOG („Aufräumen — Formatierung und Import-Reihenfolge zurück
+      ins Lint-Tor") und im Handbuch 7.5; in einer Wegwerf-Kopie
+      durchgespielt: nach `biome check --fix .` meldet das volle
+      `biome check` in allen drei Bereichen null Fehler.
+
+      DREI BIOME-FALLEN, alle am 25.09. gemessen:
+      (1) biome.json vertraegt KEINE Kommentare — und wer aus einem Bereich
+      heraus ruft (`cd src/backend-api && biome check .`, so rufen es die
+      Skripte), bekommt KEINE Fehlermeldung: Biome nimmt still die Vorgabe
+      (Tabs, doppelte Anfuehrungszeichen, Semikolons). Ein `lint:fix` haette
+      so jede Datei umgeschrieben. Nur `biome check biome.json` aus der
+      Wurzel zeigt den Parse-Fehler. Begruendungen gehoeren deshalb in
+      `_kommentar:`-Schluessel der package.json (Vorbild backend-api) oder
+      ins Handbuch.
+      (2) Der SICHERE Fix von useSimpleNumberKeys schreibt Hex-Schluessel
+      dezimal um — in hatdiagnose.ts die BQ25792-Registertabellen (REG
+      0x1C, 0x20/0x21). Gleiche Schluessel, aber nicht mehr gegen das
+      Datenblatt nachschlagbar. biome.json schaltet die Regel dort per
+      `overrides` ab; sonst haette die Massenformatierung sie mitgenommen.
+      (3) `biome lint --only=<regel>` fuehrt eine Regel auch dann aus, wenn
+      die Konfiguration sie abschaltet. Wer so pruefen will, ob ein override
+      greift, sieht die Befunde weiter und haelt den override fuer kaputt.
+      Nachsehen mit einem normalen Lauf (`--reporter=summary`).
+
+      NEBENBEI GEMESSEN: auf dem Stand vor #2 haette
+      `npm install --save-exact @biomejs/biome@2.5.11` zugleich ~18.000
+      Zeilen Lockfile geraeumt — den frontend-box-Eintrag ohne Manifest. Wer
+      eine einzelne Abhaengigkeit anfasst, liest den Lockfile-Diff, bevor er
+      ihn committet.
