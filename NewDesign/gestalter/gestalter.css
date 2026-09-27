@@ -271,6 +271,11 @@ body.ohne-box [data-box] { display: none; }
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
 }
 .marke-el.fest { border-color: transparent; }
+/* Feste Bereiche eine Stufe hoeher (27.09.2026): ihr Rahmen laesst Klicks
+   durch (pointer-events none), nur das Schild nimmt sie — und das lag sonst
+   UNTER einem ziehbaren Element im selben Bereich (Weiterhoeren in
+   „Kacheln & Reihen") und war nicht anzuklicken. */
+.marke-el.fest { z-index: 2; }
 .marke-el.fest .schild { background: rgba(38, 34, 47, 0.72); }
 .marke-el.gewaehlt { border-color: var(--g-akzent); border-style: solid; box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-akzent) 30%, transparent); }
 .marke-el.gewaehlt .schild { background: var(--g-akzent); }
@@ -350,6 +355,11 @@ body.zug-offen iframe { pointer-events: none; }
 .farbfeld { display: flex; align-items: center; gap: 8px; }
 .farbfeld input[type='color'] { width: 44px; height: 32px; border: 1px solid var(--g-linie); border-radius: 8px; padding: 2px; background: var(--g-flaeche2); }
 .farbfeld code { font-size: 12px; color: var(--g-leise); }
+.regenbogen-knopf[aria-pressed='true'] {
+  background: linear-gradient(90deg, #ff5a5a, #ffb84d, #ffe94d, #5ad07a, #4db8ff, #b06dff);
+  color: #1c1726;
+  font-weight: 700;
+}
 .bildwahl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .bildwahl button { aspect-ratio: 5/3; padding: 0; background-size: cover; background-position: center; font-size: 11px; }
 .bildwahl button[aria-pressed='true'] { outline: 3px solid var(--g-ziel); outline-offset: 1px; }

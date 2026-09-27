@@ -253,6 +253,10 @@ schritt "Darstellung: nur wirksame Felder" node tools/darstellung-felder-wer.mjs
 schritt "Gestalter: Format-Abschrift" node tools/gestalter-format-bauen.mjs --pruefen
 schritt "Gestalter: Katalog-Deckung" node tools/gestalter-katalog-deckung.mjs
 schritt "Gestalter: Ziehen im Browser" node tools/gestalter-schau.mjs
+# 4. Stehen die Rueckfaelle ohne Weichzeichner richtig geklammert? Eine
+#    verlorene Klammer legte sieben Wochen lang den grossen Player aus Glas
+#    lahm (27.09.2026 gefunden, tools/glas-rueckfall-wache.py).
+schritt "Glas: Rueckfaelle geklammert" python3 tools/glas-rueckfall-wache.py
 
 # ── Und steht jeder Schalter der Box AUCH in der Verwaltung? ────────────────
 #

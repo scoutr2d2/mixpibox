@@ -68,6 +68,12 @@ const wahl = (...werte) => ({ art: 'wahl', werte });
 const schalter = { art: 'schalter' };
 const farbe = { art: 'farbe' };
 const farbeOderLeer = { art: 'farbe', leer: true };
+/**
+ * Eine Farbe, '' ODER das Wort 'regenbogen' — ein Verlauf durch den ganzen
+ * Farbkreis (Betreiber 27.09.2026: „eine regenbogen option als verlauf").
+ * Nur dort, wo ein Verlauf etwas bedeutet: Glas und Schrift der Kopfleiste.
+ */
+const farbeLeerRegenbogen = { art: 'farbe', leer: true, regenbogen: true };
 const text = (max) => ({ art: 'text', max });
 const bild = { art: 'bild' };
 /** Das Namensmuster der Hintergrundbilder — dieselbe Regel wie in hintergrund.ts. */
@@ -114,11 +120,27 @@ export const BLOECKE = {
         namenGroesse: { flach: 'skalen.titel', art: zahl(0.5, 3) },
         // E121/4c (Alt: abstandBez): Luft zwischen Bild und Name, in px.
         namenAbstand: { flach: 'namenAbstand', art: zahl(-12, 60) },
+        // Schatten (27.09.2026, Betreiber: „baue noch einen cover schatten ein und
+        // interpreten"). Cover: flach = der schmale Balken wie bisher. Interpreten
+        // hatten nie einen: aus = wie bisher.
+        schatten: { flach: 'coverSchatten', art: wahl('flach', 'leicht', 'kraeftig') },
+        interpretenSchatten: { flach: 'interpretenSchatten', art: wahl('aus', 'leicht', 'kraeftig') },
     },
     reihen: {
         groesse: { flach: 'reihenFaktor', art: zahl(0.8, 2) },
         albumTipp: { flach: 'albumTipp', art: wahl('spielt', 'lanes', 'karte') },
         diskografie: { flach: 'diskografie', art: schalter },
+        /*
+         * WEITERHOEREN UND INTERPRETEN verschieben und ausblenden (Gestalter,
+         * Betreiber 27.09.2026: „weiter hören ausblenden und verschieben. auch
+         * interpreten"). oben = ueber den Kacheln (wie bisher), unten = nach den
+         * Kacheln, aus = gar nicht. `zuerst` entscheidet, welche Reihe vorn
+         * steht, wenn beide am selben Platz sind. Ab Werk: beide oben,
+         * Weiterhoeren zuerst — die Startseite sieht aus wie bisher.
+         */
+        weiterhoeren: { flach: 'reiheWeiter', art: wahl('oben', 'unten', 'aus') },
+        interpreten: { flach: 'reiheInterpreten', art: wahl('oben', 'unten', 'aus') },
+        zuerst: { flach: 'reiheZuerst', art: wahl('weiterhoeren', 'interpreten') },
     },
     kissen: {
         stufe: { flach: 'miniPlayer', art: wahl('voll', 'micro', 'aus') },
@@ -127,6 +149,8 @@ export const BLOECKE = {
         hoehe: { flach: 'mpHoehe', art: zahl(0.5, 3) },
         tasten: { flach: 'tasten', art: zahl(0.5, 3) },
         glas: { flach: 'mpGlas', art: schalter },
+        // Die Form (27.09.2026): rund wie bisher, abgerundet, eckig.
+        form: { flach: 'mpForm', art: wahl('rund', 'abgerundet', 'eckig') },
         titel: { flach: 'spielTitel', art: schalter },
         album: { flach: 'spielAlbum', art: schalter },
         streifen: { flach: 'statusLeiste', art: schalter },
@@ -182,6 +206,44 @@ export const BLOECKE = {
         schlummer: { flach: 'schlummer', art: schalter },
         titelRest: { flach: 'titelRest', art: schalter },
         btAkku: { flach: 'btAkku', art: wahl('aus', 'prozent') },
+        /*
+         * DIE LEISTE SELBST (Gestalter, Betreiber 27.09.2026: „das band oben aus
+         * glas auch die glasfarbe wählbar und auch einen elipsen bereich für die
+         * icons einen für die uhrzeit und zeiten in der mitte der rest soll dann
+         * durchsichtig sein" — dazu „die farbe der uhr wählbar", „auch die
+         * texte", „eine regenbogen option als verlauf").
+         *   stil: schlicht = wie bisher (Vorgabe, ohne Wirkung) · glas = die
+         *         ganze Leiste aus Milchglas · inseln = zwei Glas-Ellipsen (Mitte:
+         *         Uhr und Zeiten, rechts: die Symbole), der Rest durchsichtig.
+         *   glasFarbe '' = die Flaechenfarbe des Themas; glasDichte = wie
+         *   deckend das Glas ist. uhrFarbe/textFarbe '' = die Schrift des Themas.
+         */
+        stil: { flach: 'kopfStil', art: wahl('schlicht', 'glas', 'inseln') },
+        glasFarbe: { flach: 'kopfGlasFarbe', art: farbeLeerRegenbogen },
+        glasDichte: { flach: 'kopfGlasDichte', art: zahl(0.1, 0.9) },
+        // Ein eigener Verlauf fuer Leiste und Ellipsen (27.09.2026: „ich moechte
+        // auch ein verlauf der elipsen und der titelleiste haben nicht nur
+        // regenbogen"): glasFarbe -> glasFarbe2 im Winkel glasWinkel. '' = keiner.
+        glasFarbe2: { flach: 'kopfGlasFarbe2', art: farbeOderLeer },
+        glasWinkel: { flach: 'kopfGlasWinkel', art: zahl(0, 360) },
+        // Die Ecken der Ellipsen (27.09.2026: „den radius der ecken einstellbar
+        // also von rund bis eckig"): 1 = ganz rund (Vorgabe), 0 = eckig.
+        inselRund: { flach: 'kopfInselRund', art: zahl(0, 1) },
+        uhrFarbe: { flach: 'kopfUhrFarbe', art: farbeLeerRegenbogen },
+        textFarbe: { flach: 'kopfTextFarbe', art: farbeLeerRegenbogen },
+    },
+    zurueck: {
+        // Der Zurueck-Knopf oben links (Gestalter, Betreiber 27.09.2026: „jetzt
+        // noch den zurück button … zum einstellen"). flaeche: leiste = folgt der
+        // Kopfleiste (Vorgabe), deckend = wie bisher, glas = auch bei schlichter
+        // Leiste. form: abgerundet = wie bisher. pfeilFarbe '' = wie die Texte.
+        flaeche: { flach: 'zurueckFlaeche', art: wahl('leiste', 'deckend', 'glas') },
+        form: { flach: 'zurueckForm', art: wahl('abgerundet', 'rund', 'eckig') },
+        pfeilFarbe: { flach: 'zurueckPfeilFarbe', art: farbeLeerRegenbogen },
+        // Eigenes Glas (27.09.2026: „den zurück button will ich separat einstellen
+        // können"). '' bzw. nicht gesetzt = die Werte der Kopfleiste.
+        glasFarbe: { flach: 'zurueckGlasFarbe', art: farbeLeerRegenbogen },
+        glasDichte: { flach: 'zurueckGlasDichte', art: zahl(0.1, 0.9) },
     },
     verhalten: {
         blaettern: { flach: 'vollbildBlaettern', art: schalter },
@@ -224,7 +286,9 @@ export const BLOECKE = {
         // (Stand davor). Der Schleier legt den Grundton halbdurchsichtig ueber
         // ein Bild, damit die Namen unter den Kacheln lesbar bleiben — in hell
         // wie in dunkel, weil er aus `--bg` gerechnet wird und nicht schwarz ist.
-        art: { flach: 'hgArt', art: wahl('thema', 'farbe', 'verlauf', 'bild') },
+        // 'regenbogen' (27.09.2026: „auch ein regenbogen hintergrund") nimmt den
+        // Winkel und den Schleier, aber keine Farben — der Bogen ist fest.
+        art: { flach: 'hgArt', art: wahl('thema', 'farbe', 'verlauf', 'bild', 'regenbogen') },
         farbe: { flach: 'hgFarbe', art: farbe },
         farbe2: { flach: 'hgFarbe2', art: farbe },
         winkel: { flach: 'hgWinkel', art: zahl(0, 360) },
@@ -267,6 +331,8 @@ export function pruefeWert(wert, art) {
         case 'farbe':
             if (art.leer && wert === '')
                 return '';
+            if (art.regenbogen && wert === 'regenbogen')
+                return 'regenbogen';
             return typeof wert === 'string' && FARBE.test(wert) ? wert.toUpperCase() : undefined;
         case 'text': {
             if (typeof wert !== 'string')
@@ -508,7 +574,11 @@ function artWort(art) {
         case 'schalter':
             return 'erwartet true/false';
         case 'farbe':
-            return art.leer ? 'erwartet #RRGGBB oder ""' : 'erwartet #RRGGBB';
+            return art.regenbogen
+                ? 'erwartet #RRGGBB, "regenbogen" oder ""'
+                : art.leer
+                    ? 'erwartet #RRGGBB oder ""'
+                    : 'erwartet #RRGGBB';
         case 'text':
             return `erwartet einen Text bis ${art.max} Zeichen`;
         case 'bild':

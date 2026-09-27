@@ -52,6 +52,8 @@ export const ZONEN = {
     gesperrt: 'Die Leiste steht heute fest links (angekündigt: leiste.platz).',
   },
   kopf: { x: LEISTE, y: 0, w: 800 - LEISTE, h: KOPF, ansicht: 'start', wort: 'Kopfzeile' },
+  // Der Zurueck-Knopf steht fest bei 96 px (`--zurueck-links`), 66 x 66.
+  zurueck: { x: 96, y: 0, w: 66, h: 66, ansicht: 'start', wort: 'Zurück-Knopf' },
   'band-oben': { x: LEISTE, y: KOPF, w: 800 - LEISTE, h: 44, ansicht: 'start', wort: 'Band oben' },
   'band-unten': { x: LEISTE, y: 436, w: 800 - LEISTE, h: 44, ansicht: 'start', wort: 'Band unten' },
   'kissen-oben-links': { x: LEISTE, y: KOPF, w: 237, h: 86, ansicht: 'start', wort: 'oben links' },
@@ -65,6 +67,9 @@ export const ZONEN = {
   'ecke-unten-links': { x: LEISTE, y: 350, w: 130, h: 130, ansicht: 'start', wort: 'Ecke unten links' },
   'ecke-unten-rechts': { x: 670, y: 350, w: 130, h: 130, ansicht: 'start', wort: 'Ecke unten rechts' },
   inhalt: { x: LEISTE, y: 110, w: 800 - LEISTE, h: 284, ansicht: 'start', wort: 'Inhalt (Kacheln)' },
+  // Weiterhoeren und Interpreten (27.09.2026): ueber oder unter den Kacheln.
+  'reihen-oben': { x: LEISTE, y: 110, w: 800 - LEISTE, h: 70, ansicht: 'start', wort: 'Reihen über den Kacheln' },
+  'reihen-unten': { x: LEISTE, y: 324, w: 800 - LEISTE, h: 70, ansicht: 'start', wort: 'Reihen unter den Kacheln' },
   // Der grosse Player: Bild links, Tasten rechts, die Buehne darueber
   // (E129) — eine Zone genuegt, der Bewohner ist EINE Wahl.
   player: { x: 0, y: 72, w: 800, h: 408, ansicht: 'player', wort: 'Player' },
@@ -100,6 +105,31 @@ function kopfElement(name, wort, symbol, an = true, aus = false) {
     entfernen: (b) => setze(b, 'kopf', name, aus),
     felder: [],
     steuert: [`kopf.${name}`],
+  }
+}
+
+/**
+ * Eine Reihe der Startseite (27.09.2026): Weiterhoeren oder Interpreten.
+ * Oben/unten angedockt = dort, zurueck in die Palette = aus. Nicht gesetzt
+ * heisst „oben" — so steht sie ab Werk da.
+ */
+function reihenElement(name, wort, symbol, knoten) {
+  return {
+    id: `reihe.${name}`,
+    wort,
+    symbol,
+    knoten,
+    gruppe: 'andockbar',
+    ansicht: 'start',
+    zonen: ['reihen-oben', 'reihen-unten'],
+    lesen: (b) => {
+      const w = feld(b, 'reihen', name)
+      return w === 'aus' ? null : w === 'unten' ? 'reihen-unten' : 'reihen-oben'
+    },
+    setzen: (b, zone) => setze(b, 'reihen', name, zone === 'reihen-unten' ? 'unten' : 'oben'),
+    entfernen: (b) => setze(b, 'reihen', name, 'aus'),
+    felder: ['reihen.zuerst'],
+    steuert: [`reihen.${name}`],
   }
 }
 
@@ -167,6 +197,7 @@ export const ELEMENTE = [
       'kissen.hoehe',
       'kissen.tasten',
       'kissen.glas',
+      'kissen.form',
       'kissen.titel',
       'kissen.album',
       'kissen.streifen',
@@ -242,6 +273,51 @@ export const ELEMENTE = [
     felder: ['leiste.kategorien', 'verhalten.startKategorie'],
     steuert: [],
   },
+  reihenElement('weiterhoeren', 'Weiterhören', '⏯', '#weiter'),
+  reihenElement('interpreten', 'Interpreten', '☻', '#leute'),
+  {
+    // DIE LEISTE SELBST (27.09.2026): Glas, zwei Ellipsen, Uhr- und
+    // Textfarbe. Fest wie die Seitenleiste — sie hat einen Platz, keinen Zug.
+    id: 'kopfleiste',
+    wort: 'Kopfleiste',
+    knoten: '.kopf',
+    symbol: '▭',
+    gruppe: 'fest',
+    fest: true,
+    ansicht: 'start',
+    zonen: ['kopf'],
+    lesen: () => 'kopf',
+    setzen: () => {},
+    entfernen: () => {},
+    felder: [
+      'kopf.stil',
+      'kopf.glasFarbe',
+      'kopf.glasFarbe2',
+      'kopf.glasWinkel',
+      'kopf.glasDichte',
+      'kopf.inselRund',
+      'kopf.uhrFarbe',
+      'kopf.textFarbe',
+    ],
+    steuert: [],
+  },
+  {
+    // Der Zurueck-Knopf (27.09.2026: „jetzt noch den zurück button … zum
+    // einstellen"). Fest — er steht immer oben links.
+    id: 'zurueck',
+    wort: 'Zurück-Knopf',
+    knoten: '#zurueck',
+    symbol: '←',
+    gruppe: 'fest',
+    fest: true,
+    ansicht: 'start',
+    zonen: ['zurueck'],
+    lesen: () => 'zurueck',
+    setzen: () => {},
+    entfernen: () => {},
+    felder: ['zurueck.flaeche', 'zurueck.glasFarbe', 'zurueck.glasDichte', 'zurueck.form', 'zurueck.pfeilFarbe'],
+    steuert: [],
+  },
   {
     id: 'raster',
     wort: 'Kacheln & Reihen',
@@ -264,6 +340,8 @@ export const ELEMENTE = [
       'kacheln.namen',
       'kacheln.namenGroesse',
       'kacheln.namenAbstand',
+      'kacheln.schatten',
+      'kacheln.interpretenSchatten',
       'reihen.groesse',
       'reihen.albumTipp',
       'reihen.diskografie',
@@ -309,6 +387,10 @@ export const FARBZIELE = [
   { id: 'farben.flaeche', wort: 'Fläche', hinweis: 'Leiste, Karten' },
   { id: 'farben.schrift', wort: 'Schrift', hinweis: 'Text' },
   { id: 'kacheln.randFarbe', wort: 'Kachelrand', hinweis: 'Ring um die Cover' },
+  { id: 'kopf.glasFarbe', wort: 'Glas oben', hinweis: 'Kopfleiste' },
+  { id: 'kopf.uhrFarbe', wort: 'Uhr', hinweis: 'oben in der Mitte' },
+  { id: 'kopf.textFarbe', wort: 'Texte oben', hinweis: 'Zeiten und Symbole' },
+  { id: 'zurueck.glasFarbe', wort: 'Zurück-Knopf', hinweis: 'eigenes Glas' },
 ]
 
 export const FARB_FELDER = [
@@ -353,6 +435,9 @@ export const VERLAEUFE = [
   { wort: 'Wiese', farbe: '#E3F9C9', farbe2: '#9BDB8C', winkel: 180 },
   { wort: 'Nacht', farbe: '#1B1D3A', farbe2: '#3E2A5C', winkel: 200 },
   { wort: 'Bonbon', farbe: '#FFD1F0', farbe2: '#C9D6FF', winkel: 135 },
+  // Der Bogen ist fest (dieselben Stufen wie in app.js) — `regenbogen` statt
+  // zwei Farben. Gezogen auf den Hintergrund: hgArt 'regenbogen'.
+  { wort: 'Regenbogen', regenbogen: true, winkel: 135 },
 ]
 
 /** Freie Farben fuer die Farb-Palette zum Ziehen. */
@@ -443,6 +528,25 @@ export const WORTE = {
   'kopf.schlummer': 'Schlummer-Rest',
   'kopf.titelRest': 'Rest des Titels',
   'kopf.btAkku': 'Kopfhörer-Akku',
+  'kissen.form': 'Form',
+  'kacheln.schatten': 'Schatten unter den Covern',
+  'kacheln.interpretenSchatten': 'Schatten unter den Interpreten',
+  'reihen.weiterhoeren': 'Weiterhören',
+  'reihen.interpreten': 'Interpreten',
+  'reihen.zuerst': 'Welche Reihe zuerst',
+  'kopf.stil': 'Leiste',
+  'kopf.glasFarbe': 'Glasfarbe',
+  'kopf.glasDichte': 'Wie deckend das Glas ist',
+  'kopf.glasFarbe2': 'Zweite Glasfarbe (Verlauf; leer = keiner)',
+  'kopf.glasWinkel': 'Richtung des Verlaufs (Grad)',
+  'kopf.inselRund': 'Ecken der Ellipsen (eckig … rund)',
+  'zurueck.flaeche': 'Fläche',
+  'zurueck.form': 'Form',
+  'zurueck.pfeilFarbe': 'Farbe des Pfeils',
+  'zurueck.glasFarbe': 'Eigene Glasfarbe (leer = wie die Leiste)',
+  'zurueck.glasDichte': 'Wie deckend sein Glas ist',
+  'kopf.uhrFarbe': 'Farbe der Uhr',
+  'kopf.textFarbe': 'Farbe der Texte und Symbole',
 }
 
 /** Worte fuer Wahl-Werte, wo der Wert selbst kein gutes Wort ist. */
@@ -471,6 +575,17 @@ export const WAHL_WORTE = {
   hell: 'hell',
   dunkel: 'dunkel',
   prozent: 'Prozent',
+  schlicht: 'schlicht',
+  glas: 'Glas',
+  inseln: 'zwei Ellipsen',
+  flach: 'flach',
+  leicht: 'leicht',
+  kraeftig: 'kräftig',
+  regenbogen: 'Regenbogen',
+  leiste: 'wie die Leiste',
+  deckend: 'deckend',
+  weiterhoeren: 'Weiterhören',
+  interpreten: 'Interpreten',
 }
 
 /** Alle Felder, die der Gestalter anbietet — als `block.feld` (`licht` ohne Punkt). */

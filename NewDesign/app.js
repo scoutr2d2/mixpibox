@@ -2234,6 +2234,143 @@
   const GESTALT_FARBE = /^#[0-9a-fA-F]{6}$/
   const GESTALT_BILD = /^[0-9a-f]{16}\.(jpg|png|webp)$/
   const MASKOTTCHEN_ECKEN = ['unten-rechts', 'unten-links', 'oben-rechts', 'oben-links']
+  /** Der Regenbogen der Kopfleiste — dieselben sechs Stufen wie die Wellen (app.css). */
+  const GESTALT_REGENBOGEN = ['#FF5A5A', '#FFB84D', '#FFE94D', '#5AD07A', '#4DB8FF', '#B06DFF']
+
+  /*
+   * DIE KOPFLEISTE AUS GLAS (Gestalter, Betreiber 27.09.2026: „das band oben
+   * aus glas auch die glasfarbe wählbar … einen elipsen bereich für die icons
+   * einen für die uhrzeit und zeiten in der mitte der rest soll dann
+   * durchsichtig sein", dazu Uhr- und Textfarbe und „eine regenbogen option
+   * als verlauf").
+   *
+   * AB WERK OHNE WIRKUNG: `kopfStil` fehlt oder ist 'schlicht' -> keine
+   * Klasse, die Leiste sieht aus wie bisher. Uhr- und Textfarbe wirken
+   * dagegen auch ohne Glas — sie haengen nicht am Stil.
+   *
+   * DAS GLAS IST EIN HINTERGRUND MIT UNSCHAERFE (backdrop-filter in app.css).
+   * Die Deckkraft steckt in der Farbe selbst: bei einer festen Farbe ueber
+   * color-mix, beim Regenbogen als Alphawert jeder Stufe — einen Verlauf kann
+   * color-mix nicht mischen.
+   */
+  /*
+   * WEITERHOEREN UND INTERPRETEN VERSCHIEBEN UND AUSBLENDEN (Gestalter,
+   * 27.09.2026: „weiter hören ausblenden und verschieben. auch interpreten").
+   *
+   * VERSCHOBEN WIRD IM BAUM, nicht mit CSS `order`: die Buehne ist kein
+   * Flex-Behaelter, und sie dazu zu machen, verschoebe das Einrasten beim
+   * Blaettern. Alle anderen Stellen greifen per Kennung zu ($('weiter'),
+   * $('leute')) — wo der Abschnitt im Baum steht, ist ihnen gleich.
+   *
+   * AB WERK UNVERAENDERT: oben steht die Folge weiter, video, leute direkt
+   * vor #interpret — genau wie in index.html. Unten heisst: nach dem Raster.
+   *
+   * AUSBLENDEN PER KLASSE mit display:none (app.css), NICHT per `hidden`:
+   * das setzt app.js selbst, sobald es etwas zu zeigen gibt.
+   */
+  function reihenAnwenden(w) {
+    const b = document.body.classList
+    const platz = (x) => (x === 'unten' || x === 'aus' ? x : 'oben')
+    const pw = platz(w.reiheWeiter)
+    const pi = platz(w.reiheInterpreten)
+    b.toggle('reihe-weiter-aus', pw === 'aus')
+    b.toggle('reihe-interpreten-aus', pi === 'aus')
+    const weiter = $('weiter')
+    const video = $('video')
+    const leute = $('leute')
+    const anker = $('interpret')
+    const raster = $('raster')
+    const eltern = raster?.parentNode
+    if (!eltern || ![weiter, video, leute, anker].every((x) => x && x.parentNode === eltern)) return
+    const intZuerst = w.reiheZuerst === 'interpreten'
+    const oben = (intZuerst ? [leute, weiter, video] : [weiter, video, leute]).filter(
+      (x) => x === video || (x === weiter ? pw : pi) !== 'unten',
+    )
+    for (const x of oben) eltern.insertBefore(x, anker)
+    const unten = (intZuerst ? [leute, weiter] : [weiter, leute]).filter((x) => (x === weiter ? pw : pi) === 'unten')
+    const danach = raster.nextSibling
+    for (const x of unten) eltern.insertBefore(x, danach)
+  }
+
+  function kopfAnwenden(w) {
+    const b = document.body.classList
+    const s = document.documentElement.style
+    const stil = w.kopfStil === 'glas' || w.kopfStil === 'inseln' ? w.kopfStil : ''
+    b.toggle('kopf-glas', stil === 'glas')
+    b.toggle('kopf-inseln', stil === 'inseln')
+    // EINE Rechnung fuer Leiste und Zurueck-Knopf: Farbe ('' = Flaeche des
+    // Themas, 'regenbogen', #RRGGBB) und Dichte -> Hintergrund.
+    const glasAus = (farbe, dichteRoh, farbe2 = '', winkelRoh = 90) => {
+      const d = Number(dichteRoh)
+      const dichte = Number.isFinite(d) ? Math.min(0.9, Math.max(0.1, d)) : 0.45
+      const prozent = Math.round(dichte * 100)
+      if (farbe === 'regenbogen') {
+        const alpha = Math.round(dichte * 255)
+          .toString(16)
+          .padStart(2, '0')
+        return `linear-gradient(90deg, ${GESTALT_REGENBOGEN.map((c) => c + alpha).join(', ')})`
+      }
+      const grund = GESTALT_FARBE.test(farbe || '') ? farbe : 'var(--surface)'
+      const mischen = (c) => `color-mix(in srgb, ${c} ${prozent}%, transparent)`
+      // Ein eigener Verlauf: zweite Farbe gesetzt -> von der ersten zur zweiten.
+      if (GESTALT_FARBE.test(farbe2 || '')) {
+        const wn = Number(winkelRoh)
+        const winkel = Number.isFinite(wn) ? Math.min(360, Math.max(0, wn)) : 90
+        return `linear-gradient(${winkel}deg, ${mischen(grund)}, ${mischen(farbe2)})`
+      }
+      return mischen(grund)
+    }
+    const glas = glasAus(w.kopfGlasFarbe, w.kopfGlasDichte, w.kopfGlasFarbe2, w.kopfGlasWinkel)
+    // Der Zurueck-Knopf (27.09.2026): eigene Flaeche und Form. „glas" braucht
+    // die Glasfarbe auch bei schlichter Leiste — deshalb haengt die Variable
+    // an beiden.
+    const zFlaeche = w.zurueckFlaeche === 'deckend' || w.zurueckFlaeche === 'glas' ? w.zurueckFlaeche : 'leiste'
+    b.toggle('zurueck-deckend', zFlaeche === 'deckend')
+    b.toggle('zurueck-glas', zFlaeche === 'glas')
+    b.toggle('zurueck-rund', w.zurueckForm === 'rund')
+    b.toggle('zurueck-eckig', w.zurueckForm === 'eckig')
+    const zPfeil = w.zurueckPfeilFarbe
+    b.toggle('zurueck-pfeil-eigen', GESTALT_FARBE.test(zPfeil || ''))
+    b.toggle('zurueck-pfeil-regenbogen', zPfeil === 'regenbogen')
+    if (GESTALT_FARBE.test(zPfeil || '')) s.setProperty('--mupi-zurueck-pfeil', zPfeil)
+    else s.removeProperty('--mupi-zurueck-pfeil')
+    const ir = Number(w.kopfInselRund)
+    if (Number.isFinite(ir)) s.setProperty('--mupi-insel-r', String(Math.min(1, Math.max(0, ir))))
+    else s.removeProperty('--mupi-insel-r')
+    if (stil || zFlaeche === 'glas') s.setProperty('--mupi-kopf-glas', glas)
+    else s.removeProperty('--mupi-kopf-glas')
+    // Eigenes Glas des Zurueck-Knopfs: nur, wenn Farbe oder Dichte gesetzt
+    // sind — sonst nimmt app.css die Leiste (`var(--mupi-zurueck-glas,
+    // var(--mupi-kopf-glas))`). Fehlt nur eins, gilt fuer das andere der Wert
+    // der Leiste.
+    const zFarbe = w.zurueckGlasFarbe
+    // `typeof`, nicht Number(): Number('') und Number(null) sind 0 — „gesetzt".
+    const zDichteDa = typeof w.zurueckGlasDichte === 'number' && Number.isFinite(w.zurueckGlasDichte)
+    const zEigen = zFarbe === 'regenbogen' || GESTALT_FARBE.test(zFarbe || '') || zDichteDa
+    if (zEigen) {
+      s.setProperty(
+        '--mupi-zurueck-glas',
+        glasAus(
+          zFarbe || w.kopfGlasFarbe,
+          zDichteDa ? w.zurueckGlasDichte : w.kopfGlasDichte,
+          zFarbe ? '' : w.kopfGlasFarbe2,
+          w.kopfGlasWinkel,
+        ),
+      )
+    } else s.removeProperty('--mupi-zurueck-glas')
+    // Uhr und Texte: eigene Farbe, Regenbogen oder '' (= Schrift des Themas).
+    const teile = [
+      [w.kopfUhrFarbe, 'uhr'],
+      [w.kopfTextFarbe, 'text'],
+    ]
+    for (const [wert, teil] of teile) {
+      const eigen = GESTALT_FARBE.test(wert || '')
+      b.toggle(`kopf-${teil}-eigen`, eigen)
+      b.toggle(`kopf-${teil}-regenbogen`, wert === 'regenbogen')
+      if (eigen) s.setProperty(`--mupi-kopf-${teil}`, wert)
+      else s.removeProperty(`--mupi-kopf-${teil}`)
+    }
+  }
 
   /** Helligkeit nach WCAG — fuer die Schrift AUF dem eigenen Akzent. */
   function gestaltLeuchte(hex) {
@@ -2309,9 +2446,19 @@
     b.toggle('mp-oben', w.mpPlatz === 'oben')
     b.toggle('mp-mitte', w.mpAusrichtung === 'mitte')
     b.toggle('mp-links', w.mpAusrichtung === 'links')
+    b.toggle('mp-form-abgerundet', w.mpForm === 'abgerundet')
+    b.toggle('mp-form-eckig', w.mpForm === 'eckig')
 
     // ── Titelband ──
     titelband.setzen(w)
+    kopfAnwenden(w)
+    reihenAnwenden(w)
+    // Schatten unter Covern und Interpreten (27.09.2026). Ab Werk: Cover flach
+    // wie bisher, Interpreten ohne. Wirkung in app.css, „SCHATTEN".
+    b.toggle('cover-schatten-leicht', w.coverSchatten === 'leicht')
+    b.toggle('cover-schatten-kraeftig', w.coverSchatten === 'kraeftig')
+    b.toggle('int-schatten-leicht', w.interpretenSchatten === 'leicht')
+    b.toggle('int-schatten-kraeftig', w.interpretenSchatten === 'kraeftig')
 
     // ── Maskottchen in der Ecke ──
     const mk = $('maskottchen')
@@ -2339,6 +2486,7 @@
         : ''
     if (w.hgArt === 'farbe' && f1) hg = f1
     else if (w.hgArt === 'verlauf' && f1 && f2) hg = `${decke}linear-gradient(${winkel}deg, ${f1}, ${f2})`
+    else if (w.hgArt === 'regenbogen') hg = `${decke}linear-gradient(${winkel}deg, ${GESTALT_REGENBOGEN.join(', ')})`
     else if (w.hgArt === 'bild' && GESTALT_BILD.test(w.hgBild || ''))
       hg = `${decke}url("${API}/gestalter/hintergrund/${w.hgBild}") center / cover no-repeat`
     if (hg) s.setProperty('--mupi-hg', hg)
@@ -2539,6 +2687,11 @@
     // eigene Klasse. Die Begruendung und die Kontrastrechnung stehen in
     // app.css bei `body.mp-glas .mp`.
     document.body.classList.toggle('mp-glas', w.mpGlas === true)
+    // ALLE GLAS-EFFEKTE AUS (27.09.2026, Betreiber: „noch einen globalen
+    // schalter alle glas effekte aus fuer langsamere systeme"). Ein Schalter
+    // der BOX, nicht des Themas — ein Thema reist zu einer schnellen Box.
+    // Ab Werk aus (`=== true`). Wirkung in app.css, „GLAS-EFFEKTE AUS".
+    document.body.classList.toggle('glas-aus', w.glasAus === true)
     document.body.classList.toggle('tor-glas', w.torGlas === true)
     // DIESELBE REGEL WIE IM SCHALTER — und sie steht bewusst zweimal kurz da
     // statt einmal weit weg: Wer eine der beiden Stellen aendert, sieht die
@@ -14500,6 +14653,20 @@
           : 'Aus — der Mini-Player ist deckend, wie bisher.',
       an: (an) => an,
       wort: (an) => (an ? 'Ausschalten' : 'Einschalten'),
+      weiter: (an) => !an,
+    },
+    {
+      id: 'glasAus',
+      seite: 'player',
+      zeichen: 'kissen',
+      name: 'Glas-Effekte aus',
+      lesen: (w) => w.glasAus === true,
+      unter: (an) =>
+        an
+          ? 'Aus für langsame Boxen — alle Glasflächen sind deckend, nichts wird weichgezeichnet.'
+          : 'Glasflächen dürfen durchscheinen, wo sie eingeschaltet sind.',
+      an: (an) => an,
+      wort: (an) => (an ? 'Glas wieder erlauben' : 'Glas ausschalten'),
       weiter: (an) => !an,
     },
     /* ══ DIE WELLEN AUCH IM BOX-MENUE (Betreiber, 30.08.2026: "ich meine

@@ -208,6 +208,8 @@ interface Darstellung {
   /** Kissen und grosser Player als Glasflaeche. */
   mpGlas: boolean
   grossGlas: boolean
+  /** Alle Glas-Effekte aus — ein Schalter der Box, fuer langsame Geraete. */
+  glasAus: boolean
   /** Akzentfarbe des grossen Players: bernstein, koralle, gruen, blau. */
   playerAkzent: string
   /**
@@ -271,6 +273,7 @@ const STANDARD: Darstellung = {
   stBluetooth: true,
   mpGlas: false,
   grossGlas: false,
+  glasAus: false,
   playerAkzent: 'bernstein',
   // 'aus' ist der Stand vor E129 — kein Platz über den Tasten.
   buehne: 'aus',
@@ -1565,6 +1568,13 @@ const OPTIK_TEILE = [
             </button>
             <button type="button" class="klein" [class.an]="w().grossGlas" (click)="setz({ grossGlas: !w().grossGlas })">
               großer Player {{ w().grossGlas ? 'an' : 'aus' }}
+            </button>
+            <!-- 27.09.2026: „noch einen globalen schalter alle glas effekte aus
+                 fuer langsamere systeme". Gilt fuer ALLE Glasflaechen, auch die
+                 aus dem Theme-Gestalter (Kopfleiste, Ellipsen, Zurueck-Knopf). -->
+            <button type="button" class="klein" [class.an]="w().glasAus" (click)="setz({ glasAus: !w().glasAus })"
+                    title="Für langsame Boxen: kein Weichzeichner, alle Glasflächen deckend.">
+              alle Glas-Effekte aus {{ w().glasAus ? '— aktiv' : '' }}
             </button>
           </div>
           <div class="stufe">

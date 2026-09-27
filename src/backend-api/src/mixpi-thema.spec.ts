@@ -234,3 +234,45 @@ describe('Gestalter-Bloecke (E144): titelband, maskottchen, hintergrund, eigene 
     assert.deepEqual(ohne, [])
   })
 })
+
+describe('Kopfleiste aus Glas (Gestalter, 27.09.2026)', () => {
+  const kopf = { stil: 'inseln', glasFarbe: 'regenbogen', glasDichte: 0.5, uhrFarbe: '#FFCC00', textFarbe: 'regenbogen' }
+
+  it('Roundtrip und Tor: Stil, Glas, Dichte, Uhr- und Textfarbe samt Regenbogen', () => {
+    const flach = vonBloecken({ kopf })
+    assert.equal(flach.kopfStil, 'inseln')
+    assert.equal(flach.kopfGlasFarbe, 'regenbogen')
+    assert.equal(flach.kopfTextFarbe, 'regenbogen')
+    assert.deepEqual(zuBloecken(flach).kopf, kopf)
+    const b = pruefeThema({ format: FORMAT_KENNUNG, name: 'Glas', bloecke: { kopf } })
+    assert.deepEqual(b.fehler, [])
+  })
+
+  it('„regenbogen" gibt es NUR, wo das Format ihn erlaubt — nicht als Hintergrundfarbe', () => {
+    const b = pruefeThema({
+      format: FORMAT_KENNUNG,
+      name: 'Falsch',
+      bloecke: { hintergrund: { art: 'farbe', farbe: 'regenbogen' }, kopf: { stil: 'kristall' } },
+    })
+    assert.equal(b.ok, false)
+    assert.ok(b.fehler.some((f) => f.includes('hintergrund.farbe')))
+    assert.ok(b.fehler.some((f) => f.includes('kopf.stil')))
+  })
+})
+
+describe('Weiterhoeren und Interpreten verschieben und ausblenden (Gestalter, 27.09.2026)', () => {
+  it('Roundtrip und Tor: oben/unten/aus und welche Reihe zuerst', () => {
+    const reihen = { weiterhoeren: 'unten', interpreten: 'aus', zuerst: 'interpreten' }
+    const flach = vonBloecken({ reihen })
+    assert.equal(flach.reiheWeiter, 'unten')
+    assert.equal(flach.reiheInterpreten, 'aus')
+    assert.equal(flach.reiheZuerst, 'interpreten')
+    assert.deepEqual(zuBloecken(flach).reihen, reihen)
+    assert.deepEqual(pruefeThema({ format: FORMAT_KENNUNG, name: 'Reihen', bloecke: { reihen } }).fehler, [])
+  })
+
+  it('ein unbekannter Platz wird abgelehnt', () => {
+    const b = pruefeThema({ format: FORMAT_KENNUNG, name: 'Falsch', bloecke: { reihen: { weiterhoeren: 'links' } } })
+    assert.equal(b.ok, false)
+  })
+})

@@ -6,13 +6,16 @@
  * vor allem der Theme-Gestalter (/neu/gestalter/), der eine Arbeitsflaeche
  * fuer den Rechner ist und im schmalen Browserfenster nur halb zu sehen war.
  *
- * ES KLICKT NICHTS. Die Seite wird geladen, `--warten` ms stehen gelassen und
- * fotografiert. Beim Gestalter heisst das: der Entwurf wird gezeigt, nichts
- * wird „Auf der Box angewendet" — der Knopf dafuer bleibt unberuehrt.
+ * ES KLICKT NICHTS — ausser, `--klick SELEKTOR` verlangt es ausdruecklich
+ * (Text-Filter: `--klick '.chip.fest' --text Kopfleiste` klickt das erste
+ * passende Element, dessen Text das Wort enthaelt). Gedacht fuer die eigene
+ * Vorschau, um ein Blatt aufzuklappen; an einer Box nie auf einen Knopf, der
+ * schreibt („Auf der Box anwenden").
  *
  * AUFRUF
  *     node tools/seite-bild.mjs http://192.168.178.62:8200/neu/gestalter/ --ziel bild.png
  *     node tools/seite-bild.mjs URL --ziel bild.png --groesse 1440x900 --warten 4000
+ *     node tools/seite-bild.mjs URL --ziel bild.png --klick '.chip.fest' --text Kopfleiste
  */
 import { writeFile } from 'node:fs/promises'
 import WebSocket from 'ws'
@@ -31,6 +34,8 @@ if (!url || !ziel) {
 }
 const [breite, hoehe] = opt('groesse', '1440x900').split('x').map(Number)
 const warten = Number(opt('warten', '4000'))
+const klick = opt('klick')
+const klickText = opt('text', '')
 
 const browser = await eigenerBrowser({ fenster: `${breite},${hoehe + 200}` })
 if (!browser) {
@@ -54,9 +59,18 @@ const send = (m, p = {}) =>
   })
 try {
   await send('Page.enable')
+  await send('Runtime.enable')
   await send('Emulation.setDeviceMetricsOverride', { width: breite, height: hoehe, deviceScaleFactor: 1, mobile: false })
   await send('Page.navigate', { url })
   await new Promise((r) => setTimeout(r, warten))
+  if (klick) {
+    const r = await send('Runtime.evaluate', {
+      expression: `(() => { const e = [...document.querySelectorAll(${JSON.stringify(klick)})].find((x) => x.textContent.includes(${JSON.stringify(klickText)})); if (!e) return false; e.click(); return true })()`,
+      returnByValue: true,
+    })
+    if (r?.result?.value !== true) console.log(`  --klick: nichts gefunden fuer ${klick} ${klickText}`)
+    await new Promise((r2) => setTimeout(r2, 800))
+  }
   const s = await send('Page.captureScreenshot', { format: 'png' })
   await writeFile(ziel, Buffer.from(s.data, 'base64'))
   console.log(`  Bild: ${ziel} (${breite}x${hoehe})`)

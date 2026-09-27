@@ -3429,7 +3429,7 @@ body.ohne-bezeichnung .kachel-wort { display: none; }
   align-self: flex-end;
   width: min(calc(100% - 24px), calc((100% - 24px) * var(--mupi-mp-b, 1)));
   margin: 0 12px var(--mp-rand) 0;
-  border-radius: 22px;
+  border-radius: var(--mp-r, 22px);
   background: var(--pill);
   color: var(--pillInk);
   display: flex;
@@ -3456,7 +3456,7 @@ body.ohne-bezeichnung .kachel-wort { display: none; }
 .mp-bild img {
   width: 100%;
   height: 100%;
-  border-radius: 16px;
+  border-radius: var(--mp-r-bild, 16px);
   object-fit: cover;
   background: rgba(255, 247, 236, 0.14);
 }
@@ -3701,7 +3701,7 @@ body.ohne-np-album [data-anzeigeort] [data-np='unter'] { display: none; }
   content: '';
   position: absolute;
   inset: 8px;
-  border-radius: 15px;
+  border-radius: var(--mp-r-knopf, 15px);
   background: rgba(255, 247, 236, 0.12);
 }
 .mp-knopf svg { position: relative; }
@@ -3710,7 +3710,7 @@ body.ohne-np-album [data-anzeigeort] [data-np='unter'] { display: none; }
 .mp-haupt { color: var(--player-tinte); }
 .mp-haupt::before {
   inset: 4px;
-  border-radius: 18px;
+  border-radius: var(--mp-r-haupt, 18px);
   background: var(--player-akzent);
 }
 
@@ -5141,6 +5141,18 @@ body.platz-machen .mp {
   width: calc(4 * max(var(--griff), calc(var(--griff) * var(--mupi-btn, 1))) + 5 * var(--mp-gap) + 20px);
 }
 body.platz-machen .mp-text { flex-grow: 0; }
+/* DIE TASTEN STEHEN STILL — AUCH BEIM EINFAHREN (27.09.2026).
+ * Betreiber: „beim einfahren rutscht der player nach rechts aber beim
+ * ausfahren bleiben die tasten stehen ich haette es gerne wie beim
+ * ausfahren". Gemessen (tools/kissen-einfahren-messen.mjs): die Pause-Taste
+ * wanderte beim Einfahren 263 px, beim Ausfahren 0. Grund: Text und Bild
+ * fallen SOFORT auf Breite 0 (`auto -> 0` blendet nicht), die Tasten sprangen
+ * nach links und wurden dann vom schrumpfenden Kissen zurueckgeschoben.
+ * Rechts gepackt sitzen sie vom ersten Bild an dort, wo sie standen, und das
+ * Kissen schrumpft von links. `justify-content` wird dabei NICHT
+ * ueberblendet — es gilt fest, solange eingefahren ist; ausgefahren fuellt
+ * der Text den Platz, und die Packung macht keinen Unterschied. */
+body.platz-machen .mp { justify-content: flex-end; }
 
 /* ── UND ES GIBT AUCH HOEHE FREI ───
  *
@@ -5180,11 +5192,22 @@ body.platz-machen .mp-text { flex-grow: 0; }
  * steht, dessen Rollstellung muss der Browser damit gar nicht erst berichtigen
  * — und genau so eine Berichtigung ist es, die als Fingerbewegung ankommt und
  * die Rueckkopplung ausloest (llmwiki
- * platz-beim-blaettern-schaukelt-sich-auf). */
-body.platz-machen .mp {
+ * platz-beim-blaettern-schaukelt-sich-auf).
+ *
+ * ══ SEIT 27.09.2026 SCHWEBT ES IMMER, NICHT NUR BEIM EINFAHREN ═══
+ * Betreiber: „beim scrollen ist der player ‚ausgeschnitten' bei ruhe sieht
+ * man den unsichtbaren streifen der das darunter verdeckt". In Ruhe lag das
+ * Kissen im Fluss, die Buehne endete ueber seiner Zeile — neben und unter
+ * dem Kissen stand leerer Grund, beim Glas-Kissen sah man durch die Scheibe
+ * auf nichts. Beim Einfahren schwebte es ploetzlich, und der Rand sprang.
+ * Jetzt haengt das Schweben an `kissen-da` (das Kissen wird gezeigt): die
+ * Kacheln laufen immer bis zum unteren Rand, der untere Innenabstand haelt
+ * die letzte Reihe erreichbar. Beim Einfahren aendert sich nur noch die
+ * Breite — ein Aussenabstand weniger, der mitten im Rollen umspringt. */
+body.kissen-da .mp {
   margin-top: calc(-1 * (var(--mp-hoehe) + var(--mp-rand)));
 }
-body.platz-machen .buehne {
+body.kissen-da .buehne {
   padding-bottom: calc(10px + var(--mp-hoehe) + var(--mp-rand));
 }
 .mp { transition: width 220ms ease, margin-top 220ms ease; }
@@ -5388,6 +5411,7 @@ body.laut-glas .laut-stand {
      Weichzeichner laege das Albumcover scharf hinter der Zahl. */
   body.laut-glas .mp-laut-fenster,
   body.laut-glas .laut-stand { background: var(--pill); }
+}
 
 /* ══ DER GROSSE PLAYER AUS GLAS ═══
  *
@@ -5423,7 +5447,6 @@ body.gross-glas .gross-blatt {
      beim Tor: ein zu 72 % durchscheinendes Blatt ueber scharfen Kacheln ist
      ein Muster, kein Glas. */
   body.gross-glas .gross-blatt { background: var(--bg); }
-}
 }
 
 /* OHNE `backdrop-filter` KEIN GLAS, SONDERN DAS DECKENDE KISSEN.
@@ -5563,7 +5586,7 @@ body.mp-micro .mp-bild::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 50%;
+  border-radius: var(--mp-r-ring-bild, 50%);
   padding: 5px;                       /* die Dicke des Rings */
   background: conic-gradient(var(--pillInk) var(--ring, 0%), rgba(255, 247, 236, 0.18) 0);
   -webkit-mask:
@@ -5670,13 +5693,13 @@ body.mp-micro .mp-bild::after {
  * sieht, nicht, was man trifft. */
 body.platz-machen .mp-haupt::before {
   inset: 10px;
-  border-radius: 14px;
+  border-radius: var(--mp-r-ring-knopf, 14px);
 }
 body.platz-machen .mp-haupt::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 20px;
+  border-radius: var(--mp-r-ring, 20px);
   padding: 5px;                       /* die Dicke des Rings */
   /* CREME, NICHT GELB — und das ist am Bildschirm entschieden worden.
      Zuerst stand hier `--mp-akzent`, dieselbe Farbe wie der Balken. Am Bild
@@ -10646,11 +10669,11 @@ body.mp-oben .mp {
   margin-bottom: var(--mp-rand);
   transition: width 220ms ease, margin-bottom 220ms ease;
 }
-body.mp-oben.platz-machen .mp {
+body.mp-oben.kissen-da .mp {
   margin-top: 2px;
   margin-bottom: calc(-1 * (var(--mp-hoehe) + var(--mp-rand)));
 }
-body.mp-oben.platz-machen .buehne {
+body.mp-oben.kissen-da .buehne {
   padding-bottom: 10px;
   padding-top: calc(8px + var(--mp-hoehe) + var(--mp-rand));
 }
@@ -10734,3 +10757,266 @@ body.tb-da.tb-unten .maskottchen[data-ecke^='unten'] {
  * Unterlage (und die Vollbild-Ansichten ihren eigenen Grund). Die Leiste
  * bleibt `--surface` — sie ist Bedienung, kein Bild. */
 body.hg-eigen .rahmen { background: var(--mupi-hg); }
+
+/* ══ DIE KOPFLEISTE AUS GLAS (Gestalter, 27.09.2026) ══════════════════════════
+ *
+ * Betreiber: „das band oben aus glas auch die glasfarbe wählbar und auch einen
+ * elipsen bereich für die icons einen für die uhrzeit und zeiten in der mitte
+ * der rest soll dann durchsichtig sein" — dazu Uhr- und Textfarbe und „eine
+ * regenbogen option als verlauf". Klassen und Variablen setzt kopfAnwenden()
+ * in app.js; ohne gestaltetes Thema steht hier keine Klasse am body.
+ *
+ *   kopf-glas    die ganze Leiste ist Glas
+ *   kopf-inseln  zwei Ellipsen: Mitte (Uhr und Zeiten) und rechts (Symbole);
+ *                die Leiste selbst bleibt durchsichtig
+ *
+ * UNSCHAERFE NUR AUF WUNSCH: backdrop-filter ist unter WPE/Cog teuer (siehe
+ * die Karte weiter oben). Hier waehlt ein Thema es ausdruecklich, und die
+ * Flaeche ist klein (eine Leiste bzw. zwei Ellipsen). Ohne Unterstuetzung
+ * wird das Glas deckend — dieselbe Vorkehrung wie beim Tor.
+ */
+body.kopf-glas .kopf {
+  background: var(--mupi-kopf-glas);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--ink) 12%, transparent);
+}
+body.kopf-inseln .kopf { background: transparent; }
+/* DIE KACHELN LAUFEN UNTER DEM GLAS DURCH (27.09.2026, am Geraet: „die
+   kopfleiste wird nicht so glas ich sehe keine … darunter — cover"). Die
+   Leiste stand in ihrer eigenen Zeile; hinter ihr lag nur der Hintergrund,
+   und ein Weichzeichner ueber leerem Grund sieht nicht nach Glas aus —
+   derselbe Fehler wie beim Kissen (siehe „SCHWEBT ES IMMER"). Jetzt zieht
+   ein negativer Aussenabstand die Buehne unter die Leiste, und ihr oberer
+   Innenabstand haelt die erste Reihe davon frei.
+   NUR, WENN DIREKT DARUNTER DIE BUEHNE KOMMT: ein oben angedocktes Kissen
+   (mp-oben) oder ein Titelband oben laegen sonst unter der Leiste. */
+body:is(.kopf-glas, .kopf-inseln):not(.mp-oben):is(.tb-unten, :not(:has(#titelband:not([hidden])))) .kopf {
+  margin-bottom: calc(-1 * var(--griff));
+  z-index: 4;
+}
+body:is(.kopf-glas, .kopf-inseln):not(.mp-oben):is(.tb-unten, :not(:has(#titelband:not([hidden])))) .buehne {
+  padding-top: calc(8px + var(--griff));
+  /* EIN EIGENER STAPELKONTEXT (27.09.2026, am Geraet: „kachel reihen
+     ueberdecken kopfleiste"). Teile der Kacheln haben eigene Stufen — die
+     Spielt-Marke und die Fehlt-Plakette 4, genau die der Leiste, und sie
+     kommen im Baum spaeter: sie malten darueber. Mit `isolate` bleibt alles
+     in der Buehne unter der Leiste, gleich welche Stufe es innen hat.
+     Nichts, was ueber allem liegen muss, haengt IN der Buehne: Titelkarte,
+     Eltern, Schnellmenue und Spielecke haengen am body (gemessen). */
+  isolation: isolate;
+}
+/* DIE ELLIPSEN. Die Mitte steht fest und absolut (siehe .kopf-mitte) — sie
+   bekommt ihre Insel nur, wenn darin wirklich etwas zu sehen ist; eine leere
+   Pille mitten im Bild saehe nach Fehler aus. */
+body.kopf-inseln .kopf-mitte:has(> .km-stueck:not([hidden])),
+body.kopf-inseln .kopf-status:has(> .st:not([hidden])) {
+  background: var(--mupi-kopf-glas);
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  /* Ecken von rund (1, Vorgabe) bis eckig (0): die halbe Inselhoehe mal
+     `--mupi-insel-r` (kopfAnwenden in app.js). */
+  border-radius: calc(var(--mupi-insel-r, 1) * (var(--griff) - 16px) / 2);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+body.kopf-inseln .kopf-mitte:has(> .km-stueck:not([hidden])) {
+  top: 8px;
+  height: calc(var(--griff) - 16px);
+  padding: 0 16px;
+}
+/* DIESELBE HOEHE WIE DIE MITTE, senkrecht mittig. Das erste Bild (Vorschau,
+   27.09.2026) zeigte die Ellipse mit Polster 7 px: sie wuchs mit den Symbolen
+   ueber die Leiste hinaus und stiess oben an den Rand. */
+body.kopf-inseln .kopf-status:has(> .st:not([hidden])) {
+  height: calc(var(--griff) - 16px);
+  box-sizing: border-box;
+  padding: 0 14px;
+  align-self: center;
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body.kopf-glas .kopf,
+  body.kopf-inseln .kopf-mitte:has(> .km-stueck:not([hidden])),
+  body.kopf-inseln .kopf-status:has(> .st:not([hidden])) {
+    background: var(--surface);
+  }
+}
+
+/* UHR UND TEXTE. Eine eigene Farbe wirkt auch ohne Glas. Die Warnfarbe der
+   knappen Restzeit (.km-rest.knapp) und die Farben einzelner Symbole (Akku
+   leer, Bluetooth verbunden) bleiben: sie tragen eine Aussage. */
+body.kopf-uhr-eigen .km-uhr { color: var(--mupi-kopf-uhr); }
+body.kopf-text-eigen .kopf-mitte .km-stueck:not(.km-uhr):not(.knapp) { color: var(--mupi-kopf-text); }
+body.kopf-text-eigen .kopf-status { color: var(--mupi-kopf-text); }
+/* DER REGENBOGEN: bei Schrift ein Verlauf, der durch die Buchstaben scheint;
+   bei den Symbolen (SVG in currentColor, dort greift kein Schriftverlauf)
+   bekommt jedes seine FESTE Stufe ueber die Kennung. Nicht ueber
+   nth-of-type: das zaehlte versteckte Symbole mit und trennte span von
+   button — sichtbare Nachbarn bekaemen dann zufaellig dieselbe Farbe.
+   Zustandsfarben (Akku knapp/leer, Bluetooth getrennt/verbunden) bleiben. */
+body.kopf-uhr-regenbogen .km-uhr,
+body.kopf-text-regenbogen .kopf-mitte .km-stueck:not(.km-uhr):not(.knapp) {
+  background: linear-gradient(90deg, #ff5a5a, #ffb84d, #ffe94d, #5ad07a, #4db8ff, #b06dff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+body.kopf-text-regenbogen #st-vol { color: #ff5a5a; }
+body.kopf-text-regenbogen #st-bt:not(.bt-getrennt):not(.bt-verbunden) { color: #ffb84d; }
+body.kopf-text-regenbogen #st-pad,
+body.kopf-text-regenbogen #st-handy { color: #ffe94d; }
+body.kopf-text-regenbogen #st-fb { color: #5ad07a; }
+body.kopf-text-regenbogen #st-kette { color: #4db8ff; }
+body.kopf-text-regenbogen #st-akku:not(.akku-mittel):not(.akku-leer) { color: #b06dff; }
+
+/* ── DER ZURUECK-KNOPF ZIEHT MIT (27.09.2026, Betreiber: „jetzt noch den
+   zurück button") ───
+   Er steht `fixed` ueber allem und hat deshalb eine eigene deckende Flaeche
+   (`--line2`). Im Glas-Stil wird sie zu Glas. Bei den Ellipsen bleibt der
+   Knopf selbst durchsichtig, und eine runde Glasinsel in der Hoehe der beiden
+   anderen sitzt darin — die TREFFERFLAECHE bleibt die volle Griffgroesse
+   (9-mm-Regel), nur die sichtbare Flaeche wird kleiner.
+   Der Pfeil folgt der Textfarbe; beim Regenbogen eine feste Stufe (ein
+   Symbol in currentColor kann keinen Verlauf tragen). */
+body.kopf-glas .zurueck {
+  background: var(--mupi-zurueck-glas, var(--mupi-kopf-glas));
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+body.kopf-inseln .zurueck { background: transparent; }
+body.kopf-inseln .zurueck::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border-radius: calc(var(--mupi-insel-r, 1) * (var(--griff) - 16px) / 2);
+  background: var(--mupi-zurueck-glas, var(--mupi-kopf-glas));
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+body.kopf-inseln .zurueck > * { position: relative; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body.kopf-glas .zurueck,
+  body.kopf-inseln .zurueck::before { background: var(--surface); }
+}
+body.kopf-text-eigen .zurueck { color: var(--mupi-kopf-text); }
+body.kopf-text-regenbogen .zurueck { color: #4db8ff; }
+
+/* ── ZURUECK-KNOPF ZUM EINSTELLEN (27.09.2026: „zum einstellen") ───
+   Die Regeln oben lassen ihn der Leiste folgen (Vorgabe `leiste`). Hier die
+   ausdruecklichen Wahlen; sie kommen spaeter und gewinnen deshalb. */
+body.zurueck-glas .zurueck {
+  background: var(--mupi-zurueck-glas, var(--mupi-kopf-glas));
+  backdrop-filter: blur(14px) saturate(1.3);
+  -webkit-backdrop-filter: blur(14px) saturate(1.3);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+body.zurueck-glas .zurueck::before,
+body.zurueck-deckend .zurueck::before { content: none; }
+body.zurueck-deckend .zurueck {
+  background: var(--line2);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+body.zurueck-rund .zurueck,
+body.zurueck-rund .zurueck::before { border-radius: 999px; }
+body.zurueck-eckig .zurueck,
+body.zurueck-eckig .zurueck::before { border-radius: 3px; }
+body.zurueck-pfeil-eigen .zurueck { color: var(--mupi-zurueck-pfeil); }
+body.zurueck-pfeil-regenbogen .zurueck { color: #b06dff; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  body.zurueck-glas .zurueck { background: var(--surface); }
+}
+
+/* ══ WEITERHOEREN UND INTERPRETEN AUSBLENDEN (Gestalter, 27.09.2026) ══════════
+ * Die Klassen setzt reihenAnwenden() in app.js; verschoben wird dort im Baum.
+ * display:none mit !important, weil app.js `hidden` selbst wieder aufhebt,
+ * sobald es etwas zu zeigen gibt — und `hidden` verliert ohnehin gegen jedes
+ * eigene display. */
+body.reihe-weiter-aus #weiter,
+body.reihe-interpreten-aus #leute { display: none !important; }
+
+/* ══ DIE FORM DES MINI-PLAYERS (Gestalter, 27.09.2026) ═══════════════════════
+ * Betreiber: „den mini player geht nur rund kann man auch viereckig und
+ * viereckig mit runden ecken". Ab Werk `rund` (die Werte in den Regeln oben
+ * sind die Rueckfaelle der Variablen). Bild und Knoepfe ziehen mit, sonst
+ * saessen runde Knoepfe in einem eckigen Kissen. Die Klassen setzt
+ * gestaltungAnwenden() in app.js. */
+/* DER FORTSCHRITTSRING ZIEHT MIT (27.09.2026, Betreiber: „der
+   fortschrittskreis muss sich anpassen an die form des miniplayers wenn kreis
+   dann kreis wenn quadrat dann …"): der Ring um den Spiel-Knopf (eingefahren)
+   und der um das Bild (Mini-Modus). Der Anteil laeuft weiter als Winkel —
+   der Kegelverlauf traegt jede Form. */
+body.mp-form-abgerundet {
+  --mp-r: 10px;
+  --mp-r-bild: 7px;
+  --mp-r-knopf: 8px;
+  --mp-r-haupt: 9px;
+  --mp-r-ring: 12px;
+  --mp-r-ring-knopf: 7px;
+  --mp-r-ring-bild: 12px;
+}
+body.mp-form-eckig {
+  --mp-r: 0px;
+  --mp-r-bild: 0px;
+  --mp-r-knopf: 2px;
+  --mp-r-haupt: 2px;
+  --mp-r-ring: 3px;
+  --mp-r-ring-knopf: 2px;
+  --mp-r-ring-bild: 3px;
+}
+body.mp-form-abgerundet.mp-micro .mp-bild img,
+body.mp-form-eckig.mp-micro .mp-bild img { border-radius: var(--mp-r-bild); }
+
+/* ══ GLAS-EFFEKTE AUS (27.09.2026) ═════════════════════════════════════════════
+ * Betreiber: „noch einen globalen schalter alle glas effekte aus fuer
+ * langsamere systeme". backdrop-filter ist unter WPE/Cog der teuerste Effekt
+ * dieser Oberflaeche. `body.glas-aus` (app.js, Schalter der Box, ab Werk aus)
+ * nimmt JEDEN Weichzeichner weg und macht die Glasflaechen deckend — mit
+ * denselben Farben wie die Rueckfaelle fuer Geraete ohne Weichzeichner
+ * (`@supports not (backdrop-filter …)` weiter oben): ein durchscheinender
+ * Grund ohne Weichzeichner waere ein Muster, kein Glas. */
+body.glas-aus *,
+body.glas-aus *::before,
+body.glas-aus *::after {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+body.glas-aus.tor-glas .eltern:has(> .eltern-tor:not([hidden])) { background: var(--bg); }
+body.glas-aus.laut-glas .mp-laut-fenster,
+body.glas-aus.laut-glas .laut-stand { background: var(--pill); }
+body.glas-aus.gross-glas .gross-blatt { background: var(--bg); }
+body.glas-aus.mp-glas .mp {
+  background: var(--pill);
+  box-shadow: 0 6px 18px rgba(46, 42, 59, 0.22);
+}
+body.glas-aus.kopf-glas .kopf,
+body.glas-aus.kopf-inseln .kopf-mitte:has(> .km-stueck:not([hidden])),
+body.glas-aus.kopf-inseln .kopf-status:has(> .st:not([hidden])),
+body.glas-aus.kopf-glas .zurueck,
+body.glas-aus.kopf-inseln .zurueck::before,
+body.glas-aus.zurueck-glas .zurueck { background: var(--surface); }
+
+/* ══ SCHATTEN UNTER COVERN UND INTERPRETEN (Gestalter, 27.09.2026) ═════════════
+ * Betreiber: „baue noch einen cover schatten ein und interpreten". Klassen aus
+ * gestaltungAnwenden() in app.js; ab Werk keine (Cover: der flache Balken
+ * `0 5px 0`, Interpreten: keiner).
+ *
+ * DIE LUFT DER REIHEN WAECHST MIT. Die quer rollenden Reihen schneiden alles
+ * ab, was ueber ihren Rand ragt; ihr Rand ist `--umriss-luft` (7 px, fuer den
+ * Fokusrahmen). Sie steckt als Innenabstand UND als negativer Aussenabstand
+ * im Layout (.leute-reihe, .weiter-reihe, .raster) — groesser heisst also:
+ * mehr Platz fuer den Schatten, keine Verschiebung. */
+body:is(.cover-schatten-leicht, .int-schatten-leicht) { --umriss-luft: 12px; }
+body:is(.cover-schatten-kraeftig, .int-schatten-kraeftig) { --umriss-luft: 18px; }
+body.cover-schatten-leicht :is(.kachel-bild, .weiter-bild, .video-bild) {
+  box-shadow: 0 6px 14px rgba(20, 16, 32, 0.28);
+}
+body.cover-schatten-kraeftig :is(.kachel-bild, .weiter-bild, .video-bild) {
+  box-shadow: 0 12px 26px rgba(20, 16, 32, 0.45), 0 3px 8px rgba(20, 16, 32, 0.3);
+}
+body.int-schatten-leicht .leute-bild { box-shadow: 0 6px 14px rgba(20, 16, 32, 0.28); }
+body.int-schatten-kraeftig .leute-bild {
+  box-shadow: 0 12px 26px rgba(20, 16, 32, 0.45), 0 3px 8px rgba(20, 16, 32, 0.3);
+}

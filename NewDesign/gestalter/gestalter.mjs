@@ -368,7 +368,11 @@ function hintergruendeBauen() {
       {
         class: 'hg',
         title: `Verlauf „${v.wort}" — auf den Schirm ziehen`,
-        style: { background: `linear-gradient(${v.winkel}deg, ${v.farbe}, ${v.farbe2})` },
+        style: {
+          background: v.regenbogen
+            ? `linear-gradient(${v.winkel}deg, #FF5A5A, #FFB84D, #FFE94D, #5AD07A, #4DB8FF, #B06DFF)`
+            : `linear-gradient(${v.winkel}deg, ${v.farbe}, ${v.farbe2})`,
+        },
       },
       v.wort,
     )
@@ -440,6 +444,7 @@ function deckZeichnen() {
   const deck = $('deck')
   deck.replaceChildren()
   const kopfReihe = []
+  const marken = []
   for (const e of ELEMENTE) {
     const zone = e.lesen(zustand.bloecke)
     const z = zone && ZONEN[zone]
@@ -451,14 +456,33 @@ function deckZeichnen() {
     // DIE MARKE SITZT, WO DAS ELEMENT WIRKLICH STEHT — gemessen in der
     // Vorschau (gleiche Herkunft). Nur wenn das nicht geht (fremde Herkunft,
     // Element gerade versteckt), steht sie auf der Zone.
-    deck.append(marke(e, echtesRechteck(e.knoten) || z))
+    const r = echtesRechteck(e.knoten) || z
+    marken.push({ r, m: marke(e, r) })
   }
+  // GROSS ZUERST, KLEIN ZULETZT (27.09.2026, Betreiber: „die andockstellen
+  // ueberschneiden sich … man kann nicht einfach die sektionen anklicken").
+  // Was spaeter im Baum steht, liegt oben und faengt den Klick — so gewinnt
+  // das kleinere Element in einem groesseren, nicht umgekehrt.
+  marken.sort((a, b) => b.r.w * b.r.h - a.r.w * a.r.h)
+  for (const { m } of marken) deck.append(m)
   if (kopfReihe.length) {
     // Die Kopf-Anzeigen stehen als Reihe in der Kopfzeile, rechts beginnend
     // — wie auf der Box (Status rechts, Uhr in der Mitte).
     const z = ZONEN.kopf
+    // pointerEvents none: die Reihe liegt als Kasten ueber der GANZEN
+    // Kopfzeile und fing sonst die Klicks auf die Schilder „Kopfleiste" und
+    // „Zurueck-Knopf" darunter ab. Ihre Marken selbst nehmen Klicks an.
     const reihe = el('div', {
-      style: { position: 'absolute', ...kasten(z), display: 'flex', gap: '4px', alignItems: 'flex-end', justifyContent: 'flex-end', padding: '0 6px 4px' },
+      style: {
+        position: 'absolute',
+        ...kasten(z),
+        display: 'flex',
+        gap: '4px',
+        alignItems: 'flex-end',
+        justifyContent: 'flex-end',
+        padding: '0 6px 4px',
+        pointerEvents: 'none',
+      },
     })
     for (const e of kopfReihe) {
       const m = marke(e, null)
@@ -468,6 +492,38 @@ function deckZeichnen() {
       reihe.append(m)
     }
     deck.append(reihe)
+  }
+  schilderEntwirren(deck)
+}
+
+/**
+ * SCHILDER WEICHEN EINANDER AUS (27.09.2026). Jedes Schild sitzt links oben in
+ * seinem Rahmen — bei ineinanderliegenden Bereichen (Kopfleiste und
+ * Zurueck-Knopf, Kacheln & Reihen und Weiterhoeren) genau uebereinander, und
+ * das verdeckte war nicht mehr anzuklicken. Die kleinen Elemente behalten
+ * ihren Platz (sie wurden zuletzt gezeichnet, stehen hier also vorn); ein
+ * Schild, das ein schon gesetztes ueberdeckt, wandert in die naechste freie
+ * Ecke seines Rahmens.
+ */
+function schilderEntwirren(deck) {
+  const ecken = [
+    { left: 'auto', right: '4px', top: '4px', bottom: 'auto' },
+    { left: '4px', right: 'auto', top: 'auto', bottom: '4px' },
+    { left: 'auto', right: '4px', top: 'auto', bottom: '4px' },
+  ]
+  const trifft = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom
+  const gesetzt = [...deck.querySelectorAll('.marke-el.klein .schild')].map((x) => x.getBoundingClientRect())
+  const schilder = [...deck.querySelectorAll(':scope > .marke-el > .schild')].reverse()
+  for (const sch of schilder) {
+    let r = sch.getBoundingClientRect()
+    if (gesetzt.some((g) => trifft(r, g))) {
+      for (const ecke of ecken) {
+        Object.assign(sch.style, ecke)
+        r = sch.getBoundingClientRect()
+        if (!gesetzt.some((g) => trifft(r, g))) break
+      }
+    }
+    gesetzt.push(r)
   }
 }
 
@@ -621,6 +677,12 @@ function ziehBeginn() {
   } else {
     const wort = n.art === 'satz' ? `Farbsatz „${n.wort}" übernehmen` : 'Als Hintergrund übernehmen'
     deck.append(el('div', { class: 'zone flaeche', dataset: { flaeche: '1' } }, wort))
+    // EIN VERLAUF GEHT AUCH AUFS GLAS DER KOPFLEISTE (27.09.2026). Die Zone
+    // liegt IN der grossen Flaeche — die kleinste unter dem Zeiger gewinnt
+    // (zielUnter), ueber der Leiste also diese.
+    if (n.art === 'verlauf' && ZONEN.kopf && ZONEN.kopf.ansicht === zustand.ansicht) {
+      deck.append(el('div', { class: 'zone', style: kasten(ZONEN.kopf), dataset: { farbziel: 'kopf.glasVerlauf' } }, 'Als Glas oben'))
+    }
   }
 }
 
@@ -680,6 +742,28 @@ function ablegen(n, ziel) {
     blattWechseln('farben')
     return
   }
+  if (n.art === 'verlauf' && ziel.farbziel === 'kopf.glasVerlauf') {
+    aendern((b) => {
+      feldSetzen(b, 'kopf.glasFarbe', n.v.regenbogen ? 'regenbogen' : n.v.farbe)
+      feldSetzen(b, 'kopf.glasFarbe2', n.v.regenbogen ? '' : n.v.farbe2)
+      feldSetzen(b, 'kopf.glasWinkel', n.v.winkel)
+      const stil = feldLesen('kopf.stil', b)
+      if (stil === undefined || stil === 'schlicht') feldSetzen(b, 'kopf.stil', 'glas')
+    })
+    waehlen('kopfleiste')
+    return
+  }
+  if (n.art === 'verlauf' && n.v.regenbogen && ziel.flaeche) {
+    aendern((b) => {
+      feldSetzen(b, 'hintergrund.art', 'regenbogen')
+      feldSetzen(b, 'hintergrund.winkel', n.v.winkel)
+      // Ein Schleier von Anfang an: der Bogen ist kraeftig, die Namen unter
+      // den Kacheln sollen lesbar bleiben.
+      if (feldLesen('hintergrund.schleier', b) === undefined) feldSetzen(b, 'hintergrund.schleier', 0.45)
+    })
+    blattWechseln('farben')
+    return
+  }
   if (n.art === 'verlauf' && ziel.flaeche) {
     aendern((b) => {
       feldSetzen(b, 'hintergrund.art', 'verlauf')
@@ -700,6 +784,17 @@ function farbeAblegen(ziel, wert) {
     if (ziel === 'hintergrund') {
       feldSetzen(b, 'hintergrund.art', 'farbe')
       feldSetzen(b, 'hintergrund.farbe', wert)
+    } else if (ziel === 'kopf.glasFarbe') {
+      // Glas ohne Glas-Leiste saehe man nicht: eine schlichte Leiste wird Glas.
+      feldSetzen(b, 'kopf.glasFarbe', wert)
+      const stil = feldLesen('kopf.stil', b)
+      if (stil === undefined || stil === 'schlicht') feldSetzen(b, 'kopf.stil', 'glas')
+    } else if (ziel === 'zurueck.glasFarbe') {
+      // Eigenes Glas sieht man nur, wenn der Knopf nicht deckend ist.
+      feldSetzen(b, 'zurueck.glasFarbe', wert)
+      if (feldLesen('zurueck.flaeche', b) === 'deckend') feldSetzen(b, 'zurueck.flaeche', 'glas')
+      const stil = feldLesen('kopf.stil', b)
+      if ((stil === undefined || stil === 'schlicht') && feldLesen('zurueck.flaeche', b) !== 'glas') feldSetzen(b, 'zurueck.flaeche', 'glas')
     } else if (ziel === 'kacheln.randFarbe') {
       feldSetzen(b, 'kacheln.randFarbe', wert)
       feldSetzen(b, 'kacheln.randAn', true)
@@ -903,8 +998,9 @@ function farbBlatt() {
   ort.append(regler('hintergrund.art'))
   if (art === 'farbe' || art === 'verlauf') ort.append(regler('hintergrund.farbe'))
   if (art === 'verlauf') ort.append(regler('hintergrund.farbe2'), regler('hintergrund.winkel'))
+  if (art === 'regenbogen') ort.append(regler('hintergrund.winkel'))
   if (art === 'bild') ort.append(regler('hintergrund.bild'))
-  if (art === 'bild' || art === 'verlauf') ort.append(regler('hintergrund.schleier'))
+  if (art === 'bild' || art === 'verlauf' || art === 'regenbogen') ort.append(regler('hintergrund.schleier'))
 }
 
 function themenBlatt() {
@@ -1039,14 +1135,29 @@ function regler(pfad) {
       return feldHuelle(pfad, gruppe)
     }
     case 'farbe': {
-      const c = el('input', { type: 'color', value: typeof wert === 'string' && wert ? wert.toLowerCase() : '#888888' })
+      const hex = typeof wert === 'string' && /^#[0-9a-fA-F]{6}$/.test(wert)
+      const c = el('input', { type: 'color', value: hex ? wert.toLowerCase() : '#888888' })
       c.addEventListener('input', () => wertSetzen(pfad, c.value.toUpperCase(), { blatt: false }))
       c.addEventListener('change', () => blattZeichnen())
       const zeile = el(
         'div',
         { class: 'farbfeld' },
         c,
-        el('code', {}, wert === '' ? 'vom Farbsatz' : wert || '—'),
+        // Beim Regenbogen sagt es der gedrueckte Knopf — kein zweites Wort daneben.
+        wert === 'regenbogen' ? null : el('code', {}, wert === '' ? 'vom Farbsatz' : wert || '—'),
+        // REGENBOGEN (27.09.2026): nur, wo das Format ihn erlaubt (Kopfleiste).
+        art.regenbogen
+          ? el(
+              'button',
+              {
+                type: 'button',
+                class: 'leise regenbogen-knopf',
+                'aria-pressed': String(wert === 'regenbogen'),
+                onclick: () => wertSetzen(pfad, 'regenbogen'),
+              },
+              'Regenbogen',
+            )
+          : null,
         art.leer && wert ? el('button', { type: 'button', class: 'leise', onclick: () => wertSetzen(pfad, '') }, 'Farbsatz nehmen') : null,
       )
       return feldHuelle(pfad, zeile)

@@ -1,5 +1,5 @@
 id: mupibox
-version: "637"
+version: "638"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -65201,3 +65201,32 @@ entries:
       „Mitschnitt" ist im Code DOPPELT belegt (auch Hoerverlauf und
       Mess-Protokolle) — beim Entfernen nur die Audio-Aufnahme treffen.
     related: ["aufnahme-erweiterung-bleibt-lokal"]
+  - id: gestalter-kopfleiste-reihen-kissenform-und-schwebendes-kissen
+    title: "Gestalter-Nachtrag: Kopfleiste aus Glas, Reihen verschieben, Kissenform — und das Kissen schwebt jetzt immer"
+    kind: entscheidung
+    tags: [gestalter, themen, kopfleiste, glas, regenbogen, reihen, kissen, e144, 2026]
+    stand: "27.09.2026 gebaut und in der Vorschau fotografiert (b947ab54, 0eddba17, 52ac8853, 8dffd203). NICHT am Geraet gemessen — vor allem die Kosten von backdrop-filter unter Cog."
+    source: 'Betreiber 27.09.2026: „das band oben aus glas …", „weiter hören ausblenden und verschieben. auch interpreten", „beim scrollen ist der player ausgeschnitten bei ruhe sieht man den unsichtbaren steifen", „den mini player geht nur rund".'
+    body: >
+      NEUE FORMATFELDER (alle ab Werk ohne Wirkung): kopf.stil
+      schlicht|glas|inseln (inseln = zwei Glas-Ellipsen: Mitte fuer Uhr und
+      Zeiten, rechts fuer die Symbole, Leiste durchsichtig), kopf.glasFarbe,
+      glasDichte, uhrFarbe, textFarbe; reihen.weiterhoeren/interpreten
+      oben|unten|aus und reihen.zuerst; kissen.form rund|abgerundet|eckig.
+      Farbfelder koennen `regenbogen` erlauben (Feldart Farbe mit
+      regenbogen:true, nur die drei der Kopfleiste) — das Tor lehnt das Wort
+      ueberall sonst ab.
+      WIRKUNG: kopfAnwenden()/reihenAnwenden() in app.js, Abschnitte am Ende
+      von app.css. Reihen werden IM BAUM umgestellt (die Buehne ist kein
+      Flex-Behaelter), ausgeblendet per Klasse mit display:none, weil app.js
+      `hidden` selbst aufhebt. Regenbogen der Symbole je Kennung, nicht per
+      nth-of-type (das zaehlte versteckte mit); Zustandsfarben (Akku,
+      Bluetooth, knappe Restzeit) bleiben.
+      DAS KISSEN SCHWEBT JETZT IMMER (an `kissen-da`, nicht mehr nur an
+      `platz-machen`): in Ruhe lag es im Fluss, die Buehne endete ueber seiner
+      Zeile, und neben/unter ihm stand leerer Grund — gemeldet als
+      „unsichtbarer Streifen". Der untere Innenabstand der Buehne haelt die
+      letzte Reihe erreichbar (gemessen 10 px Luft). Beim Einfahren aendert
+      sich damit nur noch die Breite — ein umspringender Aussenabstand
+      weniger, vgl. [[platz-beim-blaettern-schaukelt-sich-auf]].
+    related: ["theme-gestalter-ziehen-und-andocken-e144", "platz-beim-blaettern-schaukelt-sich-auf", "eingefahrenes-kissen-gibt-hoehe-frei"]
