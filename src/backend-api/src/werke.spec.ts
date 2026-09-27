@@ -170,7 +170,7 @@ describe('werkAus', () => {
 
   it('gibt der QUELLE ihre eigene Kategorie mit — der Abspielweg braucht sie (30.08.2026)', () => {
     // AM GERAET GEMESSEN: „Nah" fuehrt als Streaming-Werk mit category `music`,
-    // der Mitschnitt liegt unter `audiobook/Alin Coen/Nah`. Nach der
+    // die lokale Fassung liegt unter `audiobook/Alin Coen/Nah`. Nach der
     // Verschmelzung baute die Oberflaeche den lokalen Befehl aus der
     // Kategorie des WERKS (`music:…`) — der Abspieldienst suchte in
     // media/music/, das es fuer diesen Interpreten gar nicht gibt, und die
@@ -182,7 +182,7 @@ describe('werkAus', () => {
 
   it('lokale Quellen tragen ihre PLATTENFORM — sanitisierte Namen finden sonst nichts (30.08.2026)', () => {
     // AM GERAET GEMESSEN: der Dienst nennt das Album „Guten Morgen / Good
-    // Morning (Englisch)", die Aufnahme liegt als „Guten Morgen _ Good
+    // Morning (Englisch)", die lokale Fassung liegt als „Guten Morgen _ Good
     // Morning (Englisch)" auf der Platte. Die verschmolzene Kachel fuehrt
     // mit den Streaming-Metadaten — ein musicsearch-Befehl daraus sucht den
     // Schraegstrich-Ordner, den es nicht gibt, und faengt im Zweifel etwas
@@ -271,7 +271,7 @@ describe('quellen', () => {
   })
 
   it('gibt einem lokalen Eintrag ohne Kennung trotzdem eine', () => {
-    // Lokale Aufnahmen haben keine Dienst-Kennung; ihre Identitaet ist der
+    // Lokale Alben haben keine Dienst-Kennung; ihre Identitaet ist der
     // Inhalt. Eine LEERE Kennung waere fuer alle lokalen Werke dieselbe.
     const a = werkAus(lokalesHoerspiel).quellen[0].kennung
     const b = werkAus({ type: 'library', artist: 'Anderer', title: 'Anderes' }).quellen[0].kennung

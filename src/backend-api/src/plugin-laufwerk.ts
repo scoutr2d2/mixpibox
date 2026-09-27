@@ -24,7 +24,6 @@
  */
 
 import { parentPort, workerData } from 'node:worker_threads'
-import type { Strom } from './stroeme'
 import type { Ereignisname, Fund, Inhalt, Manifest, Titel } from './plugin-vertrag'
 // MIT AUSDRUECKLICHER ENDUNG: im Test laeuft dieses Laufwerk als Worker
 // unter Nodes Type-Stripping, und das loest KEINE endungslosen Importe auf —
@@ -129,26 +128,6 @@ export interface Kontext {
   /** Nur mit Recht `netz`. Mit Frist, und nicht auf die eigene Box. */
   holen?(adresse: string, gaben?: RequestInit): Promise<Response>
   /**
-   * Die Stroeme der Box — NUR mit Recht `aufnahme`, und MIT den Zugaengen.
-   *
-   * ══ WARUM DER SCHLUESSEL HIER STEHT UND NICHT UEBER HTTP KOMMT ═══════════
-   *
-   * `GET /api/stroeme` gibt den Zugang bewusst NIE heraus: dort holt ihn die
-   * Browser-Verwaltung, und was man nicht auslesen kann, landet auch nicht
-   * versehentlich in einem Protokoll. Ein Plugin, das aufnehmen soll, braucht
-   * ihn aber — `soloist -k …` geht ohne nicht.
-   *
-   * Zwei Entscheidungen, die sich sonst widersprechen, vertragen sich hier:
-   * die Route bleibt verschlossen, und der Weg zum Plugin fuehrt ueber das
-   * RECHT, das genau dafuer da ist. Wer `aufnahme` im Manifest stehen hat,
-   * bekommt, was das Aufnehmen braucht — wer nicht, sieht das Feld gar nicht.
-   *
-   * DIE EHRLICHE EINORDNUNG: Der Schluessel steht auf dieser Box ohnehin in
-   * `ps` (bekannte Grenze, siehe soloist-start.sh). Dieser Weg vergroessert
-   * die Angriffsflaeche nicht, er macht den vorhandenen nur benutzbar.
-   */
-  stroeme?: readonly Strom[]
-  /**
    * Die angemeldeten Kern-Konfigurationsgruppen (E80) — nur was das Manifest
    * unter `konfig` nennt, und eingefroren. Aendert die Verwaltung die Werte,
    * startet der Wirt das Plugin neu; ein Plugin liest hier also immer den
@@ -176,12 +155,11 @@ export interface Kontext {
 }
 
 const brief = parentPort
-const { manifest, ordner, datenOrdner, stroeme, kernKonfig, einstellungen, fristMs, eigeneAdressen } = (workerData ??
+const { manifest, ordner, datenOrdner, kernKonfig, einstellungen, fristMs, eigeneAdressen } = (workerData ??
   {}) as {
   manifest: Manifest
   ordner: string
   datenOrdner: string
-  stroeme: Strom[]
   kernKonfig: Record<string, unknown>
   einstellungen: Record<string, unknown>
   fristMs: number
@@ -236,15 +214,9 @@ function kontextBauen(): Kontext {
   // `holen`, das wirft, sondern gar keins. Ein Plugin kann `if (!kontext.holen)`
   // fragen und eine verstaendliche Meldung geben, statt an einem Fehler zu
   // zerschellen, den sein Autor nie provoziert hat.
-  // NUR MIT `aufnahme`, und nur wenn es wirklich welche gibt. Ein leeres Feld
-  // saehe aus wie eine Auskunft und waere keine — dasselbe Argument wie beim
-  // Datenordner darueber.
-  if (manifest.rechte.includes('aufnahme') && Array.isArray(stroeme) && stroeme.length > 0) {
-    k.stroeme = Object.freeze(stroeme.map((s) => Object.freeze({ ...s })))
-  }
   // NUR DIE ANGEMELDETEN GRUPPEN (E80), und nur wenn wirklich etwas da ist —
   // der Wirt hat schon nach dem Manifest gefiltert, hier wird nur noch
-  // eingefroren. Dasselbe Muster wie `stroeme` eine Zeile drueber.
+  // eingefroren. Ein leeres Feld saehe aus wie eine Auskunft und waere keine.
   if (Array.isArray(manifest.konfig) && manifest.konfig.length > 0 && kernKonfig && Object.keys(kernKonfig).length > 0) {
     k.konfig = Object.freeze(JSON.parse(JSON.stringify(kernKonfig)))
   }

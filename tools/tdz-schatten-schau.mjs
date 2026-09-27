@@ -4,21 +4,22 @@
  *
  * ══ DER FUND, DER SIE GEBAUT HAT (20.09.2026) ══════════════════════════════
  *
- * In `plugins/mixpi-mitschnitt/index.mjs` stand zweimal `const args` im selben
- * Block: einmal oben fuer den Aufnahmebefehl, einmal dreihundert Zeilen
- * weiter unten fuer die Veredelung. Eine `const` verdeckt den aeusseren Namen
+ * In einem Plugin stand zweimal `const args` im selben Block: einmal oben
+ * fuer einen Startbefehl, einmal dreihundert Zeilen weiter unten fuer einen
+ * Nachbearbeitungsschritt. Eine `const` verdeckt den aeusseren Namen
  * ab BLOCKANFANG, nicht erst ab ihrer Zeile — der Start des Spielers griff
  * damit in die Todeszone der unteren Deklaration:
  *
  *     Cannot access 'args' before initialization
  *
  * Der `catch` darum machte daraus den `grund` eines gescheiterten Titels. Zehn
- * Tage lang nahm die Box nichts mehr auf, und es sah aus wie ein Tonproblem.
+ * Tage lang lief dieser Weg bei jedem Titel ins Leere, und es sah aus wie ein
+ * Tonproblem.
  *
  * ══ WARUM ALS WACHE UND NICHT ALS ZEUGE ════════════════════════════════════
  *
- * Ein Zeuge haette die Stelle nur getroffen, wenn er `einenAufnehmen` WIRKLICH
- * betritt — mit `spawn`, PipeWire und Spotify dahinter. Die Sorte dagegen ist
+ * Ein Zeuge haette die Stelle nur getroffen, wenn er die Funktion WIRKLICH
+ * betritt — mit `spawn` und PipeWire dahinter. Die Sorte dagegen ist
  * rein syntaktisch: ein Name, der in seinem Block VOR seiner eigenen
  * Deklaration gelesen wird. Das faellt einem Parser auf, und zwar ueberall im
  * Baum gleichzeitig.

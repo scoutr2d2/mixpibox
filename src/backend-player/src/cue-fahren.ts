@@ -28,7 +28,7 @@
  *     Pegel getrennt   -inf  dB     bricht vollstaendig ein
  *     Pegel danach      -9.5 dB     kommt zurueck
  *
- * Und die zwei Kanten zum Mitschnitt blieben dabei stehen — genau dafuer
+ * Andere Kanten desselben Knotens blieben dabei stehen — genau dafuer
  * wird der LINK getrennt und nicht der Knoten gemutet.
  *
  * ══ WAS DIESE DATEI AUSDRUECKLICH NICHT TUT ═══════════════════════════════

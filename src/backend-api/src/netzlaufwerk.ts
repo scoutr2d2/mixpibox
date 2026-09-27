@@ -1,5 +1,5 @@
 /**
- * Netzlaufwerk: eine SMB-Freigabe als Ablage für Sicherungen und Mitschnitte
+ * Netzlaufwerk: eine SMB-Freigabe als Ablage für Sicherungen und Medien
  * (BACKLOG E28/N6–N9, N15 und E29/B4).
  *
  * WORUM ES GEHT: Der Betreiber hat am 04.08.2026 vorgeschlagen, „einfach noch
@@ -8,7 +8,7 @@
  * NAS/Samba/NFS. Neues Land. Gemessen am 20.09.2026 mit
  * `tools/nas-sonde.py --suchen`: im Heimnetz horchen 192.168.178.1 (445) und
  * 192.168.178.199 (445, 2049) — auf .199 läuft auch das Jellyfin, deshalb ist
- * es der Ort, an dem ein Mitschnitt als normaler Eintrag zurückkommt (N9).
+ * es der Ort, an dem eine Ablage als normaler Eintrag zurückkommen kann (N9).
  * Anonym antwortet .199 mit NT_STATUS_ACCESS_DENIED: es braucht ohnehin einen
  * Anmeldenamen, und damit ist SMB3 mit eigenem Nutzer die Wahl (Betreiber,
  * 20.09.2026).
@@ -60,7 +60,7 @@
  *    und nicht im Betrieb (dieselbe Haltung wie vpn.ts, Regel 1).
  *
  * 5. KEIN STILLER RÜCKFALL AUF DIE KARTE (E28/N15). Dieses Modul beschreibt
- *    NUR das Netzlaufwerk. Ob eine Sicherung oder ein Mitschnitt dorthin geht,
+ *    NUR das Netzlaufwerk. Ob eine Sicherung oder eine Ablage dorthin geht,
  *    entscheidet der Betreiber an der Stelle, wo er den Ort wählt — nicht
  *    dieses Modul, indem es bei fehlendem NAS etwas anderes nimmt.
  */
@@ -402,7 +402,7 @@ function abschluss(x: {
   const { art, host, freigabe, unterpfad, quelle, hinweise, e } = x
   // Nur echtes `true` zählt, und nur bei WebDAV über https — bei SMB gibt es
   // kein Zertifikat, und bei http gäbe es nichts zu vertrauen. Dieselbe
-  // Strenge wie beim Mitschnitt-Plugin: `"true"` oder `1` sind kein Ja.
+  // Strenge wie bei den Plugin-Einstellungen: `"true"` oder `1` sind kein Ja.
   const zertifikatVertraut = e.zertifikatVertrauen === true && art === 'webdav' && quelle.startsWith('https://')
 
   const nutzer = (e.nutzer ?? '').trim()

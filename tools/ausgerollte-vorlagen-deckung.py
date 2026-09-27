@@ -21,9 +21,8 @@ ganze Begruendung stand nur im Kopf der Vorlage selbst und in zwei
 Kommentarzeilen der Ausrollskripte — also genau dort, wo sie liest, wer die
 Antwort schon hat.
 
-WARUM AUSGERECHNET DIESE: die drei Schwestern desselben Blocks
-(`80-bluez-ohne-seat.conf`, `61-entzerrer.conf`, `62-mixpi-mitschnitt.conf`)
-stehen alle in Prosa. **Eine Aufzaehlung leiht dem fehlenden Eintrag die
+WARUM AUSGERECHNET DIESE: die Schwestern desselben Blocks
+(`80-bluez-ohne-seat.conf`, `61-entzerrer.conf`) stehen alle in Prosa. **Eine Aufzaehlung leiht dem fehlenden Eintrag die
 Glaubwuerdigkeit seiner Nachbarn** — wer die Familie dokumentiert sieht,
 prueft das einzelne Glied nicht nach.
 

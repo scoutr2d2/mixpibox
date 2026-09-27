@@ -525,9 +525,8 @@ Aussage über den Browser für eine Aussage über die BOX zu halten:
 
 **Der echte Weg** (E99, Commit `55dd4f1e`, am Gerät bewiesen `dd6a5afc`):
 `pegel.ts` startet `pw-record` **bewusst ohne `--target`**, greift also den
-Monitor der Standard-Senke ab — dieselbe PipeWire-Eigenheit, die für
-`plugins/mixpi-mitschnitt` eine Falle ist (vier stille Aufnahmen, 22./23.08.),
-ist hier der **Vertrag**: gezeigt werden soll, was die Familie hört,
+Monitor der Standard-Senke ab — dieselbe PipeWire-Eigenheit, die für jeden
+gezielten Abgriff eine Falle ist, ist hier der **Vertrag**: gezeigt werden soll, was die Familie hört,
 Piper-Ansagen eingeschlossen. Vier Bänder per **Goertzel** (je drei
 Abhorchfrequenzen, 100-ms-Fenster bei 16 kHz mono, Höhen ehrlich bis 7,2 kHz —
 Nyquist), Werte 0..1, additiv als `pegel: [b1,b2,b3,b4]` im vorhandenen
@@ -603,13 +602,12 @@ andere Sache — und auch die ist tot: das `admin`-Profil, das ihn setzt, mounte
 denen es nur noch eines gibt, schickt jeden Leser auf die Suche nach einem
 Schalter, den er nicht findet.
 
-**Drei der 27 Seiten stehen in keiner Leiste.** Die Kopfleiste (`rahmen.ts`)
-führt **24** Einträge, `app.routes.ts` **27** Seiten (Stand 23.09.2026 — seit
-der Zählung vom 20.09. dazugekommen: „Netzlaufwerk" und „Nachrichten"; davor
-„Spiele" und „Videos" (Belohnungs-Videos aus der Mediathek), „Aufzeichnen",
-E126, und „VPN", E30. Die Differenz von drei blieb über alle sechs Zugänge
-dieselbe). Die Differenz sind die
-Plugin-Unterseite (`/plugins/:kennung`) — und zwei vollwertige Seiten, die
+**Vier der 27 Seiten stehen in keiner Leiste.** Die Kopfleiste (`rahmen.ts`)
+führt **23** Einträge, `app.routes.ts` **27** Seiten (Stand 27.09.2026 — seit
+der Zählung vom 20.09. dazugekommen: „Netzlaufwerk", „Nachrichten" und
+„Gruppen"; davor „Spiele" und „Videos" (Belohnungs-Videos aus der Mediathek)
+und „VPN", E30). Die Differenz sind die
+Plugin-Unterseite (`/plugins/:kennung`) — und drei vollwertige Seiten, die
 **nur über einen Link auf der Medienseite** erreichbar sind (`medien.ts`,
 Karte „weg"):
 
@@ -617,17 +615,18 @@ Karte „weg"):
 |---|---|---|---|
 | `/verschmelzung` | Doppelte | `config/verschmelzung.json` | nein |
 | `/interpreten` | Interpreten | `config/interpreten.json` | nein |
+| `/gruppen` | Gruppen | `config/interpreten.json` | nein |
 
-Beide sind **Unterseiten von „Medien"** (seit 03.08.2026); `rahmen.ts:51` bildet
-sie für die Markierung in der Leiste auf `/medien` ab, weil der Pfad nicht mit
+Alle drei sind **Unterseiten von „Medien"** (seit 03.08.2026, „Gruppen" seit
+26.09.2026); `rahmen.ts:51` bildet die ersten beiden für die Markierung in der Leiste auf `/medien` ab, weil der Pfad nicht mit
 `/medien` anfängt. Dass sie keine eigene Karte auf der Medienseite sind, ist
-Absicht: die Karte darüber **löscht Einträge**, während diese beiden nur eine
+Absicht: die Karte darüber **löscht Einträge**, während diese nur eine
 Liste **daneben** schreiben — beides untereinander lädt zum Verwechseln ein.
 Die eigene Ablage ist zugleich der Rückweg: die Datei zu löschen heißt wirklich
 „wie vorher".
 
 Wer die Seiten der Verwaltung zählt oder aufzählt, zähle deshalb
-`app.routes.ts`, **nicht** die Kopfleiste — sonst fehlen genau die drei, die
+`app.routes.ts`, **nicht** die Kopfleiste — sonst fehlen genau die vier, die
 niemand im Menü findet.
 
 **Was hier bis zum 24.08.2026 stand und falsch war:** „Vier der 21 Seiten", die
@@ -878,70 +877,7 @@ Kern**, ein abgeschaltetes Engine-Plugin nimmt nie den Ton, nur die Auskunft.
 Wer wissen will, wie weit der Vertrag wirklich trägt, liest diese vier statt
 der Musterplugins: [`plugins/README.md`](../plugins/README.md).
 
-Dazu ein **fünftes Recht**: `aufnahme`. Es war bis zum 21.08.2026 eine reine
-**Ansage** — ein Worker darf ohnehin importieren, was er will, das Recht hielt
-niemanden auf; es stand in der Liste, damit im Eltern-Bereich *lesbar* ist, dass
-ein Plugin mitschneidet.
-
-**Seit E74 entscheidet es über Daten.** Nur ein Plugin mit `aufnahme` bekommt
-`kontext.stroeme` — und zwar **mit den Zugängen**. Der Grund sind zwei
-Entscheidungen, die sich sonst widersprechen: `GET /api/stroeme` gibt den
-`spak_`-Schlüssel **nie** heraus (dort holt ihn die Browser-Verwaltung, und was
-man nicht auslesen kann, landet auch nicht versehentlich in einem Protokoll) —
-aber ein Plugin, das aufnehmen soll, braucht ihn, denn `soloist -k …` geht ohne
-nicht. Die Route bleibt also verschlossen, und der Weg zum Plugin führt über das
-Recht, das genau dafür da ist. Wer es nicht hat, sieht das Feld gar nicht.
-
-> Das kostete am 20.08. zwei Stunden: das Plugin holte die Ströme über
-> `GET /api/stroeme`, bekam sie ohne Schlüssel und meldete geduldig „Strom 2 hat
-> keinen Zugang" — obwohl einer eingetragen war. Zwei richtige Entscheidungen,
-> die sich widersprachen.
-
-Die **Zuteilung** eines Stroms läuft getrennt davon über den Wirt
-(`POST /api/stroeme/vergabe`), der nur eine **Nummer** vergibt: die Route
-verteilt Plätze, das Recht gibt Geheimnisse. Einziger Träger ist
-`mixpi-mitschnitt` (0.3.0), eine **Testfunktion**: standardmäßig aus, je Dienst
-ein eigener Schalter, zwei Haken statt einem (Dienst **und** bestätigte
-Rechtslage). Der Grund für die Härte ist das **Familienkonto** — eine Sperrung
-nähme nicht das Archiv, sondern das Abspielen überhaupt, für alle, jeden Abend.
-Einzelheiten samt Messung des Abgriffpunkts: [`plugins/README.md`](../plugins/README.md).
-
-> **Was am Regal davon ankommt.** Playlist und Kachel entstehen nach dem
-> *ersten* gelungenen Stück, nicht am Ende des Albums. Ein abgebrochener
-> Mitschnitt hinterlässt deshalb eine Kachel mit 20 Sekunden Inhalt, ein Album
-> das bei `02` anfängt, oder Dateien ganz ohne Kachel — am Gerät gemessen
-> (.62, 22.08.2026): 18 von 29 Alben. `tools/mitschnitt-stummel.py` nennt die
-> Fälle, ohne etwas zu ändern. llmwiki `mitschnitt-stummel-kachel-vor-inhalt`.
->
-> **Seit E89 (23.08.2026) sagt die Kachel es selbst.** Sie verschwindet nicht
-> und schweigt nicht: der Mitschnitt setzt `unvollstaendig: true` beim
-> **Anlegen** und löscht das Feld erst am Ende eines **sauberen** Laufs.
-> Stirbt er vorher, bleibt die Marke stehen — das ist der Entwurf, denn ein
-> sterbender Prozess kann sich nicht selbst melden. Die Verwaltung zeigt sie
-> an der Zeile des Albums. **Zwei Ebenen, zwei Regeln, die man nicht
-> verwechseln darf:** ein *Titel* unter 97 % wird verworfen und vorgemerkt,
-> das *Album* wird gezeigt und markiert. llmwiki
-> `unvollstaendig-wird-gesetzt-nicht-am-ende-behauptet` und
-> `halbe-aufnahme-nicht-anzeigen`.
->
-> **Und eine Kachel kann heil aussehen und das Falsche enthalten** (23.08.2026):
-> `pw-record` lief ohne `--target` und griff bei zwei gleichzeitigen Diensten
-> den **Lautsprecher-Monitor** ab — vier Aufnahmen mit digitaler Null, zwei zur
-> Hälfte still, alle als `fertig` geführt. Behoben über
-> `--target <object.serial>` plus Gegenprobe am Graphen und Pegelurteil; die
-> alte Wache prüfte nur die Dateigröße und maß damit die Komprimierbarkeit,
-> nicht den Ton. **Noch offen:** die sechs Dateien liegen weiter in der
-> Mediathek. llmwiki `mitschnitt-nahm-den-lautsprecher-auf`.
-
-> **Wie diese Funktion getestet wird — und warum nicht über `ssh`.** Am
-> 16.08.2026 riss das WLAN mitten im Testlauf ab, *nach* dem Einschalten und
-> *vor* dem Ausschalten; zurück blieb eine eingeschaltete Testfunktion.
-> `tools/box/mitschnitt-durchlauf.py` läuft deshalb per `nohup` **auf der Box**
-> und schaltet in einem `finally` wieder aus — auch bei Ausnahme und Strg-C.
-> Die Regel gilt für alles, dessen *eingeschalteter* Zustand teurer ist als ein
-> misslungener Test. llmwiki `heikle-testfunktion-nicht-ueber-ssh-schalten`.
-
-Mit E82 kam ein **sechstes Recht**: `geraetestand`. Es gibt einem Plugin, das
+Mit E82 kam ein **fünftes Recht**: `geraetestand`. Es gibt einem Plugin, das
 über die Box *berichtet*, ein `kontext.geraet` — lesend und über **geschlossene
 Listen**: es fragt nach Namen (`soloist-fassung`), nie nach Programm und
 Argumenten. Wie beim `holen`-Zaun ist das ehrlich gesagt eine **Beschriftung,
@@ -1060,8 +996,8 @@ Weitere: llmwiki `wischgesten-vom-rand`.
 ### 4.9 Die Ströme: wer darf gerade streamen?
 
 Die Box führt **nummerierte Ströme** statt fester Rollen (`stroeme.ts`, E72).
-Jeder Strom hat einen eigenen Zugang und ein eigenes Tonziel; Wiedergabe und
-Mitschnitt sind zwei **Zwecke**, keine zwei Sonderfälle. Der Gedanke dahinter:
+Jeder Strom hat einen eigenen Zugang und ein eigenes Tonziel; ein zweiter Strom
+ist kein Sonderfall, sondern der Normalfall. Der Gedanke dahinter:
 zwei Kinder, zwei Bluetooth-Lautsprecher — am 20.08.2026 an der Box gemessen,
 dass ein Funkbaustein zwei A2DP-Ströme 180 s ohne Aussetzer trägt.
 
@@ -1077,25 +1013,19 @@ bekommt eine **Marke**:
 
 | Endpunkt | Wofür |
 | --- | --- |
-| `POST /api/stroeme/vergabe` | `{fuer: wiedergabe\|mitschnitt}` → Strom-Nr. + Marke, oder eine Absage mit Grund |
+| `POST /api/stroeme/vergabe` | `{fuer: wiedergabe}` → Strom-Nr. + Marke, oder eine Absage mit Grund |
 | `POST /api/stroeme/lebenszeichen` | verlängert die Frist — und beantwortet zugleich „habe ich ihn noch?" |
 | `POST /api/stroeme/freigeben` | gibt die Marke zurück |
 | `GET /api/stroeme/belegung` | was gerade gehalten wird |
 
-Die **Frist hängt am Zweck** (Mitschnitt: Minuten, Wiedergabe: Stunden — die
-Zahlen stehen in `FRIST_MS` und nirgends doppelt). Eine **Reserve** hält ab Werk
-einen Strom fürs Hören frei (`spotify.stromReserve`), damit Verdrängung der
-Sonderfall bleibt. `soloist.service` trägt sich selbst ins Buch ein, bevor
+Die **Frist hängt am Zweck** (heute gibt es einen, die Wiedergabe: Stunden — die
+Zahl steht in `FRIST_MS` und nirgends doppelt). `soloist.service` trägt sich selbst ins Buch ein, bevor
 verteilt wird — sonst vergäbe der Wirt einen Platz, auf dem schon jemand sitzt.
 
-**Verdrängt wird durch Fragen, nicht durch Töten.** Hören hat Vorrang vor
-Mitschnitt: der Wirt nimmt dem Verdrängten nur den *Eintrag* weg, der Arbeiter
-merkt es am nächsten Lebenszeichen (`ok: false`) und hört von selbst auf.
-Niemand schießt einen fremden Prozess ab, und eine ausgefallene Frage heißt
-„ja" — ein Netzhänger soll keine halbe Aufnahme kosten. Verdrängung ist
-**kein Fehlschlag**: der Titel geht auf `offen` zurück, samt dem einen Versuch,
-den der Lauf gekostet hat (llmwiki `verdraengen-durch-fragen-statt-toeten`,
-`pool-statt-rolle-am-strom`).
+**Abgelaufen wird durch Fragen, nicht durch Töten.** Wessen Frist verstrichen
+ist, verliert nur den *Eintrag*; der Halter merkt es am nächsten Lebenszeichen
+(`ok: false`) und hört von selbst auf. Niemand schießt einen fremden Prozess ab
+(llmwiki `pool-statt-rolle-am-strom`).
 
 ### 4.10 Die REST-Schnittstelle
 
@@ -1348,9 +1278,9 @@ ohne `quelle=`-Wunsch **alle** Quellen der Gruppe **parallel** und lässt
 `waehleInhalt()` (`verschmelzung.ts`, reine Funktion) wählen: erst eine Antwort
 mit `vollstaendig`, sonst **die mit den meisten Titeln**, und wenn keine
 geantwortet hat, den Fehler der bevorzugten Quelle. Der Grund steht am
-Messfall: ein Album, das **lokal** führt, dessen Mitschnitt-`playlist.m3u` aber
+Messfall: ein Album, das **lokal** führt, dessen `playlist.m3u` aber
 nur einen Teil trägt — vorher gewann der erste Erfolg, und die Box zeigte nur
-die aufgezeichneten Stücke. Damit die Titelzahl-Regel überhaupt greift,
+die lokal vorhandenen Stücke. Damit die Titelzahl-Regel überhaupt greift,
 behauptet der lokale Zweig **kein `vollstaendig`** mehr: die m3u ist der
 möglicherweise lückenhafte *Bestand*, nicht das Album. **Mit** `quelle=` gibt
 es weiterhin keinen Rückfall. Die vier weiteren Stufen (Befund-Vertrag,
@@ -3332,11 +3262,6 @@ gegen den Baum; was davon wie abgetragen wird, steht in `BACKLOG.md`, E143.
   stehen bei 4.7). Der Stand je Baustein steht als Tabelle in
   `plugins/README.md` → „Was noch fehlt"; diese Zeile ist nur der Zeigefinger
   darauf.
-* **Mehrere Mitschnitte nebeneinander** sind gebaut, aber **am Gerät noch nicht
-  zu sehen**: bei zwei Strömen hält `soloist.service` einen, es bleibt genau
-  einer für die Aufnahme. Die Schleife arbeitet nachweislich (sie fragt, bekommt
-  „kein Strom frei" und bricht sauber ab) — zwei gleichzeitige Aufnahmen gibt es
-  erst mit einem dritten Zugang.
 * **Der Lautstärkesprung beim Quellenwechsel** ist real und **nicht
   ausgeglichen, wenn Spotify über soloist spielt**: lokale Dateien laufen seit
   dem 21.08. über ReplayGain, und soloist kennt keine Normalisierung, nur

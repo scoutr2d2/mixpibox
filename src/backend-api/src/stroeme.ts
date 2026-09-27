@@ -3,15 +3,12 @@
  *
  * Der Gedanke (Betreiber, 20.08.2026): „ob man nicht 2 kinder mit einer box
  * mit 2 parallelen ausgaben ueber 2 bluetooth geraete bzw senken bedienen kann
- * dann waere es nicht starr mitschnitt und familien box eher eben stream 1
- * und 2".
+ * [...] eben stream 1 und 2".
  *
- * ══ WAS DAS UMDREHT ════════════════════════════════════════════════════════
+ * ══ WAS DAS HEISST ═════════════════════════════════════════════════════════
  *
- * E66 war entworfen als „der Mitschnitt bekommt einen eigenen Zugang". Damit
- * waere der zweite Strom ein SONDERFALL — und jeder weitere ein neuer Sonderfall
- * daneben. Hier ist er der NORMALFALL: die Box fuehrt nummerierte Stroeme,
- * jeder mit eigenem Zugang und eigenem Tonziel. Der Mitschnitt ist EINER davon.
+ * Ein zweiter Strom ist kein SONDERFALL, sondern der NORMALFALL: die Box
+ * fuehrt nummerierte Stroeme, jeder mit eigenem Zugang und eigenem Tonziel.
  *
  * Am 20.08.2026 an der Box gemessen, dass es traegt: zwei gleichzeitige
  * A2DP-Stroeme auf EINEM Funkbaustein, 180 Sekunden, keine Aussetzer, WLAN
@@ -38,8 +35,8 @@
  * WELCHE Stroeme gibt es, WIE heissen sie, und WAS ist daran falsch.
  */
 
-/** Wozu ein Strom da ist. Mehr Zwecke sind moeglich; diese zwei gibt es heute. */
-export const ZWECKE = ['wiedergabe', 'mitschnitt'] as const
+/** Wozu ein Strom da ist. Mehr Zwecke sind moeglich; heute gibt es einen. */
+export const ZWECKE = ['wiedergabe'] as const
 export type Zweck = (typeof ZWECKE)[number]
 
 /** Womit ein Strom spielt. `zeroconf` heisst: kein Schluessel noetig. */
@@ -136,8 +133,8 @@ export function stroemeAus(roh: unknown): Stroeme {
 /**
  * Wie der Strom in der Connect-Liste heisst: `<Boxname> Stream <n>`.
  *
- * DER ZWECK STEHT NICHT DRIN, und das ist Absicht (Betreiber, 20.08.2026:
- * „vielleicht sollten wir das geraet nicht mitschnitt nennen"). Connect-Geraete
+ * DER ZWECK STEHT NICHT DRIN, und das ist Absicht (Betreiber, 20.08.2026).
+ * Connect-Geraete
  * stehen in der Geraeteliste des Kontos, die jeder im Haushalt sieht — ein
  * Zweck gehoert nicht in einen Geraetenamen.
  *
@@ -169,8 +166,8 @@ export function geraetename(strom: Strom, boxname: unknown): string {
  * ══ DIE ZWEI ORTE ══════════════════════════════════════════════════════════
  *
  * Strom 1 traegt `soloist.service` — dessen `StateDirectory=soloist` macht
- * daraus /var/lib/soloist. Jeder weitere Strom laeuft als eigener Prozess des
- * Mitschnitt-Plugins und bekommt seinen Ordner nach der Nummer. Diese
+ * daraus /var/lib/soloist. Jeder weitere Strom laeuft als eigener Prozess und
+ * bekommt seinen Ordner nach der Nummer. Diese
  * Ungleichheit ist gewachsen und nicht schoen; sie steht hier an EINER Stelle,
  * damit sie sich spaeter an einer Stelle geradeziehen laesst.
  */
@@ -292,17 +289,7 @@ export function pruefen(a: Stroeme): Befund[] {
 /* ══ DER POOL UND SEINE VERGABE (E74, 22.08.2026) ═══════════════════════════
  *
  * Betreiber: „kann man nicht einfach einen pool von strömen haben und falls da
- * pickt sich einer den zum hören" — dazu die Regeln: „hören hat vorrang zu
- * mitschnitt", „mitgeschnitten werden kann wenn keiner hört bzw ein stream
- * frei ist", „wenn mehr als einer frei ist geht das abarbeiten schneller".
- *
- * ══ WARUM DAS VORHER ANDERS WAR ════════════════════════════════════════════
- *
- * Nicht durch Entscheidung, sondern durch Wachstum. E66 war „der Mitschnitt
- * bekommt einen eigenen Zugang", E72 machte daraus nummerierte Stroeme — aber
- * der ZWECK blieb am Strom festgeschweisst. Ein Strom WAR eine Rolle. Damit
- * lag der zweite Zugang still, waehrend die Liste 22 Titel tief war, und ein
- * dritter haette gar nichts beschleunigt.
+ * pickt sich einer den zum hören".
  *
  * ══ WARUM DER POOL HIER TRAEGT ═════════════════════════════════════════════
  *
@@ -324,7 +311,7 @@ export function pruefen(a: Stroeme): Befund[] {
 export interface Belegung {
   nr: number
   fuer: Zweck
-  /** Beginn in ms. Entscheidet bei Verdraengung, wer weichen muss. */
+  /** Beginn in ms. */
   seit: number
 }
 
@@ -333,81 +320,22 @@ export interface Vergabe {
   nr: number | null
   /** Warum dieser, oder warum keiner. Steht so in Protokoll und Oberflaeche. */
   grund: string
-  /** Welcher laufende Mitschnitt dafuer weichen muss. */
-  verdraengt?: number
 }
 
 /**
- * Wer bekommt einen Strom.
+ * Wer bekommt einen Strom: der freie mit der kleinsten Nummer.
  *
- * ══ DIE DREI REGELN ════════════════════════════════════════════════════════
- *
- * 1. HOEREN GEWINNT IMMER. Ist nichts frei, weicht ein laufender Mitschnitt.
- *    Kein Kind wartet auf eine Aufnahme.
- *
- * 2. VERDRAENGT WIRD DER JUENGSTE MITSCHNITT. Er hat am wenigsten Arbeit
- *    gesammelt — die halbe Datei ist ohnehin verloren (der Arbeiter benennt
- *    erst bei Erfolg um), also soll moeglichst wenig davon verloren gehen.
- *    Die aeltere Aufnahme laeuft weiter und wird fertig.
- *
- * 3. DER MITSCHNITT HAELT `reserve` STROEME FREI. Er nimmt einen nur, wenn
- *    DANACH noch so viele frei sind. Damit ist Verdraengung der Sonderfall
- *    und nicht der Normalbetrieb: wer anfangen will, findet fast immer etwas.
+ * NUR STROEME AUS DEM POOL. Eine Belegung auf einer Nummer, die es nicht
+ * (mehr) gibt, darf keinen Platz blockieren — sonst haelt ein
+ * zurueckgebliebener Eintrag die Box fuer voll, obwohl sie leer ist.
  */
-export function vergeben(
-  pool: readonly Strom[],
-  belegt: readonly Belegung[],
-  fuer: Zweck,
-  reserve = 1,
-): Vergabe {
-  const belegteNr = new Set(belegt.map((b) => b.nr))
-  // NUR STROEME AUS DEM POOL. Eine Belegung auf einer Nummer, die es nicht
-  // (mehr) gibt, darf keinen Platz blockieren — sonst haelt ein
-  // zurueckgebliebener Eintrag die Box fuer voll, obwohl sie leer ist.
-  const frei = pool.filter((s) => !belegteNr.has(s.nr)).sort((a, b) => a.nr - b.nr)
-
+export function vergeben(pool: readonly Strom[], belegt: readonly Belegung[], _fuer: Zweck = 'wiedergabe'): Vergabe {
   if (pool.length === 0) return { nr: null, grund: 'kein Strom eingerichtet' }
-
-  if (fuer === 'wiedergabe') {
-    if (frei.length > 0) return { nr: frei[0].nr, grund: 'freier Strom' }
-
-    // NICHTS FREI — dann muss ein Mitschnitt weichen. Der juengste zuerst.
-    const mitschnitte = belegt.filter((b) => b.fuer === 'mitschnitt')
-    if (mitschnitte.length === 0) {
-      return { nr: null, grund: 'alle Stroeme hoeren gerade — es gibt nichts zu verdraengen' }
-    }
-    const juengster = [...mitschnitte].sort((a, b) => b.seit - a.seit)[0]
-    return {
-      nr: juengster.nr,
-      grund: 'nichts frei — der juengste Mitschnitt weicht',
-      verdraengt: juengster.nr,
-    }
-  }
-
-  // MITSCHNITT. Er nimmt nur, was uebrig bleibt.
-  if (frei.length === 0) return { nr: null, grund: 'kein Strom frei' }
-  if (frei.length - 1 < reserve) {
-    return {
-      nr: null,
-      grund: `haelt ${reserve} ${reserve === 1 ? 'Strom' : 'Stroeme'} fuers Hoeren frei`,
-    }
-  }
-  return { nr: frei[0].nr, grund: 'freier Strom, Reserve bleibt' }
+  const belegteNr = new Set(belegt.map((b) => b.nr))
+  const frei = pool.filter((s) => !belegteNr.has(s.nr)).sort((a, b) => a.nr - b.nr)
+  if (frei.length > 0) return { nr: frei[0].nr, grund: 'freier Strom' }
+  return { nr: null, grund: 'alle Stroeme sind belegt' }
 }
-
-// ZWEI VORGRIFFE SIND AM 19.09.2026 GEFALLEN (AUDIT-2026-09-19 Rang 7):
-//
-//   `mitschnittPlaetze(pool, belegt, reserve)` — wie viele Mitschnitte
-//   gleichzeitig laufen duerfen. Die Rechnung war richtig und geprueft, aber
-//   es gibt in diesem Baum keinen Mitschnitt, der Plaetze anfragt: kein
-//   Endpunkt, kein Aufrufer, nur die eigene Spec.
-//
-//   `fuerZweck(a, zweck)` — die Stroeme eines Zwecks. Ein `filter` in einer
-//   Huelle, die niemand rief.
-//
-// Der Vergabeweg (`naechsterFreier`, `/api/stroeme/vergabe`) kommt ohne
-// beide aus. Wer den Mitschnitt baut, holt die Rechnung aus der Geschichte
-// zurueck — mit dem Verbraucher im selben Zug, nicht davor.
 
 /**
  * Die Aufstellung, die eine Box ohne eigene Angabe hat.

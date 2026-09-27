@@ -89,53 +89,18 @@ export function sinksAus(text: unknown): { name: string; laeuft: boolean }[] {
 }
 
 /**
- * Die Kennungen der mixpi-Leersenken aus `pactl list short sinks`.
- *
- * ══ ES GIBT SENKEN, DIE ABSICHTLICH INS LEERE FÜHREN ═════════════════════
- * Der Mitschnitt (plugins/mixpi-mitschnitt) spielt Titel SELBST, um sie
- * aufzunehmen — still, in die Leersenke `mixpi-mitschnitt` aus
- * config/templates/62-mixpi-mitschnitt.conf. Ein Strom, der DORT hängt,
- * hängt dort mit Absicht: Wer ihn beim Ausgangswechsel mitnimmt, macht den
- * stummen Mitschnitt plötzlich hörbar — und die Aufnahme greift danach den
- * falschen Weg ab.
- *
- * ERKANNT AM NAMEN, nicht an einer Eigenschaft: die Kurzausgabe von `pactl`
- * verrät nicht, ob hinter einer Senke Hardware steckt. Alles Eigene der Box
- * heißt `mixpi-…` (die Leersenke heute, weitere morgen); die gewachsenen
- * Wege (`alsa_output.…`, `bluez_output.…`, `entzerrer`) heißen es nie.
- *
- * ZURÜCK KOMMEN KENNUNGEN, KEINE NAMEN — in der Stromliste steht die Senke
- * als Nummer, und genau dagegen muss `stroemeAus` vergleichen.
- */
-export function mixpiLeersenken(sinkText: unknown): Set<string> {
-  const raus = new Set<string>()
-  for (const z of String(sinkText ?? '').split('\n')) {
-    const t = z.split('\t')
-    if (t.length < 2) continue
-    const kennung = t[0].trim()
-    if (/^\d+$/.test(kennung) && t[1].trim().startsWith('mixpi-')) raus.add(kennung)
-  }
-  return raus
-}
-
-/**
  * Die Kennungen der laufenden Ströme aus `pactl list short sink-inputs`.
  *
  * SIE WERDEN GEBRAUCHT, WEIL EIN LAUFENDER STROM DIE ALTE WAHL BEHÄLT. Ohne
  * `move-sink-input` hörte man den Wechsel erst beim nächsten Stück.
- *
- * GESCHONT WIRD, WESSEN SENKE IN `geschont` STEHT (die zweite Spalte ist
- * die Senken-KENNUNG): Ströme in einer mixpi-Leersenke — heute der stumme
- * Mitschnitt — bleiben beim Ausgangswechsel, wo sie sind.
  */
-export function stroemeAus(text: unknown, geschont?: ReadonlySet<string>): string[] {
+export function stroemeAus(text: unknown): string[] {
   const raus: string[] = []
   for (const z of String(text ?? '').split('\n')) {
     const t = z.split('\t')
     if (t.length < 2) continue
     const kennung = t[0].trim()
     if (!/^\d+$/.test(kennung)) continue
-    if (geschont?.has(t[1].trim())) continue
     raus.push(kennung)
   }
   return raus
@@ -183,14 +148,7 @@ export function ausgangWort(name: string, bt: readonly BtName[]): { wort: string
  */
 export function ausgaenge(sinkText: unknown, vorgabe: unknown, bt: readonly BtName[]): Ausgang[] {
   const v = String(vorgabe ?? '').trim()
-  const liste = sinksAus(sinkText)
-    // MIXPI-SENKEN SIND KEIN ANGEBOT: das sind interne Parkplaetze (die
-    // Leersenke des Mitschnitts). In der Liste standen sie als „anders" —
-    // und wer sie waehlte, parkte ALLE Stroeme dauerhaft im Stummen, denn
-    // die Schonung laesst sie beim Rueckwechsel absichtlich liegen. Der
-    // POST-Riegel im Server ist das Gegenstueck fuer Direktaufrufe.
-    .filter((s) => !s.name.startsWith('mixpi-'))
-    .map((s) => {
+  const liste = sinksAus(sinkText).map((s) => {
       const { wort, art } = ausgangWort(s.name, bt)
       return { name: s.name, wort, art, gewaehlt: s.name === v, laeuft: s.laeuft }
     })

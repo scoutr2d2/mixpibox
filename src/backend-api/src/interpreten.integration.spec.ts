@@ -301,7 +301,7 @@ describe('Interpreten ueber die Schnittstelle', () => {
     assert.equal(r.body.kennungen.length, 1, 'die leergeraeumte Kennung faellt weg')
   })
 
-  it('haengt Aufnahme und Dienstverweis an dieselbe Kennung', async () => {
+  it('haengt lokalen Ordner und Dienstverweis an dieselbe Kennung', async () => {
     const b = await request(app).get('/api/interpretenkennungen').expect(200)
     const id = b.body.kennungen[0].id
     await request(app)
@@ -314,11 +314,11 @@ describe('Interpreten ueber die Schnittstelle', () => {
       .expect(200)
     const r = await request(app)
       .post('/api/interpretenkennungen/verweis')
-      .send({ id, dienst: 'aufnahme', kennung: 'music/Das Lumpenpack/Die Zukunft wird gross', stufe: 'hand' })
+      .send({ id, dienst: 'lokal', kennung: 'music/Das Lumpenpack/Die Zukunft wird gross', stufe: 'hand' })
       .expect(200)
     const k = r.body.kennungen.find((x: { id: string }) => x.id === id)
     assert.equal(k.verweise.length, 2)
-    assert.deepEqual(k.verweise.map((v: { dienst: string }) => v.dienst).sort(), ['aufnahme', 'spotify'])
+    assert.deepEqual(k.verweise.map((v: { dienst: string }) => v.dienst).sort(), ['lokal', 'spotify'])
   })
 
   it('die Freischaltungen ueberleben das alles', async () => {
@@ -331,7 +331,7 @@ describe('Interpreten ueber die Schnittstelle', () => {
   })
 
   it('zuruecksetzen nimmt die Entscheidungen zurueck, nicht die Identitaeten', async () => {
-    // Sonst verwaiste mit einem Klick jede Aufnahme, die an einer Kennung
+    // Sonst verwaiste mit einem Klick jeder Verweis, der an einer Kennung
     // haengt — und das waere ein Verlust, den niemand mit „zuruecksetzen"
     // gemeint hat. Wer wirklich alles will, loescht die Datei.
     await request(app).post('/api/interpreten/zuruecksetzen').expect(200)

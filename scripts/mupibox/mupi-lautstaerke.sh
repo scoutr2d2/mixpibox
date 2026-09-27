@@ -440,15 +440,15 @@ einheit_nachziehen() {
   # (Betreiber: „bspw alle zusammen springt" — die Ueberall-Kombi, die die
   # Verwaltung BEWUSST als stellbare Ausgabe anbietet). Die Lehre: Was die
   # Verwaltung dem Menschen zum Stellen gibt, darf keine Automatik
-  # zuruecksetzen. Die Einheit richtet nur noch die drei stummen Stationen,
-  # die NIEMAND von Hand stellt — klangwerk, entzerrer, mitschnitt.
+  # zuruecksetzen. Die Einheit richtet nur noch die zwei stummen Stationen,
+  # die NIEMAND von Hand stellt — klangwerk und entzerrer.
   pw-dump 2>/dev/null \
     | jq -r --arg v "$vorgabe" --argjson z "$(awk -v d="$durchreiche" 'BEGIN{printf "%.4f", d/100}')" '
         .[] | select(.type=="PipeWire:Interface:Node")
             | select(.info.props["media.class"]=="Audio/Sink")
             | select(.info.props["node.name"] != $v)
             | select(.info.props["node.name"] as $n
-                | ["klangwerk", "entzerrer", "mixpi-mitschnitt"] | index($n) != null)
+                | ["klangwerk", "entzerrer"] | index($n) != null)
             | select(((.info.params.Props[]?.channelVolumes[]? // $z) - $z) | fabs > 0.005)
             | .id' 2>/dev/null \
     | sort -u \

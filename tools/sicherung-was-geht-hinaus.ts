@@ -110,7 +110,6 @@ const G = {
   // Liste. Bis 22.08.2026 prueften wir am Leck vorbei: beide fehlten hier
   // und lagen im Klartext in jeder Sicherung.
   soloistKey: MARKE('SOLOIST-APIKEY'),
-  soloistKeyMitschnitt: MARKE('SOLOIST-APIKEY-MITSCHNITT'),
   stromKey: MARKE('STROM-SCHLUESSEL'),
   telegram: MARKE('TELEGRAM-TOKEN'),
   mqttPw: MARKE('MQTT-PASSWORT'),
@@ -143,7 +142,6 @@ function konfigVorgabe(): Record<string, unknown> {
       username: G.spotifyUser,
       password: G.spotifyPw,
       soloistApiKey: G.soloistKey,
-      soloistApiKeyMitschnitt: G.soloistKeyMitschnitt,
       // Die Strom-Liste (E72): der Schluessel liegt NICHT flach in der
       // Gruppe, sondern je Eintrag — genau die Form, die die flache
       // Streich-Schleife von ohneGeheimnisse frueher verfehlte.

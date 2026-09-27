@@ -340,11 +340,11 @@ export function verbinden(ablage: Ablage, a: string, b: string): Ablage {
  * bereits KENNEN und sie nicht der Heuristik ueberlassen muessen.
  *
  * ══ WOFUER (29.08.2026) ═════════════════════════════════════════════════════
- * Der Mitschnitt (plugins/mixpi-mitschnitt) weiss beim Anlegen seiner Kachel
- * genau, zu welchem Streaming-Eintrag sie gehoert (`context.uri` des laufenden
- * Stuecks) — er muss nicht warten, bis `meinenDasselbe()` Titel und Interpret
- * zufaellig fuer aehnlich genug haelt. Dieselbe Funktion traegt kuenftig auch
- * eine „von Hand verbinden"-Schaltflaeche der Verwaltung, sobald es sie gibt;
+ * Ein Plugin, das beim Anlegen einer Kachel genau weiss, zu welchem
+ * vorhandenen Eintrag sie gehoert, muss nicht warten, bis `meinenDasselbe()`
+ * Titel und Interpret zufaellig fuer aehnlich genug haelt. Dieselbe Funktion
+ * traegt kuenftig auch eine „von Hand verbinden"-Schaltflaeche der
+ * Verwaltung, sobald es sie gibt;
  * der Endpunkt in server.ts (`/api/verschmelzung/festschreiben`) reicht nur
  * durch.
  *
@@ -357,8 +357,8 @@ export function verbinden(ablage: Ablage, a: string, b: string): Ablage {
  * ══ IDEMPOTENT ══════════════════════════════════════════════════════════════
  * Steckt das Paar (in beliebiger Richtung) schon in einer Zuordnung, aendert
  * sich nichts — ein zweiter Aufruf mit denselben zwei Schluesseln darf die
- * Ablage nicht wachsen lassen (der Mitschnitt ruft bei jedem weiteren Stueck
- * desselben Albums erneut auf).
+ * Ablage nicht wachsen lassen (ein Aufrufer darf bei jedem weiteren Stueck
+ * desselben Albums erneut aufrufen).
  *
  * ══ FUEHRT EINER DER BEIDEN SCHON EINE ZUORDNUNG ════════════════════════════
  * Dann wird SIE erweitert, statt eine zweite, konkurrierende anzulegen — Fall
@@ -404,10 +404,10 @@ export function handVerbinden(ablage: Ablage, a: string, b: string): Ablage {
  * ══ WOFUER (30.08.2026, „Guten Morgen / Good Morning") ══════════════════════
  * Gefiltert wird VOR der Verschmelzung (auswahl.ts erklaert, warum diese
  * Reihenfolge richtig ist) — aber die Auswahl eines Profils kennt nur die
- * Schluessel, die beim Anhaken existierten. Der Mitschnitt legt spaeter eine
- * Kachel unter EIGENEM Schluessel an und bindet sie per Hand-Zuordnung an
- * den gewaehlten Streaming-Eintrag. Ohne diese Erweiterung fiel die
- * Mitschnitt-Kachel aus der gefilterten Liste, die Zuordnung fand ihr
+ * Schluessel, die beim Anhaken existierten. Kommt spaeter eine Kachel unter
+ * EIGENEM Schluessel dazu und wird per Hand-Zuordnung an den gewaehlten
+ * Eintrag gebunden, fiel sie ohne diese Erweiterung aus der gefilterten
+ * Liste, die Zuordnung fand ihr
  * Mitglied nicht („Ein Schluessel, den es in dieser Liste nicht gibt, wird
  * uebergangen", verschmelzung.ts), nichts verschmolz — und der Tipp auf die
  * Kachel spielte mit den Metadaten der falschen Quelle am falschen Ort.
@@ -415,8 +415,8 @@ export function handVerbinden(ablage: Ablage, a: string, b: string): Ablage {
  * DIE REGEL: Wer EIN Mitglied einer Zuordnung gewaehlt hat, hat sie ganz
  * gewaehlt — in beide Richtungen (auch das gewaehlte Mitglied zieht den
  * Fuehrenden). Das gilt AUCH bei ausgeschalteter Verschmelzung: die
- * Zuordnung sagt „dasselbe Werk", und die aufgenommene Fassung eines
- * gewaehlten Albums ist kein neuer Inhalt, sondern derselbe.
+ * Zuordnung sagt „dasselbe Werk", und eine zweite Fassung eines gewaehlten
+ * Albums ist kein neuer Inhalt, sondern derselbe.
  *
  * Ohne Auswahl (alles sichtbar) und ohne Treffer kommt die Eingabe
  * UNVERAENDERT zurueck — dasselbe Objekt, wie bei `auswahlFiltern`.

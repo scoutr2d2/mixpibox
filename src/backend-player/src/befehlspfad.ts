@@ -190,8 +190,8 @@ export function abAusName(name: string | null | undefined): number {
  * Die Titelzaehlung darunter dekodierte ZWEISTUFIG (decodeURIComponent auf
  * das decodeURI-Ergebnis), fand den echten Ordner und zaehlte froehlich 3 —
  * zwei Wahrheiten in derselben Funktion, und die falsche machte den Ton.
- * Betroffen war jeder Mitschnitt mit Komma im Interpreten — auf dieser Box
- * die halbe Aufnahme-Bibliothek („Team Karacho, Rola", „Simone Sommerland,
+ * Betroffen war jedes Album mit Komma im Interpreten — auf dieser Box
+ * die halbe lokale Bibliothek („Team Karacho, Rola", „Simone Sommerland,
  * Karsten Glück, …", „101 fabelhafte Freunde, Ruby van der Bogen").
  *
  * ERST TRENNEN, DANN DEKODIEREN — die Reihenfolge ist der Punkt: die `:`

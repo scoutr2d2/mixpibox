@@ -31,18 +31,19 @@ export interface Eintrag {
   audiobookid?: string
   spotify_url?: string
   /**
-   * „Hier fehlt noch etwas." — gesetzt vom Mitschnitt (E89).
+   * „Hier fehlt noch etwas." — gesetzt von einem Schreiber, der einen
+   * Ordner nach und nach fuellt (E89), z. B. einem Plugin.
    *
    * ══ WARUM EIN FLAG UND NICHT EINE STUECKZAHL ═══════════════════════════
    * Eine Zahl waere aus der `playlist.m3u` ABLEITBAR, und damit haette
    * dieselbe Frage zwei Antworten, die auseinanderlaufen koennen. Was
-   * dagegen NUR der Mitschnitt weiss, ist, ob sein Lauf sauber zu Ende kam:
+   * dagegen NUR der Schreiber weiss, ist, ob sein Lauf sauber zu Ende kam:
    * ein Album mit einem einzigen Stueck kann eine Single sein — oder ein
-   * abgebrochener Mitschnitt. Von aussen sieht das gleich aus.
+   * abgebrochener Lauf. Von aussen sieht das gleich aus.
    *
    * ══ DIE RICHTUNG IST ABSICHT ═══════════════════════════════════════════
    * Gesetzt wird es beim ANLEGEN, geloescht am Ende eines sauberen Laufs.
-   * Stirbt der Mitschnitt unterwegs, loescht es NIEMAND — und die Kachel
+   * Stirbt der Schreiber unterwegs, loescht es NIEMAND — und die Kachel
    * sagt weiter, dass etwas fehlt. Andersherum („am Ende setzen") bliebe
    * genau der Abbruchfall stumm, also der einzige, auf den es ankommt.
    *
@@ -523,7 +524,7 @@ export function aenderungAnwenden(alt: Eintrag, patch: Record<string, unknown>):
    *
    * `false` loescht deshalb ausdruecklich, statt „false" zu speichern. Ein
    * gespeichertes `false` waere eine Behauptung („dieses Album ist
-   * vollstaendig"), die der Mitschnitt gar nicht aufstellen kann — er weiss
+   * vollstaendig"), die der Schreiber gar nicht aufstellen kann — er weiss
    * nur, dass SEIN Lauf durch ist. */
   if (patch.unvollstaendig === true) neu.unvollstaendig = true
   else if (patch.unvollstaendig === false) delete neu.unvollstaendig
@@ -679,7 +680,7 @@ export function spotifyTitelPfad(
  * die Box wurde unter mehreren davon angeschrieben, und jeder veraltet.
  *
  * PUR UND AN DER LESESTELLE, nicht als Migration der Datei: die Liste wird
- * von mehreren Schreibern gepflegt (Verwaltung, Aufnahme-Plugin); eine
+ * von mehreren Schreibern gepflegt (Verwaltung, Plugins); eine
  * Normalisierung beim AUSLIEFERN heilt alle Bestandseinträge auf einmal und
  * kann keinem Schreiber dazwischenfunken.
  */
@@ -1040,8 +1041,8 @@ export interface BestaetigtePaarung {
  *      das Paar (Anführer, Mitglied) in `getrennt`, wird genau diese Kante
  *      übersprungen statt gezogen — der Rest der Gruppe bleibt zusammen.
  *   2. BESTÄTIGTE ZUORDNUNGEN SCHLAGEN ALLES. Sie kommen von Hand (Verwaltung)
- *      oder von einem Plugin, das seine eigene Quelle kennt (der Mitschnitt,
- *      siehe plugins/mixpi-mitschnitt) — beides ist eine AUSSAGE, keine
+ *      oder von einem Plugin, das seine eigene Quelle kennt — beides ist
+ *      eine AUSSAGE, keine
  *      Vermutung, und gilt deshalb unabhängig davon, ob die Heuristik
  *      dasselbe gefunden hätte. Ein Schlüssel, den es in `treffer` nicht
  *      (mehr) gibt, wird übergangen — dieselbe Zurückhaltung wie in

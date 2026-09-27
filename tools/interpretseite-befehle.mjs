@@ -105,7 +105,7 @@ const warte = (ms) => new Promise((r) => setTimeout(r, ms))
  * per SCHLUESSEL (auch das Box-eigene Spotify-Album — bis Stufe 3 baute es
  * seinen Befehl selbst aus der Kennung und lief damit an der Verschmelzung
  * vorbei: ein verschmolzenes Album haette weiter Spotify gespielt, waehrend
- * das Raster laengst den Mitschnitt bevorzugt). Ein KATALOG-Album ohne
+ * das Raster laengst die lokale Fassung bevorzugt). Ein KATALOG-Album ohne
  * Bibliothekseintrag geht per KENNUNG ({dienst,art,id}); die Quellen- und
  * Befehlswahl dahinter prueft src/backend-api/src/spielen.integration.spec.ts.
  * Ein /player-Befehl aus dieser Seite waere jetzt selbst der Fehler.

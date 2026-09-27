@@ -7,12 +7,12 @@ Muss AUF DER BOX laufen, waehrend etwas spielt.
 
 ══ WOFUER ═════════════════════════════════════════════════════════════════
 
-Das Mitschnitt-Plugin schneidet dort, wo sich die Titelkennung aendert, und
-verschiebt den Schnitt um `progress_ms` zurueck. Beides sind ANNAHMEN ueber
-`/state` — und am 16.08.2026 kamen dabei Stuecke von 1 Sekunde heraus,
-obwohl 37 Sekunden aufgenommen waren.
+Wer Titelgrenzen aus `/state` ableitet, nimmt an, dass sich dort die
+Titelkennung zum richtigen Zeitpunkt aendert und `progress_ms` dazu passt.
+Beides sind ANNAHMEN — und am 16.08.2026 lagen die daraus berechneten
+Grenzen um mehr als eine halbe Minute daneben.
 
-Statt im Plugin zu raten, zeigt dieses Werkzeug, was wirklich kommt: jede
+Statt zu raten, zeigt dieses Werkzeug, was wirklich kommt: jede
 Sekunde eine Zeile, und markiert, WO sich etwas aendert. Danach ist
 entweder klar, dass die Annahme falsch war, oder dass der Fehler woanders
 sitzt.

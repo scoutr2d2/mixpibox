@@ -72,6 +72,7 @@ tools/mitschnitt-*               # Werkzeuge nur fuer diese Erweiterung
 tools/box/mitschnitt-*           # dito, am Geraet
 tools/taster-druck-mitschnitt.sh # dito
 tools/github-lokal-muster.txt    # Muster, die selbst nicht hinaus sollen (liest github-veroeffentlichen.py)
+tools/github-ohne-aufnahme.patch # entfernt die Verdrahtung der Erweiterung nur beim Veroeffentlichen; beschreibt sie aber selbst
 screenshots/15-verwaltung-aufzeichnen.png  # zeigt die Seite der Erweiterung; die README bettet es nicht mehr ein
 # ── Was die Heimumgebung verraet ────────────────────────────────────────────
 .claude/                         # Umgebung der Agentensitzung: interne Adressen (192.168.178.x, git.local:3000) und Freigaben dieser Maschine

@@ -246,7 +246,7 @@ describe('Verschmelzung ueber die Schnittstelle', () => {
    * (`config/verschmelzung.json`) überhaupt zu lesen — bestätigte Paare
    * standen dort als ZWEI Zeilen, obwohl `/api/werke` sie längst zu EINER
    * Kachel zusammenfasst. Und `/api/verschmelzung/festschreiben` ist der
-   * neue Schreibweg, über den plugins/mixpi-mitschnitt eine Zuordnung
+   * neue Schreibweg, über den ein Plugin eine Zuordnung
    * FESTSCHREIBT, statt sie der Heuristik zu überlassen.
    */
   it('GET /api/medien: eine bestaetigte Zuordnung macht aus zwei voellig verschieden beschrifteten Eintraegen EINE Gruppe (W1)', async () => {

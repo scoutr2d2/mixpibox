@@ -7,14 +7,13 @@
  * Frage „welcher Titel liegt WO vor" ohne eine vierte Wahrheit anzulegen:
  *
  *   - Die PLATTE weiss, was lokal liegt. Identitaet ueber Quellen hinweg ist
- *     die TITELNUMMER: die Aufnahme legt Spuren als `NN <Titel>.<endung>` ab
- *     (mixpi-mitschnitt, `spurname`), und die NN stammt aus der Quell-Liste
- *     des Meta-Albums — sie IST dieselbe Zaehlung wie `titel[].nr` in
- *     /inhalt. Der Name dient nur als GEGENPROBE (die Sanitisierung `/`->`_`
- *     der Aufnahme macht ihn unscharf).
+ *     die TITELNUMMER: lokale Spuren liegen als `NN <Titel>.<endung>` im
+ *     Albumordner, und die NN folgt der Titelliste des Albums — sie IST
+ *     dieselbe Zaehlung wie `titel[].nr` in /inhalt. Der Name dient nur als
+ *     GEGENPROBE (Dateinamen ersetzen `/` durch `_`, das macht ihn unscharf).
  *   - GELESEN WIRD DAS VERZEICHNIS, NICHT DIE playlist.m3u: am Geraet
  *     gemessen (31.08.2026, „Guten Morgen") fuehrte die m3u 2 von 3
- *     vorhandenen Dateien — sie hinkt der Aufnahme nach. Die m3u bleibt der
+ *     vorhandenen Dateien — sie hinkt dem Ordner nach. Die m3u bleibt der
  *     Abspiel-Vertrag des musicsearch-Wegs; fuer „welcher Titel ist da" ist
  *     sie die falsche Zeugin.
  *
@@ -23,7 +22,7 @@
  * gemischte Liste. Kein Netz, kein Dateisystem, keine Uhr.
  */
 
-/** Endungen, die die Aufnahme schreibt bzw. musicsearch findet — dieselbe
+/** Endungen, die musicsearch findet — dieselbe
  *  Liste wie der find-Befehl in spotify-control.ts (`playList`). */
 const SPUR_ENDUNGEN = ['.flac', '.mp3', '.m4a', '.wma', '.wav']
 
@@ -39,20 +38,19 @@ export function spurNummerAus(dateiname: string | null | undefined): number | nu
 }
 
 /**
- * IST DIESE SPUR ABSPIELBEREIT? — Betreiber-Regel vom 31.08.2026: „mitschnitt
- * soll sich nicht auf das album beziehen sondern auf den titel wenn titel
- * komplett dann ist er abspiel bereit."
+ * IST DIESE SPUR ABSPIELBEREIT? — Betreiber-Regel vom 31.08.2026: es zaehlt
+ * der TITEL, nicht das Album: wenn der Titel komplett ist, ist er
+ * abspielbereit.
  *
- * DIE AUSKUNFT STEHT SCHON AUF DER PLATTE, im DATEINAMEN: Die Aufnahme
- * vergleicht die aufgenommene mit der erwarteten Laenge (`vollstaendigkeit`
- * in mixpi-mitschnitt) und haengt unter 97 % ` (unvollstaendig NN%)` an —
- * ausdruecklich in den Namen und nicht bloss in ein Tag, „den Namen sieht
- * auch, wer nur den Ordner oeffnet". Hier wird sie nur GELESEN; eine zweite
- * Messung waere eine zweite Wahrheit ueber dieselbe Datei.
+ * DIE AUSKUNFT STEHT AUF DER PLATTE, im DATEINAMEN: Ein Schreiber, der eine
+ * Datei nicht vollstaendig ablegen konnte, haengt ` (unvollstaendig NN%)` an
+ * — ausdruecklich in den Namen und nicht bloss in ein Tag, denn den Namen
+ * sieht auch, wer nur den Ordner oeffnet. Hier wird das nur GELESEN; eine
+ * zweite Messung waere eine zweite Wahrheit ueber dieselbe Datei.
  *
  * Ein abgebrochener Titel wird also NICHT gespielt, solange eine andere
  * Quelle ihn ganz hat — er bleibt aber liegen (zum Puffern ist er mehr wert
- * als nichts, und die naechste Aufnahme ersetzt ihn).
+ * als nichts).
  */
 export function spurVollstaendig(dateiname: string | null | undefined): boolean {
   return !/\(unvollstaendig\s+\d+%\)/i.test(String(dateiname ?? ''))
@@ -61,7 +59,7 @@ export function spurVollstaendig(dateiname: string | null | undefined): boolean 
 /** Alle Spuren eines Albumordners als Karte Nummer -> Dateiname.
  *
  *  Bei doppelter Nummer gewinnt der ERSTE in sortierter Reihenfolge — ein
- *  zweiter Mitschnitt derselben Spur darf die Karte nicht kippen, und die
+ *  zweite Datei derselben Spur darf die Karte nicht kippen, und die
  *  Sortierung macht den Gewinner unabhaengig von der readdir-Laune. */
 export function lokaleKarteAus(dateinamen: readonly string[]): Map<number, string> {
   const karte = new Map<number, string>()
@@ -73,7 +71,7 @@ export function lokaleKarteAus(dateinamen: readonly string[]): Map<number, strin
 }
 
 /** Fuer den Namensvergleich: alles ausser Buchstaben und Ziffern faellt weg.
- *  Damit sind die Sanitisierung der Aufnahme (`/` -> `_`), Satzzeichen und
+ *  Damit sind die Sanitisierung im Dateinamen (`/` -> `_`), Satzzeichen und
  *  Leerzeichen keine Unterschiede mehr. */
 function namensKern(s: string): string {
   return String(s ?? '')
@@ -86,7 +84,7 @@ function namensKern(s: string): string {
  * DIE GEGENPROBE: passt der Spur-Dateiname zum Titelnamen der Liste?
  *
  * Die Nummer ist die Identitaet — aber nur innerhalb DERSELBEN Zaehlung. Die
- * NN der Aufnahme folgt der Quell-Liste des Meta-Albums (meist die Streaming-Fassung);
+ * NN der Datei folgt der Titelliste, nach der der Ordner angelegt wurde;
  * eine Jellyfin-Liste desselben Albums zaehlt fast immer gleich, kann aber
  * abweichen (Bonustitel, andere Ausgabe). Bei Nummerngleichheit mit ganz
  * anderem Namen wird NICHT zugeordnet — dann spielt die Listen-Quelle den

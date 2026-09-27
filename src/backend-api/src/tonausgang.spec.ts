@@ -13,7 +13,6 @@ import {
   ausgangWort,
   istAusgangsname,
   macAusSink,
-  mixpiLeersenken,
   sinksAus,
   stroemeAus,
 } from './tonausgang'
@@ -77,47 +76,9 @@ describe('stroemeAus', () => {
     assert.deepEqual(stroemeAus(t), ['71', '72'])
   })
 
-  it('lässt Ströme in einer geschonten Senke stehen', () => {
-    // DER FALL: Der Mitschnitt parkt seinen Aufnahme-Strom absichtlich still
-    // in der Leersenke (Kennung 77). Ein Elternteil wechselt auf Bluetooth —
-    // ohne Schonliste wanderte der stumme Strom mit und toente ploetzlich
-    // auf dem Lautsprecher, und die Aufnahme griffe den falschen Weg ab.
-    const t = ['71\t40524\t70\tPipeWire\ts16le 2ch 44100Hz', '90\t77\t88\tPipeWire\ts16le 2ch 44100Hz'].join('\n')
-    assert.deepEqual(stroemeAus(t, new Set(['77'])), ['71'])
-  })
-
-  it('ohne Schonliste wandert alles — wie bisher', () => {
+  it('nimmt jeden Strom mit, egal auf welcher Senke', () => {
     const t = '71\t40524\t70\tPipeWire\ts16le 2ch 44100Hz\n90\t77\t88\tPipeWire\ts16le 2ch 44100Hz'
     assert.deepEqual(stroemeAus(t), ['71', '90'])
-    assert.deepEqual(stroemeAus(t, new Set()), ['71', '90'])
-  })
-})
-
-describe('mixpiLeersenken', () => {
-  it('findet die Kennung der Leersenke — und nur ihre', () => {
-    // Die Senkenliste einer Box mit ausgerollter Leersenke: die zwei echten
-    // Ausgaenge bleiben draussen, `mixpi-mitschnitt` (Kennung 77) faellt
-    // unter die Schonung. Kennungen statt Namen, weil die Stromliste die
-    // Senke nur als Nummer traegt.
-    const t = [
-      'Failed to load cookie file from cookie: No such file or directory',
-      '62\talsa_output.platform-soc_107c000000_sound.stereo-fallback\tPipeWire\ts32le 2ch 48000Hz\tSUSPENDED',
-      '77\tmixpi-mitschnitt\tPipeWire\tfloat32le 2ch 48000Hz\tIDLE',
-      '40524\tbluez_output.7C_96_D2_89_35_CC.1\tPipeWire\ts24le 2ch 48000Hz\tRUNNING',
-    ].join('\n')
-    assert.deepEqual(mixpiLeersenken(t), new Set(['77']))
-  })
-
-  it('der Entzerrer ist KEINE mixpi-Senke und wandert weiter mit', () => {
-    // `entzerrer` ist gewachsener Bestand ohne mixpi-Praefix — seine Stroeme
-    // sollen dem Ausgangswechsel weiter folgen.
-    const t = '80\tentzerrer\tPipeWire\tfloat32le 2ch 48000Hz\tRUNNING'
-    assert.deepEqual(mixpiLeersenken(t), new Set())
-  })
-
-  it('kommt mit leerer Ausgabe zurecht', () => {
-    assert.deepEqual(mixpiLeersenken(''), new Set())
-    assert.deepEqual(mixpiLeersenken(null), new Set())
   })
 })
 
@@ -179,16 +140,4 @@ describe('ausgaenge', () => {
     assert.equal(ausgaenge(SINKS, '', BT).filter((x) => x.gewaehlt).length, 0)
   })
 
-  it('mixpi-Senken stehen NICHT im Angebot — wer sie wählte, parkte alles dauerhaft im Stummen', () => {
-    // Seit der Schonung laesst der Rueckwechsel Leersenken liegen; eine
-    // waehlbare Leersenke waere damit eine Einbahnstrasse in die Stille
-    // (Befund der Ableger-Pruefung, 22.08.2026).
-    const mit = `${String(SINKS)}\n77\tmixpi-mitschnitt\tmodule-null-sink.c\ts16le 2ch 44100Hz\tIDLE`
-    const a = ausgaenge(mit, '', BT)
-    assert.equal(
-      a.some((x) => x.name.startsWith('mixpi-')),
-      false,
-    )
-    assert.equal(a.length, 2, 'die echten Ausgaenge bleiben')
-  })
 })

@@ -529,14 +529,12 @@ describe('Geheimnisse verlassen den Server nicht', () => {
     // beide gingen bis 22.08.2026 im Klartext an jeden Kiosk-Browser.
     const k = mit() as unknown as Record<string, Record<string, unknown>>
     k['spotify']['soloistApiKey'] = 'spak_geheim'
-    k['spotify']['soloistApiKeyMitschnitt'] = 'spak_zweitzugang'
     k['spotify']['stroeme'] = [
       { nr: 1, zweck: 'wiedergabe', maschine: 'soloist', schluessel: 'spak_strom1', senke: '' },
-      { nr: 2, zweck: 'mitschnitt', maschine: 'soloist', schluessel: 'spak_strom2', senke: '' },
+      { nr: 2, zweck: 'wiedergabe', maschine: 'soloist', schluessel: 'spak_strom2', senke: '' },
     ]
     const raus = ohneGeheimnisse(k) as Record<string, Record<string, unknown>>
     assert.equal(raus['spotify']['soloistApiKey'], '')
-    assert.equal(raus['spotify']['soloistApiKeyMitschnitt'], '', 'der Zweitzugang des Mitschnitts')
     const stroeme = raus['spotify']['stroeme'] as Record<string, unknown>[]
     assert.equal(stroeme.length, 2, 'die Listenform bleibt')
     for (const s of stroeme) assert.equal(s.schluessel, '')

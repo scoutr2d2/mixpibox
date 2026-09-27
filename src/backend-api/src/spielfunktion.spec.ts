@@ -45,7 +45,7 @@ describe('startPlan — der Umzug von abspielBefehl (E95/V)', () => {
   })
 
   it('der lokale RUECKFALL nimmt die Plattenform der Quelle, nie die Anzeige-Metadaten', () => {
-    // Der Messfall vom 30.08.2026: die Aufnahme sanitisiert `/` zu `_`,
+    // Der Messfall vom 30.08.2026: der Ordnername sanitisiert `/` zu `_`,
     // das verschmolzene Werk fuehrt Streaming-Metadaten. Diese Regel gilt
     // unveraendert weiter — nur ist der Befehl seit E111 der Rueckfall fuer
     // Boxen, deren Ordner nichts hergibt (fremder Mount), statt der Hauptweg.
@@ -172,7 +172,7 @@ describe('versuchsQuellen — Ausweichen, Anbieter-Sieb, Nummernraum (E95/V)', (
   })
 
   it('Nummernraum-Regel: fuehrt lokal und wurde woanders gemerkt, rueckt die gemerkte Quelle vor', () => {
-    // „Du bedeutest mir die Welt" (30.08.2026): der Mitschnitt traegt nur
+    // „Du bedeutest mir die Welt" (30.08.2026): das lokale Album traegt nur
     // einen Teil des Albums, Titel 8 der Streaming-Liste existiert dort nicht.
     const r = versuchsQuellen(werk({ quellen: [lokal, jellyfin, spotify] }), { gemerktBei: 'spotify' })
     assert.deepEqual(
@@ -337,7 +337,7 @@ describe('wechselpunkte — wo eine gemischte Liste die Maschine wechselt', () =
     )
   })
 
-  it('DER HALB-MITSCHNITT: der Nachfolger von 02 ist 06, nicht 03', () => {
+  it('DAS HALBE LOKALE ALBUM: der Nachfolger von 02 ist 06, nicht 03', () => {
     // Die Falle, die als E110 und E111 schon zweimal bezahlt wurde und im
     // E111-Eintrag als offene Fussnote steht: Position und `nr` sind NICHT
     // dasselbe. Wer hier nr+1 rechnet, findet den Wechselpunkt nie.

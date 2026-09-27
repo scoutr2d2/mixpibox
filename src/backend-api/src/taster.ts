@@ -18,7 +18,7 @@
  * vorbei, mitten in Schreibvorgänge hinein.
  *
  * DANN WURDE MITGESCHRIEBEN, was ein Mensch am Gerät wirklich tut
- * (tools/taster-druck-mitschnitt.sh, 27 Drücke in 40 Sekunden):
+ * (Tastendrücke protokolliert, 27 Drücke in 40 Sekunden):
  *
  *     kürzester 116 ms · Median 432 ms · längster 2827 ms
  *     über der Schwelle von 2000 ms:  1 von 27

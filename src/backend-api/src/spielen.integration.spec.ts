@@ -26,7 +26,7 @@ import { after, before, describe, it } from 'node:test'
 import request from 'supertest'
 import { medienSchluessel } from './medien.js'
 
-/** Der Messfall von E105/E106: Aufnahme mit Komma-Interpret und
+/** Der Messfall von E105/E106: lokale Fassung mit Komma-Interpret und
  *  Schraegstrich-Sanitisierung, verschmolzen mit dem Streaming-Zwilling. */
 const MORGEN_LOKAL = {
   type: 'library',
@@ -93,7 +93,7 @@ describe('POST /api/spielen — die Leitung zum Abspieldienst', () => {
     // (verschmelzenAusDarstellung: `aktuell.verschmelzen`): verschmolzen wird.
     writeFileSync(join(verzeichnis, 'darstellung.json'), JSON.stringify({ aktuell: { verschmelzen: true } }))
     // DIE HAND-ZUORDNUNG, wie sie der Betreiber am 30.08.2026 gesetzt hat:
-    // Aufnahme und Streaming-Fassung tragen VERSCHIEDENE Titel (`/` wurde `_`),
+    // lokale und Streaming-Fassung tragen VERSCHIEDENE Titel (`/` wurde `_`),
     // der automatische Abgleich legt sie deshalb NIE zusammen — genau der
     // E105-Fall. Ohne diese Datei testete alles hier ein unverschmolzenes
     // Werk und waere aus dem falschen Grund gruen.
@@ -182,7 +182,7 @@ describe('POST /api/spielen — die Leitung zum Abspieldienst', () => {
     // Plattenform im `musicsearch`-Album-Befehl; seither spielt die lokale
     // Quelle Titel fuer Titel (`datei/…`), damit Ton und Anzeige dieselbe
     // Liste benutzen — die E106-Kette (%2C fuer das Komma im Interpreten,
-    // `_` statt `/` aus der Sanitisierung der Aufnahme) laeuft dieselbe
+    // `_` statt `/` aus der Sanitisierung im Ordnernamen) laeuft dieselbe
     // Strecke, nur durch ein anderes Verb.
     leitung = []
     lokalStand = { currentPlayer: '', duration: null, timePos: null }
@@ -260,8 +260,8 @@ describe('POST /api/spielen — die Leitung zum Abspieldienst', () => {
       .post('/api/spielen')
       .send({ schluessel: medienSchluessel(MORGEN_SP), titelNr: 4, positionMs: 92500, gemerktBei: 'spotify' })
       .expect(200)
-    // Das Werk fuehrt LOKAL, gemerkt wurde bei SPOTIFY — der lokale
-    // Mitschnitt traegt oft nur einen Teil, Titel 4 seiner Liste waere ein
+    // Das Werk fuehrt LOKAL, gemerkt wurde bei SPOTIFY — das lokale
+    // Album traegt oft nur einen Teil, Titel 4 seiner Liste waere ein
     // anderes Lied. Die gemerkte Quelle gewinnt (versuchsQuellen, Regel 3).
     assert.equal(r.body.dienst, 'spotify')
     const start = leitung.find((p) => p.startsWith('/current/spotify/now/'))

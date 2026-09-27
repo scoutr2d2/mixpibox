@@ -3535,8 +3535,8 @@
       werke.auswahl = d && d.auswahl && typeof d.auswahl === 'object' ? d.auswahl : null
       // UEBER DEN NAMENSKERN GESCHLUESSELT (E109, dritte Naht derselben
       // Falle): `coverFuerLokal` fragt mit den PFAD-Segmenten der Platte an,
-      // und die tragen die sanitisierte Schreibweise der Aufnahme („_" statt
-      // „/") — der woertliche Schluessel traf bei jedem Mitschnitt mit
+      // und die tragen die sanitisierte Schreibweise der Ablage („_" statt
+      // „/") — der woertliche Schluessel traf bei jedem lokalen Album mit
       // Sonderzeichen ins Leere („Spielplatz hat kein bild", Betreiber
       // 31.08.2026). Kern rein, Kern raus: beide Seiten fragen gleich.
       werke.coverkarte = new Map(liste.map((w) => [`${namensKern(w.interpret)}|${namensKern(w.titel)}`, bildAdresse(w)]))
@@ -5309,8 +5309,8 @@
     // JEDES BOX-WERK geht per SCHLUESSEL — nicht mehr nur die „fremden".
     // Bis Stufe 3 baute ein Box-eigenes Spotify-Album seinen Befehl selbst
     // aus der Kennung; damit lief es an der Verschmelzung vorbei (ein
-    // verschmolzenes Album haette weiter Spotify gespielt, waehrend das
-    // Raster laengst den Mitschnitt bevorzugt). Der Schluessel-Wunsch laesst
+    // verschmolzenes Album haette weiter den Dienst gespielt, waehrend das
+    // Raster laengst die lokale Fassung bevorzugt). Der Schluessel-Wunsch laesst
     // den Server nach den eingestellten Regeln waehlen; `titelNr` waehlt den
     // Titel (die +1-Falle wohnt allein im Server, `startPlan`), den
     // Jellyfin-Album-Sonderweg fuehrt die Spielfunktion selbst.
@@ -27443,7 +27443,7 @@
      * 06.09.2026, „es gibt doubletten in den alben lokal und spotify sind
      * nicht zusammen geführt". Am Geraet gemessen (Box .81): 44 Kacheln
      * ohne, 35 mit — 9 Werke lagen doppelt im Regal, eines sogar sechsfach
-     * (dasselbe Album als Streaming-Original und als lokale Mitschnitte).
+     * (dasselbe Album aus mehreren Diensten und als lokale Dateien).
      * Fuer ein Kind ist dieselbe Kachel zweimal kein Angebot, sondern eine
      * Frage, die es nicht beantworten kann.
      *
@@ -29309,7 +29309,7 @@
     if (!lo || !karte.size) return null
     // Die Karte ist ueber den NAMENSKERN geschluesselt (siehe ihren Bau) —
     // hier wird mit demselben Kern gefragt, sonst trennt die Sanitisierung
-    // der Aufnahme („/" -> „_") Platte und Werk fuer immer.
+    // der Ablage („/" -> „_") Platte und Werk fuer immer.
     // 1. Der Pfad einer lokalen Datei: "kategorie/Interpret/Album".
     const teile = String(lo.path || '').split('/')
     if (teile[1] && teile[2]) {
@@ -29340,7 +29340,7 @@
    * ist schlimmer als gar keins.
    */
   /** Nur Buchstaben und Ziffern — dieselbe Regel wie `spurNamePasst` in
-   *  titelkarte.ts (Server): die Sanitisierung der Aufnahme (`/` -> `_`),
+   *  titelkarte.ts (Server): die Sanitisierung der Ablage (`/` -> `_`),
    *  Satzzeichen und Leerzeichen sind keine Unterschiede. */
   function namensKern(s) {
     return String(s ?? '')
@@ -29912,7 +29912,7 @@
    * ══ WOFUER — UND WARUM DAS KEINE ERFUNDENE REGEL IST ═══
    *
    * GEFUNDEN am 21.08.2026 mit tools/wischrand-schau.mjs, und der Fund war
-   * zuerst ein Messfehler: Im Mitschnitt eines 20-px-Zuges am rechten Rand
+   * zuerst ein Messfehler: Im Ereignisprotokoll eines 20-px-Zuges am rechten Rand
    * stand mitten in der Folge ein `touchmove` auf x=240 — die Endstelle des
    * ZUGES DAVOR. Aus 796 wurden in einem Ereignis 240, und die Geste loeste
    * aus, voellig zu Recht: 556 px nach innen sind mehr als die verlangten 44.

@@ -412,11 +412,10 @@ export function istDurchgang(name: unknown): boolean {
  * 100 %; eine Filter-Kette nimmt ohnehin keine Lautstaerke an.
  *
  * DIE PRUEFUNG GEHT AUF DIE SORTE, NICHT AUF EINE NAMENSLISTE. `istDurchgang`
- * zaehlt zwei Namen auf und kannte deshalb `mixpi-mitschnitt` nicht — die
- * stille Aufnahme-Senke eines Plugins. Sie fiel in die Auffangregel „alles
- * andere ist intern", landete in der Verwaltung an erster Stelle und wurde
- * dort zum Gesamt-Regler: er sprang bei jedem Zug auf 100 zurueck, weil der
- * Mitschnitt pur bleiben MUSS und keinen Wert annimmt.
+ * zaehlt zwei Namen auf und kennt deshalb keine virtuelle Senke, die ein
+ * Plugin anlegt. Sie fiele in die Auffangregel „alles andere ist intern",
+ * landete in der Verwaltung an erster Stelle und wuerde dort zum
+ * Gesamt-Regler — auf einer Senke, die fest auf 100 steht.
  *
  * Eine Liste haette man nachpflegen muessen — und das naechste Plugin haette
  * denselben Fehler ausgeloest. Hardware erkennt man an ihrem Praefix; alles

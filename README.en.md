@@ -67,11 +67,11 @@ From the commit log, not from memory. Which of this is half-done is in 3.9.
   against the real service.
 * **25.09.** **Screen-time (Kinderzeit) rules per child** now in the admin too:
   per child "like the house rule" or own rules. The one-button path sets up
-  read-aloud, remote control, equalizer and the recording sink like the other paths.
+  read-aloud, remote control and equalizer like the other paths.
 * **21.09.** Messages to the child — only from senders on the list, shown
   where the child is looking.
 * **20.09.** A **network share** (SMB or WebDAV) as storage for backups
-  and recordings, with a certificate warning instead of silently waving it through.
+  and media, with a certificate warning instead of silently waving it through.
 * **20.09.** **Reward videos**: a page where parents let videos be earned;
   the core keeps a ledger per child; a 25-minute video can be cut into
   pieces. Plus the **second media library** (ZDF, KiKA, 3sat, arte, funk).
@@ -92,7 +92,7 @@ From the commit log, not from memory. Which of this is half-done is in 3.9.
   can be downloaded as a file and uploaded on another box. *MuPiBox Classic*
   wears the origin's original colours again.
 * **August:** profiles with a lock, child time per child, play statistics (since
-  15.08.), recording the box's audio, systemd instead of pm2, covers on the box, the
+  15.08.), systemd instead of pm2, covers on the box, the
   plugin system with an admin (Verwaltung) area.
 
 ---
@@ -212,7 +212,7 @@ the only admin of the box — the inherited PHP admin was removed on 19.08.2026.
 
 | Area | Pages |
 |---|---|
-| What is there | Profiles · Media · Streaming services · Recording |
+| What is there | Profiles · Media · Streaming services |
 | What one sees and hears | Appearance · Read aloud · Videos · Games |
 | What the box is | Configuration · Network · VPN · Network drive · Messages · Bluetooth · Sound · MuPiHAT · Plugins |
 | When something is stuck | System services · System · Performance · Logs · Update · Backup |
@@ -278,9 +278,8 @@ Sound runs through PipeWire along a chain of two skippable stations:
 
 ### 3.6 Recording (planned)
 
-A recording feature is in the works — a paired Bluetooth microphone is
-planned as the source. The earlier test extension is not part of the
-published version.
+A recording feature with its own source is planned — a paired Bluetooth
+microphone is intended.
 
 ### 3.7 Operating without touch — phone app, remote control and controller
 
@@ -346,7 +345,7 @@ dedicated service reads `/dev/input/event*` with the Python standard library,
   15 test files).
 * **42 systemd units** in `config/services` (35 `.service`, 6 `.timer`,
   1 `.path`) — instead of pm2. The app is ready 20 s earlier as a result.
-* **15 plugins** in the tree, in their own worker threads with memory and
+* **14 plugins** in the tree, in their own worker threads with memory and
   time limits (section 7).
 * **Backup** with a way back that needs no SSH: a text file on the FAT
   partition of the card is enough.
@@ -424,7 +423,7 @@ lines) and against today's recipes:
 | Kiosk | Chromium | Chromium, **Cog/WPE** as an option |
 | Installation | one monolith script | **Recipes**, step by step; self-run from the card |
 | Speech output | — | **Piper** on the box |
-| Extensions | — | **Plugin system**, 15 plugins |
+| Extensions | — | **Plugin system**, 14 plugins |
 
 ### Measured — what the rebuild delivered
 
@@ -600,7 +599,7 @@ src/frontend-admin/    die Verwaltung (Angular)                             → 
 src/backend-api/       Medien, Konfiguration, Verwaltung; liefert aus       (:8200)
 src/backend-player/    Abspieldienst: mpv für lokal/Jellyfin, Spotify       (:5005)
 src/frontend-box/      Rest der gelöschten Angular-Oberfläche — siehe LIESMICH.md
-plugins/               15 Erweiterungen, Musterplugins, Prüfstand, Anleitung
+plugins/               14 Erweiterungen, Musterplugins, Prüfstand, Anleitung
 handy-app/             die Handy-App (Flutter, Android) — Abschnitt 3.7
 desktop/               der Theme-Gestalter als Desktop-App (Electron) — Abschnitt 3.1
 remote-step-installer/ Karten schreiben und Boxen aufsetzen (Abschnitt 5)
@@ -650,8 +649,8 @@ paths).
 * **Four fields are mandatory** (`kennung`, `name`, `fassung`, `haupt`); everything
   else is optional: `rechte`, `felder`, `sektion`, `icon`, `aktionen`,
   `konfig`.
-* **Seven rights**, and whatever is not in the manifest is simply
-  `undefined` in the context: `medienquelle`, `ereignisse`, `netz`, `aufnahme`, `klang`,
+* **Six rights**, and whatever is not in the manifest is simply
+  `undefined` in the context: `medienquelle`, `ereignisse`, `netz`, `klang`,
   `geraetestand`, `songtext`.
 * **Nine contract methods, all optional:** `aufloesen`, `suchen`, `inhalt`,
   `befinden`, `ereignis`, `klangkette`, `aktion`, `http`, `songtext`.
@@ -683,8 +682,8 @@ npx tsx tools/plugin-pruefen.mjs plugins/<kennung>   # das maßgebliche Urteil
 The last command is the authoritative one: it loads the plugin in a **real**
 worker with the real locks. The full guide — including the rejection rules
 verbatim and a section "For LLMs" — is in
-**[`plugins/README.md`](plugins/README.md)**. The 15 plugins in the tree are
-tested along with it: 21 test files, 680 tests (`npm run test:plugins`).
+**[`plugins/README.md`](plugins/README.md)**. The 14 plugins in the tree are
+tested along with it: 16 test files, 404 tests (`npm run test:plugins`).
 
 | Plugin | What it does |
 |---|---|

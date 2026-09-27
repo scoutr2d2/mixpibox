@@ -58,8 +58,8 @@ describe('pwRecordArgumente — die Kommandozeile IST der Vertrag', () => {
 
   it('ruft OHNE --target auf — Absicht, kein Versehen (siehe Kopfkommentar pegel.ts)', () => {
     // Ein --target wuerde HIER am Ziel vorbeischiessen: ohne --target sucht
-    // sich pw-record den Monitor der Standard-Senke selbst (an dieser Box in
-    // plugins/mixpi-mitschnitt/arbeiter.mjs bereits gemessen) — GENAU das
+    // sich pw-record den Monitor der Standard-Senke selbst (an dieser Box
+    // gemessen) — GENAU das
     // will dieses Modul. Wer das "reparieren" will, zerstoert den Vertrag.
     assert.ok(!pwRecordArgumente().includes('--target'))
   })
@@ -90,7 +90,7 @@ describe('goertzelBetrag — Energie bei EINER Frequenz, ohne FFT', () => {
   })
 
   it('ist unabhaengig von der Phase (dieselbe Linie, verschiedene Startpunkte)', () => {
-    // Der Betrag ist |X(f)|, keine Momentaufnahme - siehe tools/box/mitschnitt-machbar.py.
+    // Der Betrag ist |X(f)|, keine Momentaufnahme.
     const referenz = goertzelBetrag(sinusPuffer(440, 32767), FENSTER_PROBEN, 440, ABTASTRATE)
     const puffer = Buffer.alloc(FENSTER_PROBEN * 2)
     for (let i = 0; i < FENSTER_PROBEN; i++) {

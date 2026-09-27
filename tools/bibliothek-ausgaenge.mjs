@@ -120,7 +120,7 @@ const EINSTUFUNG = {
       'SIE LIEST SEIT DEM 19.09.2026 sichtbareMedienLesen(). Davor baute sie die Kette von ' +
       'Hand und liess auswahlUmZuordnungenErweitern weg — kein Leck, sondern das Gegenteil: ' +
       'STRENGER als /api/werke. Eine Kachel, die nur ueber eine Hand-Zuordnung sichtbar ist ' +
-      '(der Mitschnitt-Fall aus abgleich.ts), stand auf der Box und fiel hier ins 404. Ein ' +
+      '(ein Fall aus abgleich.ts), stand auf der Box und fiel hier ins 404. Ein ' +
       'Unterschied, den niemand erklaeren kann, ist auf Dauer so teuer wie ein Fehler: was ' +
       'das Kind SIEHT, darf es auch holen — nicht mehr und nicht weniger.',
   },

@@ -42,7 +42,7 @@ interface Stand {
    *
    * FOLGE: jedes Plugin mit Aktionen, aber ohne passende Sektion, hatte
    * Knoepfe, die NIEMAND DRUECKEN KANN. Am 29.08.2026 nachgezaehlt waren das
-   * zwei — `mixpi-mitschnitt` (zwei Aktionen, gar keine Sektion) und
+   * zwei — ein Plugin mit zwei Aktionen und gar keiner Sektion, und
    * `mixpi-archive` (`sektion: medien`, aber `medien` ist nirgends
    * eingehaengt). Gemerkt hat es niemand: die Anmeldung war gueltig, die
    * Route antwortete, das Plugin tat seine Arbeit — es fehlte nur der Ort.
@@ -303,8 +303,8 @@ export class PluginEineSeite {
    * Einen Knopf des Plugins druecken.
    *
    * `<pre>` und nicht `<span>` fuer die Antwort: eine Aktion darf MEHRZEILIG
-   * antworten, und genau die Zeilen sind der Zweck. Die Nachschau des
-   * Mitschnitt-Plugins nennt in ihrer Antwort jede kaputte Datei einzeln —
+   * antworten, und genau die Zeilen sind der Zweck. Eine Nachschau, die
+   * kaputte Dateien sucht, nennt in ihrer Antwort jede einzeln —
    * in einer einzeiligen Anzeige bliebe davon die Zahl uebrig und die Liste
    * ginge verloren. (Im Journal ist genau das passiert, am 29.08.2026.)
    *

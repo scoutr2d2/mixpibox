@@ -115,7 +115,7 @@ function lokalLaeuft(lo: LokalerStand | null | undefined): boolean {
  *
  * DIE REIHENFOLGE IST DIE ENTSCHEIDUNG, und sie folgt derselben Begruendung
  * wie `QUELLEN_REIHENFOLGE` in verschmelzung.ts: was die Box SELBST hat, gilt
- * vor dem, was sie erfragen muss. Ein lokaler Mitschnitt laeuft ohne Netz,
+ * vor dem, was sie erfragen muss. Eine lokale Datei laeuft ohne Netz,
  * ohne Konto und ohne Verfallsdatum.
  *
  * `''` UND NICHT `null`: der Aufrufer unterscheidet „kein Bild bekannt" von

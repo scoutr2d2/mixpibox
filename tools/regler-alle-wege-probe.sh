@@ -16,8 +16,8 @@
 # DIE EINE REGEL, DIE ALLES PRUEFT: Die Karte steht NIE ueber der wirksamen
 # Grenze min(maxVolume, Deckel der Ausgabe) — egal welcher Weg gestellt hat,
 # und auch dann nicht, wenn die Grenze GESENKT wurde, waehrend die Karte oben
-# stand. Und: Durchreichen (klangwerk, entzerrer, mixpi-mitschnitt) stehen
-# fest auf 100 — der Mitschnitt bleibt pur.
+# stand. Und: Durchreichen (klangwerk, entzerrer) stehen fest auf 100 —
+# die Kette bleibt pur.
 #
 # LAUTLOS: Die Karte wird fuer die Dauer der Probe STUMM geschaltet und am
 # Ende wiederhergestellt (auch bei Abbruch — trap). Es aendert Werte, keine
@@ -142,8 +142,8 @@ sleep 0.6
 pruefe "120% angefragt -> Antwort klemmt auf 60" "$(etwa "${AP:-999}" 60)" "Antwort ${AP:-?}%"
 pruefe "120% angefragt -> Karte steht auf 60" "$(etwa "$(kartenwert)" 60)" "Karte $(kartenwert)%"
 C1="$(curl -s -m 8 -o /dev/null -w '%{http_code}' -X POST http://localhost:8200/api/ton/senke \
-  -H 'Content-Type: application/json' -d '{"sinkName":"mixpi-mitschnitt","prozent":50}')"
-pruefe "Durchreiche mixpi-mitschnitt -> 409" "$([ "$C1" = 409 ] && echo ja || echo nein)" "HTTP $C1"
+  -H 'Content-Type: application/json' -d '{"sinkName":"klangwerk","prozent":50}')"
+pruefe "Durchreiche klangwerk -> 409" "$([ "$C1" = 409 ] && echo ja || echo nein)" "HTTP $C1"
 C2="$(curl -s -m 8 -o /dev/null -w '%{http_code}' -X POST http://localhost:8200/api/ton/senke \
   -H 'Content-Type: application/json' -d '{"sinkName":"ueberall","prozent":50}')"
 pruefe "Kombi ueberall -> 409" "$([ "$C2" = 409 ] && echo ja || echo nein)" "HTTP $C2"
@@ -154,7 +154,7 @@ curl -s -m 8 -X POST http://localhost:8200/api/ton/deckel \
   -H 'Content-Type: application/json' -d '{"ziel":"intern","prozent":70}' >/dev/null
 sleep 1.5
 pruefe "pactl 90% -> Waechter drueckt auf 60" "$(etwa "$(kartenwert)" 60)" "Karte $(kartenwert)%"
-for s in mixpi-mitschnitt klangwerk entzerrer; do
+for s in klangwerk entzerrer; do
   w="$(senkenwert "$s")"
   [ -z "$w" ] && continue
   pruefe "Durchreiche $s bleibt auf 100" "$(etwa "$w" 100)" "${w}%"

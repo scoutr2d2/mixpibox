@@ -1363,9 +1363,9 @@ export class TonSeite implements OnInit, OnDestroy {
     const senken = this.senken()
     const deckel = this.klang()?.deckel ?? {}
     // NUR DIE ECHTE KARTE, NICHT DER ERSTE intern-TREFFER (05.09.2026): die
-    // Auffangregel des Servers stempelt auch klangwerk, entzerrer und die
-    // Aufnahme-Senke mixpi-mitschnitt als „intern". Der erste Treffer war
-    // je nach Reihenfolge die Aufnahme-Senke — ihr Regler lief dann gegen
+    // Auffangregel des Servers stempelt auch klangwerk, entzerrer und
+    // weitere Plugin-Senken als „intern". Der erste Treffer war je nach
+    // Reihenfolge eine solche Plugin-Senke — ihr Regler lief dann gegen
     // eine Durchreiche und erntete den 409 („steht fest auf 100 %"), den
     // der Betreiber zu sehen bekam. Hardware erkennt man am Praefix; das
     // ist dieselbe Regel wie istHardwareSenke im Server.
@@ -1410,9 +1410,9 @@ export class TonSeite implements OnInit, OnDestroy {
     // wie die Geraetezeile: es IST dieselbe Gesamtlautstaerke.
     // ══ DIE REGELNDE SENKE, NICHT DIE ERSTE PASSENDE (05.09.2026) ═════════
     // `find(art === art)` nahm die erste Senke mit passender Art — und drei
-    // trugen `intern`: mixpi-mitschnitt, die Karte und klangwerk. Gewonnen
-    // hat die Aufnahme-Senke: sie steht immer auf 100 %, muss dort bleiben
-    // (der Mitschnitt bleibt pur) und weist jeden Wert ab. Der Betreiber sah
+    // trugen `intern`: eine Plugin-Senke, die Karte und klangwerk. Gewonnen
+    // hat die Plugin-Senke: sie steht immer auf 100 %, muss dort bleiben
+    // und weist jeden Wert ab. Der Betreiber sah
     // genau das: „der regler ist darauf gesprungen, kurz darauf wieder 100".
     // Welche es ist, sagt jetzt der Server — eine Regel, kein zweites Raten.
     const s =

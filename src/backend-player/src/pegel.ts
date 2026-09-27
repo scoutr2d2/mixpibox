@@ -10,24 +10,16 @@
  *   wenn der Abgriff nicht verfuegbar ist (alte Box, kein PipeWire, kein
  *   `pw-record`) — die Oberflaeche behandelt Fehlen wie "Funktion nicht da".
  *
- * ══ WIE ABGEGRIFFEN WIRD — UND WARUM ANDERS ALS BEIM MITSCHNITT ════════════
+ * ══ WIE ABGEGRIFFEN WIRD ════════════════════════════════════════════════
  *
- * plugins/mixpi-mitschnitt haengt sich MIT ABSICHT NICHT an den Monitor der
- * Standard-Senke, weil der auch Piper-Ansagen mitschneidet ("Noch fuenf
- * Minuten") — ein Archiv, in dem eine Ansage mitten im Lied steckt, waere
- * keins. Hier ist es GENAU UMGEKEHRT: diese Anzeige soll "was die Familie
- * gerade hoert" zeigen, Ansagen eingeschlossen — eine Welle, die bei einer
- * Ansage flach bleibt, waere eine Welle, die luegt.
+ * Diese Anzeige soll "was die Familie gerade hoert" zeigen, Piper-Ansagen
+ * ("Noch fuenf Minuten") eingeschlossen — eine Welle, die bei einer Ansage
+ * flach bleibt, waere eine Welle, die luegt.
  *
- * Deshalb wird `pw-record` bewusst OHNE `--target` aufgerufen. Was das
- * bedeutet, hat plugins/mixpi-mitschnitt/arbeiter.mjs (`mitschnittArgumente`,
- * am Geraet gemessen 22./23.08.2026) bereits herausgefunden und dort als
- * FALLE dokumentiert: ohne `--target` sucht sich `pw-record` die
- * Standardquelle selbst — den Monitor der Standard-Senke, also den
- * Lautsprecher. Fuer den Mitschnitt war das der Fehler, der vier stille
- * Aufnahmen erzeugt hat. Fuer PEGEL ist es exakt der gewuenschte Vertrag,
- * und zwar durch bereits vorhandene, an dieser Box gemessene Erfahrung
- * belegt — nicht neu erraten.
+ * Deshalb wird `pw-record` bewusst OHNE `--target` aufgerufen: ohne
+ * `--target` sucht sich `pw-record` die Standardquelle selbst — den Monitor
+ * der Standard-Senke, also den Lautsprecher (am Geraet gemessen
+ * 22./23.08.2026). Fuer PEGEL ist das exakt der gewuenschte Vertrag.
  *
  * ══ WAS HIER NICHT GEPRUEFT IST (siehe Abschlussbericht) ═══════════════════
  *
@@ -72,7 +64,7 @@ const FENSTER_BYTES = FENSTER_PROBEN * 2 // s16 = 2 Byte je Probe
  */
 export const VERFALL_MS = 300
 
-/** Eigener Knotenname, so wie `mixpi-mitschnitt` es fuer seinen Zweck tut. */
+/** Eigener Knotenname — macht den Knoten in `pw-link -l`/`pw-dump` erkennbar. */
 export const EIGENNAME = 'mixpi-pegel'
 
 /**
@@ -82,8 +74,8 @@ export const EIGENNAME = 'mixpi-pegel'
  * `goertzelBetrag` (analytisch wie numerisch nachgerechnet, N=1600) einen
  * Betrag von rund Vollausschlag/2 = 16383,5. Mit diesem Bezug (ein Viertel
  * Vollausschlag) erreicht eine einzelne Frequenz schon bei HALBER
- * Vollaussteuerung den Deckel — die Anzeige zeigt "voll", bevor eine
- * Aufnahme an die digitale Decke stoesst. Siehe pegel.spec.ts fuer die
+ * Vollaussteuerung den Deckel — die Anzeige zeigt "voll", bevor das
+ * Signal an die digitale Decke stoesst. Siehe pegel.spec.ts fuer die
  * nachgerechneten Werte.
  */
 const NORMIERUNGS_BEZUG = 8192
@@ -122,9 +114,8 @@ const BAENDER: readonly Band[] = [
 /**
  * Goertzel — die Energie bei EINER Frequenz, ohne FFT.
  *
- * Wortgleiche Formel wie `goertzel()` in tools/box/mitschnitt-machbar.py
- * (dort gegen einen bekannten Testton geprueft) — hier direkt auf dem
- * Rohpuffer: `readInt16LE` liest jede Probe unmittelbar aus dem Byte-Puffer,
+ * Die klassische Goertzel-Formel (gegen einen bekannten Testton geprueft,
+ * siehe pegel.spec.ts) — hier direkt auf dem Rohpuffer: `readInt16LE` liest jede Probe unmittelbar aus dem Byte-Puffer,
  * ohne Zwischenarray und ohne Kopie.
  *
  * @param puffer       s16-LE-Proben, mindestens `anzahlProben * 2` Byte lang
@@ -187,16 +178,14 @@ export function pegelAusFenster(
  * OHNE `--target`, UND DAS IST ABSICHT — siehe den Kopfkommentar dieser
  * Datei: ohne `--target` sucht sich `pw-record` die Standardquelle selbst,
  * und das ist der Monitor der Standard-Senke, also "was die Familie gerade
- * hoert" (an dieser Box bereits einmal gemessen, in
- * plugins/mixpi-mitschnitt/arbeiter.mjs `mitschnittArgumente` dokumentiert —
- * dort als Falle, hier als Vertrag).
+ * hoert" (an dieser Box gemessen).
  *
  * `--raw` liefert reines PCM ohne Container: `-` als Ausgabe bedeutet
  * stdout, und ohne `--raw` muesste `pw-record` mangels Dateiendung raten,
  * welchen Container es dorthin schreiben soll.
  *
  * Der eigene `node.name` macht den Knoten in `pw-link -l`/`pw-dump`
- * erkennbar, so wie `mixpi-mitschnitt` es fuer seinen Zweck tut.
+ * erkennbar.
  */
 export function pwRecordArgumente(): readonly string[] {
   return [
@@ -218,13 +207,10 @@ export function pwRecordArgumente(): readonly string[] {
 // ─────────────────────────────────────────────────────────────────────────
 
 /**
- * Dieselbe Umgebungs-Reparatur wie `pwUmgebung()` in
- * plugins/mixpi-mitschnitt/index.mjs (dort ausfuehrlich begruendet): ein
- * systemd-Dienst erbt kein `XDG_RUNTIME_DIR`, und ohne die Variable findet
- * PipeWire seinen Socket nicht (`pw_context_connect() failed: Host is
- * down`). Eine gemeinsame Datei fuer beide Pakete gibt es nicht — plugins/
- * und src/backend-player/ sind getrennte Pakete —, deshalb steht die
- * Reparatur hier noch einmal, absichtlich wortnah.
+ * Umgebungs-Reparatur: ein systemd-Dienst erbt kein `XDG_RUNTIME_DIR`, und
+ * ohne die Variable findet PipeWire seinen Socket nicht
+ * (`pw_context_connect() failed: Host is down`). Dieselbe Reparatur steht
+ * in cue-schalter.ts, absichtlich wortnah.
  */
 function pwUmgebung(): NodeJS.ProcessEnv {
   const uid = typeof process.getuid === 'function' ? process.getuid() : 1000
@@ -325,8 +311,7 @@ export function erzeugePegelSteuerung(
     prozess = p
     gefuellt = 0
 
-    // Die erste Zeile von stderr fuer eine verstaendliche Meldung — wie in
-    // plugins/mixpi-mitschnitt/index.mjs (`starten`/`meckern`).
+    // Die erste Zeile von stderr fuer eine verstaendliche Meldung.
     let meckern = ''
     p.stderr?.on('data', (s: Buffer) => {
       meckern += String(s)

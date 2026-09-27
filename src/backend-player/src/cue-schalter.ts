@@ -10,7 +10,7 @@
  * Kein Aufruf aus spotify-control.ts, keine Verdrahtung in die Wiedergabe.
  * Das ist keine Vergesslichkeit, sondern die Baustufe: der Eingriff in den
  * laufenden Tonweg braucht einen Beweis AM GERAET (Ohr des Betreibers,
- * Pegelstrom, Mitschnitt gegengehoert), und den gab es am Bautag nicht — die
+ * Pegelstrom), und den gab es am Bautag nicht — die
  * Box war offline. Bis dahin liegt hier ein Baustein, kein Verhalten.
  *
  * ══ SICHERUNG 1: DER UMGEBUNGSSCHALTER `MIXPI_CUE` ═════════════════════════
@@ -138,13 +138,10 @@ export interface CueSchalterGaben {
 }
 
 /**
- * Dieselbe Umgebungs-Reparatur wie in pegel.ts und
- * plugins/mixpi-mitschnitt/index.mjs (dort ausfuehrlich begruendet): ein
+ * Dieselbe Umgebungs-Reparatur wie in pegel.ts: ein
  * systemd-Dienst erbt kein `XDG_RUNTIME_DIR`, und ohne die Variable findet
  * PipeWire seinen Socket nicht (`pw_context_connect() failed: Host is
- * down`). Sie steht hier zum dritten Mal, absichtlich wortnah — eine
- * gemeinsame Datei gibt es nicht, plugins/ und src/backend-player/ sind
- * getrennte Pakete.
+ * down`). Sie steht hier ein zweites Mal, absichtlich wortnah.
  */
 export function pwUmgebung(basis: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const uid = typeof process.getuid === 'function' ? process.getuid() : 1000

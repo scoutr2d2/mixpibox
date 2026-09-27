@@ -3,12 +3,12 @@
 
 WOZU ES DAS GIBT
 ----------------
-Betreiber am 05.09.2026: „aufnahme in admin menu laed nicht alle titel im
-album, weniger sichtbar, auch zum nachladen." Gemessen an Box .62: das
+Betreiber am 05.09.2026: eine Seite im Verwaltungsmenue laedt nicht alle
+Titel eines Albums. Gemessen an Box .62: das
 Streaming-Werk „Folge 13: Der Geist von Cherry Town" hat 18 Titel, das
-GLEICHNAMIGE Lokal-Werk (die Aufnahmen) nur 7 — und beides sind getrennte
+GLEICHNAMIGE Lokal-Werk nur 7 — und beides sind getrennte
 Werke in /api/werke. Wer per Namensvergleich „das Werk zum Album" sucht
-(so macht es die Aufnahme-Seite der Verwaltung, aufzeichnen.ts), kann das
+(so machte es damals eine Seite der Verwaltung), kann das
 LOKALE erwischen und haelt dann 7 fuer alles: nichts gilt mehr als fehlend,
 nichts wird zum Nachladen angeboten.
 

@@ -274,7 +274,7 @@ export function istGanz(q: Quelle | null | undefined): boolean {
  *   1. VOLLSTAENDIGKEIT. Eine Quelle mit dem ganzen Werk schlaegt eine
  *      unvollstaendige — auch wenn die unvollstaendige hoeher steht. Das ist
  *      REGEL 1 aus E17/V6, und ohne sie kehrt sich die Bevorzugung ins
- *      Gegenteil: sobald lokale Mitschnitte dazukommen, verdraengte ein halbes
+ *      Gegenteil: sobald halbe lokale Alben dazukommen, verdraengte ein halbes
  *      Album das ganze, und auf der gewohnten Kachel blieben drei Lieder von
  *      zwoelf uebrig. Ein Kind, dem sein Album abhanden kommt, weil die Box
  *      „naeher dran" war, versteht diese Begruendung nicht.
@@ -347,14 +347,10 @@ function titelAnzahl(k: InhaltKandidat): number {
  *
  * DER MESSFALL, DER DAS NOETIG MACHTE (Betreiber, 29.08.2026 nachts, Album
  * „Nah" von Alin Coen): die lokale Quelle steht in `QUELLEN_REIHENFOLGE`
- * vorn, ihre Mitschnitt-`playlist.m3u` traegt aber nur einen TEIL der Titel —
- * der erste ist als kaputt vermerkt, drei weitere stehen noch auf der
- * Vormerkliste des Mitschnitts. Der alte Rueckfall (server.ts, vor dieser
- * Stufe) nahm den ERSTEN Erfolg und damit die lokale Antwort: die Box zeigte
- * nur die aufgezeichneten Stuecke, obwohl die Streaming-Fassung daneben die
- * volle Liste gehabt haette. Der Betreiber, Minuten spaeter, an genau diesem
- * Album: er sah nur die aufgezeichneten Titel, nicht die beim Dienst
- * verfuegbaren.
+ * vorn, ihre `playlist.m3u` traegt aber nur einen TEIL der Titel. Der alte
+ * Rueckfall (server.ts, vor dieser Stufe) nahm den ERSTEN Erfolg und damit
+ * die lokale Antwort: die Box zeigte nur die lokal vorhandenen Stuecke,
+ * obwohl eine andere Fassung daneben die volle Liste gehabt haette.
  *
  * DIE REGEL, IN DIESER REIHENFOLGE:
  *
@@ -378,17 +374,15 @@ function titelAnzahl(k: InhaltKandidat): number {
  * WARUM DER LOKALE ZWEIG HEUTE (server.ts, `inhaltFuerEintrag`) SEIN
  * `vollstaendig` WEGLAESST statt es wie vor dieser Stufe fest auf `true` zu
  * setzen: „die m3u wird ganz gelesen" ist wahr, sagt aber nichts darueber,
- * ob der MITSCHNITT vollstaendig ist — genau umgekehrt, die m3u eines
- * Mitschnitts IST der (moeglicherweise unvollstaendige) aufgezeichnete
- * Bestand. Mit `vollstaendig: true` haette Stufe 1 fuer den Nah-Fall NICHTS
+ * ob das ALBUM lokal vollstaendig ist — die m3u IST der (moeglicherweise
+ * unvollstaendige) lokale Bestand. Mit `vollstaendig: true` haette Stufe 1 fuer den Nah-Fall NICHTS
  * geaendert: die lokale Antwort waere weiterhin ueber Stufe 1 gewonnen,
  * unabhaengig von ihrer Titelzahl, und Stufe 2 (der eigentliche Fix) haette
  * nie gegriffen. `undefined` wirft den lokalen Kandidaten also absichtlich
  * auf Stufe 2 zurueck, wo die Titelzahl ihn schlaegt, wenn eine andere Quelle
- * mehr traegt — GENAU DAS BEHEBT DEN MESSFALL. Der Mitschnitt-Befund
- * (Wissenspaket-Stufe 2, `befunde.json`) wird das spaeter praeziser sagen
- * koennen ("N von M Titeln, davon K kaputt"); bis dahin ist "unbekannt" die
- * EHRLICHERE Aussage als ein erfundenes "ganz".
+ * mehr traegt — GENAU DAS BEHEBT DEN MESSFALL. Bis eine genauere Auskunft
+ * da ist ("N von M Titeln"), ist "unbekannt" die EHRLICHERE Aussage als ein
+ * erfundenes "ganz".
  *
  * EINE LEERE LISTE IST EIN PROGRAMMIERFEHLER DES AUFRUFERS, keine normale
  * Eingabe: `/inhalt` ruft diese Funktion nur, nachdem `eintraegeInBevorzugung`
@@ -407,8 +401,8 @@ export function waehleInhalt<T extends InhaltKandidat>(kandidaten: readonly T[])
   // AUDIT-2026-08-30 §1.1): Die erste Fassung nahm den ersten Kandidaten mit
   // gesetztem Flag VOR jedem Titelzahl-Vergleich. Der lokale Zweig laesst das
   // Flag aber BEWUSST weg (seine m3u ist der Bestand, nicht das Album), und
-  // der Streaming-Dienst meldete es praktisch immer - ein KOMPLETT aufgenommener
-  // Mitschnitt (12/12, ohne Flag) verlor damit dauerhaft gegen die
+  // die Netz-Fassung meldete es praktisch immer - ein KOMPLETTES lokales
+  // Album (12/12, ohne Flag) verlor damit dauerhaft gegen die
   // Netz-Fassung (12, true). Die Quellenreihenfolge lokal->spotify, gebaut
   // gegen den Dreifachausfall vom 27.07., war fuer genau diesen Fall tot.
   //
@@ -417,10 +411,9 @@ export function waehleInhalt<T extends InhaltKandidat>(kandidaten: readonly T[])
   // bleibt reine Anzeige-Auskunft im Body (die Oberflaeche schreibt "(die
   // neuesten)" daran), entscheidet aber keine Quellwahl mehr.
   //
-  // BEKANNTE GRENZE, bis Stufe 2 (befunde.json/titelGesamt): eine
-  // Deluxe-Fassung mit Bonustiteln (14) schlaegt das komplette lokale Album
-  // (12) weiterhin - erst der Mitschnitt-Befund kann "komplett" von "mehr
-  // ist verfuegbar" unterscheiden.
+  // BEKANNTE GRENZE: eine Deluxe-Fassung mit Bonustiteln (14) schlaegt das
+  // komplette lokale Album (12) weiterhin - erst eine Titel-Gesamtzahl kann
+  // "komplett" von "mehr ist verfuegbar" unterscheiden.
   let bester = erfolge[0]
   let besteAnzahl = titelAnzahl(bester)
   for (let i = 1; i < erfolge.length; i++) {

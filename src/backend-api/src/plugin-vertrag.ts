@@ -20,14 +20,6 @@ import { ZEILEN_DECKEL, type Songzeile } from './songtext'
 /**
  * Was ein Plugin duerfen darf. Mehr Rechte gibt es nicht — die Liste ist die Grenze.
  *
- * `aufnahme` FAELLT AUS DER REIHE, und das gehoert hierhergeschrieben: die
- * anderen drei sind Schluessel zu etwas, das der Kontext reicht. Dieses ist
- * eine ANSAGE. Ein Worker darf `node:child_process` ohnehin importieren (siehe
- * den Kopf von plugin-laufwerk.ts) — das Recht haelt niemanden auf, der es
- * nicht eintraegt. Es steht in der Liste, damit im Eltern-Bereich LESBAR ist,
- * dass dieses Plugin mitschneidet, statt dass man es aus dem Quelltext erfaehrt.
- * Fuer E28 ist genau das eine Auflage: sichtbar, wo der Schalter sitzt.
- *
  * `klang` (21.08.2026) ist wieder ein Schluessel, aber zu etwas Neuem: das
  * Plugin wird nach einer FILTERKETTE gefragt (`klangkette()`, siehe unten) und
  * haengt damit im Signalweg der ganzen Box. Deshalb ist es ein eigenes Recht
@@ -65,7 +57,7 @@ import { ZEILEN_DECKEL, type Songzeile } from './songtext'
  * doppelte Sperre nennt BACKLOG E84/B2 als Grund, warum das ein
  * Anmeldepunkt wird und kein Plugin-Sonderweg.
  */
-export const RECHTE = ['medienquelle', 'ereignisse', 'netz', 'aufnahme', 'klang', 'geraetestand', 'songtext'] as const
+export const RECHTE = ['medienquelle', 'ereignisse', 'netz', 'klang', 'geraetestand', 'songtext'] as const
 export type Recht = (typeof RECHTE)[number]
 
 /** Systemereignisse, auf die ein Plugin horchen kann. */
@@ -189,7 +181,7 @@ export type Sektion = (typeof SEKTIONEN)[number]
  * zwei Orten, ein Migrationsskript fuer jede Bestandsbox, und zwei
  * Verwaltungsflaechen fuer eine Sache. Stattdessen MELDET das Plugin AN,
  * welche Gruppen es braucht, und der Wirt reicht sie in den Kontext — genau
- * das stroeme-Muster des Rechts `aufnahme`.
+ * ein Muster: anmelden, was man braucht, statt frei zuzugreifen.
  *
  * ══ EINE GESCHLOSSENE LISTE, KEIN FREIER GRIFF ═════════════════════════════
  *

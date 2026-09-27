@@ -9,9 +9,9 @@ import {
   titelQuellenStempeln,
 } from './titelkarte'
 
-describe('spurNummerAus: die NN-Praefixe der Aufnahme', () => {
+describe('spurNummerAus: die NN-Praefixe lokaler Spuren', () => {
   it('liest die Nummer aus echten Spurnamen', () => {
-    // So legt mixpi-mitschnitt ab (`spurname`): zweistellig, Leerzeichen, Titel.
+    // Die uebliche Ablage: zweistellig, Leerzeichen, Titel.
     assert.equal(spurNummerAus('01 Guten Morgen _ Good Morning (Englisch).flac'), 1)
     assert.equal(spurNummerAus('17 Nicht alleine.mp3'), 17)
     // Dreistellig fuer lange Sendungen.
@@ -23,7 +23,7 @@ describe('spurNummerAus: die NN-Praefixe der Aufnahme', () => {
   it('haelt alles heraus, was keine Spur ist', () => {
     assert.equal(spurNummerAus('playlist.m3u'), null)
     assert.equal(spurNummerAus('cover.jpg'), null)
-    // Einstellige Praefixe schreibt die Aufnahme nicht — „3 Fragezeichen.mp3"
+    // Einstellige Praefixe zaehlen nicht — „3 Fragezeichen.mp3"
     // waere ein Titel, der mit einer Zahl BEGINNT, keine Zaehlung.
     assert.equal(spurNummerAus('3 Fragezeichen.mp3'), null)
     // Nummer 00 gibt es in keiner 1-basierten Zaehlung.
@@ -42,7 +42,7 @@ describe('lokaleKarteAus: das Verzeichnis als Zeuge', () => {
   })
 
   it('bei doppelter Nummer gewinnt der erste in sortierter Ordnung', () => {
-    // Ein zweiter Mitschnitt derselben Spur darf die Karte nicht kippen —
+    // Eine zweite Datei derselben Spur darf die Karte nicht kippen —
     // und zwar unabhaengig von der readdir-Reihenfolge.
     const karte = lokaleKarteAus(['01 B neu.flac', '01 A.flac'])
     assert.equal(karte.get(1), '01 A.flac')
@@ -50,8 +50,8 @@ describe('lokaleKarteAus: das Verzeichnis als Zeuge', () => {
 })
 
 describe('spurNamePasst: die Gegenprobe gegen fremde Zaehlungen', () => {
-  it('DER MESSFALL: die Sanitisierung der Aufnahme ist kein Unterschied', () => {
-    // Die Aufnahme ersetzt `/` durch `_` im Dateinamen; die Liste fuehrt den
+  it('DER MESSFALL: die Sanitisierung im Dateinamen ist kein Unterschied', () => {
+    // Der Dateiname ersetzt `/` durch `_`; die Liste fuehrt den
     // Schraegstrich. Beides ist derselbe Titel.
     assert.equal(
       spurNamePasst('01 Guten Morgen _ Good Morning (Englisch).flac', 'Guten Morgen / Good Morning (Englisch)'),
@@ -61,7 +61,7 @@ describe('spurNamePasst: die Gegenprobe gegen fremde Zaehlungen', () => {
 
   it('ein ganz anderer Name bei gleicher Nummer wird NICHT zugeordnet', () => {
     // Andere Ausgabe, Bonustitel: Nummer 7 der Jellyfin-Liste ist nicht
-    // Nummer 7 der Aufnahme-Zaehlung. Dann spielt die Liste, nicht die Datei.
+    // Nummer 7 der Ordner-Zaehlung. Dann spielt die Liste, nicht die Datei.
     assert.equal(spurNamePasst('07 Intro.flac', 'Outro'), false)
   })
 
@@ -160,9 +160,8 @@ describe('titelQuellenStempeln: Herkunft ohne Mischen', () => {
 })
 
 describe('spurVollstaendig: der Titel ist das kleinste Teil - auch bei der Vollstaendigkeit', () => {
-  it('liest das Urteil der Aufnahme aus dem Dateinamen', () => {
+  it('liest das Urteil aus dem Dateinamen', () => {
     // Betreiber 31.08.2026: „wenn titel komplett dann ist er abspiel bereit."
-    // Die Aufnahme haengt unter 97 % den Zusatz an (unvollstaendigZusatz).
     assert.equal(spurVollstaendig('01 Guten Morgen.flac'), true)
     assert.equal(spurVollstaendig('03 Ferien (unvollstaendig 87%).flac'), false)
     assert.equal(spurVollstaendig('12 Lied (unvollstaendig 5%).mp3'), false)
@@ -201,15 +200,15 @@ describe('titelMischen: ein Spotify-Titel traegt uri statt befehl (E108 Stufe 3)
     { nr: 3, titel: 'Kapitel 3', interpret: 'Ruby', uri: 'spotify:track:ccc' },
   ]
 
-  it('erkennt den Streaming-Dienst als Quelle — sonst faende der Mitschnitt nie einen Partner', () => {
+  it('erkennt den Streaming-Dienst als Quelle — sonst faende die lokale Spur nie einen Partner', () => {
     const karte = lokaleKarteAus(['01 Kapitel 1.flac', '02 Kapitel 2.flac'])
     const raus = titelMischen(LISTE, karte, { basisPfad: BASIS, reihenfolge: REIHE, eigenerDienst: 'spotify' })
-    // Die beiden mitgeschnittenen Kapitel: lokal gewinnt, MIT spielbarem Befehl.
+    // Die beiden lokal vorliegenden Kapitel: lokal gewinnt, MIT spielbarem Befehl.
     assert.deepEqual(raus[0].quellen, ['lokal', 'spotify'])
     assert.equal(raus[0].quelle, 'lokal')
     assert.equal(String(raus[0].befehl).startsWith('datei/'), true)
     assert.deepEqual(raus[1].quellen, ['lokal', 'spotify'])
-    // Und das noch nicht aufgenommene bleibt beim Streaming-Dienst — NICHT leer.
+    // Und das nicht lokal vorliegende bleibt beim Streaming-Dienst — NICHT leer.
     assert.deepEqual(raus[2].quellen, ['spotify'])
     assert.equal(raus[2].quelle, 'spotify')
   })

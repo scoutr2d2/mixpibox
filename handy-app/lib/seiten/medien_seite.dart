@@ -11,8 +11,7 @@ import 'versuchen.dart';
 /// Kategorie, wer sieht was, loeschen, neu einlesen.
 ///
 /// NICHT HIER (bleibt in der Weboberflaeche): Aufraeumen und
-/// Verfuegbarkeitspruefung, ARD-Regale, Internet Archive, eigene Listen,
-/// Mitschnitte.
+/// Verfuegbarkeitspruefung, ARD-Regale, Internet Archive, eigene Listen.
 ///
 /// NUR MIT VERWALTUNGSPASSWORT, wenn die Box eins hat — so entschieden. Die
 /// Wege liegen alle hinter dem Anmeldetor; ohne Passwort an der Box darf,

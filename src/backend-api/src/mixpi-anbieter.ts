@@ -109,20 +109,10 @@ export function anbieterAusBefehl(pfad: unknown): SchaltbarerDienst | null {
  * `kinderzeit: true` dort). Der Grund ist ein ganzer Satz, den man einem Kind
  * vorlesen kann; die Oberflaeche zeigt ihn woertlich.
  */
-export function verweigerung(
-  dienst: SchaltbarerDienst,
-  /* WARUM er schweigt — der Satz muss zum WEG zurueck passen (E127,
-   * 04.09.2026). Am Geraet gemessen schickte der Nachtmodus den Betreiber
-   * in die Streaming-Dienste, wo der Schalter ordnungsgemaess AN steht: eine
-   * Meldung, die in die Irre fuehrt, ist schlimmer als eine knappe. */
-  wegen: 'schalter' | 'nachtmodus' = 'schalter',
-): { anbieterAus: true; dienst: string; grund: string } {
+export function verweigerung(dienst: SchaltbarerDienst): { anbieterAus: true; dienst: string; grund: string } {
   return {
     anbieterAus: true,
     dienst,
-    grund:
-      wegen === 'nachtmodus'
-        ? `${DIENST_WORT[dienst]} schweigt gerade: Nachtmodus — die Box nimmt auf. Alles andere spielt weiter; umstellen unter Verwaltung → Aufzeichnen.`
-        : `${DIENST_WORT[dienst]} ist gerade abgeschaltet. Zum Anschalten: Verwaltung → Streaming-Dienste.`,
+    grund: `${DIENST_WORT[dienst]} ist gerade abgeschaltet. Zum Anschalten: Verwaltung → Streaming-Dienste.`,
   }
 }

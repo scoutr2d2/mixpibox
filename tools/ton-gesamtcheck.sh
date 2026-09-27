@@ -64,13 +64,13 @@ for _ in $(seq 1 12); do
   if echo "$KETTE" | grep -q "^klangwerk$" && echo "$KETTE" | grep -q "^VORGABE=klangwerk$"; then break; fi
   sleep 5
 done
-for s in klangwerk entzerrer ueberall mixpi-mitschnitt alsa_output; do
+for s in klangwerk entzerrer ueberall alsa_output; do
   if echo "$KETTE" | grep -q "^$s"; then echo "  ok   Senke $s ist da"
   else echo "  X    Senke $s FEHLT"; fehler=$((fehler+1)); fi
 done
 if echo "$KETTE" | grep -q "^VORGABE=klangwerk$"; then echo "  ok   Vorgabe-Senke ist klangwerk"
 else echo "  X    Vorgabe-Senke ist $(echo "$KETTE" | grep VORGABE)"; fehler=$((fehler+1)); fi
-for s in klangwerk entzerrer mixpi-mitschnitt; do
+for s in klangwerk entzerrer; do
   w="$(lauf "pactl get-sink-volume $s 2>/dev/null | grep -o '[0-9]\+%' | head -1 | tr -d %")"
   if [ "${w:-0}" -ge 99 ] && [ "${w:-0}" -le 101 ]; then echo "  ok   Durchreiche $s steht auf 100 ($w%)"
   else echo "  X    Durchreiche $s steht auf ${w:-?}% statt 100"; fehler=$((fehler+1)); fi

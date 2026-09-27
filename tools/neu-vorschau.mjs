@@ -244,8 +244,6 @@ const BEKANNTE_BEFEHLE = new Set([
   'enablewifi',
   'clearresume',
   'maxresume',
-  'recordon',
-  'recordoff',
 ])
 
 const HIER = fileURLToPath(new URL('.', import.meta.url))

@@ -32,11 +32,6 @@ hängt etwas in den **Signalweg des Tons** (Stereobasis, Entzerrung).
 > Messfehler des Werkzeugs, die Box ist Stereo. Warum der Test nichts taugte:
 > llmwiki `kanaltest-mit-rauschen-misst-nichts`.)
 >
-> **Nicht fertig, ausdrücklich:** [`mixpi-mitschnitt`](mixpi-mitschnitt/) (0.3.0)
-> ist eine **Testfunktion** und trägt das fünfte Recht `aufnahme` — siehe
-> [Das Recht `aufnahme`](#das-recht-aufnahme). Es ist kein Musterplugin zum
-> Nachbauen, sondern der Grund, warum das Recht existiert.
->
 > **Zwei Anbieter der Box sind selbst Plugins (E79/E81, 22.08.2026):**
 > [`mixpi-ardsounds`](mixpi-ardsounds/) (Regale, Sammlungen, Suche, Folgen —
 > **seit 0.2.0 auch Radiosender**) und
@@ -646,94 +641,6 @@ Weiterverteilen wäre etwas anderes — insbesondere sollte kein Ausrollweg
 Textdateien mitschleppen. LRCLIB verlangt außerdem eine `User-Agent`-Kennung
 mit Namen und Verweis.
 
-### Das Recht `aufnahme`
-
-`aufnahme` fällt aus der Reihe, und das gehört hierher statt in den Quelltext:
-die anderen fünf Rechte sind **Schlüssel** zu etwas, das der Kern reicht
-(Medienquelle, Ereignisse, Netz, Klangkette, Gerätestand). `aufnahme` ist eine
-**Ansage**.
-Ein Worker darf `node:child_process` ohnehin importieren (siehe den Kopf von
-`plugin-laufwerk.ts`) — das Recht hält niemanden auf, der es nicht einträgt. Es
-steht in der Liste, damit im **Eltern-Bereich lesbar** ist, dass dieses Plugin
-mitschneidet, statt dass man es aus dem Quelltext erfährt.
-
-Es gibt dafür **keine eigene Methode**. Ein Plugin mit `aufnahme` arbeitet über
-`ereignis()` und meldet über `befinden()`, dass es gerade läuft. Der einzige
-Träger heute ist [`mixpi-mitschnitt`](mixpi-mitschnitt/) — eine **Testfunktion**,
-und sie ist an jeder Stelle so gebaut, dass Nichtstun der Normalfall ist:
-standardmäßig aus, je Dienst ein eigener Schalter (keine Sperrliste, nur eine
-Erlaubnisliste), zwei Haken statt einem (der Dienst **und** die bestätigte
-Rechtslage), sichtbar während des Laufs, jederzeit abschaltbar.
-
-Der Grund für diese Härte ist keine Vorsicht, sondern eine Rechnung: es ist das
-**Familienkonto**. Eine Sperrung nähme nicht das Archiv, sondern das Abspielen
-überhaupt — für alle, jeden Abend. Das gilt auch dann, wenn der Zweck nur
-„Puffer" heißt.
-
-Abgegriffen wird **nicht** am Monitor der Senke, sondern am Quellknoten
-(`alsa_playback.librespot`) selbst: der Monitor hört alles mit, auch die
-Piper-Ansagen („Noch fünf Minuten"). Am Gerät gemessen (16.08.2026,
-`tools/box/mitschnitt-machbar.py`): ein Fremdton steckt im Monitor-Mitschnitt
-mit dem 2178-fachen der Kontrollfrequenz, im Quell-Mitschnitt mit dem
-2,8-fachen — also gar nicht. Wie man eine einzelne Tonquelle überhaupt trifft:
-llmwiki `pipewire-abgriff-je-quelle`.
-
-**NACHTRAG 23.08.2026 — der Satz „`--target` lügt" ist überholt und war teuer.**
-Er hat gesagt, was NICHT hilft, und daraus wurde im Code, `--target` sei
-entbehrlich. Ohne `--target` sucht `pw-record` sich die Standardquelle selbst,
-und das ist der **Lautsprecher-Monitor**: vier Mitschnitte vom 22.08. enthalten
-digitale Null über die volle Laufzeit, zwei weitere sind zur Hälfte still, und
-sie standen als `fertig` in der Mediathek. Was heute gilt (am Gerät vorgeführt,
-drei Läufe nebeneinander):
-
-| Aufruf | woran der Abgriff hängt |
-|---|---|
-| `--target <object.serial>` | `mixpi-mitschnitt:monitor_FL` — richtig |
-| ohne `--target` | `alsa_output…fallback:monitor_FL` — der Lautsprecher |
-
-Also: **`pw-link` für die Verkabelung UND `--target <object.serial>` für den
-Rückfall**, und die Seriennummer, nicht die Id — `pw-record` nimmt laut eigener
-Hilfe „node target serial or name"; dass beide in der Messung übereinstimmten
-(33 = 33), war Zufall. Dazu die Gegenprobe am Graphen und die Pegelprüfung
-(`annahmeUrteil`, `index.mjs:379`), die es im passiven Weg längst gab. Die alte
-Wache prüfte nur `gross < 10 000 B` — **eine Größenprüfung misst die
-Komprimierbarkeit, nicht den Ton**: digitale Stille wiegt 177 B/s, die Grenze
-fällt damit bei 56,5 Sekunden. llmwiki `mitschnitt-nahm-den-lautsprecher-auf`.
-
-**Noch offen:** die PipeWire-Vorlage `config/templates/62-mixpi-mitschnitt.conf`
-liegt im Repo, steht aber in **keinem** der beiden Ausrollwege — auf einer frisch
-bespielten Karte fehlt sie. Ihre Schwester `61-entzerrer.conf` steht in **beiden**
-(`autosetup.sh:938`, `update/start_mupibox_update.sh:1259`); das ist der
-Unterschied, den `tools/ausrollwege-vergleich.py` misst.
-
-**Die Kachel entsteht nach dem ersten Stück, nicht am Ende.** `index.mjs:961`
-schreibt `playlistSchreiben()` **und** `kachelAnlegen()` nach *jedem einzelnen*
-gelungenen Stück. Das ist eine Entscheidung für „sofort hörbar" — der Preis
-zeigt sich erst am Regal, und er ist am Gerät gemessen (.62, 22.08.2026: 29
-Alben, **18 mit Befund**, ausgelöst durch einen Betreiberfund). Drei Symptome,
-eine Ursache:
-
-| Was passiert | Was im Regal steht |
-|---|---|
-| bricht nach Stück 1 ab | Kachel mit einem 16–25-Sekunden-Stück — „spielt nicht" |
-| Stück 1 wird verworfen (`pegelMessen`, zu leise) | Album fängt bei `02` an; Kapitel 1 fehlt |
-| bricht **vor** dem ersten Stück ab | Dateien ohne Kachel (Waise), kein `cover.jpg` |
-
-Die Daten sind **bei diesen drei Symptomen** nicht kaputt: FLAC-Köpfe gültig,
-`playlist.m3u` richtig, `/api/bild/<schluessel>` liefert ein echtes JPEG. Wer
-dort sucht, sucht falsch. **Das gilt nicht für den Abgriff-Fehler oben** — die
-Dateien vom 22.08. sind formal einwandfrei und enthalten trotzdem digitale Null
-oder eine fremde Wiedergabe. Ein gültiger FLAC-Kopf ist kein Beleg für Ton.
-**Noch offen:** sechs solcher Dateien liegen weiter in der Mediathek.
-`python3 tools/mitschnitt-stummel.py --box <box>` nennt alle Fälle und ändert
-nichts — **nicht** laufen lassen, während ein Mitschnitt läuft.
-
-Die Kachel stattdessen „unvollständig" zu beschriften geht heute **nicht**:
-`neuerEintrag` (`medien.ts:480`) ist eine strenge Weißliste aus `type`,
-`category`, `title`, `artist` und genau sechs weiteren Feldern (`id`,
-`playlistid`, `showid`, `audiobookid`, `spotify_url`, `cover`); jedes
-Zusatzfeld fällt still heraus. llmwiki `mitschnitt-stummel-kachel-vor-inhalt`.
-
 ### Die Ereignisse
 
 | Name | Wann | Nutzlast |
@@ -860,7 +767,7 @@ const jf = kontext.konfig?.jellyfin ?? {}
   (`kernKonfigAktualisieren` im Wirt). Neu gestartet wird nur, wer die
   geänderte Gruppe auch angemeldet hat; alle anderen merken nichts.
 
-Das Muster ist dasselbe wie bei `stroeme` unter dem Recht `aufnahme`: was das
+Das Muster: was das
 Plugin braucht, **reist mit dem Kontext**, statt dass das Plugin danach greift.
 Vollständiges Beispiel: [`mixpi-jellyfin/`](mixpi-jellyfin/).
 
@@ -1138,7 +1045,7 @@ ersten. (Nachgemessen; die Meldungen unten stehen wörtlich so da.)
 | `kennung` doppelt vergeben | „Kennung „x" ist bereits vergeben." (das **zweite** lädt nicht) |
 | `fassung` in der Form `1.0.0` | „ist keine Form „1.0.0"." |
 | `haupt` innerhalb des Ordners | „muss innerhalb des Plugin-Ordners liegen (kein `..` und kein `/` am Anfang)" |
-| `rechte` nur `medienquelle`, `ereignisse`, `netz`, `aufnahme`, `klang`, `geraetestand`, `songtext` | „`rechte` kennt „x" nicht. Erlaubt: medienquelle, ereignisse, netz, aufnahme, klang, geraetestand, songtext." — ein unbekanntes Recht wird **nicht** stillschweigend weggelassen |
+| `rechte` nur `medienquelle`, `ereignisse`, `netz`, `klang`, `geraetestand`, `songtext` | „`rechte` kennt „x" nicht. Erlaubt: medienquelle, ereignisse, netz, klang, geraetestand, songtext." — ein unbekanntes Recht wird **nicht** stillschweigend weggelassen |
 | `felder[].schluessel`: Buchstabe zuerst, dann Buchstaben/Ziffern/`_` | „taugt nicht als Schluessel — Buchstabe zuerst, dann Buchstaben, Ziffern, Unterstrich." — **das fängt auch `__proto__`**, weil es mit `_` anfängt |
 | `constructor`, `prototype` als Schlüssel | „ist nicht erlaubt — es wuerde den Prototyp veraendern." |
 | `felder[].art` nur `text`, `zahl`, `schalter`, `geheim` | „hat die Art „x"" |

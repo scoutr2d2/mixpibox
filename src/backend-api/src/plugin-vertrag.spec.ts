@@ -592,11 +592,10 @@ describe('inhaltPruefen — eine Liste ist kein Freibrief (E78)', () => {
  * gerade jemand arbeitet.
  *
  * ══ WARUM ES DIESEN ZEUGEN GIBT (29.08.2026) ═══════════════════════════════
- * `mixpi-mitschnitt` bekam zwei Aktionen mit den Kennungen `bestand-pruefen`
- * und `kaputte-neu-aufnehmen`. Bindestriche sind dort verboten (die Kennung
- * landet in einer Route und in einem Methodenaufruf). Folge: das Plugin wurde
- * beim Laden KOMPLETT ABGEWIESEN — der Mitschnitt war offline, nicht bloss die
- * neuen Knoepfe.
+ * Ein Plugin bekam zwei Aktionen mit den Kennungen `bestand-pruefen` und
+ * `kaputte-neu-holen`. Bindestriche sind dort verboten (die Kennung landet in
+ * einer Route und in einem Methodenaufruf). Folge: das Plugin wurde beim
+ * Laden KOMPLETT ABGEWIESEN — es war offline, nicht bloss die neuen Knoepfe.
  *
  * Gemerkt hat es niemand, bis es auf der Box lag. 212 Zeugen des Plugins
  * blieben gruen; sie pruefen den Code, nicht das Manifest. Und

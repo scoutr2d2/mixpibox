@@ -47,7 +47,6 @@ import {
   type Titel,
 } from './plugin-vertrag'
 import type { Songzeile } from './songtext'
-import type { Strom } from './stroeme'
 
 /** Speicher je Plugin. Reicht fuer HTTP und JSON; ein Leck stirbt hier statt im Kern. */
 const SPEICHER_MB = 48
@@ -105,8 +104,6 @@ export interface PluginStand {
 interface Eintrag {
   /** Wo dieses Plugin seinen Zustand ablegen darf. Leer = keiner. */
   datenOrdner?: string
-  /** Nur an Plugins mit Recht `aufnahme` — siehe Kontext in plugin-laufwerk.ts. */
-  stroeme?: Strom[]
   manifest: Manifest
   ordner: string
   /**
@@ -214,7 +211,6 @@ function workerStarten(e: Eintrag): void {
       manifest: e.manifest,
       ordner: e.ordner,
       datenOrdner: e.datenOrdner ?? '',
-      stroeme: e.stroeme ?? [],
       kernKonfig: kernKonfigFuer(e.manifest),
       einstellungen: e.einstellungen,
       fristMs: FRIST_MS,
@@ -371,15 +367,6 @@ export function pluginsLaden(
    */
   datenWurzel = '',
   /**
-   * Die Stroeme der Box — nur Plugins mit Recht `aufnahme` bekommen sie.
-   *
-   * SIE ENTHALTEN DIE ZUGAENGE. Die Weitergabe entscheidet das Laufwerk
-   * anhand des Manifests; hier werden sie nur durchgereicht. Wer sie nicht
-   * mitgibt, laesst die Aufnahme-Plugins ohne Zugang — sie melden das dann
-   * verstaendlich, statt zu scheitern.
-   */
-  stroeme: Strom[] = [],
-  /**
    * Die Kern-Konfiguration je GRUPPE (E80) — nur Plugins, deren Manifest die
    * Gruppe unter `konfig` anmeldet, bekommen sie in den Kontext gereicht.
    * Der Aufrufer gibt hier bereits NUR die erlaubten Gruppen herein
@@ -456,7 +443,6 @@ export function pluginsLaden(
       manifest: m,
       ordner: pfad,
       datenOrdner,
-      stroeme,
       // GEGEN DIE ANGEMELDETEN FELDER GEBOGEN, nicht roh durchgereicht: was in
       // der Ablage steht, ist im Betrieb entstanden und kann alles sein.
       einstellungen: einstellungenNormalisieren(einstellungenJe[m.kennung], m.felder),

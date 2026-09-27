@@ -4,7 +4,7 @@
  * DER MESSFALL, am Geraet aufgenommen (04.09.2026, Box 192.168.178.62):
  * „101 Meerjungfrauen …", `spotify:14Xy9Ycf6KfXH6nG2r9Zdb`. Kapitel 1 liegt
  * LOKAL, die Kapitel 1..11 liegen beim Streaming-Dienst — die Anzeige zeigt elf, der
- * lokale Mitschnitt ist EINE Datei. Der Tipp auf Kapitel 3 bestellte korrekt
+ * lokale Ordner ist EINE Datei. Der Tipp auf Kapitel 3 bestellte korrekt
  * `{"titelNr":3}`, E110 waehlte korrekt Spotify und schrieb das auch ins
  * Protokoll — und die Antwort lautete trotzdem:
  *
@@ -48,7 +48,7 @@ const MEER_SP = {
   type: 'spotify',
   category: 'music',
 }
-/** Der Mitschnitt: EINE Datei, also ein Titel. Genau die Lage vom Geraet. */
+/** Die lokale Fassung: EINE Datei, also ein Titel. Genau die Lage vom Geraet. */
 const MEER_LOKAL = {
   type: 'library',
   category: 'audiobook',
@@ -82,7 +82,7 @@ describe('E117 — ein Titelwunsch, den die Quelle nicht fuehrt', () => {
     writeFileSync(join(verzeichnis, 'data.json'), JSON.stringify(KATALOG, null, 2))
     writeFileSync(join(verzeichnis, 'active_data.json'), JSON.stringify(KATALOG, null, 2))
     writeFileSync(join(verzeichnis, 'darstellung.json'), JSON.stringify({ aktuell: { verschmelzen: true } }))
-    // HAND-ZUORDNUNG: Mitschnitt und Streaming-Fassung tragen verschiedene
+    // HAND-ZUORDNUNG: lokale und Streaming-Fassung tragen verschiedene
     // Kategorien (`audiobook` gegen `music`) — der automatische Abgleich legt
     // sie nicht zusammen. Ohne diese Datei traegt das Werk nur EINE Quelle,
     // und Test 1 waere aus dem falschen Grund gruen.

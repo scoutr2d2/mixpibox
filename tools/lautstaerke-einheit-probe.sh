@@ -50,13 +50,13 @@ trap 'rm -rf "$WERK"' EXIT
 mkdir -p "$WERK/attrappen"
 
 # Der gemessene Zustand der Box, als Vorlage: klangwerk regelt (1.0),
-# entzerrer und Tonkarte sind gestrandet, mixpi-mitschnitt steht schon richtig.
+# entzerrer und Tonkarte sind gestrandet, eine zweite Senke steht schon richtig.
 cat > "$WERK/lage.json" <<'JSON'
 [
  {"id":77,"type":"PipeWire:Interface:Node","info":{"props":{"media.class":"Audio/Sink","node.name":"klangwerk"},"params":{"Props":[{"channelVolumes":[0.5,0.5]}]}}},
  {"id":38,"type":"PipeWire:Interface:Node","info":{"props":{"media.class":"Audio/Sink","node.name":"entzerrer"},"params":{"Props":[{"channelVolumes":[0.216,0.216]}]}}},
  {"id":62,"type":"PipeWire:Interface:Node","info":{"props":{"media.class":"Audio/Sink","node.name":"alsa_output.stereo-fallback"},"params":{"Props":[{"channelVolumes":[0.000343,0.000343]}]}}},
- {"id":33,"type":"PipeWire:Interface:Node","info":{"props":{"media.class":"Audio/Sink","node.name":"mixpi-mitschnitt"},"params":{"Props":[{"channelVolumes":[1.0,1.0]}]}}},
+ {"id":33,"type":"PipeWire:Interface:Node","info":{"props":{"media.class":"Audio/Sink","node.name":"zweite-senke"},"params":{"Props":[{"channelVolumes":[1.0,1.0]}]}}},
  {"id":83,"type":"PipeWire:Interface:Node","info":{"props":{"media.class":"Stream/Output/Audio","node.name":"klangwerk.ausgang"},"params":{"Props":[{"channelVolumes":[0.5,0.5]}]}}}
 ]
 JSON

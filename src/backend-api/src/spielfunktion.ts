@@ -118,7 +118,7 @@ export function startPlan(werk: Werk, quelle: Quelle | null | undefined, nr = 0,
      * Betreiber am Geraet: „titel -> track2 oder 3, track1 fehlt". Gemessen
      * war es eine Buchhaltung mit ZWEI Listen: `/inhalt` zeigt seit E111 die
      * Titel aus dem ORDNER (server.ts, `inhaltFuerEintrag` — das Verzeichnis
-     * ist die Wahrheit, die playlist.m3u hinkt der Aufnahme nach), waehrend
+     * ist die Wahrheit, die playlist.m3u hinkt dem Ordner nach), waehrend
      * `musicsearch/library/album/…` den Abspieldienst die m3u lesen liess.
      * „Guten Morgen": drei Dateien im Ordner, zwei in der m3u — jede
      * Warteschlangennummer bedeutete auf beiden Seiten etwas anderes, und ein
@@ -139,11 +139,11 @@ export function startPlan(werk: Werk, quelle: Quelle | null | undefined, nr = 0,
      * war; wer ihn liest, liest die alte Fassung:
      *
      *   ERST DIE PLATTENFORM DER QUELLE (30.08.2026, „Guten Morgen / Good
-     *   Morning"): die Aufnahme sanitisiert Sonderzeichen (`/` -> `_`), das
+     *   Morning"): der Ordnername sanitisiert Sonderzeichen (`/` -> `_`), das
      *   verschmolzene Werk fuehrt aber mit Streaming-Metadaten — ein Befehl
      *   daraus sucht Ordner, die es nie gab, und musicsearch faengt im
      *   Zweifel etwas AEHNLICHES. Dahinter die Kategorie der QUELLE vor der
-     *   des Werks („Nah", E105): der Mitschnitt liegt unter `audiobook/…`,
+     *   des Werks („Nah", E105): die lokale Fassung liegt unter `audiobook/…`,
      *   das Werk fuehrt `music`.
      */
     case 'lokal': {
@@ -216,7 +216,7 @@ export function startPlan(werk: Werk, quelle: Quelle | null | undefined, nr = 0,
  *
  * 3. DIE NUMMERNRAUM-REGEL (30.08.2026, „Du bedeutest mir die Welt" aus
  *    Weiterhoeren): `titelNr`/`positionMs` sind in der Liste der Quelle
- *    entstanden, bei der GEMERKT wurde. Ein lokaler Mitschnitt traegt oft
+ *    entstanden, bei der GEMERKT wurde. Ein lokales Album traegt oft
  *    nur einen TEIL des Albums — Titel 8 der Streaming-Liste existiert dort
  *    nicht, der Sprung landet irgendwo oder nirgends. Ist die bevorzugte
  *    Quelle `lokal` und wurde bei einem anderen Dienst gemerkt, rueckt die
@@ -445,7 +445,7 @@ type GemischterTitel = { nr?: unknown; quelle?: unknown; [feld: string]: unknown
  *
  * ZWEI ZAEHLUNGEN, UND SIE SIND NICHT DASSELBE: Gegangen wird ueber die
  * POSITION in der Liste, benannt wird ueber die `nr`. Bei einem
- * Halb-Mitschnitt traegt die Liste 01, 02, 06, 08 — der Nachfolger von 02
+ * halben lokalen Album traegt die Liste 01, 02, 06, 08 — der Nachfolger von 02
  * ist dort 06 und nicht 03. Wer hier `nr + 1` rechnet, baut denselben Fehler
  * ein, der als E110/E111 schon zweimal bezahlt wurde (und der als offene
  * Fussnote im E111-Eintrag genau fuer diesen Fall vermerkt ist).

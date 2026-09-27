@@ -94,7 +94,7 @@ const send = (ws, m, p = {}) =>
     ws.on('message', h)
   })
 
-// WELCHE SEITEN. Sechs, die zusammen zeigen, was die Verwaltung ist: der
+// WELCHE SEITEN. Fuenf, die zusammen zeigen, was die Verwaltung ist: der
 // Einstieg, die Medien (der Alltag), die Profile, die Spiele, der Ton und die
 // Kinderzeit. Mehr waere eine Bildergalerie, weniger verschwiege die Breite.
 const SEITEN = [
@@ -103,7 +103,6 @@ const SEITEN = [
   ['12-verwaltung-profile', 'kinderzeit'],
   ['13-verwaltung-spiele', 'spiele'],
   ['14-verwaltung-ton', 'ton'],
-  ['15-verwaltung-aufzeichnen', 'aufzeichnen'],
 ]
 
 const browser = await eigenerBrowser({ fenster: `${BREITE},${HOEHE}` })

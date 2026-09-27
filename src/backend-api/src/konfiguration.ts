@@ -1462,7 +1462,7 @@ export function pruefeEinstellungsPin(roh: unknown): Pruefung {
  * Der Punkt sind die GEHEIMNISSE: Jellyfins API-Schlüssel und Spotifys Token
  * sind Zugangsdaten. Sie werden nie mitgeschickt — die Oberfläche erfährt
  * ausschließlich, OB etwas hinterlegt ist. Sonst stünde der Schlüssel im
- * Browser, im Verlauf, im Zwischenspeicher und in jedem Mitschnitt.
+ * Browser, im Verlauf, im Zwischenspeicher und in jedem Netzprotokoll.
  */
 export function feldNachAussen(konfig: unknown, feld: Feld): { wert?: unknown; gesetzt?: boolean } {
   if (feld.art === 'geheim') {
@@ -1486,7 +1486,7 @@ export function ohneGeheimnisse(konfig: unknown): unknown {
     ['interfacelogin', ['password']],
     // Die PIN vor den Einstellungen. Sie steht als bcrypt-Hash in derselben
     // Gruppe, die das Box-Frontend ohnehin ausliest (mupibox) — ohne diesen
-    // Strich läge sie in jedem Kiosk-Browser und in jedem Mitschnitt. Ein
+    // Strich läge sie in jedem Kiosk-Browser und in jedem Netzprotokoll. Ein
     // Hash ist kein Klartext, aber vier Ziffern sind aus einem Hash in
     // Sekunden zurückgerechnet. Das Frontend braucht aus dieser Gruppe
     // ausschließlich `einstellungssperre`, nie die PIN selbst.
@@ -1500,7 +1500,6 @@ export function ohneGeheimnisse(konfig: unknown): unknown {
         'username',
         'password',
         'soloistApiKey',
-        'soloistApiKeyMitschnitt',
       ],
     ],
     ['jellyfin', ['apiKey']],

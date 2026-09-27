@@ -444,10 +444,6 @@ GEHEIM = {
         # /api/stroeme sie muehsam maskiert (stromNachAussen). Ein spak_ ist
         # ein voller Wiedergabe-Zugang zum Spotify-Konto der Familie.
         ("/spotify/soloistApiKey", "Soloist-Schluessel (spak_) — Wiedergabe-Zugang zum Konto"),
-        # Der ZWEITZUGANG fuer den Mitschnitt (eigenes Konto, zwei Stroeme
-        # parallel — tools/box/zweitzugang-probe.py). An der Geraete-Gegenprobe
-        # vom 22.08.2026 aufgefallen: er war der letzte spak_ im Archiv.
-        ("/spotify/soloistApiKeyMitschnitt", "Soloist-Zweitzugang fuer den Mitschnitt (spak_)"),
         ("/spotify/stroeme/*/schluessel", "Soloist-Schluessel je Strom (spak_)"),
     ],
     "server/config/config.json": [

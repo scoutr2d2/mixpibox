@@ -17,7 +17,7 @@ einer falschen Zustandsaussage traegt.
 
 ── DREI FUNDE BEIM ERSTEN LAUF ────────────────────────────────────────────
   tools/rechte-am-geraet.sh          gibt es nirgends im Baum
-  src/backend-api/src/mitschnittliste.ts  -> plugins/mixpi-mitschnitt/liste.mjs
+  src/backend-api/src/mitschnittliste.ts  -> in ein Plugin gewandert
   scripts/mupibox/mqtt.py            -> scripts/mqtt/mqtt.py  (vertauscht)
   scripts/mupi-lautstaerke.sh        -> scripts/mupibox/mupi-lautstaerke.sh
 
@@ -255,7 +255,7 @@ LAUFZEIT_AUSSER = ("config/services/", "config/templates/", "config/.nano")
 # liegen darunter GENAU ZWEI Ordner (`media/images`, `media/sound` — Logos und
 # Signaltoene, mitgeliefert). Alles andere unter `media/` ist die SAMMLUNG des
 # Betreibers auf der Box (`/home/dietpi/MuPiBox/media/<kategorie>/<interpret>/`):
-# die Kategorieordner `audiobook`, `music` und was der Mitschnitt sonst anlegt.
+# die Kategorieordner `audiobook`, `music` und was die Ablage sonst anlegt.
 # Kein Ordner davon kann je im Baum liegen — er entsteht erst, wenn jemand
 # Musik aufspielt oder aufnimmt.
 #
@@ -679,7 +679,15 @@ GEFALLEN = ("src/frontend-box/", "themes/", "AdminInterface/",
             # tools/box/renderer-speicher-verlauf.py aufgegangen (samt `--hier`
             # und VmHWM). BACKLOG.md erzaehlt weiter von der Messung, die es
             # DAMALS gefahren hat — das ist Geschichte, kein toter Verweis.
-            "tools/kiosk-speicher-verlauf.py")
+            "tools/kiosk-speicher-verlauf.py",
+            # 27.09.2026: Messwerkzeuge einer nur lokal gefuehrten Erweiterung,
+            # in dieser Fassung entfernt. Journal und Wissenspaket erzaehlen
+            # weiter von den Messungen — Geschichte, kein toter Verweis.
+            "tools/box/leersenke-bleibt-probe.py", "tools/box/plugin-datenordner-probe.py",
+            "tools/box/schreiblast-messen.py", "tools/box/zwei-stroeme-echt.py",
+            "tools/box/zweitzugang-probe.py", "tools/mixpi-cover-nachfuellen.py",
+            "config/templates/62-mixpi-mitschnitt.conf",
+            "src/backend-api/src/nachtfenster.ts", "tools/IDEEN.md")
 GESCHICHTSQUELLEN = ("llmwiki:", "BACKLOG.md", "dokumentation/ALT-UEBERNAHMEN.md",
                      "MODERNIZATION.md", "NewDesign/MASKOTTCHEN.md")
 def _gefallen(p):

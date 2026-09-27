@@ -1,17 +1,16 @@
 /**
- * DER MITSCHNITT — was wann wie lange und ueber welchen Dienst lief.
+ * DER VERLAUF — was wann wie lange und ueber welchen Dienst lief.
  *
- * Betreiber (15.08.2026): „ja dann richten wir den mitschnitt jetzt ein ich
- * würde auch gerne welchen dienst wie lange", dazu „ohne profil auswahl für
- * alle profile".
+ * Betreiber (15.08.2026): er möchte sehen, welcher Dienst wie lange lief,
+ * dazu „ohne profil auswahl für alle profile".
  *
- * ══ WARUM ES DEN MITSCHNITT BRAUCHT ═══════════════════════════════════════
+ * ══ WARUM ES DEN VERLAUF BRAUCHT ══════════════════════════════════════════
  *
  * `gespielt.json` merkt sich je Werk nur ZWEI Zahlen: wie oft gestartet und
  * wann zuletzt. Damit laesst sich „oft gehoert" bauen und sonst nichts. Die
  * Frage „was lief gestern nachmittag, und wie lange" kann es nicht
  * beantworten — nicht weil die Daten schwer zu bekommen waeren, sondern weil
- * sie NIE GESCHRIEBEN wurden. Rueckwirkend gibt es sie nicht; der Mitschnitt
+ * sie NIE GESCHRIEBEN wurden. Rueckwirkend gibt es sie nicht; der Verlauf
  * faengt an dem Tag an, an dem er eingeschaltet wird.
  *
  * ══ WIE DIE DAUER GEMESSEN WIRD, UND WARUM NICHT MIT DER WANDUHR ══════════

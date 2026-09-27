@@ -23,13 +23,12 @@ Dublettengruppe gilt:
     sie duerfen weg (`--wirklich`).
   * MEHRERE haben einen Ordner          -> die VOLLSTAENDIGERE Fassung
     gewinnt: gezaehlt werden die Audiodateien des Ordners abzueglich derer,
-    die "(unvollstaendig" im Namen tragen (der Mitschnitt markiert
-    abgebrochene Aufnahmen genau so). Die Verlierer verlieren nur ihren
+    die "(unvollstaendig" im Namen tragen (so sind abgebrochene
+    Dateien markiert). Die Verlierer verlieren nur ihren
     EINTRAG — kein Ordner wird angefasst. Diese Stufe hat der Betreiber am
     12.09.2026 ausdruecklich freigegeben ("Eintraege bereinigen, Ordner
-    behalten"); das Muster dahinter: der Mitschnitt legte je nach
-    Kategorie des Spotify-Eintrags mal unter audiobook/, mal unter music/
-    ab, und die lueckenhafte alte Ablage blieb als zweite Kachel stehen.
+    behalten"); das Muster dahinter: dasselbe Album landete je nach
+    Kategorie mal unter audiobook/, mal unter music/, und die lueckenhafte alte Ablage blieb als zweite Kachel stehen.
     Bei GLEICHSTAND wird weiter gemeldet statt entschieden. Zeigen zwei
     Eintraege auf DENSELBEN Ordner, ist der zweite schlicht redundant und
     faellt.

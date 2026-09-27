@@ -129,7 +129,7 @@ describe('KinderzeitSeite', () => {
    * Die Nebenkarten der Seite abraeumen.
    *
    * Seit die Seite „Profile" heisst, holt sie beim Aufbau auch Figuren, die
-   * Medien-Zuordnung und den Mitschnitt. Diese Tests handeln von den
+   * Medien-Zuordnung und den Hörverlauf. Diese Tests handeln von den
    * SPIELZEITEN — sie sollen an den Nebenkarten weder haengen noch scheitern.
    * Beantwortet wird trotzdem, statt `verify()` abzuschalten: eine Anfrage,
    * die niemand pruefen darf, ist die erste, die still ins Leere geht.

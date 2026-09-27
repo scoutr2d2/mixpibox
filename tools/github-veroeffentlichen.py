@@ -123,8 +123,14 @@ RE_REZEPT = re.compile(r"\$\{MUPI_REPO:-[^}]*\}/([A-Za-z0-9_./-]+)")
 RE_AUTOSETUP = re.compile(r"\$\{MUPI_SRC\}/([A-Za-z0-9_./-]+)")
 
 
-def pflichtpfade():
-    """Was Rezepte und autosetup aus dem Repo holen -> {pfad: quelle}."""
+def pflichtpfade(blobs=None):
+    """Was Rezepte und autosetup aus dem Repo holen -> {pfad: quelle}.
+
+    `blobs` ({pfad: sha}) liest die Rezepte aus dem VEROEFFENTLICHTEN Stand
+    statt von der Platte — noetig, seit der Ohne-Aufnahme-Patch Rezepte
+    aendert (27.09.2026): sonst verlangte die Wache Dateien, die der
+    veroeffentlichte Stand gar nicht mehr installiert.
+    """
     noetig = {}
     kandidaten = [
         os.path.join("remote-step-installer", "recipes", n)
@@ -132,10 +138,16 @@ def pflichtpfade():
     ] + [os.path.join("autosetup", "autosetup.sh"),
          os.path.join("scripts", "make-boot-sd.sh")]
     for rel in kandidaten:
-        voll = os.path.join(WURZEL, rel)
-        if not os.path.isfile(voll):
-            continue
-        text = open(voll, encoding="utf-8", errors="replace").read()
+        if blobs is not None:
+            if rel not in blobs:
+                continue
+            text = subprocess.run(["git", "-C", WURZEL, "cat-file", "-p", blobs[rel]],
+                                  capture_output=True, text=True, errors="replace").stdout
+        else:
+            voll = os.path.join(WURZEL, rel)
+            if not os.path.isfile(voll):
+                continue
+            text = open(voll, encoding="utf-8", errors="replace").read()
         for re_ in (RE_REZEPT, RE_AUTOSETUP):
             for treffer in re_.findall(text):
                 # NORMALISIEREN, SONST MELDET DIE WACHE GESPENSTER: In
@@ -279,6 +291,77 @@ def lokale_muster_lesen(pfad=LOKAL_MUSTER):
 LECK_MUSTER += [(n, m) for n, m, _f in lokale_muster_lesen()]
 
 
+# ══ DER OHNE-AUFNAHME-PATCH (27.09.2026) ══════════════════════════════════════
+#
+# Betreiber: die Aufnahme-Erweiterung bleibt lokal — „aber nur fuer github"
+# soll sie verschwinden, samt ihrer Verdrahtung im Kern (Tonweg, zweiter
+# Strom, Vorlage, Verwaltungsseite). Die Erweiterung selbst haelt die
+# Ausschlussliste zurueck; die Verdrahtung steckt aber in Dateien, die hinaus
+# MUESSEN. Deshalb ein Patch, der NUR hier wirkt: er wird im Zwischenindex auf
+# den kuratierten Stand angewendet, der Arbeitsbaum bleibt unberuehrt.
+#
+# ER ENTSTEHT AUS EINEM ZWEIG: `github-ohne-aufnahme` traegt ueber `main` den
+# Commit, der die Verdrahtung entfernt (mit gruenen Tests auf diesem Stand).
+#     python3 tools/github-veroeffentlichen.py --patch-aus github-ohne-aufnahme
+# schreibt daraus tools/github-ohne-aufnahme.patch (selbst ausgeschlossen).
+# Passt er nicht mehr auf `main`, bricht die Veroeffentlichung ab: dann den
+# Zweig auf `main` neu aufsetzen, Tests laufen lassen, Patch erneuern.
+PATCH_OHNE = os.path.join(WURZEL, "tools", "github-ohne-aufnahme.patch")
+
+
+def patch_aus_zweig(zweig, ziel=PATCH_OHNE):
+    """Den Patch als das schreiben, was `zweig` SELBST aendert.
+
+    DREI PUNKTE, nicht zwei: `HEAD zweig` naehme alles mit, was auf main seit
+    dem Abzweigen dazukam — und der Patch naehme es beim Veroeffentlichen
+    still wieder zurueck.
+    """
+    # WAS DIE AUSSCHLUSSLISTE OHNEHIN ZURUECKHAELT, GEHOERT NICHT IN DEN PATCH:
+    # im Zweig liegt z.B. die Erweiterung geloescht (damit ihre Tests den
+    # veroeffentlichten Stand abbilden) — im Zwischenindex gibt es sie gar
+    # nicht, und `git apply` scheiterte an der Loeschung.
+    muster = muster_lesen(AUSSCHLUSS)
+    pfade = [p for p in git("diff", "--name-only", "--no-renames", f"HEAD...{zweig}").splitlines()
+             if p and not any(passt(p, m) for m, _g in muster)]
+    if not pfade:
+        text = ""
+    else:
+        text = git("diff", "--binary", "--no-renames", f"HEAD...{zweig}", "--", *pfade)
+    with open(ziel, "w", encoding="utf-8") as f:
+        f.write(text)
+    return text.count("\ndiff --git ") + (1 if text.startswith("diff --git ") else 0)
+
+
+def patch_anwenden(drin, patch=PATCH_OHNE):
+    """-> (neues drin, Anzahl geaenderter Pfade) oder SystemExit, wenn er nicht passt."""
+    if not os.path.exists(patch):
+        return drin, 0
+    with tempfile.TemporaryDirectory(prefix="ghpatch-") as tmp:
+        umg = dict(os.environ, GIT_INDEX_FILE=os.path.join(tmp, "index"))
+        ein = "".join(f"{mode} {sha}\t{pfad}\n" for mode, sha, pfad, _g in drin)
+        subprocess.run(["git", "-C", WURZEL, "update-index", "--index-info"],
+                       input=ein, capture_output=True, text=True, env=umg, check=True)
+        r = subprocess.run(["git", "-C", WURZEL, "apply", "--cached", patch],
+                           capture_output=True, text=True, env=umg)
+        if r.returncode != 0:
+            raise SystemExit(
+                "  ABBRUCH: der Ohne-Aufnahme-Patch passt nicht mehr auf diesen Stand.\n"
+                f"  {r.stderr.strip()}\n"
+                "  Zweig github-ohne-aufnahme auf main neu aufsetzen, Tests, dann\n"
+                "  python3 tools/github-veroeffentlichen.py --patch-aus github-ohne-aufnahme")
+        aus = subprocess.run(["git", "-C", WURZEL, "ls-files", "-s"],
+                             capture_output=True, text=True, env=umg, check=True).stdout
+    vorher = {p: (m, s_) for m, s_, p, _g in drin}
+    neu = []
+    for zeile in aus.splitlines():
+        kopf, pfad = zeile.split("\t", 1)
+        mode, sha, _stufe = kopf.split()
+        neu.append((mode, sha, pfad, None))
+    danach = {p: (m, s_) for m, s_, p, _g in neu}
+    anders = {p for p in set(vorher) | set(danach) if vorher.get(p) != danach.get(p)}
+    return neu, len(anders)
+
+
 def lecks_suchen(drin):
     """Jeden veroeffentlichten Blob gegen LECK_MUSTER halten -> [(pfad, name, fund)]."""
     funde = []
@@ -413,6 +496,8 @@ def main():
                     help='Identitaet des Commits als "Name <mail>" (Vorgabe: GitHub-Konto der Gegenstelle + noreply-Adresse)')
     ap.add_argument("--ausschluss", default=AUSSCHLUSS,
                     help="andere Ausschlussliste (fuer Proben; Vorgabe: tools/github-ausschluss.txt)")
+    ap.add_argument("--patch-aus", default="", metavar="ZWEIG",
+                    help="tools/github-ohne-aufnahme.patch aus dem, was ZWEIG seit dem Abzweigen aendert, erneuern und beenden")
     ap.add_argument("--selbsttest", action="store_true",
                     help="nur die reinen Teile pruefen (Musterlogik) und beenden")
     a = ap.parse_args()
@@ -423,6 +508,10 @@ def main():
 
     if a.selbsttest:
         return selbsttest()
+    if a.patch_aus:
+        n = patch_aus_zweig(a.patch_aus)
+        print(f"{os.path.relpath(PATCH_OHNE, WURZEL)}: {n} Dateien aus {a.patch_aus}")
+        return 0
 
     muster = muster_lesen(a.ausschluss)
     alle = dateien_lesen()
@@ -439,6 +528,10 @@ def main():
         raus = [e for e in raus if e[2] not in noetig]
         drin += [(m, s, p, None) for m, s, p, _g in zurueck]
 
+    # Der Ohne-Aufnahme-Patch — VOR allen Zaehlungen und Wachen, damit beide
+    # den Stand pruefen, der wirklich hinausgeht.
+    drin, gepatcht = patch_anwenden(drin)
+
     g_drin = groesse([s for _m, s, _p, _g in drin])
     g_raus = groesse([s for _m, s, _p, _g in raus])
 
@@ -448,6 +541,8 @@ def main():
               f"   (namentlich gebraucht: maskottchen.json / sdstart-bilder.py)")
     print(f"  veroeffentlicht : {len(drin):5d} Dateien   {mb(g_drin):>10s}")
     print(f"  zurueckgehalten : {len(raus):5d} Dateien   {mb(g_raus):>10s}")
+    if gepatcht:
+        print(f"  Ohne-Aufnahme-Patch: {gepatcht} Pfade geaendert oder entfernt")
     print()
 
     # Je Top-Pfad, damit man auf einen Blick sieht, wo das Gewicht liegt.
@@ -488,7 +583,9 @@ def main():
         for i in range(1, len(teile) + 1):
             ordner.add("/".join(teile[:i]))
     fehlt = []
-    for pfad, quelle in sorted(pflichtpfade().items()):
+    blobs = {p: s_ for _m, s_, p, _g in drin}
+    pflicht = pflichtpfade(blobs)
+    for pfad, quelle in sorted(pflicht.items()):
         if pfad in veroeffentlicht or pfad in ordner:
             continue
         # Nur melden, was es im Repo ueberhaupt gibt — ein Rezept darf auf etwas
@@ -506,7 +603,7 @@ def main():
     # zieht jedes fuer sich nach. Fehlt ein Plugin GANZ, hat die Box es eben
     # nicht; kaputt waere nur ein HALBES. Zurueckgehalten werden darf also ein
     # ganzer Plugin-Ordner, nie ein Teil davon.
-    pflicht_ordner = {p for p in pflichtpfade() if os.path.isdir(os.path.join(WURZEL, p))}
+    pflicht_ordner = {p for p in pflicht if os.path.isdir(os.path.join(WURZEL, p))}
     raus_pfade = {p for _m, _s, p, _g in raus}
     for _m, _s, pfad, grund in raus:
         for po in pflicht_ordner:
@@ -521,7 +618,7 @@ def main():
         print()
         print("  ABBRUCH: ein Ausschluss wuerde die Installation aushebeln.")
         return 1
-    print(f"  alle {len(pflichtpfade())} Quellen der Rezepte/autosetup sind dabei.")
+    print(f"  alle {len(pflicht)} Quellen der Rezepte/autosetup sind dabei.")
     print()
 
     print("── Wache: geht etwas hinaus, das nicht hinaus darf? ────────────────")

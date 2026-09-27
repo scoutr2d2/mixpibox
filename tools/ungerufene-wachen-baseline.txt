@@ -274,7 +274,6 @@ offen tools/mitschnitt-zeichen-probe.py
 offen tools/mitschnitt-zuordnungen-nachtragen.py
 laeufer tools/mixpi-box-altlasten-probe.py
 offen tools/mixpi-box-altlasten.py
-offen tools/mixpi-cover-nachfuellen.py
 offen tools/mixpi-fassung-schneiden.py
 laeufer tools/mixpi-fassungsvergleich-deckung.py
 laeufer tools/mixpi-fremdbezug-pruefen.py

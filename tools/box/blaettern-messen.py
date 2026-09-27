@@ -9,12 +9,12 @@ Muss dort laufen, wo die Verlaufsdateien liegen (auf der Box unter
 
 ══ WOZU ═══════════════════════════════════════════════════════════════════
 
-E73 will beim Titelwechsel entscheiden: aufzeichnen, verwerfen — oder gar
-nichts tun, weil das Kind gerade BLAETTERT. Betreiber, 20.08.2026: „wenn man
+E73 will beim Titelwechsel entscheiden: als gehoert zaehlen, verwerfen —
+oder gar nichts tun, weil das Kind gerade BLAETTERT. Betreiber, 20.08.2026: „wenn man
 schnell springt waere ein wechsel jedesmal fatal."
 
 Die Regel dahinter ist einfach: wer springt, hoert nicht — und was niemand
-hoert, muss auch nicht aufgezeichnet werden. Offen ist nur die Zahl: ab wann
+hoert, muss auch nicht gezaehlt werden. Offen ist nur die Zahl: ab wann
 gilt ein Wechsel als Blaettern?
 
 DIESE ZAHL GEHOERT NICHT GERATEN. Die Box schreibt seit Wochen mit, wie ihre

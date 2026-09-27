@@ -1551,7 +1551,7 @@ if [ "$BOX" = "1" ]; then
   #
   # SIE IST NICHT MEHR DAUERROT (10.09.2026). Der Kritiker-Lauf desselben
   # Tages hatte zu Recht geruegt, dass ein „erwartet rot" zum Rot-Ueberlesen
-  # erzieht. Die Schuld ist abgetragen: `tools/mixpi-cover-nachfuellen.py`
+  # erzieht. Die Schuld ist abgetragen: ein einmaliges Nachfuellen
   # hat 65 Cover nachgeholt, gemessen 68 -> 3 Rueckfallbilder. Von den drei
   # Resten sind ZWEI leere Ordner (nur playlist.m3u, kein Ton — ein fehlendes
   # Cover ist dort kein Fehler, sondern die Spur einer geloeschten Aufnahme),

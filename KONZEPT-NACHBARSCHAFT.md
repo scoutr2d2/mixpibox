@@ -53,11 +53,11 @@ Datenhaltung, es verteilt vorhandene.
 | Profile (Figur, Name, Passwort-Abdruck) | `profile.<kennung>`-Ablagen | `src/backend-api/src/profile.ts` |
 | Kinderzeit-Regeln + Verbrauch | Regelwerk je Profil | `src/backend-api/src/kinderzeit.ts` |
 | „Zuletzt gespielt" / „Oft gehört" | `gespielt.json` (Zähler + Zeit) | `src/backend-api/src/gespielt.ts` |
-| Mitschnitt (Sitzungen, Hörzeit je Dienst) | `verlauf.json` | `src/backend-api/src/verlauf.ts` |
+| Hörverlauf (Sitzungen, Hörzeit je Dienst) | `verlauf.json` | `src/backend-api/src/verlauf.ts` |
 | Weiterhören (Stelle im Werk) | Stellen je Profil | `src/backend-api/src/weiterhoeren.ts` |
 | Eigene Listen (gemischte Playlisten) | `ABLAGE_LISTEN`, eigene Ablage | `server.ts`, Block „Eigene Listen der Box" |
 | Zugang (Jellyfin, Spotify, WLAN) | `mupiboxconfig.json` | `src/backend-api/src/konfiguration.ts` |
-| Offline-Dateien (Mitschnitte, künftig Downloads) | `media/` auf der SD-Karte | E96, E98 |
+| Offline-Dateien (eigene Dateien, künftig Downloads) | `media/` auf der SD-Karte | E96, E98 |
 
 Zwei Punkte, die dieser Tabelle ihre Schärfe geben:
 
@@ -213,7 +213,7 @@ der verschwindet, hinterlässt seinen Stand — richtig so: gehört wurde es.
 **Umstieg:** der heutige einzelne `anzahl`-Wert wird beim ersten Start dem
 **eigenen** Kürzel zugeschrieben. Kein Datenverlust, kein Migrationsskript.
 
-### 4.2 Mitschnitt (`verlauf.json`) — Protokoll, Vereinigung
+### 4.2 Hörverlauf (`verlauf.json`) — Protokoll, Vereinigung
 
 Sitzungen werden **nie geändert**, nur angehängt (`verlauf.ts`). Damit ist
 die Regel einfach: Schlüssel ist `(Boxkennung, beginn)`, zusammengeführt wird
@@ -548,7 +548,7 @@ bleiben, ohne dass etwas halb ist.
 |---|---|---|---|
 | **0** | Kennung + Ansage + Liste im Eltern-Bereich. **Kein Abgleich.** | Zwei Boxen sehen einander namentlich | keins — nichts wird geschrieben |
 | **1** | Kopplung (Code, Geheimnis, HMAC, trennen) | Kopplung hält über Neustart; ungekoppelt = 403 | keins — noch keine Daten |
-| **2** | „Zuletzt gespielt" + Mitschnitt (§4.1, §4.2) | Zähler stimmt nach **zwei** Abgleichen | gering, nur Anzeige |
+| **2** | „Zuletzt gespielt" + Hörverlauf (§4.1, §4.2) | Zähler stimmt nach **zwei** Abgleichen | gering, nur Anzeige |
 | **3** | Weiterhören (§4.3) | Stelle springt nicht zurück, auch mit falscher Uhr | mittel — spürbar für das Kind |
 | **4** | Profile + Kinderzeit (§4.4) | Guthaben über zwei Boxen; Nachbar aus ⇒ spielt weiter | **hoch — der eigentliche Gewinn** |
 | **5** | Eigene Listen (§4.5) | Beidseitig bearbeitet ⇒ beide Änderungen da; Gelöschtes bleibt weg | mittel |

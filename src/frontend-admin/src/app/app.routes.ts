@@ -44,16 +44,6 @@ export const ROUTEN: Routes = [
         loadComponent: () => import('./seiten/streaming').then((m) => m.StreamingSeite),
       },
       {
-        // WAS DER MITSCHNITT VORHAT UND GETAN HAT (E126, Stufe 1): die
-        // Warteschlange, die Fertigen, die Fehler — aus der Liste des
-        // Plugins, ohne eigene Wahrheit. Eigene Seite statt Karte auf
-        // „Medien": die traegt schon vier Bloecke, und wer den Stand seiner
-        // Aufnahmen sucht, sucht keinen Medien-Eintrag.
-        path: 'aufzeichnen',
-        title: 'Aufzeichnen – MixPiBox',
-        loadComponent: () => import('./seiten/aufzeichnen').then((m) => m.AufzeichnenSeite),
-      },
-      {
         path: 'system',
         title: 'System – MixPiBox',
         loadComponent: () => import('./seiten/system').then((m) => m.SystemSeite),
@@ -181,7 +171,7 @@ export const ROUTEN: Routes = [
       },
       {
         // NEBEN „VPN" UND UNTER „Was die Box ist": hier wird eine FREMDE
-        // Freigabe EINGEBUNDEN (Sicherungen, Mitschnitte) — das ist etwas
+        // Freigabe EINGEBUNDEN (Sicherungen, Medien) — das ist etwas
         // anderes als die Frage, wie die Box in ihr Netz kommt (Netzwerk)
         // oder wie das Heimnetz zu einer mitgenommenen Box kommt (VPN).
         path: 'netzlaufwerk',

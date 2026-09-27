@@ -78,7 +78,7 @@ const FRIST_MS = 5000
  * Ergebnis verfälschen — 3 s lassen 2 s Luft.
  */
 const MESSFENSTER_MS = 3000
-/** Eigener Knotenname, wie ihn mixpi-pegel und mixpi-mitschnitt auch führen. */
+/** Eigener Knotenname, wie ihn mixpi-pegel auch führt. */
 const EIGENNAME = 'mixpi-cue-messung'
 
 const nameTrifft = (wert) => {
@@ -253,7 +253,7 @@ function kartierungDrucken(dump, plan) {
   console.log('── Kanten ───────────────────────────────────────────────────')
   for (const l of links) {
     const treffer = plan?.kanten.some((k) => k.id === l.id) ? '  <== CUE TRENNT' : ''
-    const schont = plan?.geschont.some((k) => k.id === l.id) ? '  <== bleibt (Mitschnitt!)' : ''
+    const schont = plan?.geschont.some((k) => k.id === l.id) ? '  <== bleibt (geschont)' : ''
     console.log(
       `  ${String(l.id).padStart(4)}  ${name(l.ausgangKnoten)}:${l.ausgangPort} -> ${name(l.eingangKnoten)}:${l.eingangPort}${treffer}${schont}`,
     )

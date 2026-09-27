@@ -585,7 +585,6 @@ import {
 import {
   istAusgangsname as istTonAusgangsname,
   ausgaenge as tonAusgaenge,
-  mixpiLeersenken as tonMixpiLeersenken,
   sinksAus as tonSinksAus,
   stroemeAus as tonStroemeAus,
 } from './tonausgang.js'
@@ -690,9 +689,6 @@ import {
   zusammenhangAus,
 } from './weiterhoeren'
 import { albumOrdnerPfad, bildPfad, werkeAus } from './werke'
-// DIE REGEL DES NACHTMODUS (E127): Zwilling der Regel in der Erweiterung,
-// damit der Server auch ohne sie baut. Der Spielweg FRAGT nur.
-import { nachtfensterGilt } from './nachtfenster'
 
 // Force IPv4 for DNS lookups to avoid EAI_AGAIN errors on Raspberry Pi
 // This fixes issues where IPv6 is misconfigured or not supported
@@ -1926,13 +1922,12 @@ function bereicheHerrichten(): void {
 
 const auswahlFile = `${configBasePath}/${ABLAGE_AUSWAHL}`
 
-/* ══ DER MITSCHNITT ════════════════════════════════════════════════════════
- * Betreiber (15.08.2026): „ja dann richten wir den mitschnitt jetzt ein ich
- * würde auch gerne welchen dienst wie lange" — und ausdruecklich „ohne profil
- * auswahl für alle profile".
+/* ══ DER VERLAUF ═══════════════════════════════════════════════════════════
+ * Betreiber (15.08.2026): er möchte sehen, welcher Dienst wie lange lief —
+ * und ausdruecklich „ohne profil auswahl für alle profile".
  *
  * ER LAEUFT FUER JEDES PROFIL MIT, ohne dass jemand etwas einschaltet oder
- * auswaehlt. Ein Mitschnitt, den man erst anstellen muss, ist am Tag der
+ * auswaehlt. Ein Verlauf, den man erst anstellen muss, ist am Tag der
  * Frage leer — und die Frage kommt immer rueckwirkend („was hat sie
  * eigentlich gestern gehoert?"). Rueckwirkend gibt es die Daten nicht.
  *
@@ -2056,9 +2051,9 @@ async function auswahlSchreiben(a: Auswahl, kennung: string): Promise<void> {
  */
 async function sichtbareMedienLesen(kennung = profilAktiv()): Promise<MedienEintrag[]> {
   // Die Auswahl kennt ihre ZUORDNUNGS-PARTNER (30.08.2026, „Guten Morgen /
-  // Good Morning"): der Mitschnitt legt Kacheln unter eigenem Schluessel an
-  // und bindet sie per Hand-Zuordnung an den gewaehlten Streaming-Eintrag —
-  // ohne die Erweiterung fiele die Kachel hier heraus, BEVOR die
+  // Good Morning"): eine Kachel unter eigenem Schluessel, die per
+  // Hand-Zuordnung an einen gewaehlten Eintrag gebunden ist, fiele ohne die
+  // Erweiterung hier heraus, BEVOR die
   // Verschmelzung sie je saehe. Begruendung und Regel in abgleich.ts.
   const auswahl = auswahlUmZuordnungenErweitern(await auswahlLesen(kennung), (await verschmelzungLesen()).zuordnungen)
   return auswahlFiltern(await aktiveMedienLesen(), auswahl)
@@ -2985,47 +2980,11 @@ const spielWerkzeuge: SpielWerkzeuge = {
 // Liste — kein Grund, den Server nicht hochzufahren.
 // `plugin-daten/<kennung>/` — ein Ordner je Plugin fuer seinen Zustand. Er
 // liegt IM Konfigurationsordner und damit dort, wo das Sicherungsnetz sucht.
-/**
- * Die Stroeme, wie sie beim Hochfahren in der Konfiguration stehen.
- *
- * SYNCHRON UND MIT FANGNETZ: `pluginsLaden` laeuft beim Modulstart, da gibt es
- * kein `await`. Und eine unlesbare Konfiguration darf den Server nicht am
- * Hochfahren hindern — dann laden die Plugins eben ohne Zugaenge und sagen das.
- *
- * `StromE72`, NICHT `Strom`: Letzteres ist hier der PipeWire-Strom aus
- * daempfen.ts, also ein Tonstrom im Ausgang. Zwei verschiedene Dinge, ein Wort.
- */
-function stroemeBeimStart(): StromE72[] {
-  try {
-    const roh = JSON.parse(fs.readFileSync(mupiboxConfigPath, 'utf8')) as Record<string, any>
-    return stroemeAusKonfig(roh).stroeme
-  } catch {
-    return []
-  }
-}
-
-/* ══ DIE STROEME GEHEN MIT — ABER NUR AN PLUGINS MIT RECHT `aufnahme` ══════
- *
- * Sie enthalten die Zugaenge, und das ist Absicht. `GET /api/stroeme` gibt sie
- * NIE heraus: dort holt sie die Browser-Verwaltung, und was man nicht auslesen
- * kann, landet auch nicht versehentlich in einem Protokoll. Ein Plugin, das
- * aufnehmen soll, braucht sie aber — `soloist -k …` geht ohne nicht.
- *
- * BEIDE ENTSCHEIDUNGEN VERTRAGEN SICH, weil der Weg ueber das RECHT fuehrt:
- * die Route bleibt verschlossen, und wer `aufnahme` im Manifest stehen hat,
- * bekommt, was das Aufnehmen braucht. Die Auswahl trifft das Laufwerk
- * (plugin-laufwerk.ts, `kontextBauen`) — hier wird nur gereicht.
- *
- * EINMAL BEIM LADEN, NICHT BEI JEDEM EREIGNIS: ein Zugang, der sich aendert,
- * braucht ohnehin einen Neustart des Stroms. Wer die Stroeme in der Verwaltung
- * aendert, startet den Server neu — dieselbe Regel wie beim Maschinenwechsel.
- */
 const pluginLage = pluginsLaden(
   PLUGIN_ORDNER,
   pluginEinstellungenLesen(),
   pluginAusLesen(),
   `${configBasePath}/plugin-daten`,
-  stroemeBeimStart(),
   kernKonfigGruppen(),
 )
 if (pluginLage.abgewiesen.length > 0) {
@@ -3419,7 +3378,7 @@ app.get('/api/dienste', async (_req, res) => {
 // hier steht nur der Weg von der Zustandsdatei zum Browser.
 //
 // ── WARUM EIN EREIGNISSTROM UND KEIN ABFRAGEN IM TAKT ─────────────────────
-// AM GERAET GEMESSEN (31.08.2026, Box .79, tools/taster-druck-mitschnitt.sh):
+// AM GERAET GEMESSEN (31.08.2026, Box .79, Tastendruecke protokolliert):
 // 27 Druecke, Median 432 ms, kuerzester 116 ms. Ein Abfragetakt muesste also
 // unter 100 ms liegen, um einen normalen Druck ueberhaupt zu SEHEN — das sind
 // 10 Anfragen je Sekunde, dauerhaft, auf einem Pi 4, fuer ein Ereignis, das
@@ -5820,7 +5779,7 @@ app.delete('/api/vpn/konfiguration', async (_req, res) => {
   res.json({ ok: true })
 })
 
-// ── Netzlaufwerk: ein NAS-Ort fuer Sicherungen und Mitschnitte (E28/N6-N9, E29/B4) ──
+// ── Netzlaufwerk: ein NAS-Ort fuer Sicherungen und Ablagen (E28/N6-N9, E29/B4) ──
 //
 // „ich habe ueberlegt ob man nicht einfach noch einen nas ort angeben kann"
 // (Betreiber, 04.08.2026). ZWEI SORTEN seit dem 20.09.2026: SMB ueber
@@ -8124,8 +8083,7 @@ const SCHLUMMER_MAX_MIN = 600
  *
  * Ein Teufelskreis: je oefter aufgerufen, desto laenger die Liste, desto
  * mehr Schreiblast. Auf einer SD-Karte, deren Lebensdauer an geschriebenen
- * Bytes haengt, ist das der teuerste Posten der ganzen Box — teurer als
- * jeder Mitschnitt.
+ * Bytes haengt, ist das der teuerste Posten der ganzen Box.
  *
  * `/run/user/<uid>` ist ein tmpfs: die Verlaufsdatei landet dort im
  * Arbeitsspeicher und ist nach einem Neustart weg. Genau richtig fuer eine
@@ -8682,16 +8640,6 @@ app.post('/api/ton/ausgang', express.json(), async (req, res) => {
     res.status(400).json({ ok: false, error: 'kein gültiger Ausgang' })
     return
   }
-  // EINE MIXPI-SENKE IST KEIN ZIEL. Seit die Schonung Leersenken beim
-  // Wechsel stehen laesst, waere ein versehentlicher Wechsel AUF die
-  // Leersenke dauerhaft: alle Stroeme landen dort, und der Rueckweg liesse
-  // sie liegen — die Box bleibt still bis zum naechsten Stueck (Befund der
-  // Ableger-Pruefung, 22.08.2026). Vorher holte der Rueckweg sie zurueck;
-  // die Schonung hat diesen Fehltritt erst dauerhaft gemacht.
-  if (String(name).startsWith('mixpi-')) {
-    res.status(400).json({ ok: false, error: 'mixpi-Senken sind interne Parkplätze, kein Ausgang.' })
-    return
-  }
   // ES GIBT IHN AUCH WIRKLICH? Sonst schriebe die Box eine Vorgabe fest, die
   // der Tonserver nicht kennt — und danach spielt gar nichts mehr.
   const sinkListe = await pactl(['list', 'short', 'sinks'])
@@ -8703,18 +8651,13 @@ app.post('/api/ton/ausgang', express.json(), async (req, res) => {
 
   await pactl(['set-default-sink', name])
   // UND DIE LAUFENDEN STROEME HINTERHER — sonst spielt das aktuelle Stueck
-  // weiter auf dem alten Lautsprecher. AUSSER die Senke des Stroms ist eine
-  // mixpi-Leersenke: dort parkt der Mitschnitt seinen stummen Aufnahme-Strom
-  // mit Absicht, und wer ihn mitnimmt, laesst ihn auf dem Lautsprecher
-  // toenen — die Begruendung steht bei `mixpiLeersenken` in tonausgang.ts.
-  const geschont = tonMixpiLeersenken(sinkListe)
+  // weiter auf dem alten Lautsprecher.
   const stromListe = await pactl(['list', 'short', 'sink-inputs'])
-  const stroeme = tonStroemeAus(stromListe, geschont)
+  const stroeme = tonStroemeAus(stromListe)
   for (const s of stroeme) await pactl(['move-sink-input', s, name])
 
-  const gelassen = tonStroemeAus(stromListe).length - stroeme.length
   console.log(
-    `${new Date().toLocaleString()}: [MuPiBox-Server] Tonausgang -> ${name} (${stroeme.length} Strom/Stroeme mitgenommen${gelassen ? `, ${gelassen} in Leersenke gelassen` : ''})`,
+    `${new Date().toLocaleString()}: [MuPiBox-Server] Tonausgang -> ${name} (${stroeme.length} Strom/Stroeme mitgenommen)`,
   )
   const [sinks, vorgabe, geraete] = await Promise.all([
     pactl(['list', 'short', 'sinks']),
@@ -9246,10 +9189,9 @@ async function deckelAnwenden(): Promise<void> {
   const senken = senkenMitPegelAusPactlJson(await pactl(['-f', 'json', 'list', 'sinks']))
   for (const s of senken) {
     // NUR ECHTE AUSGAENGE (05.09.2026, am Geraet beobachtet): die Auffangregel
-    // in `zielAusSinkName` nennt auch klangwerk, entzerrer und die
-    // Plugin-Senke mixpi-mitschnitt „intern" — und dieser Waechter drueckte
-    // alle drei auf den intern-Deckel (70 %). Der Mitschnitt war damit nicht
-    // mehr pur, die Kette falsch ausgesteuert. Durchreichen gehoeren
+    // in `zielAusSinkName` nennt auch klangwerk und entzerrer „intern" — und
+    // dieser Waechter drueckte beide auf den intern-Deckel (70 %). Die Kette
+    // war damit falsch ausgesteuert. Durchreichen gehoeren
     // `einheit_nachziehen` (fest auf 100), nicht dem Deckel.
     if (!istHardwareSenke(s.sinkName)) continue
     // ERST DER NAGEL, DANN DER DECKEL: Ein eingemessener Pegel wird EXAKT
@@ -10118,10 +10060,9 @@ app.get('/api/ton/pegel', async (_req, res) => {
   ])
   const btNamen = new Map(parseDevices(btRoh).map((g) => [g.mac, g.name]))
   // WELCHE SENKE TRAEGT DIE NUTZERLAUTSTAERKE? Die Oberflaeche darf das nicht
-  // selbst raten: sie nahm bisher die erste mit passender Art — und das war
-  // `mixpi-mitschnitt`, die stille Aufnahme-Senke, die pur bleiben muss und
-  // keinen Wert annimmt. Der Gesamt-Regler sprang deshalb auf 100 zurueck.
-  // Die Antwort kommt jetzt von hier, aus derselben Regel wie im Skript.
+  // selbst raten: nahme sie die erste mit passender Art, koennte das eine
+  // virtuelle Durchreiche sein, die keinen Wert annimmt. Die Antwort kommt
+  // deshalb von hier, aus derselben Regel wie im Skript.
   const alle = senkenMitPegelAusPactlJson(senkenRoh)
   const regelnde = regelndeSenkeWaehlen(alle)
   const senken = alle.map((s) => ({
@@ -10156,9 +10097,8 @@ app.post('/api/ton/senke', express.json({ limit: '4kb' }), async (req, res) => {
       error: 'Die Kombi laesst sich nicht direkt regeln — stell die einzelnen Ausgaben; die halten.',
     })
   }
-  // DURCHREICHEN SIND KEIN REGLER (05.09.2026): klangwerk, entzerrer und die
-  // Plugin-Senke mixpi-mitschnitt stehen fest auf 100 (einheit_nachziehen);
-  // der Mitschnitt MUSS pur bleiben. Wer sie stellt, verstellt die Kette —
+  // DURCHREICHEN SIND KEIN REGLER (05.09.2026): klangwerk und entzerrer
+  // stehen fest auf 100 (einheit_nachziehen). Wer sie stellt, verstellt die Kette —
   // derselbe Grund, aus dem der Deckel-Waechter sie ueberspringt.
   if (!istHardwareSenke(sinkName)) {
     return res.status(409).json({
@@ -11458,10 +11398,10 @@ app.get('/api/medien/aus-link', async (req, res) => {
     else if (link.art === 'playlist') treffer = [einreihen(spotifyTreffer('playlist', x))]
     else if (link.art === 'show' || link.art === 'audiobook') treffer = [einreihen(spotifyTreffer('show', x))]
     else if (link.art === 'episode' && x.show) {
-      hinweise.push(`Eine einzelne Folge — aufgenommen wird die ganze Sendung „${x.show.name}".`)
+      hinweise.push(`Eine einzelne Folge — übernommen wird die ganze Sendung „${x.show.name}".`)
       treffer = [einreihen(spotifyTreffer('show', x.show))]
     } else if (link.art === 'track' && x.album) {
-      hinweise.push(`„${x.name}" ist ein einzelner Titel — die Box nimmt sein Album auf.`)
+      hinweise.push(`„${x.name}" ist ein einzelner Titel — die Box übernimmt sein Album.`)
       treffer = [einreihen(spotifyTreffer('album', x.album))]
     } else if (link.art === 'artist') {
       const alben = await holen(
@@ -11544,7 +11484,7 @@ const BILD_ZWISCHENSPEICHER = 'public, max-age=86400'
  */
 const KEIN_BILD = '/neu/bilder/mixpi-kein-bild.png'
 /**
- * Wo lokale Aufnahmen liegen — dieselbe Wurzel, die auch der Abspieldienst
+ * Wo lokale Medien liegen — dieselbe Wurzel, die auch der Abspieldienst
  * benutzt. Umlenkbar fuer Tests und die Docker-Umgebung.
  */
 const MEDIEN_ORDNER = process.env.MUPIBOX_MEDIA_DIR || '/home/dietpi/MuPiBox/media'
@@ -11597,9 +11537,9 @@ async function abspielReihenfolge(): Promise<readonly QuellenDienst[]> {
  * DIE SPUREN-KARTE EINES LOKALEN ALBUMORDNERS — readdir mit mtime-Cache.
  *
  * EIN Verzeichnis-Blick je Album und Aenderung, nicht je Abruf: der Ordner
- * aendert seine mtime, wenn die Aufnahme eine Spur ablegt — genau dann ist
+ * aendert seine mtime, wenn eine Spur dazukommt — genau dann ist
  * der Cache-Eintrag wertlos und wird ersetzt. Gelesen wird das VERZEICHNIS
- * und nicht die playlist.m3u (die hinkt der Aufnahme nach, Messung im Kopf
+ * und nicht die playlist.m3u (die hinkt dem Ordner nach, Messung im Kopf
  * von titelkarte.ts).
  *
  * `null` heisst „kein lokaler Bestand" — Ordner fehlt, Pfad unzulaessig oder
@@ -11879,8 +11819,8 @@ app.get('/api/werke', async (req, res) => {
   const kennung = profilAktiv()
   // MIT ZUORDNUNGS-PARTNERN (30.08.2026): dieser Endpunkt filtert SELBST —
   // der Kommentar an `sichtbareMedienLesen` behauptete, /api/werke liefe
-  // darueber, und stimmte nicht. Ohne die Erweiterung fiel die
-  // Mitschnitt-Kachel hier heraus, bevor die Verschmelzung sie sah
+  // darueber, und stimmte nicht. Ohne die Erweiterung fiel eine
+  // zugeordnete Kachel hier heraus, bevor die Verschmelzung sie sah
   // (Begruendung in abgleich.ts, `auswahlUmZuordnungenErweitern`).
   const auswahl = auswahlUmZuordnungenErweitern(await auswahlLesen(kennung), (await verschmelzungLesen()).zuordnungen)
   const alle = await aktiveMedienLesen()
@@ -13121,7 +13061,7 @@ app.post('/api/interpreten/zuruecksetzen', async (_req, res) => {
 // ── Die box-eigene Interpretenkennung (E64b) ─────────────────────────────────
 //
 // WAS DIESE VIER ROUTEN SIND UND WAS NICHT: Sie fuehren die Ablage, an der
-// spaeter Aufnahme und Dienste haengen. Sie aendern NICHTS an der
+// spaeter lokale Ordner und Dienste haengen. Sie aendern NICHTS an der
 // Interpretenreihe, an der Verschmelzung oder an der Interpretenseite — die
 // arbeiten weiter ueber den Namensschluessel. Das Umstellen der Verbraucher
 // ist ein eigener Block und gehoert einzeln gemessen.
@@ -13250,7 +13190,7 @@ app.post('/api/interpretenkennungen/loesen', express.json({ limit: '8kb' }), asy
   }
 })
 
-/** Einen Dienstverweis setzen — Spotify-Kennung, Aufnahmeordner, Jellyfin-Id. */
+/** Einen Dienstverweis setzen — Spotify-Kennung, lokaler Ordner, Jellyfin-Id. */
 app.post('/api/interpretenkennungen/verweis', express.json({ limit: '8kb' }), async (req, res) => {
   const b = (req.body ?? {}) as Record<string, unknown>
   const id = String(b.id ?? '').trim()
@@ -13352,7 +13292,7 @@ async function verschmelzenAusDarstellung(): Promise<boolean> {
   // WARUM DAS DIE RICHTIGE RICHTUNG IST — am Geraet gemessen (Box .81,
   // 06.09.2026): 44 Kacheln ohne Verschmelzung, 35 mit. Neun Werke lagen
   // doppelt im Regal, eines sechsfach (dasselbe Album als Streaming-Original
-  // und als mehrere lokale Mitschnitte). Fuer ein Kind ist dieselbe Kachel
+  // und als mehrere lokale Kopien). Fuer ein Kind ist dieselbe Kachel
   // zweimal kein Angebot, sondern eine Frage, die es nicht beantworten kann.
   return (g.aktuell as Record<string, unknown> | null)?.verschmelzen !== false
 }
@@ -13448,7 +13388,7 @@ async function lokaleSchwesterSpuren(schluessel: string): Promise<{ karte: Map<n
  * NUR STATUS 200 WIRD GEMERKT: ein Fehler ist keine Liste, und ein gemerkter
  * Fehler waere der Negativ-Cache, vor dem llmwiki
  * richtung-des-zweifels-bei-treffern warnt. Die Frist ist bewusst kurz:
- * Nach einer fertigen Aufnahme kippt `spurVollstaendig` die Quelle eines
+ * Kommt eine vollstaendige lokale Spur dazu, kippt `spurVollstaendig` die Quelle eines
  * Titels — 45 s Verzug dabei sind unhoerbar, eine Stunde waere eine Luege.
  * Der Wirt (`req.headers.host`) steht im Schluessel, weil die Koerper
  * anfrage-abhaengige Adressen tragen koennen.
@@ -13456,7 +13396,7 @@ async function lokaleSchwesterSpuren(schluessel: string): Promise<{ karte: Map<n
 const INHALT_MERK_MS = 45_000
 /* SPOTIFY-LISTEN HALTEN LAENGER (E118, abends): Sie sind der teure Teil der
  * E110-Wahl (gemessen bis 3,9 s kalt) UND der stabilste — eine Albumliste
- * aendert sich durch nichts als eine fertige Aufnahme, und die heilt sich
+ * aendert sich praktisch nie, und eine neue lokale Spur heilt sich
  * binnen einer Merkfrist selbst. ARD/Jellyfin/lokal bleiben bei 45 s: die
  * ARD-Liste ROLLT, und der Folgen-Sprung rechnet mit ihren Nummern. */
 const INHALT_MERK_SPOTIFY_MS = 5 * 60_000
@@ -13519,7 +13459,7 @@ async function inhaltFuerEintragFrisch(
      * Betreiber am Geraet, 31.08.2026: „ich hab das gefuehl es spielt immer
      * noch nur spotify wenn da". Gemessen war es genau so, und die m3u war
      * der Grund: „Guten Morgen" hat DREI Spuren im Ordner, aber nur ZWEI in
-     * der playlist.m3u — die Aufnahme legt die Datei ab, die m3u zieht
+     * der playlist.m3u — die Datei liegt schon da, die m3u zieht
      * spaeter nach. Der Titelzahl-Vergleich (`waehleInhalt`) sah deshalb
      * lokal=2 gegen spotify=3 und gab der Cloud recht, obwohl das Album
      * lokal VOLLSTAENDIG dalag.
@@ -13555,8 +13495,8 @@ async function inhaltFuerEintragFrisch(
           titel: nummern.map((nr) => {
             const datei = spuren.karte.get(nr) as string
             // Der angezeigte Name kommt aus dem Dateinamen: Nummer und
-            // Endung weg, der Rest ist der Titel, den die Aufnahme
-            // geschrieben hat (inklusive ihrer Sanitisierung — die
+            // Endung weg, der Rest ist der Titel, wie er im Dateinamen
+            // steht (inklusive seiner Sanitisierung — die
             // Namenskern-Regel gleicht das ueberall aus).
             const name = datei.replace(/^\d{2,3}\s+/, '').replace(/\.[a-z0-9]+$/i, '')
             const schwanz = `${enc(`${spuren.pfad}/${datei}`)}/${enc(name)}:title:artist:${enc(interpret)}`
@@ -13631,10 +13571,10 @@ async function inhaltFuerEintragFrisch(
           // KEIN `vollstaendig` HIER — bewusst, seit E95 Stufe 1
           // (verschmelzung.ts, `waehleInhalt`-Docstring hat die volle
           // Begruendung). Die m3u wird zwar ganz GELESEN, aber sie IST der
-          // (moeglicherweise unvollstaendige) Mitschnitt-Bestand: „Nah"
+          // (moeglicherweise unvollstaendige) lokale Bestand: „Nah"
           // (Alin Coen, Betreiber-Messfall 29.08.2026) hat vier fehlende
           // Titel in genau dieser m3u. `vollstaendig: true` waere hier eine
-          // Behauptung ueber das AUFGENOMMENE Album, die diese Funktion gar
+          // Behauptung ueber das LOKALE Album, die diese Funktion gar
           // nicht pruefen kann — das FEHLEN des Feldes laesst die
           // Wahlfunktion stattdessen ueber die Titelzahl entscheiden, statt
           // eine lokale Teilliste als "ganz" durchzuwinken.
@@ -13665,7 +13605,7 @@ async function inhaltFuerEintragFrisch(
                 // PFAD UND NUMMER, NICHT DIE NUMMER ALLEIN: Die Nummer ist nur
                 // INNERHALB eines Albums eindeutig; `folgeKennung` stellt zwar
                 // den Werkschluessel voran, aber dieselbe Zahl in zwei
-                // Mitschnitten desselben Werks (lokal und Jellyfin) traefe
+                // Fassungen desselben Werks (lokal und Jellyfin) traefe
                 // sonst beide. Der Albumpfad macht sie ueber die ganze Box
                 // eindeutig — und er ist hier ohnehin schon zur Hand.
                 //
@@ -14085,7 +14025,7 @@ async function inhaltFuerEintragFrisch(
 
 /* ══ EIN LOKALES ALBUM HERUNTERLADEN (E126, 04.09.2026) ════════════════════
  *
- * Betreiber: „von der box auf den rechner runterladen." Die Aufnahmen
+ * Betreiber: „von der box auf den rechner runterladen." Die Dateien
  * liegen auf der Box; wer sie sichern oder anhoeren will, kam bisher nur
  * ueber die Kommandozeile heran.
  *
@@ -14112,7 +14052,7 @@ app.get('/api/werke/:schluessel/download', async (req, res) => {
   // auswahlLesen())` — und liess `auswahlUmZuordnungenErweitern` weg. Das war
   // kein Leck, sondern das Gegenteil: STRENGER als die Kachelliste. Eine
   // Kachel, die nur ueber eine Hand-Zuordnung sichtbar ist (der
-  // Mitschnitt-Fall aus abgleich.ts, „Guten Morgen / Good Morning"), stand
+  // Fall aus abgleich.ts, „Guten Morgen / Good Morning"), stand
   // auf der Box und fiel hier ins 404. Ein Unterschied, den niemand erklaeren
   // kann, ist auf Dauer so teuer wie ein Fehler: Was das Kind SIEHT, darf es
   // auch holen — nicht mehr und nicht weniger.
@@ -14230,10 +14170,10 @@ app.get('/api/werke/:schluessel/inhalt', async (req, res) => {
    *
    * BIS E95 STUFE 1 GALT DANACH „DER ERSTE ERFOLG GEWINNT" — und genau das
    * war der zweite Fehler, den derselbe Rueckfall einschleppte: „Nah" (Alin
-   * Coen, Betreiber-Messfall 29.08.2026) fuehrt LOKAL, dessen Mitschnitt-m3u
+   * Coen, Betreiber-Messfall 29.08.2026) fuehrt LOKAL, dessen m3u
    * aber nur einen Teil der Titel traegt. Der erste Erfolg war die lokale
-   * Antwort, und die Box zeigte nur die aufgezeichneten Stuecke, waehrend
-   * die Streaming-Fassung daneben die volle Liste gehabt haette.
+   * Antwort, und die Box zeigte nur die lokal vorhandenen Stuecke, waehrend
+   * eine andere Fassung daneben die volle Liste gehabt haette.
    *
    * DESHALB JETZT: ALLE Kandidaten werden geholt (parallel — die Zweige in
    * `inhaltFuerEintrag` sind unabhaengig, keiner teilt Zustand mit einem
@@ -14316,40 +14256,6 @@ interface SpielVersuch {
  * kein Ereignis; ein langsamer ohne Aufschluesselung ist eine neue Suche.
  */
 const SPIEL_UHR_MELDESCHWELLE_MS = 500
-
-/* ══ SCHWEIGT SPOTIFY GERADE WEGEN DES NACHTMODUS? (E127) ══════════════════
- *
- * Betreiber: „ein nacht modus … in dem fall jedoch dann das spotify
- * abspielen abstellt" — und ausdruecklich: „lokal funktioniert natuerlich
- * noch, und ard".
- *
- * DER MECHANISMUS IST DER VORHANDENE: Spotify wird dem Anbieter-Sieb
- * zeitweise HINZUGEFUEGT (`abgeschalteteDienste`), statt eine zweite
- * Sperr-Art zu erfinden. Damit gilt automatisch alles, was der Schalter
- * schon kann: das Ausweichen laeuft weiter (ein Werk mit lokaler Quelle
- * spielt eben lokal), andere Dienste bleiben unberuehrt, und es gibt einen
- * fertigen Ablehnungssatz.
- *
- * FLUECHTIG, NICHT IN DER KONFIGURATION: Ein Absturz um drei Uhr liesse
- * Spotify sonst dauerhaft aus. Gefragt wird bei jedem Tipp neu — die
- * Antwort ist ein Dateilesen und ein Uhrvergleich, das kostet nichts.
- *
- * DIE REGEL steht in nachtfenster.ts (Zwilling von `nachtmodusGilt` in der
- * Erweiterung, dieselben Faelle): Der Server importiert die Erweiterung
- * nicht, damit er auch ohne sie baut. Hier wird nur GEFRAGT.
- */
-function nachtmodusSchweigt(): boolean {
-  try {
-    const e = pluginEinstellungenLesen()['mixpi-mitschnitt']
-    if (!e || e.nachtmodus !== true) return false
-    return nachtfensterGilt(e, new Date())
-  } catch {
-    // Kein Plugin, keine Einstellung, kein Modul — dann schweigt nichts.
-    // Die vorsichtige Richtung: ein Lesefehler darf die Box nicht stumm
-    // machen (dieselbe Haltung wie bei `dienstAktiv`).
-    return false
-  }
-}
 
 interface SpielUhr {
   marke: (name: string) => void
@@ -14509,13 +14415,6 @@ app.post('/api/spielen', async (req, res) => {
     // Proxy: lieber spielt eine Box mit kaputter Datei, als dass sie
     // ihretwegen verstummt.
   }
-  // IM NACHTMODUS KOMMT SPOTIFY INS SIEB (E127) — fluechtig, nur fuer
-  // diesen Tipp. Alles andere spielt weiter, und ein Werk mit lokaler
-  // Quelle weicht von selbst dorthin aus.
-  const nachtSchweigt = nachtmodusSchweigt()
-  if (nachtSchweigt && !abgeschaltet.includes('spotify')) {
-    abgeschaltet = [...abgeschaltet, 'spotify']
-  }
   const wahl = versuchsQuellen(werk, {
     wunschDienst: wunschDienst || undefined,
     abgeschaltet,
@@ -14523,10 +14422,7 @@ app.post('/api/spielen', async (req, res) => {
   })
   if (!wahl.quellen.length) {
     if (wahl.alleAus) {
-      // Der Grund entscheidet den Satz: „Nachtmodus" schickt niemanden in
-      // die Streaming-Dienste, wo der Schalter ordnungsgemaess an steht.
-      const wegen = nachtSchweigt && wahl.alleAus === 'spotify' ? 'nachtmodus' : 'schalter'
-      return res.status(403).json(verweigerung(wahl.alleAus as Parameters<typeof verweigerung>[0], wegen))
+      return res.status(403).json(verweigerung(wahl.alleAus as Parameters<typeof verweigerung>[0]))
     }
     return res.status(502).json({ ergebnis: 'geht-nicht', grund: 'keine-quelle', schluessel })
   }
@@ -14544,13 +14440,12 @@ app.post('/api/spielen', async (req, res) => {
    *
    * DIE URSACHE WAR EINE INKONSISTENZ IM EIGENEN HAUS: `/inhalt` waehlt seit
    * E95 Stufe 1 die VOLLSTE Quelle (`waehleInhalt` — genau fuer den Fall
-   * „Mitschnitt hat erst die Haelfte"), die TON-Wahl nahm aber weiter stur
+   * „lokal liegt erst die Haelfte"), die TON-Wahl nahm aber weiter stur
    * die erste der Reihenfolge. Hier wird beides dieselbe Entscheidung: der
    * Server holt die Kandidaten-Inhalte (dieselbe Funktion, dieselbe Regel)
    * und spielt die Quelle, die auch angezeigt wird.
    *
-   * SELBSTHEILUNG INKLUSIVE (Betreiber: „irgendwann sollte es ja auch
-   * aufgenommen sein"): sobald der Mitschnitt vollstaendig ist, hat die
+   * SELBSTHEILUNG INKLUSIVE: sobald das lokale Album vollstaendig ist, hat die
    * lokale Quelle die meisten Titel und gewinnt von selbst — ohne dass
    * jemand etwas umstellt.
    *
@@ -14577,11 +14472,11 @@ app.post('/api/spielen', async (req, res) => {
       /* ══ DER TITEL IST DAS KLEINSTE TEIL — AUCH HIER (Nachtrag 31.08.) ═══
        *
        * Betreiber, nachdem die erste Fassung fast alles auf Spotify schob:
-       * „mitschnitt soll sich nicht auf das album beziehen sondern auf den
-       * titel wenn titel komplett dann ist er abspiel bereit." Die
+       * es zaehlt der Titel, nicht das Album — wenn ein Titel komplett ist,
+       * ist er abspielbereit. Die
        * Titelzahl-Regel oben ist eine ALBUM-Frage und damit die falsche:
        * sechs fertige Titel zu verwerfen, weil acht fehlen, wirft genau das
-       * weg, was die Aufnahme schon geleistet hat.
+       * weg, was lokal schon vorliegt.
        *
        * Deshalb die Gegenprobe je Titel: Traegt die GEWINNER-Liste (die
        * vollste, also die ehrliche Soll-Liste) fuer JEDEN Titel ein lokales
@@ -14589,7 +14484,7 @@ app.post('/api/spielen', async (req, res) => {
        * lokal bleibt vorn, ganz gleich was die Titelzahl der einzelnen
        * Antworten sagt. Das Haekchen setzt `titelQuellenStempeln`/
        * `titelMischen` nur fuer VOLLSTAENDIGE Spuren (`spurVollstaendig`
-       * liest das Urteil der Aufnahme aus dem Dateinamen).
+       * liest das Urteil aus dem Dateinamen).
        *
        * Bis der EINE Wechselpunkt steht (E108 Stufe 3, PipeWire-Cue am
        * 31.08. am Ton bewiesen), bleibt es bei GANZ oder GAR NICHT — ein
@@ -17170,7 +17065,7 @@ app.post('/api/profil/auswahl/werk', express.json({ limit: '8kb' }), async (req,
 })
 
 /**
- * Der Mitschnitt — wer was wann wie lange, und ueber welchen Dienst.
+ * Der Verlauf — wer was wann wie lange, und ueber welchen Dienst.
  *
  * OHNE `?profil=` KOMMEN ALLE (Betreiber: „ohne profil auswahl für alle
  * profile"). Ein Erwachsener will meistens wissen, was IM HAUS lief, nicht
@@ -20019,7 +19914,7 @@ app.post('/api/weiterhoeren', express.json({ limit: '16kb' }), async (req, res) 
   const eintrag = await eintragZuSchluessel(schluessel)
   if (!eintrag) return res.status(404).json({ error: 'unbekannterSchluessel' })
 
-  // MITSCHNITT: hier meldet die Oberflaeche im Takt, was laeuft — also ist
+  // VERLAUF: hier meldet die Oberflaeche im Takt, was laeuft — also ist
   // hier die Stelle, an der sich Hoerzeit MESSEN laesst statt schaetzen.
   // Bewusst ohne await: der Verlauf darf das Fortsetzen nicht aufhalten.
   void verlaufSchlagBuchen(profilAktiv(), {
@@ -21702,7 +21597,7 @@ function stroemeAusKonfig(konfig: Record<string, any>): Stroeme {
  * DREI AUSGAENGE, NICHT ZWEI. `null` heisst „konnte nicht nachsehen" und ist
  * etwas ganz anderes als `0` („nachgesehen, keines da"). Wer beides zu `0`
  * zusammenzieht, meldet einer Box, die gerade laeuft und spielt, sie sei nicht
- * gekoppelt — dieselbe Unterscheidung wie beim Laden der Mitschnitt-Liste.
+ * gekoppelt — dieselbe Unterscheidung wie beim Laden der Verlaufs-Liste.
  */
 function kontenZaehlen(ordner: string): number | null {
   try {
@@ -21827,24 +21722,14 @@ app.put('/api/stroeme', express.json({ limit: '16kb' }), async (req, res) => {
  * Nachfrager. Zwei Arbeiter wuerden sonst jeder fuer sich denselben freien
  * Strom finden und beide mit demselben Zugang starten.
  *
- * DER ZUGANG GEHT HIER NICHT HINAUS. Die Antwort nennt nur die NUMMER; den
- * Schluessel dazu hat das Plugin ohnehin schon aus `kontext.stroeme`, und
- * zwar nur, wenn sein Manifest das Recht `aufnahme` traegt. Zwei Wege, zwei
- * Zustaendigkeiten: die Route teilt Plaetze zu, das Recht gibt Geheimnisse.
+ * DER ZUGANG GEHT HIER NICHT HINAUS. Die Antwort nennt nur die NUMMER; die
+ * Route teilt Plaetze zu und gibt keine Geheimnisse heraus.
  */
 const belegungsbuch = new Belegungsbuch()
 
 /**
  * DER DIENST HAELT SEINEN STROM — immer, auch wenn niemand hoert.
  *
- * ══ AM GERAET GELERNT (22.08.2026) ═════════════════════════════════════════
- *
- * Der erste Pool-Lauf teilte dem Mitschnitt STROM 1 zu, und der Lauf scheiterte
- * mit Soloists eigenen Worten:
- *
- *     Soloist: Use --data-dir to specify a writable location.
- *
- * Der Grund ist keine Kleinigkeit, sondern eine falsche Annahme im Entwurf:
  * Strom 1 ist KEIN freier Platz. Es ist der Zugang, mit dem `soloist.service`
  * dauerhaft laeuft — mit `/var/lib/soloist` als Datenordner (StateDirectory).
  * Zwei Soloist-Prozesse koennen sich einen Datenordner nicht teilen; dort liegt
@@ -21853,23 +21738,14 @@ const belegungsbuch = new Belegungsbuch()
  * Die Mitglieder des Pools sind also NICHT gleichartig: einer wird von einem
  * dauerhaften Dienst gehalten, die uebrigen werden bei Bedarf gestartet. Wer
  * das nicht eintraegt, verteilt einen Platz, auf dem schon jemand sitzt.
- *
- * ══ UND DAMIT IST DIE RESERVE SCHON ERFUELLT ═══════════════════════════════
- *
- * „Immer einen fuers Hoeren freihalten" heisst bei dieser Bauart: der Dienst
- * HAELT ihn bereits. Deshalb ist die Vorgabe fuer `reserve` 0 und nicht 1 —
- * sonst zaehlte dieselbe Zusicherung zweimal, und der Mitschnitt kaeme bei zwei
- * Stroemen nie zum Zug. Wer mehr Zugaenge eintraegt und einen ZWEITEN Platz
- * fuer ein zweites Kind freihalten will, setzt `spotify.stromReserve`.
  */
 const DIENST_HAELT_STROM = 1
 function dienstBelegungSichern(engine: string): void {
   // NUR WENN SOLOIST DIE GEWAEHLTE MASCHINE IST. Mit engine=librespot laeuft
   // soloist.service gar nicht (ExecCondition) und haelt nichts — die Belegung
-  // trotzdem einzutragen hiess bis 22.08.2026: die Ein-Schluessel-Box mit
-  // librespot konnte NIE mitschneiden, weil ihr einziger Strom auf dem Papier
-  // einem Dienst gehoerte, der nicht existiert. Nicht mehr erneuert heisst:
-  // eine bestehende Belegung laeuft ueber ihre Frist aus, kein Abriss noetig.
+  // trotzdem einzutragen hiesse: der einzige Strom einer Ein-Schluessel-Box
+  // gehoerte auf dem Papier einem Dienst, der nicht existiert. Nicht mehr
+  // erneuert heisst: eine bestehende Belegung laeuft ueber ihre Frist aus.
   if (engine !== 'soloist') return
   // IDEMPOTENT UND OHNE ABLAUF-SORGE: die Frist wird bei jeder Frage neu
   // gesetzt, weil der Dienst laeuft, solange die Box laeuft. Ein Zeitgeber
@@ -21883,33 +21759,24 @@ function dienstBelegungSichern(engine: string): void {
     [{ nr: DIENST_HAELT_STROM, zweck: 'wiedergabe', maschine: 'soloist', schluessel: '', senke: '' }],
     'wiedergabe',
     'soloist.service',
-    0,
   )
 }
 
 app.post('/api/stroeme/vergabe', express.json({ limit: '4kb' }), async (req, res) => {
-  const b = (req.body ?? {}) as { fuer?: unknown; wer?: unknown; reserve?: unknown }
-  const fuer = b.fuer === 'mitschnitt' ? 'mitschnitt' : b.fuer === 'wiedergabe' ? 'wiedergabe' : null
+  const b = (req.body ?? {}) as { fuer?: unknown; wer?: unknown }
+  const fuer = b.fuer === 'wiedergabe' ? 'wiedergabe' : null
   if (!fuer) {
-    res.status(400).json({ error: 'fuer muss wiedergabe oder mitschnitt sein' })
+    res.status(400).json({ error: 'fuer muss wiedergabe sein' })
     return
   }
   try {
     const konfig = ((await readJsonFile(mupiboxConfigPath).catch(() => null)) ?? {}) as Record<string, any>
     const pool = stroemeAusKonfig(konfig).stroeme
-    // DIE RESERVE IST EINSTELLBAR (Betreiber: „das könnte man konfigurieren"),
-    // hat aber eine Vorgabe, die ohne Zutun das Richtige tut: EINEN Strom
-    // fuers Hoeren freihalten. Damit ist Verdraengung der Sonderfall.
-    const reserve = Number.isInteger(konfig?.spotify?.stromReserve)
-      ? Number(konfig.spotify.stromReserve)
-      : typeof b.reserve === 'number' && Number.isInteger(b.reserve) && b.reserve >= 0
-        ? b.reserve
-        : 0
     const wer = typeof b.wer === 'string' && b.wer.trim() ? b.wer.trim().slice(0, 60) : 'unbekannt'
     // ERST EINTRAGEN, WAS DER DIENST HAELT, dann verteilen. Sonst vergibt der
     // Wirt einen Platz, auf dem schon jemand sitzt (Begruendung oben).
     dienstBelegungSichern(String(konfig?.spotify?.engine ?? 'librespot'))
-    const z = belegungsbuch.anfordern(pool, fuer, wer, reserve)
+    const z = belegungsbuch.anfordern(pool, fuer, wer)
     res.json(z)
   } catch (f) {
     fehlerAntwort(res, 500, 'POST /api/stroeme/vergabe', f, (grund) => ({ error: grund }))
@@ -21928,9 +21795,8 @@ app.post('/api/stroeme/freigeben', express.json({ limit: '2kb' }), (req, res) =>
 /**
  * „Ich lebe noch" — und zugleich die Frage „habe ich ihn noch?".
  *
- * `ok: false` heisst VERDRAENGT (oder Frist abgelaufen). Genau daran merkt ein
- * laufender Arbeiter, dass er weichen soll, ohne dass ihn jemand abschiessen
- * muss.
+ * `ok: false` heisst: Frist abgelaufen oder freigegeben. Genau daran merkt ein
+ * Nehmer, dass er den Strom nicht mehr haelt.
  */
 app.post('/api/stroeme/lebenszeichen', express.json({ limit: '2kb' }), (req, res) => {
   const marke = (req.body as { marke?: unknown })?.marke
@@ -21962,9 +21828,7 @@ app.get('/api/stroeme/belegung', (_req, res) => {
  */
 const spielstandQuelle = new SpielstandQuelle({
   endpunkt: async () => {
-    // STROM 1 IST DER DIENST — nur er haelt einen dauerhaften Draht. Die
-    // Aufnahme-Stroeme leben je einen Titel lang; sie zu befragen hiesse,
-    // einen Spielstand zu melden, den niemand hoert.
+    // STROM 1 IST DER DIENST — nur er haelt einen dauerhaften Draht.
     const ordner = '/var/lib/soloist'
     const [addr, port] = await Promise.all([
       readFile(`${ordner}/ws.addr`, 'utf8').catch(() => ''),
@@ -23601,7 +23465,7 @@ app.post('/api/verschmelzung/verbinden', express.json({ limit: '8kb' }), async (
 
 /**
  * Eine Zuordnung von HAND FESTSCHREIBEN — fuer Aufrufer, die ihre Quelle schon
- * KENNEN (heute: der Mitschnitt, plugins/mixpi-mitschnitt, `kachelAnlegen()`),
+ * KENNEN (etwa ein Plugin, das eine Kachel fuer einen bekannten Eintrag anlegt),
  * statt sie der Heuristik (`gruppiereMitVerschmelzung` in medien.ts) zu
  * ueberlassen. Die Regel selbst — idempotent, GETRENNT gewinnt, eine
  * bestehende Zuordnung wird erweitert statt verdoppelt — steht in

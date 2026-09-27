@@ -9,11 +9,11 @@ jeweiligen Prozess, und genau die fremden will man sehen.
 ══ WOFUER ═════════════════════════════════════════════════════════════════
 
 Die Box schreibt im LEERLAUF rund 1,5 GB je Stunde auf die SD-Karte
-(gemessen 16.08.2026, tools/box/schreiblast-messen.py). Das ist viel fuer
-ein Geraet, das Musik abspielt — und es ist die Groesse, an der die
-Lebensdauer der Karte haengt. Fuer den Mitschnitt wurde die Rohdatei extra
-in den Arbeitsspeicher gelegt, um 660 MB/h zu sparen; wenn nebenher das
-Doppelte fuer nichts geschrieben wird, war das die falsche Baustelle.
+(gemessen 16.08.2026). Das ist viel fuer ein Geraet, das Musik abspielt —
+und es ist die Groesse, an der die Lebensdauer der Karte haengt. Wer
+Zwischendateien extra in den Arbeitsspeicher legt, um Schreiblast zu sparen,
+und nebenher das Doppelte fuer nichts schreibt, hat an der falschen Stelle
+gespart.
 
 ══ WAS GEMESSEN WIRD, UND WAS NICHT ═══════════════════════════════════════
 

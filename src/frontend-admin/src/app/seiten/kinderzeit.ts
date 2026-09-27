@@ -679,7 +679,7 @@ export function kennungAus(name: string): string {
 
     <!-- ══ STATISTIKEN ═══════════════════════════════════════════════════
          Betreiber: „statistiken was gespielwurde wann" und „welchen dienst
-         wie lange". Die Zahlen kommen aus dem Mitschnitt (verlauf.ts) und
+         wie lange". Die Zahlen kommen aus dem Hörverlauf (verlauf.ts) und
          sind GEMESSENE Hoerzeit, nicht Start-bis-Stopp. -->
     <div class="karte">
       <b>Statistik — was gehört wurde</b>
@@ -729,11 +729,11 @@ export function kennungAus(name: string): string {
           </tbody>
         </table>
       } @else {
-        <!-- EHRLICH STATT LEER: der Mitschnitt kann noch nichts wissen, wenn
+        <!-- EHRLICH STATT LEER: der Hörverlauf kann noch nichts wissen, wenn
              er heute erst eingerichtet wurde. Das ist kein Fehler, und die
              Seite soll es nicht wie einen aussehen lassen. -->
         <p class="hinweis">
-          Für diesen Zeitraum ist noch nichts aufgezeichnet. Der Mitschnitt läuft
+          Für diesen Zeitraum ist noch nichts gezählt. Der Hörverlauf läuft
           seit dem 15.08.2026 mit — rückwirkend gibt es die Daten nicht.
         </p>
       }

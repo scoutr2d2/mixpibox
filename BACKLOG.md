@@ -5266,7 +5266,7 @@ Der Verdacht unten (`verfuegbar.ts`) war **falsch**. Die Ursache ist die
 **Medienauswahl des Profils**, und sie ist strukturell:
 
 `medienSchluessel` trägt den **Dienst im Schlüssel**. Dasselbe Album hat als
-Streaming-Eintrag `spotify:7zkg…` und als Mitschnitt `lokal:t:künstler|titel` —
+Streaming-Eintrag `spotify:7zkg…` und als lokale Fassung `lokal:t:künstler|titel` —
 zwei verschiedene Schlüssel. In der Auswahl steht nur der erste, also wirft
 `auswahlFiltern` den Mitschnitt heraus. Und die Verschmelzung rettet ihn
 nicht: sie läuft **danach** (server.ts, erst 8298, dann 8308).
@@ -5533,7 +5533,7 @@ erklärt sich jetzt selbst.
 |---|---|---|
 | S1 | **Probe NEBEN librespot**, eigener Gerätename („MixPiBox-Probe"), nichts umgestellt | PipeWire-Knotenname (der Recorder-Abgriff hängt daran!), CPU/RAM, WebSocket-API, Verhalten beim WLAN-Abriss, Neustart-Festigkeit |
 | S2 | Engine-Schalter + systemd-Unit + Startskript; Tonlogin-Weg klären (Soloist authentifiziert über Connect/Zeroconf, nicht credentials.json) | Umschalten hin UND zurück, ohne Neuinstallation |
-| S3 | Recorder folgt dem Knoten (`knotenSuchen` hat den Suchbegriff schon als Parameter) | Mitschnitt-Durchlauf unter Soloist |
+| S3 | Recorder folgt dem Knoten (`knotenSuchen` hat den Suchbegriff schon als Parameter) | Mitschnitt-Durchlauf mit der zweiten Maschine |
 | S4 | **Der 90-Tage-Updater** + Admin-Warnung | Uhr vorstellen/Build altern lassen: warnt es? holt es? |
 | S5 | Erst DANACH die Frage, ob Soloist Vorgabe wird | — |
 
@@ -7074,7 +7074,7 @@ Namen abgeleitet** wird:
 
 `src/backend-api/src/interpretenkennung.ts` — Kennung `int_` + zwölf
 Hexziffern, die der Box gehört, mit mehreren Namen und mehreren
-Dienstverweisen (`spotify`, `aufnahme`, `jellyfin` …) daran. **Zufällig**
+Dienstverweisen (`spotify`, `jellyfin`, `lokal` …) daran. **Zufällig**
 erzeugt, nicht gezählt: zwei Boxen, die je für sich zählen, vergeben dieselbe
 Nummer an verschiedene Interpreten, und das fällt erst beim Zusammenführen auf.
 
@@ -7289,7 +7289,7 @@ ist keiner. In **Fall 3 bricht es ab** statt zu warnen — ein Lauf mit demselbe
 Zugang während der Wiedergabe wäre Schaden am laufenden Betrieb, kein
 Messfehler.
 
-Der zweite Schlüssel gehört nach `.spotify.soloistApiKeyMitschnitt` und steht
+Der zweite Schlüssel gehört in ein eigenes Feld der Konfiguration und steht
 bewusst nicht im Repo. Am 20.08. per Prüfsummen bestätigt: er ist ein
 **anderer** als der der Familie.
 
@@ -8328,7 +8328,7 @@ Tarifentscheidung — ein Family-Tarif trägt bis zu sechs.
 
 Nichts wird verworfen. Die Liste (`mitschnittliste.ts`) und die
 Interpretenkennung sind von der Frage unberührt. Was sich ändert, ist der
-**Zuschnitt der Kette darunter**: statt „Familien-Soloist + Mitschnitt-Soloist"
+**Zuschnitt der Kette darunter**: statt „erste Maschine + zweite Maschine"
 eine Verwaltung von *n* Strömen, aus der sich beide bedienen. Der Mitschnitt
 sollte deshalb **nicht** so gebaut werden, dass er „der zweite" ist — er ist
 „einer".
@@ -9278,7 +9278,7 @@ Buchung des Kritiker-Laufs 10.09.2026 (AUDIT-2026-09-10.md):
 - AUDIT-2026-09-10 Rang 7: zwei rohe JSON-Schreiber im 2-s-Sammelfenster — server.ts:16353 gespielt (Hoerverlauf eines Profils) und :20657 verfuegbarkeit (speist medienGeloescht) per writeFileSync ohne tmp+rename; auf jsonAtomarSchreiben (importiert, drei Zeilen entfernt im Einsatz) — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-10 Rang 8: Kern importiert aus Plugin — server.ts:592 nachtmodusGilt aus mixpi-mitschnitt/auftrag.mjs, esbuild baeckt es ins Buendel, auf der Box zwei Fassungen ueber die Ausrollgrenze (mixpi-plugins-nachziehen.sh); nicht aufloesen, messen: Start-Wache Buendel gegen PLUGIN_ORDNER — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-10 Rang 9: app.js-Schreib-Naht — 28/55 fetch ohne Frist (json()-Kommentar :1006 nennt nur Bluetooth), 32/41 Schreibstellen ohne 401-Zweig, Profil-Familie 9 Stellen zeichennah ohne Frist und 5/9 stumm im Fehlerfall (Kind-Umschalten schreibt still aufs alte Profil); Etappen: profilSchreiben, dann json() um Methode/Rumpf — offen — Sammelpunkt E91, unbewertet uebernommen
-- AUDIT-2026-09-10 Rang 10: Plugin-Netzpfad-Haertung — archive/ardsounds/jellyfin rufen .json() am Pruefstand vorbei (Proxy-HTML wird Unexpected token), lastfm ohne holen-Wache, musicbrainz parst ohne try, librespot/soloist-Asymmetrie bei dritter Maschine, mitschnitt telefoniert dokumentiert am Loopback-Riegel vorbei ohne dass es etwas ausweist — vier kleine Schnitte, NICHT zusammenlegen — offen — Sammelpunkt E91, unbewertet uebernommen
+- AUDIT-2026-09-10 Rang 10: Plugin-Netzpfad-Haertung — archive/ardsounds/jellyfin rufen .json() am Pruefstand vorbei (Proxy-HTML wird Unexpected token), lastfm ohne holen-Wache, musicbrainz parst ohne try, librespot/soloist-Asymmetrie bei dritter Maschine; ein Plugin telefoniert dokumentiert am Loopback-Riegel vorbei ohne dass es etwas ausweist — vier kleine Schnitte, NICHT zusammenlegen — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-10 Rang 11: backlog-status-schau liest Tabellen an Spaltenzahl statt Kopfzeile — die 9 Zellen ausserhalb der Konventionen (09-08 R15) sind ALLE Fehlalarme zweier Prosa-Tabellen; echt kaputt sind BACKLOG.md:2427/:2433 (ungeschuetztes Pipe seit 04.08.), und die Wache haengt in keinem Laeufer — Kopfzeilen-Erkennung, zwei Zeilen richten, verdrahten — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-10 Rang 12: mixpi-fernbedienung.service als root ohne Hardening — parst Funk-Eingaben; NoNewPrivileges/ProtectSystem=strict/DeviceAllow=char-input u. a. risikofrei, PrivateNetwork/PrivateDevices ausdruecklich NICHT, CapabilityBoundingSet am Geraet proben — offen — Sammelpunkt E91, unbewertet uebernommen
 - AUDIT-2026-09-10 Rang 13: Node 22 EOL 30.04.2027 (Maintenance seit 10/2025) — backend-api target=node22, Installer setup_22.x; vor 04/2027 auf Node 24 samt nodesource-Trixie-Thema; BlueZ-Parsing dagegen ausdruecklich lassen (Trixie friert 5.82 ein), nur hciconfig-Abhaengigkeit (bluetooth.ts:458) vormerken — offen, terminiert — Sammelpunkt E91, unbewertet uebernommen
@@ -10859,8 +10859,6 @@ Drei Ebenen, festgeschrieben am 31.08.2026:
        spotify (Node 85, Stream/Output/Audio, app=Spotify, regelbar)
            --> klangwerk --> klangwerk.ausgang --> alsa_output
        entzerrer.ausgang --> klangwerk            [der mpv-Weg]
-       spotify --> mixpi-mitschnitt               [die Aufnahme zapft
-                                                   VOR dem Klangwerk ab]
 
    Die beiden Maschinen laufen bis zum Klangwerk GETRENNT - der
    Spotify-Pfad ist einzeln schaltbar, ohne mpv zu beruehren. Live
@@ -11439,7 +11437,6 @@ und die Box war an diesem Abend offline.
 spotify (Stream/Output/Audio, application.name=Spotify)
     --> klangwerk --> klangwerk.ausgang --> alsa_output.platform-soc_…
 entzerrer.ausgang --> klangwerk            [der mpv-Weg]
-spotify --> mixpi-mitschnitt               [die Aufnahme zapft VOR dem Klangwerk ab]
 alsa_output --> mixpi-pegel                [die Pegelmessung]
 ```
 

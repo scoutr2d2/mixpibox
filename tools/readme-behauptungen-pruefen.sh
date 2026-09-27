@@ -247,8 +247,8 @@ zahl "frontend-admin Seiten (Routen mit title:, ohne Anmeldung)" "27" "$n" 10
 n=$(find "$WURZEL/config/services" \( -name '*.service' -o -name '*.timer' -o -name '*.path' \) 2>/dev/null | wc -l)
 zahl "systemd-Einheiten in config/services" "42" "$n" 10
 
-# tools/IDEEN.md ist kein Werkzeug, und dieses Skript hier zaehlt sich selbst
-# mit — beides abziehen, sonst waechst die Zahl bei jedem Gegenlesen.
+# Nur Skripte zaehlen, und dieses Skript hier zaehlt sich selbst
+# mit — daher „inkl. dieses" in der Beschreibung.
 n=$(find "$WURZEL/tools" -maxdepth 1 -type f \
       \( -name '*.sh' -o -name '*.mjs' -o -name '*.py' -o -name '*.js' \) | wc -l)
 zahl "Werkzeuge in tools/ (Skripte, inkl. dieses)" "ueber 560" "$n" 25
@@ -320,7 +320,7 @@ zahl "mixpibox.md §7.3  remote-step-installer Testdateien" "27" "$n" 20
 # dass ihre Summanden stimmen; genau deshalb braucht JEDE der beiden Zahlen
 # hier ihre eigene Zeile. Toleranz 0, ein Eintrag mehr ist hier ein Ereignis.
 n=$(grep -cE "<a routerLink=" "$WURZEL/src/frontend-admin/src/app/rahmen.ts" 2>/dev/null)
-zahl "mixpibox.md §4   Eintraege der Kopfleiste (rahmen.ts)" "24" "$n" 0
+zahl "mixpibox.md §4   Eintraege der Kopfleiste (rahmen.ts)" "23" "$n" 0
 
 echo
 echo "== 4. Wiki-Eintraege, die die README beim Namen nennt =="

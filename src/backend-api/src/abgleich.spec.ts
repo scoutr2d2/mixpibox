@@ -66,9 +66,9 @@ const HAMM_SPOTIFY = werk('spotify:0l0nQidfDmC4SiTdrpHr4v', 'spotify', {
 
 describe('auswahlUmZuordnungenErweitern — die Auswahl kennt ihre Partner (30.08.2026)', () => {
   // AM GERAET GEMESSEN („Guten Morgen / Good Morning"): das Papa-Profil hat
-  // den Streaming-Eintrag in seiner Medienauswahl, der Mitschnitt traegt den
-  // lokal-Schluessel — und gefiltert wird VOR der Verschmelzung. Die
-  // Mitschnitt-Kachel fiel aus der Liste, die Hand-Zuordnung fand ihr
+  // den Streaming-Eintrag in seiner Medienauswahl, die lokale Fassung traegt
+  // den lokal-Schluessel — und gefiltert wird VOR der Verschmelzung. Die
+  // lokale Kachel fiel aus der Liste, die Hand-Zuordnung fand ihr
   // Mitglied nicht, nichts verschmolz, und der Tipp spielte am falschen Ort.
   const zuordnungen = [
     { schluessel: 'spotify:6wMx', auch: ['lokal:t:team karacho rola|guten morgen good morning englisch'], stufe: 'hand' as const },
@@ -418,9 +418,9 @@ describe('trennen und verbinden — einzeln, ohne die ganze Funktion abzuschalte
 
 /**
  * `handVerbinden` — eine Zuordnung von HAND FESTSCHREIBEN, ohne auf die
- * Heuristik zu warten (W2, Befund 29.08.2026). Der Mitschnitt
- * (plugins/mixpi-mitschnitt) ruft das ueber `/api/verschmelzung/festschreiben`
- * bei JEDEM aufgenommenen Stueck erneut auf — idempotent und mit `getrennt`
+ * Heuristik zu warten (W2, Befund 29.08.2026). Ein Plugin darf das ueber
+ * `/api/verschmelzung/festschreiben` bei JEDEM Stueck erneut aufrufen —
+ * idempotent und mit `getrennt`
  * als letztem Wort muss diese Funktion deshalb wirklich sein, nicht nur im
  * Normalfall.
  */
@@ -434,8 +434,8 @@ describe('handVerbinden — eine Zuordnung von Hand festschreiben (W2)', () => {
   })
 
   it('ist IDEMPOTENT — ein zweiter Aufruf mit demselben Paar laesst die Ablage unveraendert', () => {
-    // Der Mitschnitt ruft bei jedem weiteren Stueck desselben Albums erneut
-    // auf: das darf die Ablage nicht wachsen lassen.
+    // Ein Aufrufer darf bei jedem weiteren Stueck desselben Albums erneut
+    // aufrufen: das darf die Ablage nicht wachsen lassen.
     const einmal = handVerbinden(ABLAGE_LEER, 'spotify:abc', 'lokal:t:k|t')
     const zweimal = handVerbinden(einmal, 'spotify:abc', 'lokal:t:k|t')
     assert.deepEqual(zweimal, einmal)

@@ -67,11 +67,11 @@ Aus dem Commit-Log, nicht aus dem Gedächtnis. Was davon halb ist, steht in 3.9.
   nicht gefahren.
 * **25.09.** **Kinderzeit-Regeln je Kind** jetzt auch in der Verwaltung: je Kind
   „wie die Hausregel" oder eigene Regeln. Der Ein-Knopf-Weg richtet Vorlesen,
-  Fernbedienung, Entzerrer und die Mitschnitt-Senke ein wie die anderen Wege.
+  Fernbedienung und Entzerrer ein wie die anderen Wege.
 * **21.09.** Nachrichten an das Kind — nur von Absendern auf der Liste, angezeigt
   dort, wo das Kind hinsieht.
 * **20.09.** Ein **Netzlaufwerk** (SMB oder WebDAV) als Ablage für Sicherungen
-  und Mitschnitte, mit Zertifikatswarnung statt stillem Durchwinken.
+  und Medien, mit Zertifikatswarnung statt stillem Durchwinken.
 * **20.09.** **Belohnungs-Videos**: eine Seite, auf der Eltern Videos verdienen
   lassen; der Kern führt Buch je Kind; ein 25-Minuten-Video lässt sich in Stücke
   schneiden. Dazu die **zweite Mediathek** (ZDF, KiKA, 3sat, arte, funk).
@@ -92,7 +92,7 @@ Aus dem Commit-Log, nicht aus dem Gedächtnis. Was davon halb ist, steht in 3.9.
   lässt sich als Datei herunterladen und auf einer anderen Box hochladen.
   *MuPiBox Classic* trägt wieder die Ur-Farben des Ursprungs.
 * **August:** Profile mit Schloss, Kinderzeit je Kind, Abspielstatistik (seit
-  15.08.), Aufnehmen des Box-Tons, systemd statt pm2, Cover auf der Box, das
+  15.08.), systemd statt pm2, Cover auf der Box, das
   Plugin-System mit Verwaltungsfläche.
 
 ---
@@ -214,7 +214,7 @@ ausgebaut worden.
 
 | Bereich | Seiten |
 |---|---|
-| Was da ist | Profile · Medien · Streaming-Dienste · Aufzeichnen |
+| Was da ist | Profile · Medien · Streaming-Dienste |
 | Was man sieht und hört | Darstellung · Vorlesen · Videos · Spiele |
 | Was die Box ist | Konfiguration · Netzwerk · VPN · Netzlaufwerk · Nachrichten · Bluetooth · Ton · MuPiHAT · Plugins |
 | Wenn etwas klemmt | Systemdienste · System · Leistung · Protokolle · Aktualisierung · Sicherung |
@@ -282,9 +282,8 @@ Stationen: **Quellen → Klangwerk → Entzerrer → Ziel**.
 
 ### 3.6 Aufnehmen (geplant)
 
-Eine Aufnahmefunktion ist in Arbeit — als Quelle ist ein gekoppeltes
-Bluetooth-Mikrofon vorgesehen. Die bisherige Test-Erweiterung gehört nicht zur
-veröffentlichten Fassung.
+Eine Aufnahmefunktion mit eigener Quelle ist geplant — vorgesehen ist ein
+gekoppeltes Bluetooth-Mikrofon.
 
 ### 3.7 Bedienen ohne Touch — Handy-App, Fernbedienung und Controller
 
@@ -353,7 +352,7 @@ Gerät exklusiv (sonst schluckt Chromium die Tasten).
   15 Testdateien).
 * **42 systemd-Einheiten** in `config/services` (35 `.service`, 6 `.timer`,
   1 `.path`) — statt pm2. Die App ist damit 20 s früher bereit.
-* **15 Plugins** im Baum, in eigenen Worker-Fäden mit Speicher- und
+* **14 Plugins** im Baum, in eigenen Worker-Fäden mit Speicher- und
   Zeitgrenzen (Abschnitt 7).
 * **Sicherung** mit einem Rückweg, der ohne SSH auskommt: eine Textdatei auf
   der FAT-Partition der Karte genügt.
@@ -433,7 +432,7 @@ Zeilen) und an den heutigen Rezepten:
 | Kiosk | Chromium | Chromium, **Cog/WPE** als Option |
 | Installation | ein Monolith-Skript | **Rezepte**, Schritt für Schritt; Selbstlauf von der Karte |
 | Sprachausgabe | — | **Piper** auf der Box |
-| Erweiterungen | — | **Plugin-System**, 15 Plugins |
+| Erweiterungen | — | **Plugin-System**, 14 Plugins |
 
 ### Gemessen — was der Umbau gebracht hat
 
@@ -615,7 +614,7 @@ src/frontend-admin/    die Verwaltung (Angular)                             → 
 src/backend-api/       Medien, Konfiguration, Verwaltung; liefert aus       (:8200)
 src/backend-player/    Abspieldienst: mpv für lokal/Jellyfin, Spotify       (:5005)
 src/frontend-box/      Rest der gelöschten Angular-Oberfläche — siehe LIESMICH.md
-plugins/               15 Erweiterungen, Musterplugins, Prüfstand, Anleitung
+plugins/               14 Erweiterungen, Musterplugins, Prüfstand, Anleitung
 handy-app/             die Handy-App (Flutter, Android) — Abschnitt 3.7
 desktop/               der Theme-Gestalter als Desktop-App (Electron) — Abschnitt 3.1
 remote-step-installer/ Karten schreiben und Boxen aufsetzen (Abschnitt 5)
@@ -665,8 +664,8 @@ Pfaden).
 * **Pflicht sind vier Felder** (`kennung`, `name`, `fassung`, `haupt`), alles
   andere ist freiwillig: `rechte`, `felder`, `sektion`, `icon`, `aktionen`,
   `konfig`.
-* **Sieben Rechte**, und was nicht im Manifest steht, ist im Kontext schlicht
-  `undefined`: `medienquelle`, `ereignisse`, `netz`, `aufnahme`, `klang`,
+* **Sechs Rechte**, und was nicht im Manifest steht, ist im Kontext schlicht
+  `undefined`: `medienquelle`, `ereignisse`, `netz`, `klang`,
   `geraetestand`, `songtext`.
 * **Neun Vertragsmethoden, alle freiwillig:** `aufloesen`, `suchen`, `inhalt`,
   `befinden`, `ereignis`, `klangkette`, `aktion`, `http`, `songtext`.
@@ -698,8 +697,8 @@ npx tsx tools/plugin-pruefen.mjs plugins/<kennung>   # das maßgebliche Urteil
 Der letzte Befehl ist der maßgebliche: er lädt das Plugin in einem **echten**
 Worker mit den echten Riegeln. Die volle Anleitung — samt Abweisungsregeln im
 Wortlaut und einem Abschnitt „Für LLMs" — steht in
-**[`plugins/README.md`](plugins/README.md)**. Die 15 Plugins im Baum sind
-mitgetestet: 21 Testdateien, 680 Tests (`npm run test:plugins`).
+**[`plugins/README.md`](plugins/README.md)**. Die 14 Plugins im Baum sind
+mitgetestet: 16 Testdateien, 404 Tests (`npm run test:plugins`).
 
 | Plugin | Was es tut |
 |---|---|

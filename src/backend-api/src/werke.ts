@@ -64,8 +64,8 @@ export interface Quelle {
    *
    * WOZU, UND WARUM BEIDES FEHLEN DARF: ein Streamingdienst hat immer alles;
    * fuer ihn sind die Zahlen bedeutungslos, und sie fehlen. Eine LOKALE Ablage
-   * dagegen fuellt sich nach und nach — ein Mitschnitt enthaelt genau die
-   * Titel, die jemand gehoert hat, also anfangs drei von zwoelf.
+   * dagegen fuellt sich nach und nach — sie enthaelt womoeglich nur einen
+   * Teil der Titel, etwa drei von zwoelf.
    *
    * Ohne diese Angabe wuerde die Bevorzugung (`lokal` vor `spotify`) genau das
    * Falsche tun: das halbe lokale Album verdraengte das ganze aus dem Stream,
@@ -82,8 +82,8 @@ export interface Quelle {
    * Die Kategorie DIESER Quelle — nicht die des (verschmolzenen) Werks.
    *
    * AM GERAET GEMESSEN (30.08.2026, „ich kann keine alben abspielen die
-   * zusammen gefasst sind und aufgenommen"): „Nah" fuehrt als Streaming-Werk
-   * mit Kategorie `music`, der Mitschnitt liegt unter
+   * zusammen gefasst sind"): „Nah" fuehrt als Streaming-Werk
+   * mit Kategorie `music`, die lokale Fassung liegt unter
    * `audiobook/Alin Coen/Nah`. Der lokale Abspielbefehl heisst
    * `musicsearch/library/album/<kategorie>:<interpret>:<titel>` — mit der
    * Kategorie des WERKS suchte er in `media/music/`, das es fuer diesen
@@ -99,7 +99,7 @@ export interface Quelle {
    * Interpret und Titel exakt so, wie die Ordner auf der Platte heissen.
    *
    * AM GERAET GEMESSEN (30.08.2026, „Guten Morgen / Good Morning"): die
-   * Aufnahme sanitisiert Sonderzeichen (`/` wird `_`), die verschmolzene
+   * lokale Ordnername sanitisiert Sonderzeichen (`/` wird `_`), die verschmolzene
    * Kachel fuehrt aber mit den STREAMING-Metadaten. Ein musicsearch-Befehl
    * aus Werk-Titel und -Interpret sucht dann einen Ordner, den es nie gab
    * — und faengt im Zweifel etwas AEHNLICHES: falsches Lied, falsche

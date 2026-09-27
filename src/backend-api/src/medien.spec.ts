@@ -595,7 +595,7 @@ describe('gruppiereMitVerschmelzung — bestaetigte Zuordnungen und Trennungen (
 
   it('fasst zwei Eintraege zusammen, die die Heuristik ALLEIN nicht zusammengelegt haette', () => {
     // Der Fall aus dem Befund: der Streaming-Eintrag wurde umbenannt oder der
-    // Mitschnitt traegt einen anderen Interpreten — meinenDasselbe() sieht
+    // lokale Eintrag traegt einen anderen Interpreten — meinenDasselbe() sieht
     // keine Aehnlichkeit mehr, aber die Ablage hat die Zuordnung schon.
     const treffer = [
       mach('spotify', 's1', 'Steil II', 'Das Lumpenpack'),
@@ -1002,7 +1002,7 @@ describe('Plugin-Einträge (E87)', () => {
 })
 
 /**
- * „KACHEL SAGT ES" (E89) — die Marke fuer abgebrochene Mitschnitte.
+ * „KACHEL SAGT ES" (E89) — die Marke fuer unvollstaendige Alben.
  *
  * Betreiberwahl nach dem 101-Meerjungfrauen-Fund: die Kachel soll sichtbar
  * tragen, dass etwas fehlt, statt zu verschwinden oder zu schweigen.
@@ -1046,7 +1046,7 @@ describe('unvollstaendig (E89)', () => {
 
   it('DIE IDENTITAET AENDERT SICH DADURCH NICHT', () => {
     // Sonst verlöre die Box Verlauf und Favoriten in dem Moment, in dem ein
-    // Mitschnitt fertig wird.
+    // Ordner fertig wird.
     const mit = neuerEintrag({ ...roh, unvollstaendig: true }) as Eintrag
     assert.equal(medienSchluessel(mit), medienSchluessel(aenderungAnwenden(mit, { unvollstaendig: false })))
   })

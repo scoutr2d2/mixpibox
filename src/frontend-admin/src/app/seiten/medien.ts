@@ -149,83 +149,6 @@ interface Verfuegbarkeit {
   vorschlaege: Vorschlag[]
 }
 
-/**
- * Ein Eintrag der Mitschnitt-Lage, wie `mixpi-mitschnitt` unter `http/liste`
- * liefert (Betreiber: „mir fehlt noch die verwaltung sowie anstoßen").
- */
-interface AufnahmeEintrag {
-  uri: string
-  name: string
-  interpret: string
-  album?: string
-  stand: 'offen' | 'fertig' | 'fehler'
-  /** Nur bei `stand === 'fehler'` gesetzt — der Klartext des Plugins. */
-  wort?: string
-  gemerktAm?: number
-}
-
-interface AufnahmeZusammenfassung {
-  offen: number
-  fertig: number
-  fehler: number
-}
-
-/** Ein Titel aus `GET /api/werke/<schluessel>/inhalt` — nur die Felder, die die Abbildung braucht. */
-interface MitschnittTitelRoh {
-  titel?: string
-  interpret?: string
-  dauerMs?: number
-  uri?: unknown
-}
-
-/** Ein Titel im Koerper von `POST .../mixpi-mitschnitt/http/vormerken`. */
-interface MitschnittVormerkTitel {
-  uri: string
-  name: string
-  interpret: string
-  album: string
-  albumKuenstler?: string
-  dauerMs?: number
-  kategorie?: string
-}
-
-/**
- * Titel aus `/inhalt` (quelle=spotify) auf den Koerper von
- * `POST .../mixpi-mitschnitt/http/vormerken` abbilden — REIN, ohne Http, ohne
- * Angular, damit `mitschnitt-vormerk-koerper.spec.ts` sie ohne Umweg pruefen
- * kann (Haus-Muster: `SCHNELL_NICHT_KLICKBAR`, geprueft in `schnellwahl.spec.ts`).
- *
- * TITEL OHNE `uri` SIND KEIN STREAMING-TITEL — der serverseitige
- * Quellen-Ruckfall (`/api/werke/:schluessel/inhalt`, server.ts) kann bei
- * `quelle=spotify` trotzdem einen lokalen oder ARD-Titel ohne `uri` liefern,
- * wenn der Dienst selbst keinen Kandidaten stellt. Der Mitschnitt kann mit einem
- * Titel ohne Titel-URI nichts anfangen; er wird gezaehlt, nicht gesendet.
- */
-export function mitschnittVormerkKoerper(
-  titel: readonly MitschnittTitelRoh[],
-  album: { titel: string; interpret: string; kategorie?: string },
-): { koerper: MitschnittVormerkTitel[]; uebersprungen: number } {
-  const koerper: MitschnittVormerkTitel[] = []
-  let uebersprungen = 0
-  for (const t of titel) {
-    if (typeof t.uri !== 'string' || !t.uri) {
-      uebersprungen++
-      continue
-    }
-    const eintrag: MitschnittVormerkTitel = {
-      uri: t.uri,
-      name: String(t.titel ?? ''),
-      interpret: String(t.interpret ?? ''),
-      album: album.titel,
-    }
-    if (album.interpret) eintrag.albumKuenstler = album.interpret
-    if (typeof t.dauerMs === 'number') eintrag.dauerMs = t.dauerMs
-    if (album.kategorie) eintrag.kategorie = album.kategorie
-    koerper.push(eintrag)
-  }
-  return { koerper, uebersprungen }
-}
-
 /** Merker der Ansicht: soll automatisch bei den anderen Diensten nachgefragt werden? */
 const AUTO_SCHLUESSEL = 'mupi_medien_auto_v1'
 
@@ -241,13 +164,6 @@ const KATEGORIE_NAME: Record<string, string> = {
   music: 'Musik',
   audiobook: 'Hörspiel',
   other: 'Sonstiges',
-}
-
-/** Der Stand eines Mitschnitt-Eintrags als Wort statt als Code. */
-const AUFNAHME_STAND_WORT: Record<string, string> = {
-  offen: 'offen',
-  fertig: 'fertig',
-  fehler: 'mit Fehler',
 }
 
 /*
@@ -444,7 +360,6 @@ export const SCHNELL_NICHT_KLICKBAR = 'input, button, select, textarea, label, a
     .warn { color: var(--warnung, #e0a33a); }
     .leer { color: var(--gedaempft); font-size: 0.92rem; margin: 0.9rem 0 0; }
     summary { cursor: pointer; }
-    .mitschnitt-meldung { flex: 0 0 100%; color: var(--gedaempft); font-size: 0.82rem; }
     /* Treffer links, Baukasten rechts. Auf schmalen Schirmen untereinander -
        ein 320px-Kasten neben einer Trefferliste waere dort unbrauchbar. */
     .zweispaltig { display: flex; gap: 1rem; align-items: flex-start; }
@@ -951,56 +866,6 @@ export const SCHNELL_NICHT_KLICKBAR = 'input, button, select, textarea, label, a
     </div>
 
     <div class="karte">
-      <!-- ══ AUFNAHMEN — DIE LAGE DES MITSCHNITTS (Betreiber: „mir fehlt noch
-           die verwaltung sowie anstoßen ... ggf direkt an den alben zum
-           klicken"). Diese Karte fuehrt kein eigenes Buch - sie fragt beim
-           Mitschnitt-Plugin (mixpi-mitschnitt, http/liste) nach, was es an
-           Titeln offen, fertig oder mit Fehler hat. GEHOLT WIRD ERST BEIM
-           AUFKLAPPEN, nicht beim Oeffnen der Seite - dieselbe Zurueckhaltung
-           wie bei den ARD-Regalen darunter: ein Ruf an ein Plugin, das aus
-           sein kann, gehoert nicht in den Seitenaufbau. LIEFERT DIE ROUTE
-           404 ODER EINEN FEHLER (Plugin aus oder eine aeltere Fassung, die
-           die Auskunft noch nicht kennt), bleibt es bei einem ruhigen
-           Hinweis - kein Fehlerrot, denn das ist ein gewoehnlicher
-           Betriebszustand und kein Defekt dieser Seite. -->
-      <h2>Aufnahmen</h2>
-      <details (toggle)="aufnahmenAufklappen($any($event.target).open)">
-        <summary>
-          @if (aufnahmenZahl(); as z) {
-            {{ z.offen }} offen · {{ z.fertig }} fertig · {{ z.fehler }} mit Fehler
-          } @else {
-            Aufnahme-Lage ansehen
-          }
-        </summary>
-        <div class="reihe" style="margin-top: 0.6rem">
-          <button (click)="aufnahmenHolen()" [disabled]="aufnahmenLaedt()">
-            {{ aufnahmenLaedt() ? 'holt …' : 'Liste holen' }}
-          </button>
-        </div>
-        @if (aufnahmenHinweis()) {
-          <p class="hinweis">{{ aufnahmenHinweis() }}</p>
-        } @else if (aufnahmenListe().length) {
-          <ul>
-            @for (a of aufnahmenListe(); track a.uri) {
-              <li>
-                <span class="wer">
-                  <b>{{ a.name }}</b>
-                  <span>{{ a.interpret }}</span>
-                </span>
-                <span class="marke">{{ aufnahmeStandWort(a.stand) }}</span>
-                @if (a.stand === 'fehler' && a.wort) {
-                  <span class="hinweis warn">{{ a.wort }}</span>
-                }
-              </li>
-            }
-          </ul>
-        } @else if (aufnahmenGeholt()) {
-          <p class="leer">Nichts vorgemerkt.</p>
-        }
-      </details>
-    </div>
-
-    <div class="karte">
       <!-- ══ DIE REGALE DER ARD (E38, 15.08.2026) ══════════════════════════
            Betreiber: „oder gibt es kategorien" — es gibt achtzehn, und sie
            sind von der ARD GEPFLEGT statt von uns am Titel geraten. Dann:
@@ -1410,21 +1275,6 @@ export const SCHNELL_NICHT_KLICKBAR = 'input, button, select, textarea, label, a
                   placeholder="Interpret"
                   title="Interpret - Eingabe speichert, Esc verwirft"
                 />
-                <!-- „HIER FEHLT NOCH ETWAS" (E89). Gesetzt vom Mitschnitt,
-                     abgeräumt am Ende eines sauberen Laufs — bleibt also
-                     stehen, wenn er abgebrochen ist. Genau der Fall, der beim
-                     Betreiber als „101 Meerjungfrauen spielt nicht" ankam:
-                     25 Sekunden im Regal, die wie ein fertiges Album aussahen.
-
-                     ES STEHT AN DER ZEILE, NICHT IN EINER EIGENEN LISTE —
-                     wer die Bibliothek durchsieht, soll es dort finden, wo
-                     das Album steht. -->
-                @if (e['unvollstaendig']) {
-                  <span class="marke unvollstaendig"
-                        title="Der Mitschnitt wurde abgebrochen — das Album ist unvollständig. tools/mitschnitt-stummel.py nennt alle Fälle.">
-                    unvollständig
-                  </span>
-                }
               </span>
               <!-- WER SIEHT DAS? (Betreiber 15.08.2026: „ich bin noch ein
                    bisschen unglücklich über die medien profil zuordnung")
@@ -1515,27 +1365,6 @@ export const SCHNELL_NICHT_KLICKBAR = 'input, button, select, textarea, label, a
                         title="Gibt es das auch in einem anderen Dienst?">
                   {{ pruefe() === e.schluessel ? 'sucht …' : 'andere Dienste?' }}
                 </button>
-              }
-              <!-- AUFNEHMEN (Mitschnitt) - nur bei einer Streaming-Quelle in der
-                   Zeile, denn der Mitschnitt greift nur diese Wiedergabe ab. ZWEI
-                   KLICKS, KEIN FENSTER (sicher(), Haus-Idiom). -->
-              @if (mitschnittQuelle(e)) {
-                <button
-                  (click)="mitschnittAufnehmen(e)"
-                  [disabled]="nimmt() === e.schluessel"
-                  title="Die fehlenden Titel dieses Albums beim Mitschnitt vormerken"
-                >
-                  {{
-                    nimmt() === e.schluessel
-                      ? 'nimmt auf …'
-                      : fragt() === 'mitschnitt:' + e.schluessel
-                        ? (e['unvollstaendig'] ? 'wirklich neu aufnehmen?' : 'wirklich aufnehmen?')
-                        : (e['unvollstaendig'] ? 'Neu aufnehmen' : 'Aufnehmen')
-                  }}
-                </button>
-                @if (mitschnittMeldung()[e.schluessel]) {
-                  <span class="hinweis mitschnitt-meldung">{{ mitschnittMeldung()[e.schluessel] }}</span>
-                }
               }
               @if (geschwister(e).length === 1) {
                 <button class="gefahr" (click)="entfernen(e)">
@@ -2391,125 +2220,6 @@ export class MedienSeite {
   /** Die Art, wie die Spotify-Web-API sie nennt, auf Deutsch. */
   protected artName2(a: string | undefined): string {
     return a === 'playlists' ? 'Liste' : a === 'shows' ? 'Show' : a === 'audiobooks' ? 'Hörbuch' : 'Album'
-  }
-
-  // ── Aufnahmen (Mitschnitt-Lage) ────────────────────────────────────────
-  //
-  // Betreiber: „mir fehlt noch die verwaltung sowie anstoßen ... ggf direkt
-  // an den alben zum klicken". Diese Karte fuehrt kein eigenes Buch - sie
-  // fragt beim Mitschnitt-Plugin (mixpi-mitschnitt) nach. GEHOLT WIRD ERST
-  // BEIM AUFKLAPPEN (`aufnahmenAufklappen`), dieselbe Zurueckhaltung wie bei
-  // den ARD-Regalen: ein Ruf an ein Plugin, das aus sein kann, gehoert nicht
-  // in den Seitenaufbau.
-  protected readonly aufnahmenLaedt = signal(false)
-  protected readonly aufnahmenGeholt = signal(false)
-  protected readonly aufnahmenZahl = signal<AufnahmeZusammenfassung | null>(null)
-  protected readonly aufnahmenListe = signal<AufnahmeEintrag[]>([])
-  protected readonly aufnahmenHinweis = signal('')
-
-  /** Beim ERSTEN Aufklappen automatisch holen - ein zweites Mal nicht von selbst, dafuer steht „Liste holen". */
-  protected aufnahmenAufklappen(offen: boolean): void {
-    if (offen && !this.aufnahmenGeholt() && !this.aufnahmenLaedt()) void this.aufnahmenHolen()
-  }
-
-  protected async aufnahmenHolen(): Promise<void> {
-    if (this.aufnahmenLaedt()) return
-    this.aufnahmenLaedt.set(true)
-    this.aufnahmenHinweis.set('')
-    try {
-      const d = await firstValueFrom(
-        this.http.get<{ zusammenfassung?: AufnahmeZusammenfassung; eintraege?: AufnahmeEintrag[] }>(
-          '/api/plugins/mixpi-mitschnitt/http/liste',
-        ),
-      )
-      this.aufnahmenZahl.set(d.zusammenfassung ?? { offen: 0, fertig: 0, fehler: 0 })
-      this.aufnahmenListe.set(d.eintraege ?? [])
-    } catch {
-      // 404 heisst: das Plugin ist aus, oder eine aeltere Fassung kennt die
-      // Auskunft noch nicht. Beides ist ein gewoehnlicher Betriebszustand -
-      // kein Fehlerrot, siehe Kartenkommentar im Template.
-      this.aufnahmenHinweis.set('Der Mitschnitt ist aus oder kennt diese Auskunft noch nicht.')
-    } finally {
-      this.aufnahmenGeholt.set(true)
-      this.aufnahmenLaedt.set(false)
-    }
-  }
-
-  protected aufnahmeStandWort(stand: string): string {
-    return AUFNAHME_STAND_WORT[stand] ?? stand
-  }
-
-  /**
-   * Je Bibliotheks-Zeile: die Streaming-Fassung, wenn es eine gibt.
-   *
-   * NUR ZEILEN MIT STREAMING-QUELLE koennen vorgemerkt werden - der Mitschnitt
-   * greift nur diese eine Wiedergabe ab, keinen anderen Dienst. Bei einer
-   * verschmolzenen Zeile (mehrere `geschwister`) reicht EINE Streaming-Fassung.
-   */
-  protected mitschnittQuelle(e: Eintrag): Eintrag | undefined {
-    return this.geschwister(e).find((q) => this.dienstSchluessel(q) === 'spotify')
-  }
-
-  /** Antwort je Zeile - Muster wie `angebote()`: ein Record statt einer einzelnen Meldung. */
-  protected readonly mitschnittMeldung = signal<Record<string, string>>({})
-
-  /**
-   * Die fehlenden Titel eines Albums beim Mitschnitt vormerken.
-   *
-   * ZWEI KLICKS, KEIN FENSTER (`sicher()`, Haus-Idiom). Ablauf: Titel ueber
-   * `/inhalt?quelle=spotify` holen, auf den Vormerk-Koerper abbilden
-   * (`mitschnittVormerkKoerper`, rein und eigens geprueft) und beim Plugin
-   * vormerken. DIE ANTWORT STEHT AN DER ZEILE (`mitschnittMeldung`), nicht in
-   * der Seiten-Meldung ganz unten - Muster wie bei `angebote()`.
-   */
-  protected async mitschnittAufnehmen(e: Eintrag): Promise<void> {
-    if (!this.mitschnittQuelle(e)) return
-    if (!this.sicher(`mitschnitt:${e.schluessel}`)) return
-    this.nimmt.set(e.schluessel)
-    this.mitschnittMeldung.update((m) => ({ ...m, [e.schluessel]: '' }))
-    try {
-      const d = await firstValueFrom(
-        this.http.get<{ titel?: MitschnittTitelRoh[] }>(
-          `/api/werke/${encodeURIComponent(e.schluessel)}/inhalt?verschmelzen=1&quelle=spotify`,
-        ),
-      )
-      const { koerper, uebersprungen } = mitschnittVormerkKoerper(d.titel ?? [], {
-        titel: e.title ?? '',
-        interpret: e.artist ?? '',
-        kategorie: e.category,
-      })
-      if (!koerper.length) {
-        this.mitschnittMeldung.update((m) => ({
-          ...m,
-          [e.schluessel]: uebersprungen
-            ? `Kein Titel mit Titel-Kennung (${uebersprungen} übersprungen).`
-            : 'Keine Titel gefunden.',
-        }))
-        return
-      }
-      const a = await firstValueFrom(
-        this.http.post<{ vorgemerkt: number; schonDa: number; fertigUebersprungen?: number }>(
-          '/api/plugins/mixpi-mitschnitt/http/vormerken',
-          { titel: koerper },
-        ),
-      )
-      const teile = [`${a.vorgemerkt} vorgemerkt`]
-      if (a.schonDa) teile.push(`${a.schonDa} übersprungen (schon da)`)
-      if (a.fertigUebersprungen) teile.push(`${a.fertigUebersprungen} schon fertig`)
-      if (uebersprungen) teile.push(`${uebersprungen} ohne Titel-Kennung übersprungen`)
-      this.mitschnittMeldung.update((m) => ({ ...m, [e.schluessel]: `${teile.join(', ')}.` }))
-    } catch (f) {
-      const antwort = f as { status?: number; error?: { fehler?: string } }
-      const text =
-        antwort?.status === 403
-          ? antwort.error?.fehler || 'Der Mitschnitt bestätigt die Rechtslage nicht — vormerken ist gesperrt.'
-          : antwort?.status === 404
-            ? 'Der Mitschnitt ist aus oder kennt diese Auskunft noch nicht.'
-            : 'Die Titel ließen sich nicht vormerken.'
-      this.mitschnittMeldung.update((m) => ({ ...m, [e.schluessel]: text }))
-    } finally {
-      this.nimmt.set('')
-    }
   }
 
   /** Die eigenen Listen der Box (eigene Ablage, nicht die Bibliothek). */

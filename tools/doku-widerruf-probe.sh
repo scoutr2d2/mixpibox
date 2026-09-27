@@ -143,15 +143,15 @@ pruefe \
 # auftauchen.
 pruefe \
   '`--target` lügt|--target luegt, PIPEWIRE_NODE|nur `pw-link` trifft|nur pw-link trifft' \
-  "23.08.2026, Mitschnitt-Abgriff" \
+  "23.08.2026, pw-record-Abgriff" \
   "pw-link fuer die Verkabelung UND --target <object.serial> gegen den stillen Rueckfall auf die Standardquelle"
 
 # Derselbe Fall, zweite Haelfte: „die Daten sind heil" galt fuer die
-# Stummel-Kacheln und wurde zur Blankoaussage ueber jeden Mitschnitt-Befund.
+# Stummel-Kacheln und wurde zur Blankoaussage ueber jeden Abgriff-Befund.
 # Vier Dateien mit gueltigem FLAC-Kopf enthalten digitale Null.
 pruefe \
   'Die Daten sind dabei \*\*nicht\*\* kaputt|Die Daten sind dabei heil' \
-  "23.08.2026, Mitschnitt-Abgriff" \
+  "23.08.2026, pw-record-Abgriff" \
   "gilt NUR fuer die drei Stummel-Symptome; ein gueltiger FLAC-Kopf ist kein Beleg fuer Ton"
 
 # 24.08.2026: dieselbe Klasse, eine Stufe schwaecher — der Satz ist WAHR, aber

@@ -105,7 +105,6 @@
 0 tools/rechte-am-geraet.sh
 1 tools/riegel-tests-haelt-was.sh
 0 tools/rueckweg-wirklich-fahren.sh
-0 tools/say-befehl-durchfall.sh
 0 tools/schirm-umschalten-am-geraet.sh
 0 tools/schirmwahrnehmung-probe.sh
 0 tools/spotify-endpunkt-probe.sh

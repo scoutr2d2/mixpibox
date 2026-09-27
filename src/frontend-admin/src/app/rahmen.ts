@@ -180,11 +180,6 @@ export const UNTERSEITE_VON: Record<string, string> = {
           <a routerLink="/kinderzeit" routerLinkActive="hier">Profile</a>
           <a routerLink="/medien" [class.hier]="leuchtet('/medien')">Medien</a>
           <a routerLink="/streaming" routerLinkActive="hier">Streaming-Dienste</a>
-          <!-- „Aufzeichnen" GEHOERT ZU „Was da ist": es beschreibt, wie
-               Bestand ENTSTEHT (der Mitschnitt fuellt die Platte), nicht wie
-               die Box aussieht oder klemmt. Direkt nach den Diensten, aus
-               denen aufgezeichnet wird. -->
-          <a routerLink="/aufzeichnen" routerLinkActive="hier">Aufzeichnen</a>
         </section>
         <section class="gruppe">
           <span class="gruppentitel">Was man sieht und hört</span>

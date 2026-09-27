@@ -8,7 +8,7 @@
  *
  * DER SCHWERPUNKT LIEGT AUF DEM NEIN. Zwei Interpreten unter einer Kennung
  * sind ein stiller, nicht zurueckholbarer Schaden — im Regal des Kindes haengen
- * dann die Aufnahmen eines Fremden unter einem bekannten Namen, und es sieht
+ * dann die Alben eines Fremden unter einem bekannten Namen, und es sieht
  * aus wie Absicht. Ein Interpret unter zwei Kennungen ist dagegen eine
  * sichtbare Kachel zu viel. Deshalb pruefen die meisten Zeugen hier, dass
  * etwas NICHT passiert.
@@ -160,7 +160,7 @@ describe('nachschlagen', () => {
     assert.equal(kennungFuerNamen(ablage, 'das  pummeleinhorn'), 'int_000000000001')
   })
 
-  it('findet ueber den Dienstverweis — der Weg fuer Aufnahme und Dienste', () => {
+  it('findet ueber den Dienstverweis — der Weg fuer lokale Ordner und Dienste', () => {
     assert.equal(kennungFuerVerweis(ablage, 'Spotify', '1vCWHaC5f2uS3yhpwWbIA6'), 'int_000000000001')
   })
 
@@ -306,11 +306,11 @@ describe('Dienstverweise', () => {
     ],
   })
 
-  it('haengt Aufnahme und Dienstverweis an dieselbe Kennung', () => {
+  it('haengt lokalen Ordner und Dienstverweis an dieselbe Kennung', () => {
     let a = verweisSetzen(grund, 'int_000000000001', 'spotify', '4Yxsn0N9cLLXBGXPYUlP2y').ablage
-    a = verweisSetzen(a, 'int_000000000001', 'aufnahme', 'music/Die Sendung mit der Maus').ablage
+    a = verweisSetzen(a, 'int_000000000001', 'lokal', 'music/Die Sendung mit der Maus').ablage
     assert.equal(kennungFuerVerweis(a, 'spotify', '4Yxsn0N9cLLXBGXPYUlP2y'), 'int_000000000001')
-    assert.equal(kennungFuerVerweis(a, 'aufnahme', 'music/Die Sendung mit der Maus'), 'int_000000000001')
+    assert.equal(kennungFuerVerweis(a, 'lokal', 'music/Die Sendung mit der Maus'), 'int_000000000001')
   })
 
   it('laesst denselben Verweis NICHT an zwei Kennungen haengen', () => {

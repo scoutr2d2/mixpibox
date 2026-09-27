@@ -100,8 +100,8 @@
     "info": {
       "props": {
         "media.class": "Stream/Input/Audio",
-        "node.name": "mixpi-mitschnitt",
-        "media.name": "pw-record",
+        "node.name": "fremder-abnehmer",
+        "media.name": "pw-cat",
         "object.id": 90
       }
     }

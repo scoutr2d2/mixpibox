@@ -1,5 +1,5 @@
 /**
- * Die Netzlaufwerk-Seite: ein NAS-Ort für Sicherungen und Mitschnitte
+ * Die Netzlaufwerk-Seite: ein NAS-Ort für Sicherungen und Medien
  * (BACKLOG E28/N6–N9, N15 und E29/B4).
  *
  * „ich habe überlegt ob man nicht einfach noch einen nas ort angeben kann"
@@ -85,7 +85,7 @@ import { type Art, NetzlaufwerkDienst, type NetzlaufwerkLage } from '../netzlauf
     <h1>Netzlaufwerk</h1>
     <p class="unter">
       Eine Freigabe im Heimnetz — SMB oder WebDAV — als zweite Ablage: die Sicherungsstände liegen dann nicht nur auf derselben
-      Karte wie die Box, und Mitschnitte können dorthin, wo das Jellyfin sie ohnehin findet. Die Box hängt es
+      Karte wie die Box, und Medien können dort liegen, wo das Jellyfin sie ohnehin findet. Die Box hängt es
       NICHT beim Hochfahren ein, sondern erst beim Zugriff — ein ausgeschaltetes NAS hält sie nie auf.
     </p>
 

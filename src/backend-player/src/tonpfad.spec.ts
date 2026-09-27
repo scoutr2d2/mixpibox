@@ -7,7 +7,7 @@
  *
  *     spotify (85) --> klangwerk (60) --> klangwerk.ausgang (62) --> alsa_output (47)
  *     entzerrer.ausgang (71) --> klangwerk (60)
- *     spotify (85) --> mixpi-mitschnitt (90)
+ *     spotify (85) --> fremder-abnehmer (90)
  *     alsa_output (47) --> mixpi-pegel (92)
  *
  * Die Feldnamen der Kanten (`output-node-id`, `output-port-id`,
@@ -115,11 +115,11 @@ describe('istSpotifyEinspeisung — der Riegel ist die Klasse, nicht der Name', 
     assert.equal(istSpotifyEinspeisung(knoten({ name: 'spotify.1' })), true)
   })
 
-  it('DIE TEUERSTE VERWECHSLUNG: der Mitschnitt ist keine Einspeisung', () => {
-    // mixpi-mitschnitt zapft den Abspielknoten `spotify` ab und traegt deshalb
-    // im Alltag dessen Namen in seiner Umgebung. Die Klasse rettet: er nimmt AUF.
+  it('DIE TEUERSTE VERWECHSLUNG: ein Abnehmer ist keine Einspeisung', () => {
+    // Ein Abnehmer am Abspielknoten `spotify` kann dessen Namen in seiner
+    // Umgebung tragen. Die Klasse rettet: er nimmt ab, er speist nicht ein.
     assert.equal(
-      istSpotifyEinspeisung(knoten({ name: 'mixpi-mitschnitt', klasse: 'Stream/Input/Audio', anwendung: 'Spotify' })),
+      istSpotifyEinspeisung(knoten({ name: 'fremder-abnehmer', klasse: 'Stream/Input/Audio', anwendung: 'Spotify' })),
       false,
     )
     assert.equal(istSpotifyEinspeisung(knoten({ name: 'mixpi-pegel', klasse: 'Stream/Input/Audio' })), false)
@@ -168,10 +168,10 @@ describe('cueBefundAus — der Alltagsfall', () => {
     )
   })
 
-  it('DER MITSCHNITT-ABGRIFF WIRD GESCHONT — der ganze Grund fuer pw-link statt Mute', () => {
+  it('EIN WEITERER ABNEHMER WIRD GESCHONT — der ganze Grund fuer pw-link statt Mute', () => {
     const plan = cuePlanAus(abschrift())
     assert.ok(plan)
-    // 126 ist spotify -> mixpi-mitschnitt. Er darf NICHT in `kanten` stehen …
+    // 126 ist spotify -> fremder-abnehmer. Er darf NICHT in `kanten` stehen …
     assert.equal(
       plan.kanten.some((k) => k.id === 126),
       false,

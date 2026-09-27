@@ -113,7 +113,7 @@ describe('PATCH /api/medien/:schluessel traegt die Marke (E89)', () => {
   })
 
   it('DIE MARKE LAESST SICH WIEDER ABRAEUMEN — sonst bliebe sie fuer immer', async () => {
-    // Genau dieser Weg laeuft am Ende eines sauberen Mitschnitts.
+    // Genau dieser Weg laeuft am Ende eines sauberen Laufs.
     const a = await request(app)
       .patch(`/api/medien/${encodeURIComponent(SCHLUESSEL)}`)
       .send({ unvollstaendig: false })

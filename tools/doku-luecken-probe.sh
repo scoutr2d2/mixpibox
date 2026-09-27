@@ -32,6 +32,11 @@ luecken=0
 echo "── Plugins, die das Handbuch nicht nennt ($HANDBUCH) ──"
 for p in plugins/*/; do
   n=$(basename "$p")
+  # Was nur lokal bleibt (tools/github-ausschluss.txt, Zeile `plugins/<name>/`),
+  # beschreibt das Handbuch mit Absicht nicht — es geht nicht mit hinaus.
+  if grep -qE "^plugins/$n/([[:space:]]|$)" tools/github-ausschluss.txt 2>/dev/null; then
+    continue
+  fi
   if ! grep -q "$n" "$HANDBUCH"; then
     echo "  FEHLT: $n"
     luecken=$((luecken + 1))
@@ -1037,10 +1042,10 @@ if ! fbbild_ausgabe=$(python3 tools/fernbedienung-bild-deckung.py 2>&1); then
 fi
 
 # Namen, die sich selbst totlegen (20.09.2026). Ein zweites `const args` im
-# selben Block hat den Aufnahmeweg des Mitschnitt-Plugins zehn Tage lang bei
-# JEDEM Titel sofort abbrechen lassen — gefangen vom `catch` darum, gemeldet
-# als Aufnahmefehler. Kein Zeuge konnte das treffen: die Stelle liegt hinter
-# spawn, PipeWire und Spotify. Die SORTE dagegen sieht ein Parser sofort.
+# selben Block hat einen Plugin-Weg zehn Tage lang bei JEDEM Titel sofort
+# abbrechen lassen — gefangen vom `catch` darum, gemeldet als gewoehnlicher
+# Fehler. Kein Zeuge konnte das treffen: die Stelle liegt hinter spawn und
+# PipeWire. Die SORTE dagegen sieht ein Parser sofort.
 echo "── Namen vor ihrer eigenen Deklaration (tools/tdz-schatten-schau.mjs) ──"
 if ! tdz_ausgabe=$(node tools/tdz-schatten-schau.mjs 2>&1); then
   echo "$tdz_ausgabe"

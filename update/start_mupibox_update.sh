@@ -1382,10 +1382,6 @@ echo "==========================================================================
 		mkdir -p /etc/pipewire/pipewire.conf.d >&3 2>&3
 		rm -f /etc/pipewire/pipewire.conf.d/60-ueberall.conf >&3 2>&3
 		cp -f ${MUPI_SRC}/config/templates/61-entzerrer.conf /etc/pipewire/pipewire.conf.d/61-entzerrer.conf >&3 2>&3
-		# Die Leersenke des Mitschnitts (E66) — bis zum 25.09.2026 auf keinem
-		# Weg ausgerollt (AUDIT-2026-08-22 Rang 2). Wirkt wie 61 erst nach dem
-		# naechsten PipeWire-Start; Begruendung in der Vorlage.
-		cp -f ${MUPI_SRC}/config/templates/62-mixpi-mitschnitt.conf /etc/pipewire/pipewire.conf.d/62-mixpi-mitschnitt.conf >&3 2>&3
 		echo "## Tonstapel ${AUDIO_STAPEL}: Benutzerebene und wireplumber nachgezogen ##" >&3 2>&3
 		# DIE PLUGINS standen bis zum 22.08.2026 HIER, im pipewire-Zweig des
 		# case — eine PulseAudio-Box bekam beim Update gar keine

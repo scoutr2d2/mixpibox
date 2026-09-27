@@ -6,7 +6,7 @@
  * `vergeben()` in stroeme.ts entscheidet, WER einen Strom bekommt — aber nur,
  * wenn ihm jemand sagt, was gerade belegt ist. Diese Auskunft kann kein
  * einzelnes Plugin geben: es sieht sich selbst und sonst nichts. Zwei
- * Mitschnitt-Arbeiter wuerden beide denselben freien Strom finden und beide
+ * Nachfrager wuerden beide denselben freien Strom finden und beide
  * mit demselben Zugang starten — genau der Fall, den `pruefen()` als schwer
  * meldet: der zweite nimmt dem ersten die Wiedergabe weg.
  *
@@ -16,15 +16,14 @@
  * ══ DIE MIETE LAEUFT AB ════════════════════════════════════════════════════
  *
  * Ein Nehmer, der abstuerzt, gibt nichts zurueck. Ohne Ablauf haelt eine
- * einzige abgebrochene Aufnahme den Strom fuer immer — und die Box meldet
+ * einziger abgestuerzter Nehmer den Strom fuer immer — und die Box meldet
  * geduldig „nichts frei", bis jemand sie neu startet. Es gibt keinen Weg, das
  * VERLAESSLICH zu vermeiden (ein Prozess kann jederzeit sterben), also gibt es
  * einen, es zu ueberleben: jede Belegung hat eine Frist, und wer weiterarbeitet,
  * verlaengert sie.
  *
- * DIE FRIST HAENGT AM ZWECK. Ein Mitschnitt ist EIN Titel — Minuten. Ein Kind
- * hoert einen Nachmittag. Eine gemeinsame Zahl waere fuer das eine zu lang und
- * fuer das andere zu kurz.
+ * DIE FRIST HAENGT AM ZWECK. Heute gibt es einen: ein Kind hoert einen
+ * Nachmittag.
  *
  * ══ DIE UHR KOMMT VON AUSSEN ═══════════════════════════════════════════════
  *
@@ -36,10 +35,6 @@ import { type Belegung, type Strom, type Vergabe, type Zweck, vergeben } from '.
 
 /** Wie lange eine Belegung ohne Lebenszeichen gilt, je Zweck. */
 export const FRIST_MS: Record<Zweck, number> = {
-  // Ein Titel dauert Minuten; 30 sind reichlich Luft fuer einen langen
-  // Hoerspiel-Teil samt Anlauf. Laenger heisst nur: ein abgestuerzter
-  // Arbeiter blockiert laenger.
-  mitschnitt: 30 * 60_000,
   // Ein Nachmittag. Der Spieler frischt ohnehin auf, solange er laeuft —
   // diese Frist faengt nur den Fall ab, dass er es nicht mehr tut.
   wiedergabe: 6 * 60 * 60_000,
@@ -50,8 +45,8 @@ export interface Eintrag extends Belegung {
    * DER AUSWEIS — und NICHT die Stromnummer.
    *
    * Der erste Entwurf liess Nehmer sich mit `nr` melden. Ein Zeuge hat das
-   * sofort umgeworfen: nach einer Verdraengung haelt DIESELBE NUMMER jemand
-   * anderes. Ein Lebenszeichen des Verdraengten traf dann den neuen Halter
+   * sofort umgeworfen: nach Ablauf oder Freigabe haelt DIESELBE NUMMER jemand
+   * anderes. Ein Lebenszeichen des alten Halters traf dann den neuen
    * („ja, du hast ihn noch" — hatte er nicht), und ein `freigeben(nr)` haette
    * dem Kind den Strom weggenommen, den es gerade bekommen hat.
    *
@@ -98,16 +93,11 @@ export class Belegungsbuch {
 
   /**
    * Einen Strom anfordern. Trägt ihn gleich ein, wenn einer zugeteilt wird.
-   *
-   * VERDRAENGUNG IST TEIL DER ZUTEILUNG, nicht ein zweiter Schritt: `vergeben`
-   * nennt den Verdraengten, und hier verliert er den Eintrag. Zwischen beidem
-   * darf nichts passieren, sonst haelt ihn ein Halbzustand doppelt belegt.
    */
-  anfordern(pool: readonly Strom[], fuer: Zweck, wer: string, reserve = 1): Zuteilung {
+  anfordern(pool: readonly Strom[], fuer: Zweck, wer: string): Zuteilung {
     this.aufraeumen()
-    const v = vergeben(pool, this.eintraege, fuer, reserve)
+    const v = vergeben(pool, this.eintraege, fuer)
     if (v.nr === null) return { ...v, marke: null }
-    if (v.verdraengt !== undefined) this.eintraege = this.eintraege.filter((e) => e.nr !== v.verdraengt)
     const jetzt = this.uhr()
     const marke = this.naechsteMarke++
     this.eintraege.push({ marke, nr: v.nr, fuer, seit: jetzt, zuletzt: jetzt, wer })
@@ -125,10 +115,9 @@ export class Belegungsbuch {
    * „Ich lebe noch" — verlaengert die Frist.
    *
    * `false`, wenn der Ausweis nicht (mehr) gilt. Das ist eine WICHTIGE Antwort
-   * und kein Nebenbefund: wer verdraengt wurde, erfaehrt es genau hier — und
-   * soll dann aufhoeren statt weiterzuschreiben. Das ist der Weg, auf dem ein
-   * laufender Arbeiter merkt, dass er weichen soll, ohne dass ihn jemand
-   * abschiessen muss.
+   * und kein Nebenbefund: wessen Frist abgelaufen ist, erfaehrt es genau hier
+   * — und soll dann aufhoeren, statt einen Strom zu benutzen, den er nicht
+   * mehr haelt.
    */
   lebenszeichen(marke: number): boolean {
     const e = this.eintraege.find((x) => x.marke === marke)

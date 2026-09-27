@@ -533,7 +533,6 @@ interface CurrentMeta {
   timePos: number
   duration: number
   volume: number
-  recording: boolean
 }
 const currentMeta: CurrentMeta = {
   activeSpotifyId: '',
@@ -550,7 +549,6 @@ const currentMeta: CurrentMeta = {
   timePos: 0,
   duration: 0,
   volume: 0,
-  recording: false,
 }
 
 /** EIN Protokolleintrag, wenn der Pegel-Abgriff ausfaellt — siehe pegel.ts. */
@@ -2752,8 +2750,8 @@ async function befehlVerteilen(req: any, res: any) {
     const parts = decodeURIComponent(command.name).split(':title:artist:')
     currentMeta.currentTrackname = parts[0]
     currentMeta.album = parts[1]
-    // `ab` wie bei `plugin`: ein Mitschnitt einer Quelle mit Vorspann traegt
-    // den Vorspann in der Datei — der Befehlsbauer darf ihn ueberspringen.
+    // `ab` wie bei `plugin`: eine Datei mit Vorspann traegt
+    // den Vorspann in sich — der Befehlsbauer darf ihn ueberspringen.
     playURL(pfad, parts[0], abAusName(command.name))
   }
 
@@ -2948,15 +2946,7 @@ async function befehlVerteilen(req: any, res: any) {
   else if (command.name === 'index') cmdCall('sudo bash /usr/local/bin/mupibox/add_index.sh')
   else if (command.name === 'seek+30') seekRelativ(true)
   else if (command.name === 'seek-30') seekRelativ(false)
-  else if (command.name === 'recordon') {
-    // Recording STATE only for now — the actual capture pipeline lands with the
-    // recorder integration (MODERNIZATION.md B5). The UI reflects this flag.
-    currentMeta.recording = true
-    log.info(`${new Date().toLocaleString()}: [Spotify Control] recording ON (stub — capture pipeline pending)`)
-  } else if (command.name === 'recordoff') {
-    currentMeta.recording = false
-    log.info(`${new Date().toLocaleString()}: [Spotify Control] recording OFF`)
-  } else if (command.name.includes('tracknr:')) {
+  else if (command.name.includes('tracknr:')) {
     // Jump to playlist track N (cover-flip track picker). mplayer only knows
     // relative playlist steps, so send the delta from the current track. The
     // metadata handler adds +1 on the resulting track change — pre-set N-1.

@@ -127,7 +127,7 @@ describe('Die Stroeme am Server (E72)', () => {
       .send({
         stroeme: [
           { nr: 1, zweck: 'wiedergabe', maschine: 'soloist', schluessel: SCHLUESSEL_A },
-          { nr: 2, zweck: 'mitschnitt', maschine: 'soloist', schluessel: SCHLUESSEL_A },
+          { nr: 2, zweck: 'wiedergabe', maschine: 'soloist', schluessel: SCHLUESSEL_A },
         ],
       })
       .expect(200)

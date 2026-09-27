@@ -189,7 +189,7 @@ test('nur das LETZTE :ab: zaehlt, und nur Zahlen', () => {
 test('der Plattenpfad dekodiert JE SEGMENT — das Komma war der Messfall', () => {
   // 31.08.2026, „Team Karacho, Rola": decodeURI liess %2C stehen, der
   // m3u-Pfad zeigte auf einen Ordner, den es nie gab — Buchfuehrung
-  // „spielt", Ton keiner. Betroffen war jeder Mitschnitt mit Komma.
+  // „spielt", Ton keiner. Betroffen war jedes Album mit Komma.
   assert.equal(
     medienPfadAus('audiobook:Team%20Karacho%2C%20Rola:Guten%20Morgen%20_%20Good%20Morning%20(Englisch)'),
     'audiobook/Team Karacho, Rola/Guten Morgen _ Good Morning (Englisch)',
@@ -212,7 +212,7 @@ test('ein unkodierbares Segment bleibt roh stehen, statt den Dienst umzureissen'
 })
 
 test('der datei-Zaun laesst nur den Medienordner durch (E108)', () => {
-  // Der Normalfall: eine Mitschnitt-Spur, wie die Mischliste sie schickt.
+  // Der Normalfall: eine lokale Spur, wie die Mischliste sie schickt.
   assert.equal(
     dateiPfadErlaubt('/home/dietpi/MuPiBox/media/audiobook/Team Karacho, Rola/Guten Morgen/01 Guten Morgen.flac'),
     true,

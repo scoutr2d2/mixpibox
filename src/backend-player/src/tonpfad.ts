@@ -24,8 +24,6 @@
  *     spotify (Stream/Output/Audio, application.name=Spotify)
  *         --> klangwerk --> klangwerk.ausgang --> alsa_output.platform-soc_…
  *     entzerrer.ausgang --> klangwerk            [das ist der mpv-Weg]
- *     spotify --> mixpi-mitschnitt               [die Aufnahme zapft VOR
- *                                                 dem Klangwerk ab]
  *     alsa_output --> mixpi-pegel                [die Pegelmessung]
  *
  * Zwei Dinge daran sind fuer diese Datei entscheidend:
@@ -34,14 +32,12 @@
  *    ist einzeln schaltbar, ohne mpv anzufassen. Ohne diesen Befund waere
  *    das ganze Vorhaben gestorben.
  *
- * 2. DER MITSCHNITT ZAPFT VOR DEM KLANGWERK AB. Deshalb wird hier NICHT der
- *    Knoten stummgeschaltet (`wpctl set-mute`), obwohl das am Ton bewiesen
+ * 2. GETRENNT WIRD DIE KANTE, NICHT DER KNOTEN. Hier wird NICHT der Knoten
+ *    stummgeschaltet (`wpctl set-mute`), obwohl das am Ton bewiesen
  *    funktioniert (Pegel ging auf [0,0,0,0], kein Knacken beim Zurueck).
- *    Mute traefe den Abgriff der Aufnahme MIT — die Aufzeichnung haette ein
- *    stilles Loch genau in der Laenge des Cues. Getrennt wird stattdessen
- *    der LINK spotify→klangwerk; die Aufnahme schneidet dann im stummen
- *    Fenster weiter mit, und genau das ist der Sinn der Selbstheilung
- *    (BACKLOG E108: der Wechselpunkt wandert, bis das Album lokal liegt).
+ *    Mute traefe JEDEN weiteren Abnehmer desselben Knotens mit. Getrennt
+ *    wird stattdessen nur der LINK spotify→klangwerk; alle anderen Kanten
+ *    des Knotens bleiben unberuehrt stehen (`geschont` im Plan).
  *
  * ══ WARUM MEHRERE KANDIDATENNAMEN ══════════════════════════════════════════
  *
@@ -58,9 +54,9 @@
  *
  * Der Name allein entscheidet aber NIE. Die Klasse `Stream/Output/Audio`
  * muss dazukommen, und das ist die eigentliche Sicherung: sie schliesst die
- * Senken (`Audio/Sink`) aus und — wichtiger — die eigenen Aufnahmeknoten
- * `mixpi-mitschnitt` und `mixpi-pegel`, die als `Stream/Input/Audio`
- * laufen. Ein Werkzeug, das versehentlich den Mitschnitt trennt, waere die
+ * Senken (`Audio/Sink`) aus und — wichtiger — eigene Abnehmerknoten wie
+ * `mixpi-pegel`, die als `Stream/Input/Audio` laufen. Ein Werkzeug, das
+ * versehentlich einen Abnehmer statt der Einspeisung trennt, waere die
  * teuerste denkbare Verwechslung.
  *
  * ══ ES WIRD NIE GEWORFEN ═══════════════════════════════════════════════════
@@ -119,8 +115,8 @@ export interface CuePlan {
   /** Die Kanten, die das Cue trennt und danach wieder herstellt. */
   readonly kanten: readonly TonLink[]
   /**
-   * Kanten DESSELBEN Knotens, die absichtlich stehen bleiben — im Alltag
-   * der Abgriff `spotify → mixpi-mitschnitt`. Steht im Plan, damit beim
+   * Kanten DESSELBEN Knotens, die absichtlich stehen bleiben — jeder
+   * weitere Abnehmer ausser der Senke. Steht im Plan, damit beim
    * Lesen sichtbar ist, dass das Auslassen eine Entscheidung war und kein
    * Uebersehen (siehe Kopfkommentar, Punkt 2).
    */
@@ -171,7 +167,7 @@ export const KLANGWERK_SENKE = 'klangwerk'
  * BINDESTRICH UND UNTERSTRICH SIND ABSICHTLICH NICHT DABEI. Was hier nicht
  * passen darf, ist ein Name, der den Kandidaten bloss ENTHAELT: ein Knoten
  * `spotify-nachbar` waere sonst eine Spotify-EINSPEISUNG, und das Cue
- * trennte die Aufnahme statt des Tons. Der Kreis der erlaubten Anhaengsel
+ * trennte den falschen Zweig statt des Tons. Der Kreis der erlaubten Anhaengsel
  * ist deshalb so klein wie moeglich gehalten — im Zweifel findet das Cue
  * nichts (1–2 s Stille wie bisher), statt das Falsche zu treffen.
  */

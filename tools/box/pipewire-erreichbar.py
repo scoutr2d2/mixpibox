@@ -7,7 +7,7 @@ Muss AUF DER BOX laufen.
 
 ══ WOFUER ═════════════════════════════════════════════════════════════════
 
-Das Mitschnitt-Plugin startet `pw-record` aus dem Server heraus und bekam
+Ein Plugin startete `pw-record` aus dem Server heraus und bekam
 (16.08.2026):
 
     pw_context_connect() failed: Host is down

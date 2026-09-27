@@ -34,7 +34,7 @@ function laufen(
   return { offen, fertig }
 }
 
-describe('Mitschnitt: der Dienst am Schluessel', () => {
+describe('Verlauf: der Dienst am Schluessel', () => {
   it('liest den Dienst aus dem Kopf des Schluessels', () => {
     assert.equal(dienstAus('ard:10378841'), 'ard')
     assert.equal(dienstAus('spotify:2hp3IHxHhTrUt4q2buTKTT'), 'spotify')
@@ -50,7 +50,7 @@ describe('Mitschnitt: der Dienst am Schluessel', () => {
   })
 })
 
-describe('Mitschnitt: die Dauer ist gemessen, nicht geschaetzt', () => {
+describe('Verlauf: die Dauer ist gemessen, nicht geschaetzt', () => {
   it('zaehlt die Abstaende zwischen den Schlaegen — 30 Schlaege sind eine Minute', () => {
     const schlaege = Array.from({ length: 31 }, (_, i) => ({ key: 'ard:1', bei: 1000 + i * TAKT }))
     const { offen } = laufen(schlaege)
@@ -112,7 +112,7 @@ describe('Mitschnitt: die Dauer ist gemessen, nicht geschaetzt', () => {
   })
 })
 
-describe('Mitschnitt: was gar nicht erst aufgeschrieben wird', () => {
+describe('Verlauf: was gar nicht erst aufgeschrieben wird', () => {
   it('Durchblaettern erzeugt keine Zeilen — zu kurz faellt weg', () => {
     assert.equal(abschliessen({ beginn: 0, ende: 1, sekunden: 1, key: 'ard:1', dienst: 'ard' }), null)
     assert.equal(abschliessen(null), null)
@@ -141,7 +141,7 @@ describe('Mitschnitt: was gar nicht erst aufgeschrieben wird', () => {
   })
 })
 
-describe('Mitschnitt: welcher Dienst wie lange', () => {
+describe('Verlauf: welcher Dienst wie lange', () => {
   const s = [
     { beginn: 1000, ende: 2000, sekunden: 600, key: 'ard:1', dienst: 'ard' },
     { beginn: 5000, ende: 6000, sekunden: 300, key: 'ard:2', dienst: 'ard' },
@@ -171,7 +171,7 @@ describe('Mitschnitt: welcher Dienst wie lange', () => {
   })
 })
 
-describe('Mitschnitt: was von der Platte kommt, ist Verdacht', () => {
+describe('Verlauf: was von der Platte kommt, ist Verdacht', () => {
   it('wirft Unsinn heraus, statt ihn in die Statistik zu lassen', () => {
     const raus = verlaufNormalisieren([
       { beginn: 1, ende: 2, sekunden: 10, key: 'ard:1' },

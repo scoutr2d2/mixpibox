@@ -341,7 +341,7 @@ def messen(pfad, mb):
     sagen(f"  lesen       {mb / lesen:7.1f} MB/s   ({lesen:.2f} s)")
     sagen(f"  stat        {stat_ms:7.1f} ms")
     sagen()
-    sagen("  Zum Einordnen: eine Stunde FLAC aus dem Mitschnitt sind rund "
+    sagen("  Zum Einordnen: eine Stunde FLAC sind rund "
           "320 MB (E28/N3), ein Hoerspiel als MP3 rund 60 MB.")
     return 0
 

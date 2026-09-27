@@ -42,7 +42,7 @@ function zwei(schluesselB = B) {
   return stroemeAus({
     stroeme: [
       { nr: 1, zweck: 'wiedergabe', maschine: 'soloist', schluessel: A, senke: 'bluez_output.AA.1' },
-      { nr: 2, zweck: 'mitschnitt', maschine: 'soloist', schluessel: schluesselB, senke: 'bluez_output.BB.1' },
+      { nr: 2, zweck: 'wiedergabe', maschine: 'soloist', schluessel: schluesselB, senke: 'bluez_output.BB.1' },
     ],
   })
 }
@@ -140,11 +140,11 @@ describe('der Geraetename', () => {
     assert.equal(geraetename(a.stroeme[1], 'MixPiBox'), 'MixPiBox Stream 2')
   })
 
-  it('NENNT DEN MITSCHNITT NICHT BEIM NAMEN', () => {
+  it('NENNT DEN ZWECK NICHT BEIM NAMEN', () => {
     // Der Name steht in der Geraeteliste des Kontos, die jeder im Haushalt
     // sieht — ein Zweck gehoert nicht in einen Geraetenamen.
     const name = geraetename(zwei().stroeme[1], 'MixPiBox')
-    assert.equal(name.toLowerCase().includes('mitschnitt'), false, name)
+    assert.equal(name.toLowerCase().includes('wiedergabe'), false, name)
   })
 
   it('folgt dem Boxnamen — dort gehoert die Boxnummer hin', () => {
@@ -204,13 +204,10 @@ describe('die Vorgabe — eine bestehende Box aendert sich NICHT', () => {
     assert.deepEqual(pruefen(vorgabe('', 'librespot')), [])
   })
 
-  it('haelt Zwecke auseinander — der Mitschnitt ist einer, die Wiedergabe der andere', () => {
-    // Hieraus las frueher `fuerZweck()` (gefallen am 19.09.2026, Rang 7 —
-    // kein Aufrufer ausser diesem Zeugen). Die ZUSICHERUNG bleibt: eine
-    // Aufstellung mit zwei Stroemen traegt genau einen Mitschnitt, die
-    // Vorgabe einer gewoehnlichen Box keinen.
-    assert.equal(zwei().stroeme.filter((s) => s.zweck === 'mitschnitt').length, 1)
-    assert.equal(vorgabe(A).stroeme.filter((s) => s.zweck === 'mitschnitt').length, 0)
+  it('ein unbekannter Zweck faellt auf Wiedergabe zurueck', () => {
+    const a = stroemeAus({ stroeme: [{ nr: 1, zweck: 'irgendwas', maschine: 'soloist', schluessel: A, senke: '' }] })
+    assert.equal(a.stroeme[0].zweck, 'wiedergabe')
+    assert.equal(vorgabe(A).stroeme[0].zweck, 'wiedergabe')
   })
 })
 
@@ -307,77 +304,20 @@ describe('die Vergabe (E74) — wer bekommt einen Strom', () => {
       senke: '',
     }))
   }
-  const belegung = (nr: number, fuer: 'wiedergabe' | 'mitschnitt', seit: number): Belegung => ({ nr, fuer, seit })
+  const belegung = (nr: number, fuer: 'wiedergabe', seit: number): Belegung => ({ nr, fuer, seit })
 
-  describe('Hoeren gewinnt immer', () => {
+  describe('der freie Strom', () => {
     it('nimmt den niedrigsten freien Strom', () => {
       const v = vergeben(pool(3), [belegung(1, 'wiedergabe', 10)], 'wiedergabe')
       assert.equal(v.nr, 2)
-      assert.equal(v.verdraengt, undefined, 'es musste niemand weichen')
     })
 
-    it('verdraengt einen Mitschnitt, wenn nichts frei ist', () => {
-      const v = vergeben(pool(2), [belegung(1, 'wiedergabe', 10), belegung(2, 'mitschnitt', 20)], 'wiedergabe')
-      assert.equal(v.nr, 2)
-      assert.equal(v.verdraengt, 2)
-    })
-
-    it('verdraengt den JUENGSTEN Mitschnitt — die aeltere Aufnahme wird fertig', () => {
-      // Der juengste hat am wenigsten Arbeit gesammelt. Die halbe Datei ist
-      // ohnehin verloren; es soll moeglichst wenig davon sein.
-      const v = vergeben(
-        pool(3),
-        [belegung(1, 'mitschnitt', 100), belegung(2, 'mitschnitt', 500), belegung(3, 'mitschnitt', 300)],
-        'wiedergabe',
-      )
-      assert.equal(v.verdraengt, 2, 'Strom 2 lief am kuerzesten')
-    })
-
-    it('sagt WARUM, wenn alle hoeren — statt eines nackten null', () => {
+    it('sagt WARUM, wenn alle belegt sind — statt eines nackten null', () => {
       const v = vergeben(pool(2), [belegung(1, 'wiedergabe', 10), belegung(2, 'wiedergabe', 20)], 'wiedergabe')
       assert.equal(v.nr, null)
-      assert.match(v.grund, /nichts zu verdraengen/)
+      assert.match(v.grund, /alle Stroeme sind belegt/)
     })
   })
-
-  describe('der Mitschnitt haelt Platz frei', () => {
-    it('nimmt einen, solange danach die Reserve bleibt', () => {
-      // Pool 3, nichts belegt: nimmt einen, es blieben 2 frei.
-      assert.equal(vergeben(pool(3), [], 'mitschnitt').nr, 1)
-    })
-
-    it('nimmt den letzten NICHT — sonst wartet das naechste Kind', () => {
-      // Pool 2, einer belegt: nur einer frei. Nehmen hiesse 0 frei.
-      const v = vergeben(pool(2), [belegung(1, 'mitschnitt', 10)], 'mitschnitt')
-      assert.equal(v.nr, null)
-      assert.match(v.grund, /fuers Hoeren frei/)
-    })
-
-    it('mit Reserve 0 nimmt er auch den letzten', () => {
-      const v = vergeben(pool(2), [belegung(1, 'mitschnitt', 10)], 'mitschnitt', 0)
-      assert.equal(v.nr, 2)
-    })
-
-    it('mehrere Mitschnitte gleichzeitig — genau darum geht es', () => {
-      // Betreiber: „wenn mehr als einer frei ist geht das abarbeiten
-      // schneller". Pool 4, Reserve 1: drei duerfen laufen.
-      const belegt: Belegung[] = []
-      for (let i = 0; i < 9; i++) {
-        const v = vergeben(pool(4), belegt, 'mitschnitt')
-        if (v.nr === null) break
-        belegt.push(belegung(v.nr, 'mitschnitt', i))
-      }
-      assert.equal(belegt.length, 3, 'drei laufen, der vierte bleibt fuers Hoeren frei')
-    })
-  })
-
-  // „die Plaetze rechnen sich aus den Hoerern" ist am 19.09.2026 mit
-  // `mitschnittPlaetze()` gefallen (AUDIT-2026-09-19 Rang 7). Die Rechnung
-  // war richtig und ungefragt: es gibt in diesem Baum keinen Mitschnitt, der
-  // nach Plaetzen fragt — kein Endpunkt, kein Aufrufer. Was der Vergabeweg
-  // wirklich zusichert (die Reserve bleibt frei), steht unveraendert im
-  // Zeugen darueber und wird an `vergeben()` geprueft, nicht an einer
-  // Nebenrechnung.
 
   describe('Randfaelle, die eine Box sonst festfahren', () => {
     it('ohne Pool wird nichts vergeben — mit Grund', () => {
@@ -388,7 +328,7 @@ describe('die Vergabe (E74) — wer bekommt einen Strom', () => {
     it('eine Belegung auf einer Nummer ausserhalb des Pools blockiert NICHTS', () => {
       // Ein zurueckgebliebener Eintrag (Strom entfernt, Belegung blieb) darf
       // die Box nicht fuer voll halten, waehrend sie leer ist.
-      const v = vergeben(pool(2), [belegung(7, 'mitschnitt', 10)], 'wiedergabe')
+      const v = vergeben(pool(2), [belegung(7, 'wiedergabe', 10)], 'wiedergabe')
       assert.equal(v.nr, 1)
     })
   })

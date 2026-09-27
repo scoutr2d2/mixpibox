@@ -52,7 +52,7 @@ const ARD_SENDUNG = {
 }
 /**
  * DIE „NAH"-KONSTELLATION (E95 Stufe 1, Betreiber-Messfall 29.08.2026): ein
- * lokaler Mitschnitt, dessen `playlist.m3u` nur einen TEIL des Albums traegt,
+ * lokales Album, dessen `playlist.m3u` nur einen TEIL des Albums traegt,
  * UND dieselbe Streaming-Ausgabe daneben. `lokal` steht in `QUELLEN_REIHENFOLGE`
  * vorn — ohne die Wahlfunktion (`waehleInhalt`, verschmelzung.ts) waere die
  * lokale Teilliste der erste und damit einzige Versuch.
@@ -175,7 +175,7 @@ function spotifyAlbumErfolgStub(id: string, anzahlTitel: number) {
 }
 
 /**
- * DER LOKALE MITSCHNITT, mit `anzahlTitel` Stuecken — der Abspieldienst
+ * DAS LOKALE ALBUM, mit `anzahlTitel` Stuecken — der Abspieldienst
  * (`PLAYER_PROXY_HOST`/`PORT`, Vorgabe `127.0.0.1:5005`, server.ts) laeuft im
  * Test nicht wirklich; `nock` ersetzt ihn genau wie sonst Spotify. Derselbe
  * Pfad, den `inhaltFuerEintrag()` aus `category/artist/title` zusammensetzt:
@@ -186,7 +186,7 @@ function lokalTracklistStub(anzahlTitel: number) {
     .get('/tracklist')
     .query(true)
     .reply(200, {
-      tracks: Array.from({ length: anzahlTitel }, (_, i) => ({ nr: i + 1, name: `Aufgezeichnet ${i + 1}` })),
+      tracks: Array.from({ length: anzahlTitel }, (_, i) => ({ nr: i + 1, name: `Lokal ${i + 1}` })),
     })
 }
 

@@ -2,7 +2,7 @@
  * DIE BOX-EIGENE INTERPRETENKENNUNG (E64b).
  *
  * Auftrag (Betreiber, 20.08.2026): eine box-interne Interpreten-ID, an die
- * sich Aufnahme und die Dienste gleichermassen knuepfen lassen.
+ * sich lokale Ordner und die Dienste gleichermassen knuepfen lassen.
  *
  * ══ WARUM ES DAS BRAUCHT, OBWOHL E45 UND E49 SCHON DA WAREN ════════════════
  *
@@ -15,7 +15,7 @@
  * Daraus folgen zwei Dinge, die sich nicht wegschaerfen lassen:
  *
  *   1. Heisst derselbe Interpret in zwei Quellen verschieden — beim Dienst
- *      „ARD Sounds", im Aufnahmeordner „Die Sendung mit der Maus" —, gibt es
+ *      „ARD Sounds", im lokalen Ordner „Die Sendung mit der Maus" —, gibt es
  *      keine Stelle, an der beide zusammenkommen. Ein besserer Schluessel
  *      hilft da nicht: die Namen SIND verschieden.
  *   2. Aendert sich ein Name, aendert sich der Schluessel, und alles, was
@@ -33,7 +33,7 @@
  * Deshalb VERWEIGERT `nameHinzufuegen` das Zusammenlegen, sobald der Name
  * schon zu einer anderen Kennung gehoert — es sei denn, ein Mensch sagt es
  * (`stufe: 'hand'`). Eine Maschine darf hier nicht grosszuegig sein: sie
- * wuerde die Aufnahmen eines Fremden unter einen bekannten Interpreten
+ * wuerde die Alben eines Fremden unter einen bekannten Interpreten
  * haengen, und im Regal des Kindes sieht das aus wie Absicht.
  *
  * ══ WARUM DIE STUFE AN JEDER EINZELNEN VERKNUEPFUNG HAENGT ═════════════════
@@ -82,7 +82,7 @@ export function istKennungsId(x: unknown): x is string {
  * Trennzeichen im zusammengesetzten Schluessel Dienst+Dienstkennung.
  *
  * KEIN LEERZEICHEN. Eine Dienstkennung darf Leerzeichen enthalten — ein
- * Aufnahmeordner heisst "music/Die Sendung mit der Maus" —, und dann fielen
+ * lokaler Ordner heisst "music/Die Sendung mit der Maus" —, und dann fielen
  * zwei verschiedene Paare unter einen Schluessel. U+0000 kommt in keinem der
  * beiden Teile vor.
  *
@@ -245,7 +245,7 @@ export function namenKarte(ablage: Kennungsablage | null | undefined): Map<strin
   return karte
 }
 
-/** Dienst + Dienstkennung -> Kennungs-Id. Der Weg fuer Aufnahme und Dienste. */
+/** Dienst + Dienstkennung -> Kennungs-Id. Der Weg fuer lokale Ordner und Dienste. */
 export function verweisKarte(ablage: Kennungsablage | null | undefined): Map<string, string> {
   const karte = new Map<string, string>()
   for (const k of ablage?.kennungen ?? []) {
@@ -418,7 +418,7 @@ export function nameLoesen(
 }
 
 /**
- * Einen Dienstverweis setzen — Spotify-Kennung, Aufnahmeordner, Jellyfin-Id.
+ * Einen Dienstverweis setzen — Spotify-Kennung, lokaler Ordner, Jellyfin-Id.
  *
  * Anders als beim Namen ist ein Verweis, der schon woanders haengt, KEIN
  * Zusammenlegen zweier Interpreten: er ist eine Korrektur an genau einer

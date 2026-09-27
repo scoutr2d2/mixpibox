@@ -409,7 +409,7 @@ describe('REGEL 1 — das ganze Werk schlaegt das halbe (E17/V6)', () => {
   const spotify = { dienst: 'spotify' as const, kennung: 's1' }
 
   it('das halbe lokale Album verdraengt NICHT das ganze aus dem Stream', () => {
-    // Der Fall, um den es geht: sobald Mitschnitte dazukommen, hat `lokal`
+    // Der Fall, um den es geht: sobald halbe lokale Alben dazukommen, hat `lokal`
     // den hoeheren Rang — aber eben nur drei von zwoelf Titeln.
     const geordnet = quellenOrdnen([lokalHalb, spotify])
     assert.equal(geordnet[0].dienst, 'spotify')
@@ -579,7 +579,7 @@ describe('waehleInhalt — E95 Stufe 1: die vollere Quelle schlaegt die Reihenfo
   })
 
   // DER FESTNAGEL-TEST AUS DEM KRITIKER-LAUF 30.08. (AUDIT-2026-08-30 §1.1,
-  // Rang 1): ein KOMPLETT aufgenommener Mitschnitt (ohne Flag - sein Zweig
+  // Rang 1): ein KOMPLETTES lokales Album (ohne Flag - sein Zweig
   // laesst es bewusst weg) darf gegen die gleich lange Netz-Fassung MIT Flag
   // nicht verlieren. Die erste Fassung dieser Wahl tat genau das: Flag-Sieg
   // vor Titelzahl-Vergleich, die Offline-Reihenfolge war fuer lokal<->spotify

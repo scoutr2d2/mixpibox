@@ -5777,7 +5777,7 @@ entries:
   - kind: plan
     id: mitschnitt-plan
     title: "PLAN: Mitschnitt/Archiv mit Dienst-Anmeldung, Puffer und Stueckelung"
-    tags: [plan, mitschnitt, recorder, spotify, jellyfin, 2026]
+    tags: [plan, mitschnitt, recorder, jellyfin, 2026]
     body: |
       ENTWURF vom 2026-07-28, NICHT gebaut. Ziel: die Box legt gehoerte Titel
       dauerhaft ab - aber nur dort, wo es noetig ist, und ohne dass jemand
@@ -34042,9 +34042,9 @@ entries:
   - id: pipewire-abgriff-je-quelle
     kind: falle
     title: "Eine einzelne Tonquelle abgreifen: --target <id> luegt, PIPEWIRE_NODE auch, pw-link trifft (NACHTRAG: --target <object.serial> ist trotzdem PFLICHT)"
-    match: "pipewire einzelne quelle aufnehmen|pw-record target funktioniert nicht|nur eine anwendung mitschneiden|librespot abgreifen|monitor hoert alles|piper ansage im mitschnitt|stream output audio aufnehmen"
+    match: "pipewire einzelne quelle aufnehmen|pw-record target funktioniert nicht|nur eine anwendung mitschneiden|abspielknoten abgreifen|monitor hoert alles|piper ansage im mitschnitt|stream output audio aufnehmen"
     sev: high
-    tags: ["ton", "pipewire", "mitschnitt", "e28", "librespot", "messen", 2026]
+    tags: ["ton", "pipewire", "mitschnitt", "e28", "messen", 2026]
     source: >
       16.08.2026, tools/box/mitschnitt-machbar.py auf der Box .57 an laufender
       Musik gemessen. Vier Laeufe, davon zwei mit falschem Ergebnis (siehe
@@ -34464,7 +34464,7 @@ entries:
     title: "Spotify Soloist auf der Box: Knoten heisst spotify, Schluessel ist spak_, getInfo liegt auf /zc"
     match: "soloist installieren|soloist api key|soloist pipewire knoten|soloist nicht sichtbar spotify app|soloist login failed|soloist websocket ctl"
     sev: med
-    tags: ["soloist", "spotify", "e42", "pipewire", "mitschnitt", 2026]
+    tags: ["soloist", "spotify", "e42", "pipewire", 2026]
     source: >
       19.08.2026, E42/S1 an der Box .57 gemessen. Probe unter
       /home/dietpi/soloist-probe, lief NEBEN librespot.
@@ -35947,12 +35947,12 @@ entries:
   - id: interpretenkennung-gehoert-der-box
     kind: entscheidung
     title: "Der Interpret braucht eine Kennung, die NICHT aus seinem Namen abgeleitet ist"
-    match: "interpret in zwei quellen anders benannt|interpret umbenannt verweise weg|aufnahme und spotify verknuepfen|box interne interpreten id"
+    match: "interpret in zwei quellen anders benannt|interpret umbenannt verweise weg|lokal und streaming verknuepfen|box interne interpreten id"
     sev: high
     tags: ["interpreten", "identitaet", "e64b", "e45", "e49", "entscheidung", 2026]
     source: >
       E64b, 20.08.2026, Auftrag des Betreibers: „koennen wir nicht box intern
-      eine interpreten ID machen, an die wir einfach aufnahme und Spotify usw
+      eine interpreten ID machen, an die wir einfach [alle Quellen]
       knuepfen". Gebaut als src/backend-api/src/interpretenkennung.ts, 34
       Zeugen, ohne einen einzigen Verbraucher umzustellen.
     body: >
@@ -36254,9 +36254,9 @@ entries:
   - id: selbstbeendender-prozess-statt-schwellenwert
     kind: entscheidung
     title: "Ein Prozess, der sich am Stueckende selbst beendet, schlaegt jede Prozent-Schwelle"
-    match: "97 prozent schwelle aufnahme|titel vollstaendig erkennen|mitschnitt abgeschnitten titelwechsel|single-track soloist"
+    match: "97 prozent schwelle aufnahme|titel vollstaendig erkennen|mitschnitt abgeschnitten titelwechsel|single-track abspielen"
     sev: high
-    tags: ["mitschnitt", "soloist", "e66", "e64a", "spotify", "entscheidung", 2026]
+    tags: ["mitschnitt", "e66", "e64a", "entscheidung", 2026]
     source: >
       E66 Vorbereitung, 20.08.2026, beim Lesen der Soloist-Hilfe gefunden:
       `-s, --single-track <uri>` spielt EIN Stueck und beendet sich danach;
@@ -36284,18 +36284,18 @@ entries:
       NOCH NICHT GEBAUT (Stand 20.08.): erst wird gemessen, ob ein zweiter
       Zugang parallel spielen darf —
       [[annahme-vor-dem-bauen-messen-nicht-glauben]].
-    related: ["halbe-aufnahme-nicht-anzeigen", "soloist-erste-messung", "annahme-vor-dem-bauen-messen-nicht-glauben"]
+    related: ["soloist-erste-messung", "annahme-vor-dem-bauen-messen-nicht-glauben", "halbe-aufnahme-nicht-anzeigen"]
 
   - id: annahme-vor-dem-bauen-messen-nicht-glauben
     kind: pattern
     title: "Haengt ein ganzer Umbau an einer Annahme, wird sie zuerst gemessen — mit einem Werkzeug, das OFFEN sagen darf"
     match: "spotify zweiter zugang parallel|zwei stroeme ein konto|zweitzugang probe|annahme vor umbau pruefen"
     sev: high
-    tags: ["mitschnitt", "spotify", "e66", "messen", "pattern", 2026]
+    tags: ["mitschnitt", "e66", "messen", "pattern", 2026]
     source: >
       E66 Vorbereitung, 20.08.2026: tools/box/zweitzugang-probe.py, 399
       Zeilen, gebaut BEVOR am Mitschnitt eine Zeile geaendert wurde. Der
-      zweite Schluessel gehoert nach .spotify.soloistApiKeyMitschnitt und
+      zweite Schluessel gehoert in ein eigenes Feld der Konfiguration und
       steht bewusst NICHT im Repo.
     body: >
       DIE ANNAHME, AN DER ALLES HAENGT: Der Streaming-Dienst spielt je Konto nur EINEN
@@ -36785,9 +36785,9 @@ entries:
   - id: geraetename-geht-an-den-dienst
     kind: entscheidung
     title: "Der Geraetename steht nicht nur im Haushalt — er geht an den Streaming-Dienst"
-    match: "connect geraet name mitschnitt|soloistNameMitschnitt|geraetename verraet zweck|Stream 1 Stream 2 benennen"
+    match: "connect geraet name mitschnitt|geraetename zweiter strom|geraetename verraet zweck|Stream 1 Stream 2 benennen"
     sev: high
-    tags: ["mitschnitt", "e66", "spotify", "benennung", "entscheidung", 2026]
+    tags: ["mitschnitt", "e66", "benennung", "entscheidung", 2026]
     source: >
       E66, 20.08.2026, Betreiber: das zweite Geraet heisst NICHT „Mitschnitt".
       Schema stattdessen `<Boxname> Stream <n>` („MixPiBox_1 Stream 1 und
@@ -40666,7 +40666,7 @@ entries:
     title: "Der Zweck war am Strom festgeschweisst - ein Pool macht aus zwei Rollen N Zugaenge"
     match: "pool von stroemen|zweck am strom|mehrere mitschnitte gleichzeitig|hoeren hat vorrang|verdraengung mitschnitt|stream frei picken|abarbeiten schneller"
     sev: high
-    tags: [stroeme, e74, entwurf, mitschnitt, spotify, 2026]
+    tags: [stroeme, e74, entwurf, mitschnitt, 2026]
     stand: "entschieden 22.08.2026 mit dem Betreiber; Modell und Zeugen stehen, Verdrahtung offen"
     body: |
       ══ DIE FRAGE ══════════════════════════════════════════════════════════
@@ -40945,7 +40945,7 @@ entries:
     title: "Strom 1 war nie frei - soloist.service haelt ihn, und die Vergabe wusste es nicht"
     match: "use --data-dir to specify a writable location|strom 1 zugeteilt scheitert|pool teilt belegten strom zu|zwei soloist ein datenordner|reserve zaehlt doppelt"
     sev: high
-    tags: [stroeme, e74, mitschnitt, spotify, systemd, 2026]
+    tags: [stroeme, e74, mitschnitt, systemd, 2026]
     stand: "am Geraet gemessen und behoben 22.08.2026"
     body: |
       ══ DER ERSTE POOL-LAUF SCHEITERTE ══════════════════════════════════════
@@ -41350,7 +41350,7 @@ entries:
       ══ DIE AUFNAHME HAT DIESE FALLE NICHT (am Geraet gegengeprueft) ═══════
 
       `mupibox-server.service` hat KEIN `StateDirectory`, und der Serverprozess
-      traegt keins in der Umgebung. Ein Aufnahme-Soloist ohne `-D` landet also
+      traegt keins in der Umgebung. Ein zweiter Prozess ohne `-D` landet also
       unter `~/.local/share/soloist`, nicht im Ordner des Dienstes.
 
       ══ ZWEI FOLGEFEHLER AUS DEM UMBAU SELBST ══════════════════════════════
@@ -42224,7 +42224,8 @@ entries:
       VORAB GEFIXT (Kartierungsfunde, Commit 0197d9a2): tonerzeugerNeustarten
       ohne soloist.service (Box mit engine=soloist nach Bluetooth-Wechsel
       stumm), dienstBelegungSichern trug soloist.service bedingungslos als
-      Strom-1-Halter ein (librespot-Box konnte nie mitschneiden),
+      Strom-1-Halter ein (eine Box mit engine=librespot bekam so nie einen
+      freien Strom),
       quellenAnzeigeName kannte den Soloist-Knoten "spotify" nicht.
     related: ["kern-konfig-reist-in-den-kontext", "jellyfin-zieht-ins-plugin", "soloist-erste-messung"]
 
@@ -42259,11 +42260,11 @@ entries:
     title: "Die spak_-Schluessel gingen ueber /api/config und die Sicherung im Klartext hinaus - drei Striche, und die Attrappe prueft nur, was sie kennt"
     kind: falle
     sev: hoch
-    match: "spak_.*Klartext|soloistApiKey.*ohneGeheimnisse|soloistApiKeyMitschnitt|Sicherung.*spak"
-    cause: "ohneGeheimnisse strich nur die flachen Alt-Felder; stroeme[*].schluessel liegt in einer LISTE, soloistApiKey/soloistApiKeyMitschnitt fehlten in Streichliste UND Sicherungs-GEHEIM"
-    fix: "ohneGeheimnisse: + soloistApiKey/+soloistApiKeyMitschnitt/+stroeme-Listenlauf; Sicherung GEHEIM: /spotify/soloistApiKey, /spotify/soloistApiKeyMitschnitt, /spotify/stroeme/*/schluessel; Ring-1-Werkzeug um Marken erweitert"
+    match: "spak_.*Klartext|soloistApiKey.*ohneGeheimnisse|zweiter spak-schluessel|Sicherung.*spak"
+    cause: "ohneGeheimnisse strich nur die flachen Alt-Felder; stroeme[*].schluessel liegt in einer LISTE, soloistApiKey und der zweite Schluessel fehlten in Streichliste UND Sicherungs-GEHEIM"
+    fix: "ohneGeheimnisse: + soloistApiKey/+ zweiter Schluessel/+stroeme-Listenlauf; Sicherung GEHEIM: /spotify/soloistApiKey, das Feld des zweiten Schluessels, /spotify/stroeme/*/schluessel; Ring-1-Werkzeug um Marken erweitert"
     tags: [sicherheit, spotify, soloist, sicherung, 2026]
-    source: "am 2026-08-22 an der Box: /api/config lieferte beide Schluessel + Strom-Schluessel im Klartext; frisches Archiv nach Fix 1: soloistApiKeyMitschnitt WEITER drin - erst die Geraete-Gegenprobe fand das Feld, das kein Werkzeug kannte. Nach Fix 2: keine spak_-WERTE im Archiv"
+    source: "am 2026-08-22 an der Box: /api/config lieferte beide Schluessel + Strom-Schluessel im Klartext; frisches Archiv nach Fix 1: der zweite Schluessel WEITER drin - erst die Geraete-Gegenprobe fand das Feld, das kein Werkzeug kannte. Nach Fix 2: keine spak_-WERTE im Archiv"
     body: |
       Waehrend /api/stroeme muehsam maskiert (stromNachAussen) und
       kontext.stroeme hinter dem Recht `aufnahme` liegt, gaben ZWEI andere
@@ -42274,8 +42275,8 @@ entries:
       (tools/sicherung-was-geht-hinaus.ts) war nach dem ersten Fix gruen -
       und das frische Archiv AM GERAET trug weiter einen spak_. Die
       Attrappe prueft nur Felder, die sie KENNT; das echte Geraet hatte
-      zusaetzlich .spotify.soloistApiKeyMitschnitt (Zweitzugang fuer den
-      Mitschnitt, tools/box/zweitzugang-probe.py). Eine gruene Attrappe
+      zusaetzlich einen zweiten Schluessel in der Konfiguration (Zweitzugang,
+      tools/box/zweitzugang-probe.py). Eine gruene Attrappe
       ersetzt die Messung am Geraet nicht - sie ergaenzt sie
       ([einmal-hinsehen-ist-keine-messung], [attrappe-luegt-durch-weglassen]).
 
@@ -50653,9 +50654,9 @@ entries:
   - id: kacheltitel-ist-ordnername-nie-zeichengleich
     kind: entscheidung
     title: "Aufnahme-Kachel und Streaming-Quelle koennen nie zeichengleich sein - der Kacheltitel IST der Ordnername"
-    match: "gleiche zeichen wie spotify|Unterstrich statt Doppelpunkt|mitschnitt-zeichen-probe|NUR-FORM|unsichtbare Zeichen Kachel"
+    match: "mitschnitt-zeichen-probe|Unterstrich statt Doppelpunkt|NUR-FORM|unsichtbare Zeichen Kachel|gleiche zeichen wie spotify"
     sev: med
-    tags: [mitschnitt, verschmelzung, spotify, zeichen, e93, 2026]
+    tags: [mitschnitt, verschmelzung, zeichen, e93, 2026]
     source: "29.08.2026 abends, Messung an mixpibox.local mit tools/mitschnitt-zeichen-probe.py ueber /api/medien (37 Eintraege, 12 inhaltliche Paare); Code: plugins/mixpi-mitschnitt/index.mjs saeubern/albumOrdner/dateiname."
     related: [api-medien-wendet-zuordnungen-an, verweis-zeigt-auf-den-plattennamen, quellen-verschmelzen, normal-macht-aus-scharfem-s-eine-luecke]
     body: |
@@ -52519,7 +52520,7 @@ entries:
     cause: "Betreiber, 30.08.2026 woertlich: 'also wichtig die kapselung [ui] ->[backend] fusion und playerwahl. die ui spielt mit der spielfunktion das backend entscheidet nach eingestellten regeln.' Der Abend davor ist der Beweis: drei Fehlschichten in Folge (Kategorie, Plattenform, Nummernraum - E105) waren alle Reparaturen an ENTSCHEIDUNGSLOGIK, die in der UI wohnte (abspielBefehl, weiterSpielen). Jede Quelle, jede Sanitisierung, jeder Nummernraum, den die UI kennt, ist eine kuenftige Falle in einer Schicht, die niemand serverseitig testen kann"
     fix: "Der Vertrag steht in BACKLOG E95/V: POST /api/spielen {schluessel, titelNr?, positionMs?, quelle?} - das Backend loest das Werk auf (Verschmelzung, Auswahl-Bruecke), waehlt die Quelle nach den eingestellten Regeln (inkl. Nummernraum-Uebersetzung), schickt die Befehle selbst durch die bestehenden Tore (Kinderzeit, Anbieter-Schalter, Plugin-Ereignisse) und antwortet, WAS gespielt wird. Die UI zeigt nur an. Der Player behaelt die MASCHINEN-Schlichtung (tonmaschineUebernehmen, E104-Fremdanhalten); die WAHL zieht zum Server. Wer eine neue Quelle anschliesst, fasst danach GENAU EINE Stelle an"
     tags: [architektur, kapselung, verschmelzung, playerwahl, e95, entscheid, 2026]
-    related: [quelle-kennt-ihre-kategorie-selbst, mitschnitt-kachel-braucht-plattenform-und-auswahlbruecke, soloists-konto-ist-nicht-das-webapi-konto]
+    related: [soloists-konto-ist-nicht-das-webapi-konto, quelle-kennt-ihre-kategorie-selbst, mitschnitt-kachel-braucht-plattenform-und-auswahlbruecke]
     body: |
       ══ DIE REGEL IN EINEM SATZ ═════════════════════════════════════════════
       Die UI sagt "spiele dieses Werk (ab Titel N, ab Position M)" - alles
@@ -53931,7 +53932,7 @@ entries:
     kind: entscheidung
     title: "Das PipeWire-Cue trennt den LINK, es mutet nicht den Knoten"
     sev: med
-    tags: [pipewire, spotify, cue, mitschnitt, klangwerk, abspieler, pw-link, 2026]
+    tags: [pipewire, spotify, cue, klangwerk, abspieler, pw-link, 2026]
     source: "31.08.2026, BACKLOG E114"
     related:
       - mitschnitt-nahm-den-lautsprecher-auf
@@ -53951,8 +53952,6 @@ entries:
           spotify (Stream/Output/Audio, application.name=Spotify)
               --> klangwerk --> klangwerk.ausgang --> alsa_output…
           entzerrer.ausgang --> klangwerk        [der mpv-Weg]
-          spotify --> mixpi-mitschnitt           [die Aufnahme zapft VOR
-                                                  dem Klangwerk ab]
           alsa_output --> mixpi-pegel
 
       Erst diese Karte macht das Vorhaben moeglich: beide Maschinen laufen bis
@@ -54005,8 +54004,9 @@ entries:
       Stille, die es ohnehin gaebe — statt das Falsche zu treffen.
 
       ZWEI KANDIDATEN SIND KEIN RANDFALL: beide Soloist-Instanzen heissen
-      `spotify` (siehe [[mitschnitt-nahm-den-lautsprecher-auf]], wo genau das
-      vier stille Aufnahmen erzeugt hat), und Soloists Knoten BLEIBT in der
+      gleich — genau das hat schon einmal einen Abgriff auf den falschen
+      Knoten gelenkt ([[mitschnitt-nahm-den-lautsprecher-auf]]).
+      Und Soloists Knoten BLEIBT in der
       Pause stehen, waehrend librespots verschwand. Entschieden wird deshalb
       ueber den GRAPHEN, nicht ueber den Namen: wer Kanten zur Senke hat,
       spielt. Fuehren zwei Kandidaten Ton, wird ausdruecklich NICHTS geplant.
@@ -55134,7 +55134,7 @@ entries:
     match: "mitschnitt pur|aufnahme entzerrt|doppelt entzerrt|wo zapft die aufnahme an|mitschnitt senke|archiv klingt anders|aufnahme mit klangregelung"
     sev: high
     cause: "Betreiber, 04.09.2026, waehrend der Ueberlegung, alle Quellen durch den Entzerrer zu fuehren: 'mitschnitt bleibt bei allen quellen auch zukuenftigen pur'. Die Anforderung ist die richtige, und sie ist leicht zu verletzen: Eine Aufnahme an einer SENKE abzugreifen ist bequem (eine Stelle statt einer je Quelle) und waere an zwei Stellen zugleich falsch"
-    fix: "So ist es gebaut, und so muss es bleiben — am Geraet nachgemessen (04.09.2026): `spotify [Stream/Output/Audio] --> mixpi-mitschnitt`, je zwei Kanten (FL/FR) auf `mixpi-mitschnitt` und auf `mixpi-mitschnitt-arbeiter-2`. Angezapft wird der AUSGANG DES QUELLKNOTENS, parallel zum Abspielweg, VOR jeder Senke. Wer den Mitschnitt auf weitere Quellen ausdehnt, legt fuer jede eine eigene Kante von deren Ausgang — nicht eine gemeinsame von einer Senke"
+    fix: "So ist es gebaut, und so muss es bleiben — am Geraet nachgemessen (04.09.2026): `<Quellknoten> [Stream/Output/Audio] --> mixpi-mitschnitt`, je zwei Kanten (FL/FR) auf `mixpi-mitschnitt` und auf `mixpi-mitschnitt-arbeiter-2`. Angezapft wird der AUSGANG DES QUELLKNOTENS, parallel zum Abspielweg, VOR jeder Senke. Wer den Mitschnitt auf weitere Quellen ausdehnt, legt fuer jede eine eigene Kante von deren Ausgang — nicht eine gemeinsame von einer Senke"
     tags: [mitschnitt, aufnahme, pipewire, ton, archiv, entzerrer, klangwerk, regel, 2026]
     related: [die-ganze-tonstrecke-und-wo-die-pegel-entstehen, spotify-cue-link-trennen-statt-node-muten, der-titel-ist-das-kleinste-teil]
     body: |
@@ -58954,7 +58954,7 @@ entries:
   - id: audit-2026-09-11-kritiker
     kind: howto
     title: 'Kritiker-Lauf 11.09.2026 — die Zusage im Kommentar ersetzt die Messung'
-    tags: [audit, cover, mitschnitt, spotify, wache, 2026]
+    tags: [audit, cover, mitschnitt, wache, 2026]
     source: >
       Kritiker-Lauf 11.09.2026 (AUDIT-2026-09-11.md), vier unabhaengige
       Pruefer plus eigene Nachmessung am Baum. Tagesdifferenz: nur E135/1c
@@ -62228,7 +62228,7 @@ entries:
     title: "Ein zweites `const args` im selben Block hat zehn Tage lang JEDE Aufnahme abgebrochen"
     match: "Cannot access .* before initialization|aufnahme bricht sofort ab|tdz todeszone const verdeckt|zweimal const gleicher name block|aufnahmeweg tot seit commit"
     sev: high
-    tags: ["mitschnitt", "soloist", "plugin", "javascript", "wache", "falle", "e135", 2026]
+    tags: ["mitschnitt", "plugin", "javascript", "wache", "falle", "e135", 2026]
     source: >
       20.09.2026, Betreibermeldung „Aufnahme hat Probleme" mit drei Zeilen aus
       der Liste. Zwei davon waren alt; die dritte lautete
@@ -62279,7 +62279,7 @@ entries:
       abgeschaltet.
 
       ZWEI ALTE GRUENDE AUS DERSELBEN MELDUNG, beide aus dem Zweig „der Knoten
-      des Aufnahmelaufs kam nicht": `Soloist: Error: --single-track requires a
+      des Laufs kam nicht": `Soloist: Error: --single-track requires a
       valid playable Spotify URI` ist ein TITELFEHLER (die URI ist formal
       gueltig, der Dienst gibt das Stueck nicht her). `Soloist: became active
       device` ist dagegen gar keine Fehlermeldung, sondern Soloists
@@ -62294,7 +62294,7 @@ entries:
       de: "Aufgefuellt wird nur zwischen ZWEI Eintraegen — ein Mitschnitt ohne Quell-Zeile bleibt bei seinem Bestand"
     summary:
       de: "Die Kachel zeigte 9 von 15 Titeln: `waehleInhalt` waehlt die vollere Quelle, aber es gab nur eine"
-    tags: [mitschnitt, verschmelzung, spotify, medien, falle, 2026]
+    tags: [mitschnitt, verschmelzung, medien, falle, 2026]
     source:
       de: "20.09.2026, Betreiber-Befund an Box 192.168.178.62; gemessen mit tools/mitschnitt-quelle-anlegen.py und curl gegen /api/werke/<k>/inhalt"
     body:
@@ -62336,7 +62336,7 @@ entries:
         sieht dabei aus, als arbeite sie.
 
         == WARUM DER MITSCHNITT SIE NICHT BESCHAFFT HAT ==
-        `spotifyQuellSchluessel` (plugins/mixpi-mitschnitt/index.mjs) las nur
+        `spotifyQuellSchluessel` (im Plugin, index.mjs) las nur
         `context.uri` — die Quelle, AUS DER gespielt wurde. Zwei Folgen:
 
           * Kein Kontext (Kuenstlerseite, Radio) -> gar keine Zuordnung.
@@ -65130,7 +65130,7 @@ entries:
       Erst wenn eine Aufnahme mit eigener Quelle steht, kommt wieder eine
       Aufnahmefunktion in die oeffentliche Fassung.
 
-      DIE ZWEITE HAELFTE: KEIN TEXT, DER DIE AUFNAHME AN EINEN STREAMINGDIENST
+      DIE ZWEITE HAELFTE: KEIN TEXT, DER DIE AUFNAHME AN EINEN FREMDEN DIENST
       BINDET. Auch lokal nicht — sonst geht er ueber README, Wissenspaket oder
       einen Kommentar im Kern doch hinaus. Am 27.09.2026 wurden dafuer rund 300
       Stellen neutral gefasst („die Wiedergabe", „die Quelle", „der

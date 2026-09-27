@@ -24,8 +24,10 @@ export interface MedienSchalter {
 /** Die Schalter aus dem gelesenen Stand — mit den Vorgaben der Box. */
 export function schalterAus(a: Record<string, unknown>): MedienSchalter {
   return {
-    verschmelzen: a.verschmelzen !== false,
-    diskografie: a.diskografie === true,
+    // Klammerschreibweise: tsconfig verlangt sie fuer Index-Signaturen
+    // (noPropertyAccessFromIndexSignature) — sonst scheitert der Admin-Bau.
+    verschmelzen: a['verschmelzen'] !== false,
+    diskografie: a['diskografie'] === true,
   }
 }
 

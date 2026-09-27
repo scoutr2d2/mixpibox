@@ -43,7 +43,8 @@ import { firstValueFrom } from 'rxjs'
 
 interface StromAussen {
   nr: number
-  zweck: 'wiedergabe' | 'mitschnitt'
+  /** Jeder Strom dient der Wiedergabe; das Feld reist nur unveraendert mit. */
+  zweck: 'wiedergabe'
   maschine: 'soloist' | 'librespot'
   senke: string
   /** So heisst er in der Geraeteliste von Spotify. */
@@ -177,18 +178,6 @@ interface Zeile extends StromAussen {
 
             <div class="felder">
               <div class="feld">
-                <label [attr.for]="'zweck' + z.nr">Wofür</label>
-                <select
-                  [id]="'zweck' + z.nr"
-                  [value]="z.zweck"
-                  (change)="setzen(z.nr, 'zweck', wert($event))"
-                >
-                  <option value="wiedergabe">Wiedergabe — ein Kind hört</option>
-                  <option value="mitschnitt">Aufnahme — ohne Lautsprecher (Testfunktion)</option>
-                </select>
-              </div>
-
-              <div class="feld">
                 <label [attr.for]="'maschine' + z.nr">Client</label>
                 <select
                   [id]="'maschine' + z.nr"
@@ -207,10 +196,10 @@ interface Zeile extends StromAussen {
                      dem @for im Baum stehen — die Zuweisung findet dann nichts
                      und faellt still auf den ersten Eintrag zurueck. Am
                      21.08.2026 zeigte Strom 2 deshalb „der Standard-Ausgabe
-                     folgen", obwohl mixpi-mitschnitt eingetragen war: das Feld
-                     hatte die richtige Option und die falsche Anzeige. Die
-                     festen Felder darueber (Wofuer, Client) sind nicht
-                     betroffen — ihre Optionen stehen fest in der Vorlage. -->
+                     folgen", obwohl eine andere Senke eingetragen war: das Feld
+                     hatte die richtige Option und die falsche Anzeige. Das
+                     feste Feld darueber (Client) ist nicht betroffen — seine
+                     Optionen stehen fest in der Vorlage. -->
                 <select [id]="'senke' + z.nr" [value]="z.senke" (change)="setzen(z.nr, 'senke', wert($event))">
                   <option value="" [selected]="!z.senke">der Standard-Ausgabe folgen</option>
                   @for (a of ausgaengeFuer(z.senke); track a.name) {
@@ -362,7 +351,7 @@ export class SpotifyStroeme implements OnInit {
     this.zeilen.update((zs) => zs.map((z) => (z.nr === nr ? { ...z, ersetzen: true } : z)))
   }
 
-  setzen(nr: number, feld: 'zweck' | 'maschine' | 'senke' | 'neuerSchluessel', wert: string): void {
+  setzen(nr: number, feld: 'maschine' | 'senke' | 'neuerSchluessel', wert: string): void {
     this.zeilen.update((zs) => zs.map((z) => (z.nr === nr ? { ...z, [feld]: wert } : z)))
   }
 

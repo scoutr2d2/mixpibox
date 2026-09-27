@@ -17,7 +17,7 @@
  * EHRLICHE BESCHRIFTUNG statt Werbung: Soloist ist offiziell und verlustfrei,
  * aber seine Builds verfallen nach 90 Tagen — der woechentliche Waechter
  * erneuert sie, und GENAU DAS steht am Schalter, nicht in einer Hilfeseite.
- * Dieselbe Regel wie beim Mitschnitt (E28): die Wahrheit wohnt am Schalter.
+ * Die Regel: die Wahrheit wohnt am Schalter.
  *
  * KEINE BACKTICKS in Vorlage und Kommentaren ([[backticks-in-angular-vorlagen]]).
  */

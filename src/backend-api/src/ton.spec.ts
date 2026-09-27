@@ -480,10 +480,9 @@ describe('istHardwareSenke / regelndeSenkeWaehlen', () => {
   })
 
   it('DIE VIRTUELLEN NICHT — auch die eines Plugins, das der Server nicht kennt', () => {
-    // Genau der Fall vom 05.09.2026: mixpi-mitschnitt fiel in die
-    // Auffangregel "alles andere ist intern" und wurde in der Verwaltung
-    // zum Gesamt-Regler, der bei jedem Zug auf 100 zuruecksprang.
-    assert.equal(istHardwareSenke('mixpi-mitschnitt'), false)
+    // Eine virtuelle Senke fiele sonst in die Auffangregel "alles andere
+    // ist intern" und wuerde in der Verwaltung zum Gesamt-Regler.
+    assert.equal(istHardwareSenke('mixpi-plugin-senke'), false)
     assert.equal(istHardwareSenke('klangwerk'), false)
     assert.equal(istHardwareSenke('entzerrer'), false)
     assert.equal(istHardwareSenke('ueberall'), false)
@@ -495,7 +494,7 @@ describe('istHardwareSenke / regelndeSenkeWaehlen', () => {
 
   it('waehlt Bluetooth VOR der Karte — wie regelnde_senke im Skript', () => {
     const senken = [
-      { sinkName: 'mixpi-mitschnitt' },
+      { sinkName: 'mixpi-plugin-senke' },
       { sinkName: 'alsa_output.platform-soc_107c000000_sound.stereo-fallback' },
       { sinkName: 'klangwerk' },
       { sinkName: 'bluez_output.00_9E_C8_61_1A_EA.1' },
@@ -505,7 +504,7 @@ describe('istHardwareSenke / regelndeSenkeWaehlen', () => {
 
   it('ohne Kopfhoerer die Karte — und nie eine virtuelle', () => {
     const senken = [
-      { sinkName: 'mixpi-mitschnitt' },
+      { sinkName: 'mixpi-plugin-senke' },
       { sinkName: 'ueberall' },
       { sinkName: 'alsa_output.platform-soc_107c000000_sound.stereo-fallback' },
     ]
@@ -514,7 +513,7 @@ describe('istHardwareSenke / regelndeSenkeWaehlen', () => {
 
   it('gibt es GAR KEINE Hardware, ist die Antwort null — nicht die erste beste', () => {
     // Lieber kein Regler als einer, der ins Leere stellt.
-    assert.equal(regelndeSenkeWaehlen([{ sinkName: 'klangwerk' }, { sinkName: 'mixpi-mitschnitt' }]), null)
+    assert.equal(regelndeSenkeWaehlen([{ sinkName: 'klangwerk' }, { sinkName: 'mixpi-plugin-senke' }]), null)
     assert.equal(regelndeSenkeWaehlen([]), null)
   })
 })
