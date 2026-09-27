@@ -12,7 +12,7 @@
       "alt": "MixPi steht mit Kopfhoerern und geschlossenen Augen",
       "text": null,
       "vorlesen": false,
-      "wo": "Zeichen 'wer hoert' oben links, solange kein Kind ein eigenes Bild gewaehlt hat - das Standardbild"
+      "wo": "Zeichen 'wer hoert' oben links, solange kein Kind ein eigenes Bild gewaehlt hat - das Standardbild; dazu die Maskottchen-Ecke des Gestalters (Block maskottchen, E144), solange nichts spielt"
     },
     "spielt": {
       "datei": "mixpi-spielt.png",
@@ -21,7 +21,7 @@
       "alt": "MixPi singt mit offenem Mund, Funken ringsum",
       "text": null,
       "vorlesen": false,
-      "wo": "Waehrend der Wiedergabe - loest aus, wenn /player/state playing meldet",
+      "wo": "Waehrend der Wiedergabe - loest aus, wenn /player/state playing meldet; in der Maskottchen-Ecke des Gestalters nur mit maskottchen.lebendig (E144)",
       "regel": "Der Gegensatz zu hoert. Bisher zeigte die Startseite dasselbe Bild, ob Musik lief oder nicht."
     },
     "kein-bild": {

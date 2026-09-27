@@ -173,3 +173,64 @@ describe('Das Tor: pruefeThema', () => {
     }
   })
 })
+
+describe('Gestalter-Bloecke (E144): titelband, maskottchen, hintergrund, eigene Farben, Andocken', () => {
+  const voll = {
+    titelband: { an: true, platz: 'unten', inhalt: 'beides', text: 'Emmas Box', groesse: 1.2 },
+    maskottchen: { an: true, ecke: 'unten-links', groesse: 0.8, lebendig: true },
+    hintergrund: { art: 'bild', farbe: '#112233', farbe2: '#445566', winkel: 135, bild: '0123456789abcdef.jpg', schleier: 0.4 },
+    farben: { akzent: '#FF0088', grund: '', flaeche: '#FFFFFF', schrift: '#222222' },
+    kissen: { platz: 'oben', ausrichtung: 'mitte' },
+  }
+
+  it('Roundtrip Bloecke -> flach -> Bloecke ist verlustfrei', () => {
+    const flach = vonBloecken(voll)
+    assert.equal(flach.titelBandText, 'Emmas Box')
+    assert.equal(flach.mpPlatz, 'oben')
+    assert.equal(flach.eigenGrund, '')
+    assert.deepEqual(zuBloecken(flach), voll)
+  })
+
+  it('das Tor nimmt ein volles Gestalter-Thema an', () => {
+    const b = pruefeThema({ format: FORMAT_KENNUNG, name: 'Gestaltet', bloecke: voll })
+    assert.deepEqual(b.fehler, [])
+    assert.deepEqual(b.bloecke, voll)
+  })
+
+  it('Text: spitze Klammern und Steuerzeichen fallen heraus, zu lang wird abgelehnt', () => {
+    assert.deepEqual(vonBloecken({ titelband: { text: ' <b>Hallo</b>\u0007  Welt ' } }), {
+      titelBandText: 'bHallo/b Welt',
+    })
+    const b = pruefeThema({ format: FORMAT_KENNUNG, name: 'x', bloecke: { titelband: { text: 'x'.repeat(41) } } })
+    assert.equal(b.ok, false)
+    assert.ok(b.fehler.some((f) => f.includes('titelband.text') && f.includes('40')))
+  })
+
+  it('Bild: nur Ablagenamen, nie ein Pfad', () => {
+    for (const boese of ['../../etc/passwd', 'a.jpg', '0123456789abcdef.svg', '/0123456789abcdef.jpg']) {
+      const b = pruefeThema({ format: FORMAT_KENNUNG, name: 'x', bloecke: { hintergrund: { bild: boese } } })
+      assert.equal(b.ok, false, boese)
+    }
+    assert.deepEqual(vonBloecken({ hintergrund: { bild: '' } }), { hgBild: '' })
+  })
+
+  it('eigene Farben: "" nimmt zurueck, andere Farbfelder bleiben streng', () => {
+    assert.deepEqual(vonBloecken({ farben: { akzent: '' } }), { eigenAkzent: '' })
+    assert.deepEqual(vonBloecken({ kacheln: { randFarbe: '' } }), {})
+    assert.deepEqual(vonBloecken({ hintergrund: { farbe: '' } }), {})
+  })
+
+  it('farben.werte nennt den Nachfolger statt „unbekannt"', () => {
+    const b = pruefeThema({ format: FORMAT_KENNUNG, name: 'x', bloecke: { farben: { werte: {} } } })
+    assert.ok(b.fehler.some((f) => f.includes('farben.werte') && f.includes('farben.akzent')))
+  })
+
+  it('jedes neue Feld hat einen ECHTEN Leser `w.<feld>` in app.js — nicht nur ein Wort im Kommentar', () => {
+    const appJs = readFileSync(join(HIER, '../../../NewDesign/app.js'), 'utf8')
+    const neu = ['titelband', 'maskottchen', 'hintergrund']
+      .flatMap((b) => Object.values(BLOECKE[b]).map((e) => e.flach))
+      .concat(['eigenAkzent', 'eigenGrund', 'eigenFlaeche', 'eigenSchrift', 'mpPlatz', 'mpAusrichtung'])
+    const ohne = neu.filter((f) => !new RegExp(`\\bw\\.${f}\\b`).test(appJs))
+    assert.deepEqual(ohne, [])
+  })
+})

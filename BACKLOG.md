@@ -14392,3 +14392,30 @@ mit jeder Umformatierung. `tools/doku-zeilenzitate-pruefen.py` sieht nur
 Zeilen, die es nicht mehr gibt, nicht Zeilen, die jetzt etwas anderes
 zeigen. Nach dem Umformat die Suite laufen lassen und die Zitate der
 umformatierten Dateien stichprobenhaft nachsehen.
+
+## E144 — Theme-Gestalter: Themen per Ziehen bauen, dazu die Desktop-Schale (2026-09-27, GEBAUT)
+
+Betreiber: „einen theme editor integrieren mit dem man selbst themes gestalten
+kann in anordnung. Dazu eigene feste elemente definieren miniplayer. seiten
+andocken. titel … sinvolle elemente erstellen aus dem existierenden theme und
+auch noch neue erzeugen welche aktuell nicht verwendet werden. auch vorbereiten
+das es eine desktop app win/linux/mac geben kann um themes zu gestalten. auch
+hintergründe definieren und farben. alles drag und drop."
+
+| Teil | Stand |
+|---|---|
+| Gestalter `NewDesign/gestalter/` (auf der Box `/neu/gestalter/`, Link in der Verwaltung) — Palette, echte Vorschau im Rahmen, Andockzonen, Eigenschaften aus der Format-Whitelist, Rückgängig, Datei/Anwenden/Ablegen | **FERTIG** — `tools/gestalter-schau.mjs` 12/12 gegen die Attrappe |
+| Neue Formatfelder: `kissen.platz/ausrichtung`, Blöcke `titelband`, `maskottchen`, `hintergrund`, `farben.akzent/grund/flaeche/schrift` (löst das angekündigte `farben.werte` ab) — mit Wirkung in `app.js`/`app.css` | **FERTIG** |
+| Hintergrundbilder: `/api/gestalter/hintergrund*`, Ablage `server/config/hintergruende/`, Inhalts-Hash als Name, Anhang in Themendateien | **FERTIG** |
+| `POST /api/thema/anwenden` (zusammenführend wie `PUT /api/darstellung`) | **FERTIG** |
+| Desktop-Schale `desktop/gestalter/` (Electron, beide Lagen) | **VORBEREITET** — unter Linux/Xvfb gestartet; Windows, macOS, Paketieren und echte Box **ungemessen** |
+| Seitenleiste rechts/oben (`leiste.platz`) | OFFEN — im Gestalter als gesperrte Zone gezeigt; die Leiste hängt an vielen festen Maßen (Schublade, Rückweg) |
+| Hintergrundbilder überleben ein Update nicht (dieselbe Lage wie F8: `rm -R` des Programmordners) und stehen nicht in der Sicherung | OFFEN |
+| Eigene Farben greifen erst mit dem ersten Abgleich (≤ 3 s), nicht im Einzeiler des Kopfs | OFFEN, klein |
+| Mini-Player oben: eine offene App liegt über ihm | bewusst, im Handbuch 4.3.4 |
+
+Beobachtet nebenbei (nicht behoben): `?seite=player` klappt den großen Player
+beim ersten Darstellungs-Abgleich wieder zu, solange noch kein Stück gemeldet
+ist (`anwenden()` → `mpMalen()`); im Gestalter umgangen über
+`body.gestalter-muster`. Wiki: [[theme-gestalter-ziehen-und-andocken-e144]].
+

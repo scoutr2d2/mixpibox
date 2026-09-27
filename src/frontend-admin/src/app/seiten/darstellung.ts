@@ -495,6 +495,13 @@ const OPTIK_TEILE = [
       font-size: 1.05rem; line-height: 1;
     }
     .stufe button.klein { font-size: 0.85rem; min-width: 0; }
+    /* Der Weg zum Gestalter (E144) ist ein LINK (neuer Tab), sieht aber aus
+       wie die Knoepfe daneben — in der Leitfarbe, weil er der Einstieg ist. */
+    .stufe a.knopf {
+      display: inline-flex; align-items: center; min-height: 2.6rem; padding: 0 0.9rem;
+      border-radius: 10px; background: var(--leit); color: #fff; text-decoration: none;
+      font-size: 0.9rem; font-weight: 600;
+    }
     .stufe button.an { background: var(--leit); border-color: transparent; color: #fff; }
     .stufe .wert {
       min-width: 4.2rem; text-align: center; font-family: ui-monospace, monospace;
@@ -1038,6 +1045,17 @@ const OPTIK_TEILE = [
     @if (reiterAktiv() === 'themen') {
       <section>
         <h2>Themen</h2>
+        <!-- DER THEME-GESTALTER (E144, 27.09.2026): Themen per Ziehen und
+             Ablegen bauen — Mini-Player andocken, Titelband, Maskottchen,
+             Hintergruende, eigene Farben. Eine EIGENE Seite unter /neu/,
+             weil sie ohne Angular laufen muss: dieselbe Seite wird die
+             Desktop-App (desktop/gestalter). Neuer Tab, damit diese Seite
+             mit ihrem Stand offen bleibt (siehe G10 im BACKLOG). -->
+        <div class="stufe">
+          <span class="was">Gestalten</span>
+          <a class="knopf klein" href="/neu/gestalter/" target="_blank" rel="noopener">Theme-Gestalter öffnen ↗</a>
+          <span class="hinweis" style="margin:0">Elemente andocken, Hintergründe und Farben — alles per Ziehen.</span>
+        </div>
         <!-- „Startseite der Box" stand bis 05.09.2026 hier — sie heisst jetzt
              Startkategorie und wohnt im Reiter „Verhalten", wo sie hingehoert. -->
         <div class="stufe">

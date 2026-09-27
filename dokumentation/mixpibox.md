@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1117 Einträge,
-Fassung 619). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1118 Einträge,
+Fassung 620). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -411,6 +411,7 @@ andere: die **Anzeigeorte**, drei Hüllen in `NewDesign/index.html`, die
 | `Mini-Player` | das Kissen am unteren Rand (`#mp`) |
 | `grosser Player` | der aufgezogene Spieler (`#gross`) |
 | `Cover-Vollbild` | das formatfüllende Cover (`#album-gross`) |
+| `Titelband` | der laufende Teil des Titelbands (`#tb-laufend`, seit E144 — ab Werk aus, eingeschaltet über den Theme-Gestalter, siehe 4.3.4) |
 
 **Warum das hier steht und nicht nur im Code:** Die drei Orte hatten bis zum
 03.08.2026 je **eigene** Zuweisungen. Zwei liefen im 2-Sekunden-Takt
@@ -449,6 +450,57 @@ behauptet keinen Ort, den es nicht gibt. Die Wache ist am 30.08.2026
 entstanden — bis dahin kam **keiner** der drei Namen in dieser Datei vor,
 während die klassische Oberfläche ihre 16 Wege seit dem 25.08. aufgezählt und
 bewacht führte.
+
+#### 4.3.4 Der Theme-Gestalter (E144, 27.09.2026)
+
+Themen per **Ziehen und Ablegen** bauen: Elemente andocken, neue Elemente
+einsetzen, Hintergründe und Farben wählen. Aufruf **im Browser** unter
+`http://<box>:8200/neu/gestalter/` — oder aus der Verwaltung: Darstellungsseite,
+Reiter *Themen*, Zeile *Gestalten* (öffnet einen neuen Tab). Dieselbe Seite läuft als Desktop-App für
+Windows, Linux und macOS (`desktop/gestalter/`, siehe deren README).
+
+| Teil | Datei | Was |
+|---|---|---|
+| Seite | `NewDesign/gestalter/index.html`, `gestalter.mjs`, `gestalter.css` | Palette, Schirm, Eigenschaften-Blatt, Rückgängig |
+| Katalog | `NewDesign/gestalter/katalog.mjs` | Andockzonen (800×480) und Elemente — WO etwas hin darf |
+| Format | `NewDesign/gestalter/format.mjs` | **erzeugte** Abschrift von `mixpi-thema.ts` (`node tools/gestalter-format-bauen.mjs`) — WELCHE Felder und Werte gelten |
+| Ablage | `NewDesign/gestalter/ablage.mjs` | Box (`/api`) oder Datei; Desktop-Brücke `window.mixpiDesktop` |
+| Wirkung | `NewDesign/app.js` `gestaltungAnwenden()`, `app.css` Abschnitt „DER GESTALTER" | was die neuen Felder auf der Box tun |
+
+**Die Vorschau ist die echte Oberfläche**, kein Nachbau: `../index.html?gestalter=1`
+im Rahmen. Der Entwurf geht per `postMessage` hinein (nur mit `?gestalter=1`
+und nur vom Elternfenster) und liegt über dem gespeicherten Stand, bis
+*Auf der Box anwenden* (`POST /api/thema/anwenden`, zusammenführend wie
+`PUT /api/darstellung`) oder *Als Thema ablegen* (`POST /api/thema/import`)
+gedrückt wird. *Datei speichern* schreibt eine `.mixpi-thema.json`, die das
+Hintergrundbild unter `anhaenge` mitbringt.
+
+**Neue Formatblöcke** (alle ab Werk ohne Wirkung — eine Box ohne gestaltetes
+Thema sieht aus wie vorher):
+
+| Block | Felder (flach) | Wirkung |
+|---|---|---|
+| `kissen.platz` / `.ausrichtung` | `mpPlatz` unten/oben, `mpAusrichtung` rechts/mitte/links | Mini-Player andocken |
+| `titelband` | `titelBandAn`, `titelBandPlatz`, `titelBandInhalt` (text/laufend/beides), `titelBandText` (≤ 40), `titelBandGroesse` | **neu**: Band mit festem Namen und/oder laufendem Titel |
+| `maskottchen` | `maskottchenAn`, `maskottchenEcke`, `maskottchenGroesse`, `maskottchenLebendig` | **neu**: MixPi in einer Ecke, singt beim Spielen; fängt keine Tipps |
+| `hintergrund` | `hgArt` (thema/farbe/verlauf/bild), `hgFarbe`, `hgFarbe2`, `hgWinkel`, `hgBild`, `hgSchleier` | Hintergrund hinter den Kacheln |
+| `farben.akzent/grund/flaeche/schrift` | `eigenAkzent`, `eigenGrund`, `eigenFlaeche`, `eigenSchrift` (`''` = Farbsatz) | eigene Farben über dem Farbsatz; abhängige Töne werden gerechnet |
+
+**Hintergrundbilder** liegen unter `server/config/hintergruende/`, benannt nach
+ihrem Inhalt (16 Zeichen sha256 + Endung, `hintergrund.ts`); in der Darstellung
+steht nur der Name. Grenze: JPEG/PNG/WebP bis 3 MB, der Gestalter verkleinert
+vorher auf 1280×800.
+
+**Bekannte Grenzen:** Die Seitenleiste bleibt links (`leiste.platz` ist
+angekündigt, die Zone „rechts" wird gesperrt gezeigt). Steht der Mini-Player
+oben, liegt eine offene App über ihm. Eigene Farben kommen erst mit dem ersten
+Abgleich (bis zu 3 s nach dem Start), nicht schon im Einzeiler des Kopfs.
+
+**Wachen:** `tools/gestalter-format-bauen.mjs --pruefen` (Abschrift aktuell),
+`tools/gestalter-katalog-deckung.mjs` (jedes Formatfeld stellbar, Andocken
+umkehrbar) — beide in CI und `tools/pruefen.sh`; `tools/gestalter-schau.mjs`
+(Ziehen im Browser gegen die Attrappe, nur `tools/pruefen.sh`);
+`mixpi-thema.spec.ts`, `hintergrund.spec.ts`, `gestalter.integration.spec.ts`.
 
 #### 4.3.3 Wellen im Player — seit E99 taktehrlich, mit CSS als Rückfall
 
@@ -1452,6 +1504,8 @@ Bau-Ergebnis und bündelt fremde Bibliotheken mit.
 | `GET/PUT /api/darstellung`, `GET/PUT /api/farbthema` | Darstellung und Farbthema |
 | `GET /api/oberflaeche/stand`, `POST /api/oberflaeche/neuladen` | welche Oberfläche läuft, neu laden |
 | `GET /api/bild/:schluessel`, `GET /api/bild/extern` | Bilder |
+| `GET /api/thema/export/:name`, `POST /api/thema/import`, `POST /api/thema/anwenden` | Themen als Datei tauschen; anwenden = sofort aufs aktive Profil (Gestalter, E144) |
+| `POST /api/gestalter/hintergrund`, `GET /api/gestalter/hintergruende`, `GET/DELETE /api/gestalter/hintergrund/:name` | Hintergrundbilder des Gestalters |
 
 **Vorlesen** (`vorlesen.ts`)
 
@@ -1548,6 +1602,7 @@ gegen die Liste.
 | `resume.json` | gemerkte Stellen. Seit E18/S3 nur noch **Brücke** — der Inhalt liegt je Kind. `active_resume.json` ist wieder der Verweis |
 | `offline_resume.json` | die Gegenstücke ohne Netz, von `check_network.sh` und `get_network.sh` per `jq` erzeugt |
 | `profile.json` | das **Verzeichnis der Kinder**: Kennung, Name, Figur, wer dran ist. Die einzige Stelle, an der ein Kind überhaupt existiert |
+| `hintergruende/` | Hintergrundbilder der Themen (Gestalter, E144), Name = Inhalts-Hash. Fehlt eines, zeigt die Box den Farbsatz |
 | `darstellung.json` | die **Themen** (Farbsätze — die gehören der Box, ein Kind das eines baut teilt es) und `aktuell` als **Rückfall** für Profile ohne eigene Wahl. Steht **auch** je Kind (siehe unten), und zwar als einzige Ablage in beiden Tabellen zugleich: sie ist die einzige, die beim Start **nicht** umzieht (`OHNE_UMZUG` in `server.ts`, begründet in `profile.ts`). Wer diese Datei für überflüssig hält, weil „alles je Kind liegt", nimmt allen Kindern die Paletten |
 | `kinderzeit.json` | der **Regelsatz**, `{standard, je}` — die Hausregel und, unter `je.<kennung>`, die Ausnahme eines einzelnen Kindes (seit 02.08.2026, `regelnFuer()`). **Nicht** die Zeitkonten: die liegen je Kind in `kinderzeit-verbrauch.json`. Box-weit mit Absicht — je Bereich abgelegt fände `regelnFuer()` die Hausregel nicht mehr (`profile.ts`, `BEREICH_ABLAGEN`) |
 | `plugin-einstellungen.json` | Adresse, Benutzer und Passwort je Plugin (geheime Felder streicht `GEHEIM`) |
@@ -2317,7 +2372,7 @@ Drei Aufträge, alle auf `ubuntu-latest` mit Node 22 und `npm ci`:
 | Auftrag | Was er ruft | Was das deckt |
 |---|---|---|
 | `Lint (Biome)` | `npm run lint` | die Biome-Lint-Regeln in allen drei Bereichen, **blockierend** — Formatierung und Import-Reihenfolge nicht, siehe Kasten |
-| `Tests + types` | `npm run check-types` (nur `backend-player`), dann `npm run test` für `backend-api` und `backend-player`, `npm run test:plugins`, dazu der Selbsttest von `tools/mixpi-github-fassung.py` und der Zieher-Sandkasten `tools/mixpi-zieher-probe.py` | die Testdateien beider Backends und aller Plugins, dazu die Fassungs-Pipeline (7.16) |
+| `Tests + types` | `npm run check-types` (nur `backend-player`), dann `npm run test` für `backend-api` und `backend-player`, `npm run test:plugins`, dazu der Selbsttest von `tools/mixpi-github-fassung.py`, der Zieher-Sandkasten `tools/mixpi-zieher-probe.py` und die zwei Gestalter-Wachen `tools/gestalter-format-bauen.mjs --pruefen` und `tools/gestalter-katalog-deckung.mjs` | die Testdateien beider Backends und aller Plugins, dazu die Fassungs-Pipeline (7.16) und der Theme-Gestalter (E144) |
 | `Build all workspaces` | `npm run build` | alle drei Bereiche mit Bau (`backend-api`, `backend-player`, `frontend-admin`); darüber läuft auch der Angular-Compiler der Verwaltung |
 
 **Rot von der ersten Veröffentlichung bis zum 25.09.2026.** Alle drei Läufe

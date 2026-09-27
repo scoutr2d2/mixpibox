@@ -1,0 +1,39 @@
+{
+  "name": "mixpibox-gestalter",
+  "productName": "MixPiBox Theme-Gestalter",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Themen fuer die MixPiBox gestalten — per Ziehen und Ablegen, mit oder ohne Box (BACKLOG E144).",
+  "_warum_nicht_im_arbeitsbereich": "Absichtlich NICHT unter src/* und damit nicht in den npm-Arbeitsbereichen der Wurzel: Electron zieht rund 100 MB je Plattform, und weder die Box noch die CI brauchen es. Wer die App baut, installiert hier drin (npm install). Der Gestalter selbst ist NewDesign/gestalter/ — dieses Paket ist nur die Schale.",
+  "main": "main.cjs",
+  "scripts": {
+    "vorbereiten": "node vorbereiten.mjs",
+    "start": "npm run vorbereiten && electron .",
+    "bauen:linux": "npm run vorbereiten && electron-builder --linux",
+    "bauen:win": "npm run vorbereiten && electron-builder --win",
+    "bauen:mac": "npm run vorbereiten && electron-builder --mac",
+    "bauen:alle": "npm run vorbereiten && electron-builder --linux --win --mac"
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "appId": "de.mixpibox.gestalter",
+    "productName": "MixPiBox Theme-Gestalter",
+    "directories": { "output": "dist" },
+    "files": ["main.cjs", "preload.cjs", "verbinden.html", "package.json"],
+    "extraResources": [{ "from": "app", "to": "app" }],
+    "linux": { "target": ["AppImage", "deb"], "category": "Graphics" },
+    "win": { "target": ["nsis", "portable"] },
+    "mac": { "target": ["dmg"], "category": "public.app-category.graphics-design" },
+    "fileAssociations": [
+      {
+        "ext": "mixpi-thema.json",
+        "name": "MixPiBox-Thema",
+        "description": "Thema fuer die MixPiBox (mixpi-thema/1)",
+        "role": "Editor"
+      }
+    ]
+  }
+}

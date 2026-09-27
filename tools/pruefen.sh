@@ -241,6 +241,19 @@ schritt "Gesten der Box" node tools/wischrand-schau.mjs
 # und meldet jede Abweichung. Unter einer Sekunde, kein Browser noetig.
 schritt "Darstellung: nur wirksame Felder" node tools/darstellung-felder-wer.mjs --pruefen
 
+# ── Der Theme-Gestalter (E144): drei Fragen ────────────────────────────────
+#
+# 1. Passt die Abschrift des Formats (NewDesign/gestalter/format.mjs) noch zu
+#    mixpi-thema.ts? Der Gestalter prueft im Browser mit ihr — eine veraltete
+#    Abschrift liesse ihn Felder anbieten, die das Tor der Box ablehnt.
+# 2. Kann er JEDES Formatfeld stellen, und ist Andocken umkehrbar?
+# 3. Wirkt Ziehen und Ablegen wirklich in der Vorschau, und landet
+#    „Anwenden" auf der (Attrappen-)Box? Ohne Browser ueberspringt sich die
+#    Schau selbst. Rund 15 s.
+schritt "Gestalter: Format-Abschrift" node tools/gestalter-format-bauen.mjs --pruefen
+schritt "Gestalter: Katalog-Deckung" node tools/gestalter-katalog-deckung.mjs
+schritt "Gestalter: Ziehen im Browser" node tools/gestalter-schau.mjs
+
 # ── Und steht jeder Schalter der Box AUCH in der Verwaltung? ────────────────
 #
 # Der Schritt darueber fragt, ob ein Feld der Verwaltung ueberhaupt WIRKT. Die

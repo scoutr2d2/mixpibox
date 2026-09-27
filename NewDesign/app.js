@@ -1194,6 +1194,15 @@
      */
     zuletztGeschrieben: 0,
 
+    /**
+     * Der Entwurf des Gestalters (nur im Rahmen, siehe IM_GESTALTER) — die
+     * flachen Felder, die UEBER dem gespeicherten Stand liegen. `null` =
+     * kein Entwurf, die Box zeigt, was gespeichert ist.
+     */
+    entwurf: null,
+    /** Der zuletzt gesehene gespeicherte Stand als Objekt — die Unterlage des Entwurfs. */
+    stand: null,
+
     async abgleichen() {
       if (Date.now() - this.zuletztGeschrieben < RUHE_NACH_SCHREIBEN_MS) return
       try {
@@ -1204,7 +1213,9 @@
         // eine Neuberechnung des ganzen Rasters an.
         if (text === this.gesehen) return
         this.gesehen = text
-        anwenden(d.aktuell)
+        this.stand = d.aktuell
+        // Ein offener Entwurf bleibt OBEN — die neue Unterlage kommt darunter.
+        anwenden(this.entwurf ? { ...d.aktuell, ...this.entwurf } : d.aktuell)
       } catch {
         /* Backend still oder offline — es bleibt beim zuletzt Gesehenen. */
       }
@@ -2200,6 +2211,182 @@
     return s === 3 ? 1 : s + 1
   }
 
+  /* ══ DER GESTALTER — ANDOCKEN, NEUE ELEMENTE, HINTERGRUND, EIGENE FARBEN ═══
+   * (BACKLOG E144, 27.09.2026)
+   *
+   * Betreiber: „einen theme editor … eigene feste elemente definieren
+   * miniplayer. seiten andocken. titel … auch hintergründe definieren und
+   * farben. alles drag und drop." Der Editor wohnt in `gestalter/` neben
+   * dieser Seite; er schreibt DIESELBEN flachen Felder wie jede andere
+   * Einstellung (mixpi-thema.ts, Bloecke kissen/titelband/maskottchen/
+   * hintergrund/farben). Hier steht ihre Wirkung — und NUR hier.
+   *
+   * JEDE VORGABE IST DER STAND DAVOR. Fehlt ein Feld (aeltere
+   * darstellung.json), sieht die Box aus wie gestern: Kissen unten rechts,
+   * kein Band, kein Maskottchen in der Ecke, Hintergrund und Farben aus dem
+   * Farbsatz. Deshalb ueberall `=== 'oben'`/`=== true` statt `!== …`.
+   *
+   * FARBEN UND BILDNAMEN WERDEN HIER NOCH EINMAL GEPRUEFT, obwohl das Tor
+   * (pruefeThema) es schon tat: `PUT /api/darstellung` prueft nur die grobe
+   * Form, und ein Wert landet hier in einer CSS-Variablen bzw. einer
+   * Adresse. Dieselbe Regel wie bei `kachelRandFarbe`.
+   */
+  const GESTALT_FARBE = /^#[0-9a-fA-F]{6}$/
+  const GESTALT_BILD = /^[0-9a-f]{16}\.(jpg|png|webp)$/
+  const MASKOTTCHEN_ECKEN = ['unten-rechts', 'unten-links', 'oben-rechts', 'oben-links']
+
+  /** Helligkeit nach WCAG — fuer die Schrift AUF dem eigenen Akzent. */
+  function gestaltLeuchte(hex) {
+    const k = [1, 3, 5].map((i) => {
+      const c = parseInt(hex.slice(i, i + 2), 16) / 255
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+    })
+    return 0.2126 * k[0] + 0.7152 * k[1] + 0.0722 * k[2]
+  }
+
+  /** Eine eigene Farbe setzen oder — bei '' / fehlend / kaputt — zuruecknehmen. */
+  function gestaltVariable(name, wert, abgeleitet) {
+    const s = document.documentElement.style
+    if (typeof wert === 'string' && GESTALT_FARBE.test(wert)) {
+      s.setProperty(name, wert)
+      for (const [n, v] of Object.entries(abgeleitet ? abgeleitet(wert) : {})) s.setProperty(n, v)
+      return true
+    }
+    s.removeProperty(name)
+    for (const n of Object.keys(abgeleitet ? abgeleitet('#000000') : {})) s.removeProperty(n)
+    return false
+  }
+
+  /**
+   * DAS TITELBAND — ein Band quer ueber die Spalte: ein fester Name und/oder
+   * der laufende Titel. Der laufende Teil ist ein ANZEIGEORT
+   * (`data-anzeigeort="Titelband"`): `anzeigeMalen` fuellt ihn mit, ohne
+   * eine Zeile mehr — dieselbe Quelle wie Kissen und Player
+   * ([[drei-orte-eine-anzeige]]). Wann er zu SEHEN ist, entscheidet `malen()`:
+   * nur solange das Kissen steht (body.kissen-da), sonst hiesse es „—".
+   */
+  const titelband = {
+    an: false,
+    inhalt: 'text',
+    text: '',
+    setzen(w) {
+      this.an = w.titelBandAn === true
+      this.inhalt = w.titelBandInhalt === 'laufend' || w.titelBandInhalt === 'beides' ? w.titelBandInhalt : 'text'
+      this.text = typeof w.titelBandText === 'string' ? w.titelBandText.slice(0, 40) : ''
+      const band = $('titelband')
+      if (!band) return
+      document.body.classList.toggle('tb-unten', w.titelBandPlatz === 'unten')
+      const g = Number(w.titelBandGroesse)
+      document.documentElement.style.setProperty(
+        '--mupi-tb-f',
+        String(Number.isFinite(g) ? Math.min(2, Math.max(0.6, g)) : 1),
+      )
+      const t = $('tb-text')
+      if (t) t.textContent = this.text
+      this.malen()
+    },
+    malen() {
+      const band = $('titelband')
+      const laufend = $('tb-laufend')
+      if (!band || !laufend) return
+      const textDa = this.inhalt !== 'laufend' && this.text !== ''
+      const laufendDa =
+        this.inhalt !== 'text' &&
+        (document.body.classList.contains('kissen-da') || document.body.classList.contains('gestalter-muster'))
+      laufend.hidden = !(this.an && laufendDa)
+      const t = $('tb-text')
+      if (t) t.hidden = !textDa
+      band.hidden = !(this.an && (textDa || laufendDa))
+      document.body.classList.toggle('tb-da', !band.hidden)
+    },
+  }
+
+  function gestaltungAnwenden(w) {
+    const b = document.body.classList
+    const s = document.documentElement.style
+
+    // ── Kissen andocken: oben/unten, links/mitte/rechts ──
+    b.toggle('mp-oben', w.mpPlatz === 'oben')
+    b.toggle('mp-mitte', w.mpAusrichtung === 'mitte')
+    b.toggle('mp-links', w.mpAusrichtung === 'links')
+
+    // ── Titelband ──
+    titelband.setzen(w)
+
+    // ── Maskottchen in der Ecke ──
+    const mk = $('maskottchen')
+    if (mk) {
+      mk.hidden = w.maskottchenAn !== true
+      const ecke = MASKOTTCHEN_ECKEN.includes(w.maskottchenEcke) ? w.maskottchenEcke : MASKOTTCHEN_ECKEN[0]
+      mk.dataset.ecke = ecke
+      mk.classList.toggle('mk-lebendig', w.maskottchenLebendig === true)
+      const g = Number(w.maskottchenGroesse)
+      s.setProperty('--mupi-mk-f', String(Number.isFinite(g) ? Math.min(2, Math.max(0.5, g)) : 1))
+    }
+
+    // ── Hintergrund ──
+    // Der SCHLEIER ist der Grundton halbdurchsichtig — aus `--bg` gerechnet,
+    // damit er in hell wie in dunkel die Namen unter den Kacheln lesbar
+    // haelt. Auf einer blossen Farbe waere er sinnlos und entfaellt.
+    let hg = ''
+    const f1 = GESTALT_FARBE.test(w.hgFarbe || '') ? w.hgFarbe : ''
+    const f2 = GESTALT_FARBE.test(w.hgFarbe2 || '') ? w.hgFarbe2 : ''
+    const winkel = Number.isFinite(Number(w.hgWinkel)) ? Math.min(360, Math.max(0, Number(w.hgWinkel))) : 180
+    const schleier = Number.isFinite(Number(w.hgSchleier)) ? Math.min(0.9, Math.max(0, Number(w.hgSchleier))) : 0
+    const decke =
+      schleier > 0
+        ? `linear-gradient(color-mix(in srgb, var(--bg) ${Math.round(schleier * 100)}%, transparent), color-mix(in srgb, var(--bg) ${Math.round(schleier * 100)}%, transparent)), `
+        : ''
+    if (w.hgArt === 'farbe' && f1) hg = f1
+    else if (w.hgArt === 'verlauf' && f1 && f2) hg = `${decke}linear-gradient(${winkel}deg, ${f1}, ${f2})`
+    else if (w.hgArt === 'bild' && GESTALT_BILD.test(w.hgBild || ''))
+      hg = `${decke}url("${API}/gestalter/hintergrund/${w.hgBild}") center / cover no-repeat`
+    if (hg) s.setProperty('--mupi-hg', hg)
+    else s.removeProperty('--mupi-hg')
+    b.toggle('hg-eigen', !!hg)
+
+    // ── Eigene Farben ueber dem Farbsatz ──
+    // Aus VIER Toenen werden die abhaengigen gerechnet, statt dass ein Thema
+    // vierzehn gegeneinander abstimmen muss: die Schrift auf dem Akzent nach
+    // Kontrast, der dunkle Akzent als Mischung, Linien und Reihengrund aus
+    // Grund + Schrift.
+    gestaltVariable('--accent', w.eigenAkzent, (c) => ({
+      '--accentDark': `color-mix(in srgb, ${c} 78%, #000000)`,
+      '--accentInk': gestaltLeuchte(c) > 0.45 ? '#2E2A3B' : '#FFFFFF',
+    }))
+    gestaltVariable('--bg', w.eigenGrund, () => ({
+      '--rowBg': 'color-mix(in srgb, var(--bg) 94%, var(--ink))',
+      '--line': 'color-mix(in srgb, var(--bg) 90%, var(--ink))',
+      '--line2': 'color-mix(in srgb, var(--bg) 86%, var(--ink))',
+    }))
+    gestaltVariable('--surface', w.eigenFlaeche)
+    gestaltVariable('--ink', w.eigenSchrift, () => ({
+      '--muted': 'color-mix(in srgb, var(--ink) 62%, var(--bg))',
+    }))
+  }
+
+  /* ══ ENTWURF AUS DEM GESTALTER (Live-Vorschau) ═══
+   *
+   * Der Gestalter zeigt DIESE Seite in einem Rahmen (`?gestalter=1`) und
+   * schickt ihr seinen Entwurf per postMessage — KEIN Nachbau der Box, die
+   * echte Oberflaeche ist die Vorschau ([[darstellung-auf-der-box-statt-im-browser]]).
+   *
+   * NUR IM RAHMEN UND NUR VOM ELTERNFENSTER: ohne `?gestalter=1` gibt es den
+   * Hoerer gar nicht, und eine Nachricht von anderswo wird verworfen. Der
+   * Entwurf wird NICHT gespeichert — er liegt ueber dem zuletzt gesehenen
+   * Stand, bis der Gestalter ihn zuruecknimmt; der 3-s-Abgleich schweigt so
+   * lange (`darstellung.entwurf`), sonst drehte er jede Aenderung zurueck.
+   * Die Herkunft ist absichtlich NICHT festgelegt: die Desktop-App
+   * (desktop/gestalter) zeigt die Box von einer anderen Herkunft aus.
+   */
+  const IM_GESTALTER = (() => {
+    try {
+      return window.parent !== window && new URLSearchParams(location.search).get('gestalter') === '1'
+    } catch {
+      return false
+    }
+  })()
+
   function anwenden(w) {
     const s = document.documentElement.style
 
@@ -2488,6 +2675,10 @@
     // werden und wuerde es eines Tages nicht. Am `body` gilt sie auch fuer ein
     // Kissen, das es gerade gar nicht gibt.
     document.body.classList.toggle('mp-micro', w.kissenMicro === true)
+
+    // DER GESTALTER (E144): Andocken, Titelband, Maskottchen, Hintergrund,
+    // eigene Farben — die Begruendung steht bei `gestaltungAnwenden`.
+    gestaltungAnwenden(w)
 
 
     // PLATZ BEIM BLAETTERN — aus, solange nichts anderes dasteht.
@@ -33654,7 +33845,13 @@
       // Wiedergabe, waehrend es offen war, blieb ein formatfuellendes Cover
       // eines Stuecks stehen, das laengst nicht mehr spielt. Ueber die Liste
       // aus dem Baum kann das keinem Ort mehr passieren.
-      for (const ort of anzeigeOrte()) ort.huelle.hidden = true
+      //
+      // AUSNAHME NUR IM GESTALTER (E144): mit „Mini-Player ohne Musik zeigen"
+      // (`body.gestalter-muster`) bleiben die Orte offen — sonst saehe man
+      // beim Gestalten ohne laufende Musik weder Kissen noch Player. Auf der
+      // Box gibt es die Klasse nicht (sie kommt nur per postMessage im Rahmen).
+      if (!document.body.classList.contains('gestalter-muster'))
+        for (const ort of anzeigeOrte()) ort.huelle.hidden = true
       // DAS KISSEN IST WEG — UND DER PLATZ, DEN ES SICH NIMMT, AUCH.
       //
       // Im Eltern-Bereich haelt die Karte 84 px und das Tor 94 px unten frei,
@@ -33669,11 +33866,15 @@
       // Stelle, die dasselbe noch einmal beantwortet, laeuft beim naechsten
       // Anfassen davon (dieselbe Lehre wie [[drei-orte-eine-anzeige]]).
       document.body.classList.remove('kissen-da')
+      // Das Titelband (E144) haengt am Kissen: ohne Kissen kein laufender Titel.
+      titelband.malen()
       if (!np) zustand.anker = null
       return
     }
     leiste.hidden = false
+    const kissenNeu = !document.body.classList.contains('kissen-da')
     document.body.classList.add('kissen-da')
+    if (kissenNeu) titelband.malen()
 
     // Den Anker NUR bei einer wirklich NEUEN Meldung neu setzen.
     //
@@ -34947,6 +35148,46 @@
       if (e.target !== e.currentTarget) return
       schnell.zu()
     })
+  }
+
+  // ══ DER HOERER FUER DEN GESTALTER (E144) ══ — nur im Rahmen, siehe
+  // IM_GESTALTER. Drei Nachrichten:
+  //   entwurf  { flach | null }  die flachen Felder UEBER dem gespeicherten
+  //                              Stand; null nimmt den Entwurf zurueck
+  //   muster   { an }            Kissen und Titelband zeigen, auch wenn
+  //                              nichts spielt — sonst sieht man beim
+  //                              Andocken des Mini-Players: nichts
+  //   (hinaus) bereit            einmal beim Start, damit der Gestalter
+  //                              seinen Entwurf nicht ins Leere schickt
+  if (IM_GESTALTER) {
+    document.documentElement.classList.add('im-gestalter')
+    window.addEventListener('message', (e) => {
+      if (e.source !== window.parent) return
+      const m = e.data
+      if (!m || typeof m !== 'object' || m.art !== 'mixpi-gestalter') return
+      if (m.was === 'entwurf') {
+        const flach = m.flach && typeof m.flach === 'object' && !Array.isArray(m.flach) ? m.flach : null
+        darstellung.entwurf = flach
+        anwenden({ ...(darstellung.stand || {}), ...(flach || {}) })
+      } else if (m.was === 'muster') {
+        const an = m.an === true
+        document.body.classList.toggle('gestalter-muster', an)
+        if (an && !document.body.classList.contains('kissen-da')) {
+          for (const ort of anzeigeOrte()) {
+            const t = ort.titel ? ort.titel.textContent.trim() : ''
+            if (ort.titel && (!t || t === '—')) ort.titel.textContent = 'Beispieltitel'
+            if (ort.unter && !ort.unter.textContent.trim()) ort.unter.textContent = 'Beispiel-Album'
+          }
+        }
+        // Die Player-Ansicht des Gestalters (`&seite=player`): der Start
+        // oeffnet den Player zwar, der erste Abgleich schliesst ihn aber
+        // wieder, solange noch kein Stueck gemeldet ist — mit Muster bleibt
+        // er offen.
+        if (an && new URLSearchParams(location.search).get('seite') === 'player') $('gross').hidden = false
+        titelband.malen()
+      }
+    })
+    window.parent.postMessage({ art: 'mixpi-gestalter', was: 'bereit' }, '*')
   }
 
   sichtbarerTakt(TAKT_DARSTELLUNG, () => darstellung.abgleichen())

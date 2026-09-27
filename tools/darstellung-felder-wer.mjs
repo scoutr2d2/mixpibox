@@ -109,6 +109,27 @@ function leserZeilen(datei, feld) {
   return treffer
 }
 
+/**
+ * Die flachen Anker, die der Gestalter stellen kann (E144): seine angebotenen
+ * `block.feld` ueber die Format-Abschrift in flache Namen uebersetzt. Der
+ * Punkt-Anker (`skalen.titel`) zaehlt wie in ankerLesen() nur mit seinem
+ * letzten Teil nicht — dort steht er als `skalen.titel` gar nicht im Muster,
+ * also genuegt hier der ganze Name.
+ */
+async function gestalterAnker() {
+  const g = join(WURZEL, 'NewDesign/gestalter')
+  const { pathToFileURL } = await import('node:url')
+  const format = await import(pathToFileURL(join(g, 'format.mjs')).href)
+  const katalog = await import(pathToFileURL(join(g, 'katalog.mjs')).href)
+  const raus = new Set()
+  for (const f of katalog.angeboteneFelder()) {
+    const [block, name] = f.split('.')
+    const e = format.BLOECKE[block]?.[name]
+    if (e) raus.add(e.flach)
+  }
+  return raus
+}
+
 export function messen() {
   return felderLesen().map((feld) => ({ feld, neu: leserZeilen(NEU, feld).length }))
 }
@@ -130,14 +151,23 @@ if (process.argv.includes('--pruefen')) {
 
   // Richtung 2: jeder Format-Anker ist in der Verwaltung stellbar (oder
   // steht mit Grund in OHNE_REGLER).
+  //
+  // SEIT DEM 27.09.2026 ZAEHLT DER GESTALTER MIT (E144). Er ist aus der
+  // Verwaltung heraus erreichbar (Darstellung -> „Theme-Gestalter") und baut
+  // seine Regler aus dem Format selbst; welche Felder er anbietet, sagt
+  // `angeboteneFelder()` in NewDesign/gestalter/katalog.mjs, und dass das
+  // ALLE sind, haelt tools/gestalter-katalog-deckung.mjs. Die Frage dieser
+  // Richtung — „laesst sich ein Thema mit dem Feld bauen, ohne eine Datei
+  // von Hand zu schreiben?" — beantwortet er genauso wie ein Regler hier.
   const imInterface = new Set(zeilen.map((z) => z.feld))
+  const imGestalter = await gestalterAnker()
   for (const anker of ankerLesen()) {
-    if (imInterface.has(anker) || anker in OHNE_REGLER) continue
+    if (imInterface.has(anker) || imGestalter.has(anker) || anker in OHNE_REGLER) continue
     schief++
     console.error(
-      `Das Themenformat kennt „${anker}", die Darstellungs-Seite bietet es nicht an.\n` +
-        `  Themen bauen in der Verwaltung (E120) braucht den Regler — oder eine\n` +
-        `  benannte Ausnahme in OHNE_REGLER dieses Werkzeugs.`,
+      `Das Themenformat kennt „${anker}", weder die Darstellungs-Seite noch der Gestalter bieten es an.\n` +
+        `  Themen bauen in der Verwaltung (E120) braucht den Regler — oder den Eintrag in\n` +
+        `  NewDesign/gestalter/katalog.mjs — oder eine benannte Ausnahme in OHNE_REGLER.`,
     )
   }
 
@@ -147,7 +177,8 @@ if (process.argv.includes('--pruefen')) {
   }
   console.log(
     `Alle ${zeilen.length} Interface-Felder haben Leser in app.js; ` +
-      `alle Format-Anker sind stellbar (${Object.keys(OHNE_REGLER).length} benannte Ausnahmen).`,
+      `alle Format-Anker sind stellbar (${imGestalter.size} davon im Gestalter, ` +
+      `${Object.keys(OHNE_REGLER).length} benannte Ausnahmen).`,
   )
 } else if (process.argv.includes('--json')) {
   console.log(JSON.stringify(zeilen, null, 2))

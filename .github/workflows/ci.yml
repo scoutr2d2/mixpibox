@@ -58,6 +58,10 @@ jobs:
         run: python3 tools/mixpi-github-fassung.py --selbsttest
       - name: Puller sandbox (the box side of the release pipeline)
         run: python3 tools/mixpi-zieher-probe.py
+      - name: Theme designer (format copy and catalogue coverage)
+        run: |
+          node tools/gestalter-format-bauen.mjs --pruefen
+          node tools/gestalter-katalog-deckung.mjs
 
   build:
     name: Build all workspaces

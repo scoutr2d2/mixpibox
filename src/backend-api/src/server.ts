@@ -6,6 +6,7 @@ import fs from 'node:fs'
 import {
   copyFile as dateiKopieren,
   unlink as dateiLoeschen,
+  mkdir,
   open as dateiOeffnen,
   stat as dateiStat,
   rename as dateiUmbenennen,
@@ -509,6 +510,15 @@ import {
   verdichten as sysVerdichten,
 } from './systemverlaufablage'
 import { type TasterLage, lageBilden as tasterLageBilden } from './taster'
+import {
+  alsDatenAdresse,
+  anhaengePruefen,
+  bildBenennen,
+  bildNamenUmschreiben,
+  GROESSTE_BYTES as HINTERGRUND_GROESSTE_BYTES,
+  istBildName,
+  mimeVon,
+} from './hintergrund'
 import { alsDokument as themaAlsDokument, pruefeThema, vonBloecken } from './mixpi-thema'
 import { aktivesThema, auslieferungAlle, ergaenzen as themenErgaenzen } from './themen'
 import { lokaleKarteAus, titelMischen, titelQuellenStempeln } from './titelkarte'
@@ -15514,6 +15524,8 @@ app.get('/api/jellyfin/strom/:kennung', async (req, res) => {
 // sofort richtig aussehen und auch dann laufen, wenn das Backend gerade nicht
 // antwortet.
 const darstellungFile = `${configBasePath}/darstellung.json`
+/** Hintergrundbilder der Themen (Gestalter, E144) — siehe hintergrund.ts. */
+const hintergrundDir = `${configBasePath}/hintergruende`
 let darstellungLauf = 0
 
 /**
@@ -17497,24 +17509,65 @@ app.get('/api/thema/export/:name', async (req, res) => {
       'Content-Disposition',
       `attachment; filename*=UTF-8''${encodeURIComponent(name)}.mixpi-thema.json`,
     )
-    res.json(themaAlsDokument(name, flach))
+    const dokument = themaAlsDokument(name, flach)
+    // DAS BILD REIST MIT (Gestalter, E144): ohne Anhang waere das Thema auf
+    // der naechsten Box eines ohne Hintergrund. Fehlt die Datei hier selbst,
+    // geht das Thema trotzdem hinaus — der Name im Block schadet nicht.
+    const bildName = (flach as Record<string, unknown>).hgBild
+    if (istBildName(bildName)) {
+      try {
+        const bytes = await readFile(path.join(hintergrundDir, bildName))
+        dokument.anhaenge = { [bildName]: alsDatenAdresse(bildName, bytes) }
+      } catch {
+        /* Bild liegt hier nicht (mehr) — ohne Anhang */
+      }
+    }
+    res.json(dokument)
   } catch (e) {
     fehlerAntwort(res, 500, 'GET /api/thema/export/:name', e, (grund) => ({ ok: false, error: grund }))
   }
 })
 
-app.post('/api/thema/import', express.json({ limit: '256kb' }), async (req, res) => {
-  const b = req.body as { dokument?: unknown; ueberschreiben?: unknown }
-  const befund = pruefeThema(b?.dokument)
-  if (!befund.ok) {
-    // DIE FEHLER GEHEN MIT HINAUS — das Tor lehnt mit Saetzen ab
-    // (unbekanntes Feld, angekuendigte Stufe, kaputter Wert), nicht mit
-    // einem nackten 400. Wer eine fremde Datei hochlaedt, soll lesen
-    // koennen, woran sie scheitert.
-    res.status(400).json({ ok: false, fehler: befund.fehler })
-    return
+/**
+ * Das Tor fuer eine Themendatei — Bloecke UND mitgebrachte Bilder.
+ *
+ * Erst wird ALLES geprueft, dann erst ein Bild abgelegt: eine Datei, deren
+ * Bloecke abgelehnt werden, soll keine Bilder auf der Box hinterlassen.
+ * Die Bilder werden am INHALT neu benannt, `hintergrund.bild` zeigt danach
+ * auf den gerechneten Namen (hintergrund.ts).
+ */
+async function themaAnnehmen(
+  dokument: unknown,
+): Promise<{ ok: false; fehler: string[] } | { ok: true; name: string; bloecke: Record<string, unknown> }> {
+  const befund = pruefeThema(dokument)
+  const anhang = anhaengePruefen((dokument as { anhaenge?: unknown } | null)?.anhaenge)
+  const fehler = [...befund.fehler, ...anhang.fehler]
+  if (!befund.ok || fehler.length) return { ok: false, fehler }
+  const umbenannt = new Map<string, string>()
+  if (anhang.bilder.length) {
+    await mkdir(hintergrundDir, { recursive: true })
+    for (const b of anhang.bilder) {
+      await atomarSchreiben(path.join(hintergrundDir, b.name), b.bytes)
+      umbenannt.set(b.alt, b.name)
+    }
   }
+  return { ok: true, name: befund.name, bloecke: bildNamenUmschreiben(befund.bloecke, umbenannt) }
+}
+
+// 6 MB statt 256 kB: eine Themendatei darf ihr Hintergrundbild mitbringen
+// (hoechstens 3 MB, als base64 um ein Drittel laenger).
+app.post('/api/thema/import', express.json({ limit: '6mb' }), async (req, res) => {
+  const b = req.body as { dokument?: unknown; ueberschreiben?: unknown }
   try {
+    const befund = await themaAnnehmen(b?.dokument)
+    if (!befund.ok) {
+      // DIE FEHLER GEHEN MIT HINAUS — das Tor lehnt mit Saetzen ab
+      // (unbekanntes Feld, angekuendigte Stufe, kaputter Wert), nicht mit
+      // einem nackten 400. Wer eine fremde Datei hochlaedt, soll lesen
+      // koennen, woran sie scheitert.
+      res.status(400).json({ ok: false, fehler: befund.fehler })
+      return
+    }
     let bisher: Record<string, unknown> = {}
     let boxAktuell: unknown = null
     try {
@@ -17539,6 +17592,108 @@ app.post('/api/thema/import', express.json({ limit: '256kb' }), async (req, res)
     res.json({ ok: true, name: befund.name, felder: Object.keys(flach).length })
   } catch (e) {
     fehlerAntwort(res, 500, 'POST /api/thema/import', e, (grund) => ({ ok: false, error: grund }))
+  }
+})
+
+// ══ DER GESTALTER (E144, 27.09.2026) ═══════════════════════════════════════
+//
+// NewDesign/gestalter/ baut Themen per Ziehen und Ablegen. Er braucht drei
+// Dinge, die es vorher nicht gab — und KEINEN eigenen Speicherweg fuer das
+// Thema selbst: Ablegen laeuft ueber /api/thema/import, Tauschen ueber
+// /api/thema/export. Neu sind nur:
+//
+//   POST   /api/thema/anwenden             ein Dokument SOFORT auf das aktive
+//                                          Profil legen (ohne es abzulegen)
+//   POST   /api/gestalter/hintergrund      ein Bild hochladen -> { name }
+//   GET    /api/gestalter/hintergruende    was schon da ist
+//   GET    /api/gestalter/hintergrund/:n   ausliefern (Kiosk + Vorschau)
+//   DELETE /api/gestalter/hintergrund/:n   wegraeumen
+
+app.post('/api/thema/anwenden', express.json({ limit: '6mb' }), async (req, res) => {
+  const b = req.body as { dokument?: unknown }
+  try {
+    const befund = await themaAnnehmen(b?.dokument)
+    if (!befund.ok) {
+      res.status(400).json({ ok: false, fehler: befund.fehler })
+      return
+    }
+    const flach = vonBloecken(befund.bloecke)
+    const wer = profilAktiv()
+    // DERSELBE WEG WIE PUT /api/darstellung: zusammenfuehren, nicht ersetzen.
+    // Was das Thema nicht nennt, bleibt, wie das Kind es hatte.
+    await aktuellZusammenfuehren(bereichSchreibPfad(darstellungFile, wer), flach)
+    res.json({ ok: true, profil: wer, felder: Object.keys(flach).length })
+  } catch (e) {
+    fehlerAntwort(res, 500, 'POST /api/thema/anwenden', e, (grund) => ({ ok: false, error: grund }))
+  }
+})
+
+app.post(
+  '/api/gestalter/hintergrund',
+  // JEDER Content-Type wird angenommen: entschieden wird an den ersten Bytes
+  // (hintergrund.ts `bildArt`), nicht an dem, was der Absender behauptet.
+  express.raw({ type: () => true, limit: HINTERGRUND_GROESSTE_BYTES }),
+  async (req, res) => {
+    try {
+      const bytes = Buffer.isBuffer(req.body) ? new Uint8Array(req.body) : new Uint8Array()
+      const benannt = bildBenennen(bytes)
+      if (!benannt) {
+        res.status(400).json({
+          ok: false,
+          error: `Das ist kein JPEG-, PNG- oder WebP-Bild bis ${HINTERGRUND_GROESSTE_BYTES / 1024 / 1024} MB.`,
+        })
+        return
+      }
+      await mkdir(hintergrundDir, { recursive: true })
+      await atomarSchreiben(path.join(hintergrundDir, benannt.name), bytes)
+      res.json({ ok: true, name: benannt.name })
+    } catch (e) {
+      fehlerAntwort(res, 500, 'POST /api/gestalter/hintergrund', e, (grund) => ({ ok: false, error: grund }))
+    }
+  },
+)
+
+app.get('/api/gestalter/hintergruende', async (_req, res) => {
+  try {
+    const namen = (await verzeichnisLesen(hintergrundDir).catch(() => [] as string[])).filter(istBildName)
+    // Neueste zuerst — wer gerade eines hochgeladen hat, sucht genau das.
+    const mitZeit = await Promise.all(
+      namen.map(async (n) => ({ n, t: (await dateiStat(path.join(hintergrundDir, n))).mtimeMs })),
+    )
+    res.json({ namen: mitZeit.sort((a, b) => b.t - a.t).map((x) => x.n) })
+  } catch (e) {
+    fehlerAntwort(res, 500, 'GET /api/gestalter/hintergruende', e, (grund) => ({ ok: false, error: grund }))
+  }
+})
+
+app.get('/api/gestalter/hintergrund/:name', async (req, res) => {
+  const name = String(req.params.name || '')
+  if (!istBildName(name)) {
+    res.status(404).end()
+    return
+  }
+  try {
+    const bytes = await readFile(path.join(hintergrundDir, name))
+    // Der Name IST der Inhalt (Hash) — er kann sich nie aendern, also darf
+    // der Browser ihn fuer immer behalten.
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+    res.type(mimeVon(name)).send(bytes)
+  } catch {
+    res.status(404).end()
+  }
+})
+
+app.delete('/api/gestalter/hintergrund/:name', async (req, res) => {
+  const name = String(req.params.name || '')
+  if (!istBildName(name)) {
+    res.status(404).json({ ok: false, error: 'Unbekanntes Bild.' })
+    return
+  }
+  try {
+    await dateiLoeschen(path.join(hintergrundDir, name))
+    res.json({ ok: true })
+  } catch {
+    res.status(404).json({ ok: false, error: 'Das Bild liegt nicht (mehr) auf der Box.' })
   }
 })
 
@@ -18823,6 +18978,26 @@ app.get('/api/oberflaeche/stand', async (_req, res) => {
   }
 })
 
+/**
+ * `aktuell` eines Profils ZUSAMMENFUEHREN, nicht ersetzen — die Begruendung
+ * steht am Aufruf in `PUT /api/darstellung` (16.08.2026). Herausgezogen am
+ * 27.09.2026, weil `POST /api/thema/anwenden` (Gestalter) denselben Weg
+ * braucht; zwei Abschriften liefen beim naechsten Befund auseinander.
+ */
+async function aktuellZusammenfuehren(ziel: string, teil: Record<string, unknown> | null): Promise<void> {
+  let vorher: Record<string, unknown> = {}
+  try {
+    const alt = (await readJsonFile(ziel)) as { aktuell?: Record<string, unknown> } | null
+    if (alt?.aktuell && typeof alt.aktuell === 'object') vorher = alt.aktuell
+  } catch {
+    /* noch nichts fuer dieses Profil gespeichert */
+  }
+  const zusammen = teil ? { ...vorher, ...teil } : vorher
+  const tmp = `${ziel}.${process.pid}.${++darstellungLauf}.tmp`
+  await writeFile(tmp, `${JSON.stringify({ aktuell: zusammen }, null, 2)}\n`, { mode: 0o644 })
+  await dateiUmbenennen(tmp, ziel)
+}
+
 app.put('/api/darstellung', express.json({ limit: '256kb' }), async (req, res) => {
   const b = req.body as { aktuell?: unknown; themen?: unknown }
   // Nur die grobe FORM pruefen. Welche Felder gueltig sind, weiss die
@@ -18885,18 +19060,7 @@ app.put('/api/darstellung', express.json({ limit: '256kb' }), async (req, res) =
      * (false, '', 0) — das ueberschreibt sauber. Nur das blosse Fehlen
      * bedeutet ab jetzt „dazu sage ich nichts" statt „loesch das".
      */
-    let vorher: Record<string, unknown> = {}
-    try {
-      const alt = (await readJsonFile(ziel)) as { aktuell?: Record<string, unknown> } | null
-      if (alt?.aktuell && typeof alt.aktuell === 'object') vorher = alt.aktuell
-    } catch {
-      /* noch nichts fuer dieses Profil gespeichert */
-    }
-    const zusammen = aktuell ? { ...vorher, ...(aktuell as Record<string, unknown>) } : vorher
-
-    const tmp = `${ziel}.${process.pid}.${++darstellungLauf}.tmp`
-    await writeFile(tmp, `${JSON.stringify({ aktuell: zusammen }, null, 2)}\n`, { mode: 0o644 })
-    await dateiUmbenennen(tmp, ziel)
+    await aktuellZusammenfuehren(ziel, aktuell as Record<string, unknown> | null)
     res.json({ ok: true, profil: wer })
   } catch (e) {
     fehlerAntwort(res, 500, 'PUT /api/darstellung', e, (grund) => ({ ok: false, error: grund }))

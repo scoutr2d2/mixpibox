@@ -212,6 +212,9 @@ import { createServer } from 'node:http'
 import { extname, join, normalize } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+/** Hintergrundbilder des Gestalters (E144) — nur im Speicher, Name = Inhalts-Hash. */
+const GESTALTER_BILDER = new Map()
+
 /**
  * Die Steuerbefehle, die der echte Verteiler kennt (spotify-control.ts).
  * Namen mit Doppelpunkt sind VORSAETZE (`tracknr:3`, `setvolume:40`).
@@ -5514,6 +5517,97 @@ const server = createServer(async (req, res) => {
   // andere. Eine Attrappe, die freundlich zusammenfuegt, haette genau diesen
   // Fehler zugedeckt und ihn erst an der Box sichtbar werden lassen.
   // `themen` wird wie am Server ergaenzt und nicht ersetzt.
+  // ── DER GESTALTER (E144) ─────────────────────────────────────────────
+  // Die Attrappe spricht dieselben vier Wege wie server.ts, damit
+  // /neu/gestalter/ hier end-to-end laeuft (tools/gestalter-schau.mjs).
+  // Die REGELN kommen aus der Format-Abschrift des Gestalters — keine
+  // eigene Pruefung, die mit der Box auseinanderlaufen koennte. Bilder
+  // liegen nur im Speicher; ihr Name wird wie auf der Box aus dem Inhalt
+  // gerechnet (sha256, 16 Zeichen).
+  if (p.startsWith('/api/thema/') || p.startsWith('/api/gestalter/')) {
+    const format = await import(new URL('../NewDesign/gestalter/format.mjs', import.meta.url).href)
+    const { createHash } = await import('node:crypto')
+    const leseJson = async () => {
+      let roh = ''
+      for await (const stueck of req) roh += stueck
+      try {
+        return JSON.parse(roh || '{}')
+      } catch {
+        return {}
+      }
+    }
+    const annehmen = (dok) => {
+      const befund = format.pruefeThema(dok)
+      if (!befund.ok) return { befund }
+      const anhaenge = dok && typeof dok.anhaenge === 'object' && dok.anhaenge ? dok.anhaenge : {}
+      const umbenannt = new Map()
+      for (const [alt, daten] of Object.entries(anhaenge)) {
+        const m = /^data:image\/(jpeg|png|webp);base64,(.+)$/.exec(String(daten))
+        if (!m) continue
+        const bytes = Buffer.from(m[2], 'base64')
+        const name = `${createHash('sha256').update(bytes).digest('hex').slice(0, 16)}.${m[1] === 'jpeg' ? 'jpg' : m[1]}`
+        GESTALTER_BILDER.set(name, bytes)
+        umbenannt.set(alt, name)
+      }
+      const hg = befund.bloecke.hintergrund
+      if (hg && umbenannt.has(hg.bild)) befund.bloecke.hintergrund = { ...hg, bild: umbenannt.get(hg.bild) }
+      return { befund, flach: format.vonBloecken(befund.bloecke) }
+    }
+    if (p === '/api/thema/anwenden' && req.method === 'POST') {
+      const { befund, flach } = annehmen((await leseJson()).dokument)
+      if (!flach) return jsonAus(res, { ok: false, fehler: befund.fehler }, 400)
+      DARSTELLUNG.aktuell = { ...(DARSTELLUNG.aktuell || {}), ...flach }
+      DARSTELLUNG.geschrieben = true
+      console.log(`  POST /api/thema/anwenden <- ${Object.keys(flach).length} Felder`)
+      return jsonAus(res, { ok: true, profil: 'vorschau', felder: Object.keys(flach).length })
+    }
+    if (p === '/api/thema/import' && req.method === 'POST') {
+      const k = await leseJson()
+      const { befund, flach } = annehmen(k.dokument)
+      if (!flach) return jsonAus(res, { ok: false, fehler: befund.fehler }, 400)
+      if (DARSTELLUNG.themen[befund.name] && k.ueberschreiben !== true)
+        return jsonAus(res, { ok: false, error: `Ein Thema „${befund.name}" gibt es schon.`, name: befund.name }, 409)
+      DARSTELLUNG.themen[befund.name] = flach
+      console.log(`  POST /api/thema/import <- „${befund.name}"`)
+      return jsonAus(res, { ok: true, name: befund.name, felder: Object.keys(flach).length })
+    }
+    if (p.startsWith('/api/thema/export/')) {
+      const name = decodeURIComponent(p.slice('/api/thema/export/'.length))
+      const flach = DARSTELLUNG.themen[name]
+      if (!flach) return jsonAus(res, { ok: false, error: `Ein Thema „${name}" gibt es nicht.` }, 404)
+      const dok = format.alsDokument(name, flach)
+      const bild = flach.hgBild
+      if (bild && GESTALTER_BILDER.has(bild))
+        dok.anhaenge = { [bild]: `data:image/${bild.endsWith('png') ? 'png' : 'jpeg'};base64,${GESTALTER_BILDER.get(bild).toString('base64')}` }
+      return jsonAus(res, dok)
+    }
+    if (p === '/api/gestalter/hintergrund' && req.method === 'POST') {
+      const teile = []
+      for await (const stueck of req) teile.push(stueck)
+      const bytes = Buffer.concat(teile)
+      const art = bytes[0] === 0xff && bytes[1] === 0xd8 ? 'jpg' : bytes[0] === 0x89 && bytes[1] === 0x50 ? 'png' : null
+      if (!art) return jsonAus(res, { ok: false, error: 'Das ist kein JPEG- oder PNG-Bild.' }, 400)
+      const name = `${createHash('sha256').update(bytes).digest('hex').slice(0, 16)}.${art}`
+      GESTALTER_BILDER.set(name, bytes)
+      return jsonAus(res, { ok: true, name })
+    }
+    if (p === '/api/gestalter/hintergruende') return jsonAus(res, { namen: [...GESTALTER_BILDER.keys()].reverse() })
+    if (p.startsWith('/api/gestalter/hintergrund/')) {
+      const name = p.slice('/api/gestalter/hintergrund/'.length)
+      if (req.method === 'DELETE') {
+        const da = GESTALTER_BILDER.delete(name)
+        return jsonAus(res, { ok: da }, da ? 200 : 404)
+      }
+      const bytes = GESTALTER_BILDER.get(name)
+      if (!bytes) {
+        res.statusCode = 404
+        return res.end()
+      }
+      res.writeHead(200, { 'Content-Type': name.endsWith('png') ? 'image/png' : 'image/jpeg' })
+      return res.end(bytes)
+    }
+  }
+
   if (p === '/api/darstellung' && req.method === 'PUT') {
     let roh = ''
     for await (const stueck of req) roh += stueck
@@ -6738,7 +6832,8 @@ const server = createServer(async (req, res) => {
   // Die Seite selbst. /neu/ ist der Pfad, unter dem die Box sie ausliefert -
   // damit dieselben absoluten Adressen greifen wie dort.
   let rest = p.startsWith('/neu') ? p.slice(4) : p
-  if (rest === '' || rest === '/') rest = '/index.html'
+  // Ein Verzeichnis heisst seine index.html — /neu/ wie /neu/gestalter/ (E144).
+  if (rest === '' || rest.endsWith('/')) rest = `${rest}index.html`
   const ziel = join(SEITE, normalize(rest).replace(/^(\.\.[/\\])+/, ''))
   if (!ziel.startsWith(SEITE)) {
     res.statusCode = 403

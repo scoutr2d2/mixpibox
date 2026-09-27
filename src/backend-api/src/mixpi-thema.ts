@@ -29,11 +29,16 @@
  *   * leiste.platz 'oben' und leiste.schublade — die Leiste ist fest links,
  *     die Schublade bewusst hart an (app.js:~30026: ein stilles Backend
  *     darf die Apps nicht verschwinden lassen);
- *   * farben.ton / farben.werte (gerechnete Palette -> /farben.css) und die
- *     Uebernahme-Felder aus dem Alten (endeZeit, schlummer, beimVerlassen,
- *     lautKnoepfe, ...) kommen mit E120/E121 — Whitelist, Uebersetzer und
- *     WIRKUNG wachsen dort gemeinsam, damit nie ein Feld existiert, das
- *     nichts tut.
+ *   * farben.ton (gerechnete Palette -> /farben.css) kommt mit E120 —
+ *     Whitelist, Uebersetzer und WIRKUNG wachsen dort gemeinsam, damit nie
+ *     ein Feld existiert, das nichts tut. (farben.werte ist seit dem
+ *     27.09.2026 durch vier Einzelfarben abgeloest, siehe Block `farben`.)
+ *
+ * ══ DER GESTALTER (27.09.2026) ══════════════════════════════════════════════
+ * NewDesign/gestalter/ baut Themen per Ziehen und Ablegen. Er liest DIESE
+ * Datei — als erzeugte Abschrift `NewDesign/gestalter/format.js`
+ * (`node tools/gestalter-format-bauen.mjs`, Wache `--pruefen`). Wer hier
+ * etwas aendert, baut die Abschrift im selben Zug neu.
  *
  * ══ ZWEI BEWUSSTE UMBENENNUNGEN im Format ═══════════════════════════════════
  *   * `kissen.streifen` uebersetzt das flache `statusLeiste` — der Name war
@@ -58,13 +63,38 @@ type Zahl = { art: 'zahl'; min: number; max: number }
 /** Eine Wahl aus festen Worten. */
 type Wahl = { art: 'wahl'; werte: readonly string[] }
 type Schalter = { art: 'schalter' }
-type Farbe = { art: 'farbe' }
-type Feldart = Zahl | Wahl | Schalter | Farbe
+/**
+ * Eine Farbe. `leer: true` laesst zusaetzlich '' zu — das heisst „keine
+ * eigene Farbe, der Farbsatz gilt". Ohne dieses Wort koennte ein Thema eine
+ * einmal gesetzte eigene Farbe nie wieder zuruecknehmen: der Merge-Vertrag
+ * wertet das blosse FEHLEN als „dazu sage ich nichts".
+ */
+type Farbe = { art: 'farbe'; leer?: boolean }
+/**
+ * Ein kurzer Text (Gestalter, 27.09.2026: der Name im Titelband). Er landet
+ * per `textContent` im Schirm, nie als HTML — die Pruefung nimmt trotzdem
+ * Steuerzeichen und spitze Klammern heraus, weil eine Themendatei von
+ * anderswo kommen kann und in der Verwaltung auch angezeigt wird.
+ */
+type Text = { art: 'text'; max: number }
+/**
+ * Der Name eines Hintergrundbilds im Ablageordner der Box
+ * (`hintergrund.ts`: 16 Hex-Zeichen Inhalts-Hash + Endung). '' = keines.
+ * Ein Pfad kommt hier nie durch — das Muster laesst weder `/` noch `..` zu.
+ */
+type Bild = { art: 'bild' }
+export type Feldart = Zahl | Wahl | Schalter | Farbe | Text | Bild
 
 const zahl = (min: number, max: number): Zahl => ({ art: 'zahl', min, max })
 const wahl = (...werte: string[]): Wahl => ({ art: 'wahl', werte })
 const schalter: Schalter = { art: 'schalter' }
 const farbe: Farbe = { art: 'farbe' }
+const farbeOderLeer: Farbe = { art: 'farbe', leer: true }
+const text = (max: number): Text => ({ art: 'text', max })
+const bild: Bild = { art: 'bild' }
+
+/** Das Namensmuster der Hintergrundbilder — dieselbe Regel wie in hintergrund.ts. */
+export const BILD_NAME = /^[0-9a-f]{16}\.(jpg|png|webp)$/
 
 /**
  * DIE WHITELIST — je Block: Formatfeld -> { flach, art }.
@@ -80,6 +110,18 @@ export const BLOECKE: Record<string, Record<string, { flach: string; art: Feldar
     // Server prueft wie /api/profil/aussehen nur die FORM — welche Saetze es
     // gibt, weiss das Stilblatt. 'ton'/'werte' kommen mit E120.
     satz: { flach: 'farbe', art: { art: 'wahl', werte: [] } },
+    /*
+     * EIGENE FARBEN UEBER DEM SATZ (Gestalter, 27.09.2026 — loest das
+     * angekuendigte `farben.werte` ab). Vier Toene, die der Satz sonst
+     * vorgibt; '' nimmt die eigene Farbe zurueck. Absichtlich nur vier:
+     * `--accentDark`, `--accentInk` und die Linien RECHNET anwenden() aus
+     * diesen, statt dass ein Thema vierzehn Werte gegeneinander abstimmen
+     * muss (die Kontrastfalle aus farbsatz-jede-paarung).
+     */
+    akzent: { flach: 'eigenAkzent', art: farbeOderLeer },
+    grund: { flach: 'eigenGrund', art: farbeOderLeer },
+    flaeche: { flach: 'eigenFlaeche', art: farbeOderLeer },
+    schrift: { flach: 'eigenSchrift', art: farbeOderLeer },
   },
   licht: {
     // Kein Unterobjekt — der Block IST der Wert ('hell'|'dunkel').
@@ -116,6 +158,11 @@ export const BLOECKE: Record<string, Record<string, { flach: string; art: Feldar
     // Streifenlaenge getrennt von der Kissenbreite.
     endeZeit: { flach: 'endeZeit', art: schalter },
     streifenLaenge: { flach: 'streifenLaenge', art: zahl(0.3, 1) },
+    // Gestalter (27.09.2026): WO das Kissen andockt. Die Vorgaben 'unten'
+    // und 'rechts' sind exakt der Stand davor — `.mp` sitzt am Fuss der
+    // Spalte, `align-self: flex-end` (app.css).
+    platz: { flach: 'mpPlatz', art: wahl('unten', 'oben') },
+    ausrichtung: { flach: 'mpAusrichtung', art: wahl('rechts', 'mitte', 'links') },
   },
   player: {
     cover: { flach: 'skalen.cover', art: zahl(0.5, 3) },
@@ -169,6 +216,45 @@ export const BLOECKE: Record<string, Record<string, { flach: string; art: Feldar
     beimVerlassen: { flach: 'beimVerlassen', art: wahl('weiter', 'stopp') },
     startKategorie: { flach: 'startKategorie', art: wahl('alle', 'audiobook', 'music', 'other') },
   },
+  /*
+   * ══ NEUE ELEMENTE AUS DEM GESTALTER (27.09.2026) ═══
+   * Betreiber: „eigene feste Elemente definieren … sinnvolle Elemente aus
+   * dem existierenden Theme und auch neue, welche aktuell nicht verwendet
+   * werden". Die drei Bloecke unten gab es vorher NICHT auf dem Schirm —
+   * jeder hat seine Wirkung in NewDesign/app.js (`gestaltung.anwenden`),
+   * die Wache unten im spec haelt das.
+   */
+  titelband: {
+    // Ein Band quer ueber die Spalte: ein fester Name („Emmas Box") und/oder
+    // der laufende Titel. Andockbar oben (unter dem Kopf) oder unten.
+    an: { flach: 'titelBandAn', art: schalter },
+    platz: { flach: 'titelBandPlatz', art: wahl('oben', 'unten') },
+    inhalt: { flach: 'titelBandInhalt', art: wahl('text', 'laufend', 'beides') },
+    text: { flach: 'titelBandText', art: text(40) },
+    groesse: { flach: 'titelBandGroesse', art: zahl(0.6, 2) },
+  },
+  maskottchen: {
+    // MixPi in einer Ecke. Rein schmueckend: `pointer-events: none`, es kann
+    // nie einen Knopf verdecken. `lebendig` tauscht das Bild mit der
+    // Wiedergabe (hoert <-> spielt) — die Bilder gibt es seit E-Maskottchen,
+    // eine Ecke dafuer gab es nie.
+    an: { flach: 'maskottchenAn', art: schalter },
+    ecke: { flach: 'maskottchenEcke', art: wahl('unten-links', 'unten-rechts', 'oben-rechts', 'oben-links') },
+    groesse: { flach: 'maskottchenGroesse', art: zahl(0.5, 2) },
+    lebendig: { flach: 'maskottchenLebendig', art: schalter },
+  },
+  hintergrund: {
+    // Was HINTER der Startseite liegt. 'thema' = der Grund des Farbsatzes
+    // (Stand davor). Der Schleier legt den Grundton halbdurchsichtig ueber
+    // ein Bild, damit die Namen unter den Kacheln lesbar bleiben — in hell
+    // wie in dunkel, weil er aus `--bg` gerechnet wird und nicht schwarz ist.
+    art: { flach: 'hgArt', art: wahl('thema', 'farbe', 'verlauf', 'bild') },
+    farbe: { flach: 'hgFarbe', art: farbe },
+    farbe2: { flach: 'hgFarbe2', art: farbe },
+    winkel: { flach: 'hgWinkel', art: zahl(0, 360) },
+    bild: { flach: 'hgBild', art: bild },
+    schleier: { flach: 'hgSchleier', art: zahl(0, 0.9) },
+  },
   leiste: {
     // E121/4b: EIN durchschaltender Kategorie-Knopf fuer Kinder, die nicht
     // lesen (Alt: kategorien 'einer'). Der flache Name `kategorien` traegt
@@ -188,16 +274,34 @@ export const ANGEKUENDIGT: Record<string, string> = {
   'leiste.platz': "die Leiste ist heute fest links; 'oben' ist eine geplante Achse (BACKLOG E119ff)",
   'leiste.schublade': 'die Schublade ist bewusst hart an (app.js: ein stilles Backend darf die Apps nicht verstecken)',
   'farben.ton': 'gerechnete Paletten kommen mit E120 (Classic + Tauschen)',
-  'farben.werte': 'gerechnete Paletten kommen mit E120 (Classic + Tauschen)',
+  // 'farben.werte' stand hier bis 27.09.2026 — abgeloest durch die vier
+  // einzelnen Felder farben.akzent/grund/flaeche/schrift.
+  'farben.werte': 'abgeloest durch die Einzelfarben farben.akzent/grund/flaeche/schrift (Gestalter, BACKLOG E144)',
 }
 
-/** Einen Wert gegen seine Feldart halten. Gibt den GEKLEMMTEN Wert oder undefined. */
-function pruefeWert(wert: unknown, art: Feldart): unknown {
+/**
+ * Einen Wert gegen seine Feldart halten. Gibt den GEKLEMMTEN Wert oder undefined.
+ *
+ * Exportiert fuer den Gestalter (NewDesign/gestalter): er prueft jede Eingabe
+ * mit DERSELBEN Funktion, die am Tor steht — ueber die erzeugte Abschrift
+ * `NewDesign/gestalter/format.js` (tools/gestalter-format-bauen.mjs).
+ */
+export function pruefeWert(wert: unknown, art: Feldart): unknown {
   switch (art.art) {
     case 'schalter':
       return typeof wert === 'boolean' ? wert : undefined
     case 'farbe':
+      if (art.leer && wert === '') return ''
       return typeof wert === 'string' && FARBE.test(wert) ? wert.toUpperCase() : undefined
+    case 'text': {
+      if (typeof wert !== 'string') return undefined
+      // Steuerzeichen und spitze Klammern heraus, Weissraum zusammenziehen.
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: genau die sollen heraus
+      const rein = wert.replace(/[\u0000-\u001f\u007f<>]/g, '').replace(/\s+/g, ' ').trim()
+      return rein.length <= art.max ? rein : undefined
+    }
+    case 'bild':
+      return typeof wert === 'string' && (wert === '' || BILD_NAME.test(wert)) ? wert : undefined
     case 'wahl':
       if (art.werte.length === 0) {
         // Formpruefung wie /api/profil/aussehen: kurzer Bezeichner.
@@ -432,7 +536,11 @@ function artWort(art: Feldart): string {
     case 'schalter':
       return 'erwartet true/false'
     case 'farbe':
-      return 'erwartet #RRGGBB'
+      return art.leer ? 'erwartet #RRGGBB oder ""' : 'erwartet #RRGGBB'
+    case 'text':
+      return `erwartet einen Text bis ${art.max} Zeichen`
+    case 'bild':
+      return 'erwartet den Namen eines Hintergrundbilds der Box oder ""'
     case 'zahl':
       return `erwartet eine Zahl ${art.min}..${art.max}`
     case 'wahl':

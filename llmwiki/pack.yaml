@@ -1,5 +1,5 @@
 id: mupibox
-version: "619"
+version: "620"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -64325,3 +64325,65 @@ entries:
       aus server.ts zurueck (der eine Fall, den der Zeilenumbruch-Riegel
       allein nicht faengt).
     related: ["arbeitsbereich-der-nichts-deklariert-ist-unsichtbar", "dauerrote-wache-ist-keine", "gegenprobe-statt-gruen-glauben"]
+  - id: theme-gestalter-ziehen-und-andocken-e144
+    title: "E144: Der Theme-Gestalter — Themen per Ziehen bauen, Vorschau ist die echte Box, dieselbe Seite als Desktop-App"
+    kind: architektur
+    match: "theme editor|theme-gestalter|gestalter|drag und drop theme|miniplayer andocken|titelband|maskottchen ecke|hintergrundbild thema|eigene farben thema|desktop app themes|mixpiDesktop"
+    sev: medium
+    tags: [themen, darstellung, gestalter, neue-oberflaeche, desktop, e144, 2026]
+    stand: "27.09.2026 gebaut. Gemessen: tools/gestalter-schau.mjs 12/12 gegen die Attrappe; Desktop-Schale unter Linux/Xvfb in beiden Lagen gestartet. NICHT gemessen: echte Box, Windows, macOS, electron-builder."
+    source: "Betreiber 27.09.2026: „einen theme editor integrieren mit dem man selbst themes gestalten kann in anordnung … miniplayer. seiten andocken. titel … auch vorbereiten das es eine desktop app win/linux/mac geben kann … hintergründe definieren und farben. alles drag und drop.“"
+    cause: >
+      Themen liessen sich nur ueber Regler in der Verwaltung oder als
+      Datei (mixpi-thema/1) bauen; Lage von Elementen, Hintergrund und
+      freie Farben gab es im Format nicht.
+    fix: >
+      WO: NewDesign/gestalter/ (auf der Box /neu/gestalter/, Link in der
+      Verwaltung Darstellung -> Reiter Themen). Drei Quellen, keine eigene
+      Wahrheit: format.mjs ist eine ERZEUGTE Abschrift von mixpi-thema.ts
+      (tools/gestalter-format-bauen.mjs, Wache --pruefen), katalog.mjs sagt
+      nur WO etwas andockt (Zonen in 800x480) und wie es heisst, ablage.mjs
+      spricht Box (/api) oder Datei.
+
+      VORSCHAU = DIE ECHTE OBERFLAECHE im Rahmen (../index.html?gestalter=1).
+      Der Entwurf geht per postMessage hinein (Hoerer in app.js nur mit
+      ?gestalter=1 und nur vom Elternfenster), darstellung.entwurf liegt
+      UEBER dem gespeicherten Stand; gespeichert wird erst mit
+      POST /api/thema/anwenden (zusammenfuehrend, aktuellZusammenfuehren in
+      server.ts, derselbe Weg wie PUT /api/darstellung) oder
+      /api/thema/import.
+
+      NEUE BLOECKE (ab Werk ohne Wirkung): kissen.platz/ausrichtung
+      (mpPlatz, mpAusrichtung), titelband (titelBand*; laufender Teil ist
+      Anzeigeort „Titelband“), maskottchen (maskottchen*; pointer-events
+      none), hintergrund (hg*; Bilder unter server/config/hintergruende,
+      Name = sha256-16 des Inhalts, hintergrund.ts; reisen in Themendateien
+      unter `anhaenge`, beim Import NEU benannt), farben.akzent/grund/
+      flaeche/schrift (eigen*; '' = Farbsatz). Wirkung: gestaltungAnwenden()
+      in app.js und der Abschnitt „DER GESTALTER“ in app.css.
+
+      FALLE BEIM ZIEHEN UEBER EINEM IFRAME: pointermove/pointerup ueber der
+      Vorschau landen im iframe-Dokument, der Zug klebte am Zeiger.
+      Loesung: body.zug-offen iframe { pointer-events: none } fuer die
+      Dauer eines Zugs. HTML5-DnD bewusst NICHT (kein Touch); nur Dateien
+      aus dem Dateimanager kommen ueber drop.
+
+      FALLE „?seite=player“: der erste Darstellungs-Abgleich ruft mpMalen()
+      bevor ein Stueck gemeldet ist und klappt den Player wieder zu (auch
+      ohne Gestalter, vorbestehend). Im Gestalter haelt body.gestalter-muster
+      die Anzeigeorte offen.
+
+      DESKTOP: desktop/gestalter/ ist nur eine Electron-Schale um DIESELBE
+      Seite — ohne Box aus app/neu (Schema mixpi://, vorbereiten.mjs ruft
+      tools/newdesign-kopieren.py), mit Box von http://<box>:8200/neu/
+      gestalter/ (gleiche Herkunft, keine CORS-Frage). Bruecke
+      window.mixpiDesktop: nur Datei oeffnen/speichern + Box setzen.
+      Absichtlich NICHT in den npm-Arbeitsbereichen.
+
+      WACHEN: tools/gestalter-format-bauen.mjs --pruefen und
+      tools/gestalter-katalog-deckung.mjs (CI + tools/pruefen.sh),
+      tools/gestalter-schau.mjs (Browser gegen tools/neu-vorschau.mjs, nur
+      pruefen.sh). darstellung-felder-wer.mjs zaehlt seit E144 den Gestalter
+      als „stellbar“. WER EIN FORMATFELD ERGAENZT: Whitelist, Wirkung in
+      app.js, Eintrag in katalog.mjs, dann format.mjs neu bauen.
+    related: ["bloecke-format-mixpi-thema", "classic-und-themen-tauschen", "darstellung-auf-der-box-statt-im-browser", "darstellung-nur-wirksame-felder", "mixpi-maskottchen-familie"]

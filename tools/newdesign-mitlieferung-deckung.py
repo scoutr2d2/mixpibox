@@ -34,8 +34,9 @@ seitdem DREI Dinge:
 
 Auf der SORTE, nicht auf Namen von heute (llmwiki:
 `doku-zeigt-auf-zeilen-die-wandern`). Die Box-Oberflaeche besteht aus
-LAUFZEIT-SEITEN (index.html — und seit E118/1a spotify-anmeldung.html, die
-server.ts unter /spotify ausliefert) mit ihren Skripten. Also gilt:
+LAUFZEIT-SEITEN (index.html — seit E118/1a spotify-anmeldung.html, die
+server.ts unter /spotify ausliefert, und seit E144 gestalter/index.html, der
+Theme-Gestalter) mit ihren Skripten. Also gilt:
 
   * jede `*.html`, die keine Laufzeit-Seite ist  — Messseiten, Standalone
   * jede `*.md` an jedem Ort                     — Text fuer Menschen
@@ -77,7 +78,10 @@ RUFER = [WURZEL / "src/deploy.sh", WURZEL / "tools/ausliefern.py"]
 
 # Die Laufzeit-Seiten der neuen Oberflaeche. index.html ist DIE Seite;
 # spotify-anmeldung.html liefert server.ts unter /spotify aus (E118/1a).
-SEITEN = {"index.html", "spotify-anmeldung.html"}
+# gestalter/index.html ist seit 27.09.2026 die dritte (E144): der
+# Theme-Gestalter, den die Verwaltung unter /neu/gestalter/ oeffnet — er
+# MUSS mit auf die Box, sonst fuehrt der Knopf in der Verwaltung ins Leere.
+SEITEN = {"index.html", "spotify-anmeldung.html", "gestalter/index.html"}
 
 
 def werkzeug_laden():

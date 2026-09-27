@@ -1,0 +1,125 @@
+<!doctype html>
+<!--
+  DER THEME-GESTALTER — Themen bauen per Ziehen und Ablegen (BACKLOG E144).
+
+  Erreichbar auf der Box unter /neu/gestalter/ (Verwaltung → Darstellung →
+  „Theme-Gestalter öffnen") und als Desktop-App (desktop/gestalter/). Die
+  Vorschau in der Mitte ist die ECHTE Box-Oberflaeche im Rahmen
+  (../index.html?gestalter=1), kein Nachbau; der Entwurf geht per postMessage
+  hinein und wird erst gespeichert, wenn jemand „Anwenden" oder „Ablegen"
+  drueckt.
+
+  Kein Bauschritt, kein Buendler, keine Adresse ausserhalb der Box — wie die
+  Box-Oberflaeche selbst. Die Regeln des Formats kommen aus format.mjs, einer
+  erzeugten Abschrift von src/backend-api/src/mixpi-thema.ts.
+-->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Theme-Gestalter – MixPiBox</title>
+<link rel="icon" href="../bilder/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="gestalter.css">
+<script type="module" src="gestalter.mjs"></script>
+</head>
+<body>
+
+<header class="oben">
+  <div class="marke">
+    <img src="../bilder/mixpi-gestalten.png" alt="" width="40" height="40">
+    <div>
+      <h1>Theme-Gestalter</h1>
+      <span class="lage" id="lage">verbinde …</span>
+    </div>
+  </div>
+  <label class="name-feld">
+    <span>Name</span>
+    <input id="name" type="text" maxlength="60" value="Mein Thema" autocomplete="off" spellcheck="false">
+  </label>
+  <div class="knoepfe">
+    <button type="button" id="rueck" class="symbol" title="Rückgängig (Strg+Z)" aria-label="Rückgängig" disabled>↶</button>
+    <button type="button" id="vor" class="symbol" title="Wiederholen (Strg+Y)" aria-label="Wiederholen" disabled>↷</button>
+    <button type="button" id="oeffnen" title="Eine .mixpi-thema.json öffnen">Datei öffnen</button>
+    <button type="button" id="speichern" title="Als .mixpi-thema.json speichern — zum Tauschen">Datei speichern</button>
+    <button type="button" id="ablegen" data-box title="Unter dem Namen in der Themenliste der Box ablegen">Als Thema ablegen</button>
+    <button type="button" id="anwenden" data-box class="haupt" title="Sofort auf der Box zeigen">Auf der Box anwenden</button>
+  </div>
+</header>
+
+<main class="werkbank">
+
+  <aside class="palette" id="palette" aria-label="Elemente zum Ziehen">
+    <section>
+      <h2>Elemente</h2>
+      <p class="klein">Auf den Schirm ziehen. Zum Entfernen zurück hierher ziehen.</p>
+      <div class="stapel" id="p-andockbar"></div>
+    </section>
+    <section>
+      <h2>Kopfzeile</h2>
+      <div class="chips" id="p-kopf"></div>
+    </section>
+    <section>
+      <h2>Player-Bühne</h2>
+      <div class="chips" id="p-buehne"></div>
+    </section>
+    <section>
+      <h2>Feste Bereiche</h2>
+      <div class="chips" id="p-fest"></div>
+    </section>
+    <section>
+      <h2>Farbsätze</h2>
+      <div class="saetze" id="p-saetze"></div>
+    </section>
+    <section>
+      <h2>Farben</h2>
+      <p class="klein">Auf den Schirm ziehen und dort ablegen, wo die Farbe hin soll.</p>
+      <div class="farben" id="p-farben"></div>
+      <label class="eigene-farbe">
+        <input type="color" id="p-eigene" value="#ff6b57">
+        <span>eigene Farbe – dann das Feld links ziehen</span>
+      </label>
+    </section>
+    <section>
+      <h2>Hintergründe</h2>
+      <div class="hgs" id="p-hg"></div>
+      <button type="button" id="bild-waehlen" class="breit">Bild hinzufügen …</button>
+      <p class="klein">Oder ein Bild direkt aus dem Dateimanager auf den Schirm ziehen.</p>
+    </section>
+  </aside>
+
+  <section class="mitte">
+    <div class="ansichten">
+      <div class="reiter" role="tablist" aria-label="Ansicht">
+        <button type="button" role="tab" data-ansicht="start" aria-selected="true">Startseite</button>
+        <button type="button" role="tab" data-ansicht="player" aria-selected="false">Player</button>
+      </div>
+      <label class="schalter-klein"><input type="checkbox" id="muster" checked> Mini-Player ohne Musik zeigen</label>
+      <label class="schalter-klein"><input type="checkbox" id="stellen" checked> Andockstellen zeigen</label>
+    </div>
+    <div class="schirm" id="schirm">
+      <div class="schirm-innen" id="schirm-innen">
+        <iframe id="vorschau" title="Vorschau: die echte Oberfläche der Box" src="../index.html?gestalter=1"></iframe>
+        <div class="deck" id="deck" aria-hidden="true"></div>
+        <div class="ablage-hinweis" id="ablage-hinweis" hidden></div>
+      </div>
+    </div>
+    <p class="tipp" id="tipp">Tipp: Ein Element anklicken zeigt rechts seine Eigenschaften. Die Vorschau ist die echte Oberfläche — gespeichert wird erst mit „Anwenden" oder „Ablegen".</p>
+  </section>
+
+  <aside class="blatt" aria-label="Eigenschaften">
+    <div class="reiter" role="tablist" aria-label="Blatt">
+      <button type="button" role="tab" data-blatt="element" aria-selected="true">Element</button>
+      <button type="button" role="tab" data-blatt="farben" aria-selected="false">Farben &amp; Hintergrund</button>
+      <button type="button" role="tab" data-blatt="themen" aria-selected="false">Themen</button>
+    </div>
+    <section class="blatt-teil" id="b-element"></section>
+    <section class="blatt-teil" id="b-farben" hidden></section>
+    <section class="blatt-teil" id="b-themen" hidden></section>
+  </aside>
+</main>
+
+<div class="meldung" id="meldung" role="status" aria-live="polite" hidden></div>
+<div class="geist" id="geist" hidden></div>
+
+</body>
+</html>

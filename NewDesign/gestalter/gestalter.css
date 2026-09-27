@@ -1,0 +1,385 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEME-GESTALTER (BACKLOG E144) — die Werkbank.
+
+   Eine Arbeitsflaeche fuer Erwachsene am Laptop oder Tablet, nicht der
+   Kinder-Schirm: ruhige Flaechen, damit die bunte Vorschau in der Mitte das
+   Lauteste auf der Seite ist. Dieselben Schriften wie die Box (offline, aus
+   ../schriften), hell und dunkel nach Einstellung des Systems.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@font-face {
+  font-family: 'Nunito';
+  src: url('../schriften/nunito-latin.woff2') format('woff2');
+  font-weight: 200 1000;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Baloo 2';
+  src: url('../schriften/baloo2-latin.woff2') format('woff2');
+  font-weight: 400 800;
+  font-display: swap;
+}
+
+:root {
+  --g-grund: #f4f2ee;
+  --g-flaeche: #ffffff;
+  --g-flaeche2: #f9f8f5;
+  --g-linie: #e4e0d8;
+  --g-schrift: #26222f;
+  --g-leise: #6f6879;
+  --g-akzent: #ff6b57;
+  --g-akzent-schrift: #ffffff;
+  --g-ziel: #3880ff;
+  --g-gut: #2f9e5b;
+  --g-schlecht: #d23c3c;
+  --g-schatten: 0 1px 2px rgba(38, 34, 47, 0.06), 0 6px 18px rgba(38, 34, 47, 0.07);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --g-grund: #16141c;
+    --g-flaeche: #201d28;
+    --g-flaeche2: #1b1923;
+    --g-linie: #34303f;
+    --g-schrift: #eeeaf4;
+    --g-leise: #a39cb0;
+    --g-ziel: #6ea2ff;
+    --g-schatten: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--g-grund);
+  color: var(--g-schrift);
+  font: 500 14px/1.4 Nunito, system-ui, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+button, input, select { font: inherit; color: inherit; }
+button {
+  cursor: pointer;
+  border: 1px solid var(--g-linie);
+  background: var(--g-flaeche);
+  border-radius: 10px;
+  padding: 7px 12px;
+  font-weight: 700;
+}
+button:hover:not(:disabled) { border-color: var(--g-leise); }
+button:disabled { opacity: 0.45; cursor: default; }
+button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--g-ziel);
+  outline-offset: 2px;
+}
+button.haupt { background: var(--g-akzent); border-color: var(--g-akzent); color: var(--g-akzent-schrift); }
+button.symbol { width: 36px; padding: 6px 0; font-size: 17px; line-height: 1; }
+button.breit { width: 100%; }
+button.leise { border-color: transparent; background: transparent; color: var(--g-leise); }
+h1 { font: 800 18px/1.1 'Baloo 2', Nunito, sans-serif; margin: 0; }
+h2 { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--g-leise); margin: 0 0 8px; }
+h3 { font: 800 16px/1.2 'Baloo 2', Nunito, sans-serif; margin: 0 0 4px; }
+.klein { font-size: 12px; color: var(--g-leise); margin: 0 0 8px; }
+/* Doppelt, damit es jede Einzelklasse mit `display` schlaegt — ohne !important. */
+[hidden][hidden] { display: none; }
+body.ohne-box [data-box] { display: none; }
+
+/* ── Kopf ─── */
+.oben {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--g-flaeche);
+  border-bottom: 1px solid var(--g-linie);
+}
+.marke { display: flex; align-items: center; gap: 10px; }
+.marke img { width: 40px; height: 40px; object-fit: contain; }
+.lage { font-size: 12px; color: var(--g-leise); }
+.lage.gut::before { content: '●'; color: var(--g-gut); margin-right: 5px; }
+.lage.schlecht::before { content: '●'; color: var(--g-schlecht); margin-right: 5px; }
+.name-feld { display: flex; align-items: center; gap: 8px; flex: 1 1 200px; max-width: 360px; }
+.name-feld span { color: var(--g-leise); font-size: 12px; }
+.name-feld input, .feld input[type='text'], .feld select {
+  flex: 1;
+  width: 100%;
+  border: 1px solid var(--g-linie);
+  border-radius: 10px;
+  padding: 7px 10px;
+  background: var(--g-flaeche2);
+}
+.knoepfe { display: flex; gap: 6px; flex-wrap: wrap; margin-left: auto; }
+
+/* ── Die Werkbank: Palette | Schirm | Blatt ─── */
+.werkbank {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr) 320px;
+  gap: 0;
+}
+.palette, .blatt {
+  background: var(--g-flaeche);
+  overflow-y: auto;
+  padding: 14px;
+}
+.palette { border-right: 1px solid var(--g-linie); }
+.blatt { border-left: 1px solid var(--g-linie); padding-top: 10px; }
+.palette section { margin-bottom: 18px; }
+.palette.ziel-entfernen {
+  outline: 3px dashed var(--g-schlecht);
+  outline-offset: -8px;
+  background: color-mix(in srgb, var(--g-schlecht) 8%, var(--g-flaeche));
+}
+
+.stapel { display: grid; gap: 8px; }
+.teil {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--g-linie);
+  border-radius: 12px;
+  background: var(--g-flaeche2);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  font-weight: 700;
+}
+.teil:hover { border-color: var(--g-leise); }
+.teil .sym {
+  width: 28px; height: 28px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--g-flaeche); border: 1px solid var(--g-linie);
+  font-size: 15px; flex: 0 0 auto;
+}
+.teil .namen { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.teil .wo { font-size: 11px; font-weight: 600; color: var(--g-leise); }
+.teil.platziert .wo { color: var(--g-gut); }
+.neu-marke {
+  margin-left: auto;
+  font-size: 10px; font-weight: 800; letter-spacing: 0.05em;
+  padding: 1px 6px; border-radius: 999px;
+  background: var(--g-akzent); color: var(--g-akzent-schrift);
+}
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px; border-radius: 999px;
+  border: 1px solid var(--g-linie); background: var(--g-flaeche2);
+  cursor: grab; user-select: none; touch-action: none;
+  font-size: 13px; font-weight: 700;
+}
+.chip.an { border-color: var(--g-gut); background: color-mix(in srgb, var(--g-gut) 12%, var(--g-flaeche)); }
+.chip.fest { cursor: pointer; }
+
+.saetze { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.satz {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  border: 2px solid var(--g-linie);
+  cursor: grab; touch-action: none;
+  position: relative; overflow: hidden;
+  display: grid; place-items: end center;
+  font-size: 10px; font-weight: 800; padding-bottom: 3px;
+}
+.satz > span, .satz { text-shadow: none; }
+.satz .satz-wort {
+  background: rgba(255, 255, 255, 0.88); color: #26222f;
+  border-radius: 999px; padding: 0 5px; max-width: 94%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.satz.gewaehlt { border-color: var(--g-ziel); box-shadow: 0 0 0 2px var(--g-ziel); }
+.farben { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 8px; }
+.farbe {
+  aspect-ratio: 1; border-radius: 50%;
+  border: 2px solid var(--g-linie);
+  cursor: grab; touch-action: none;
+}
+.eigene-farbe { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--g-leise); }
+.eigene-farbe input { width: 40px; height: 32px; border: 0; padding: 0; background: none; }
+.hgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+.hg {
+  aspect-ratio: 5 / 3;
+  border-radius: 8px;
+  border: 1px solid var(--g-linie);
+  background-size: cover; background-position: center;
+  cursor: grab; touch-action: none;
+  position: relative;
+  font-size: 10px; font-weight: 800;
+  display: grid; place-items: end start; padding: 3px 5px;
+  color: #fff; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.hg .weg {
+  position: absolute; top: 2px; right: 2px;
+  width: 20px; height: 20px; padding: 0; border-radius: 50%;
+  font-size: 11px; line-height: 1; display: none;
+}
+.hg:hover .weg { display: block; }
+
+/* ── Die Mitte: Ansicht-Reiter und der Schirm ─── */
+.mitte { min-width: 0; display: flex; flex-direction: column; padding: 14px 18px; gap: 10px; }
+.ansichten { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.reiter { display: inline-flex; background: var(--g-flaeche); border: 1px solid var(--g-linie); border-radius: 12px; padding: 3px; }
+.reiter button { border: 0; background: transparent; border-radius: 9px; padding: 6px 12px; color: var(--g-leise); }
+.reiter button[aria-selected='true'] { background: var(--g-grund); color: var(--g-schrift); box-shadow: var(--g-schatten); }
+.schalter-klein { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--g-leise); }
+/* Die Groesse setzt gestalter.mjs (`einpassen`): 800x480 mal Massstab. Das
+ * Innere bleibt 800x480 und wird per transform verkleinert — so rechnen Deck
+ * und Zonen in denselben Bildpunkten wie die Box. */
+.schirm {
+  position: relative;
+  flex: 0 0 auto;
+  margin: 10px auto 0;
+}
+.schirm-innen {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 800px;
+  height: 480px;
+  transform-origin: top left;
+  border-radius: 14px;
+  box-shadow: 0 0 0 10px #111, 0 18px 40px rgba(0, 0, 0, 0.3);
+  background: #111;
+  overflow: hidden;
+}
+.schirm-innen iframe { display: block; width: 800px; height: 480px; border: 0; background: #fff; }
+.tipp { font-size: 12px; color: var(--g-leise); margin: 0; text-align: center; }
+
+/* ── Das Deck ueber der Vorschau: Marken, Zonen, Farbziele ───
+ * Das Deck faengt KEINE Tipps (pointer-events: none) — die Vorschau bleibt
+ * bedienbar. Nur die Marken der platzierten Elemente sind anfassbar. */
+.deck { position: absolute; inset: 0; pointer-events: none; }
+.marke-el {
+  position: absolute;
+  pointer-events: auto;
+  border: 2px dashed color-mix(in srgb, var(--g-ziel) 70%, transparent);
+  border-radius: 10px;
+  cursor: grab;
+  touch-action: none;
+}
+.marke-el.klein { border-style: solid; border-width: 1.5px; }
+.marke-el .schild {
+  position: absolute; left: 4px; top: 4px;
+  font: 800 11px/1 Nunito, sans-serif;
+  padding: 3px 7px; border-radius: 999px;
+  background: var(--g-ziel); color: #fff;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+.marke-el.fest { border-color: transparent; }
+.marke-el.fest .schild { background: rgba(38, 34, 47, 0.72); }
+.marke-el.gewaehlt { border-color: var(--g-akzent); border-style: solid; box-shadow: 0 0 0 3px color-mix(in srgb, var(--g-akzent) 30%, transparent); }
+.marke-el.gewaehlt .schild { background: var(--g-akzent); }
+body.ohne-stellen .marke-el:not(.gewaehlt) { border-color: transparent; }
+body.ohne-stellen .marke-el:not(.gewaehlt) .schild { opacity: 0; }
+body.ohne-stellen .marke-el:hover .schild { opacity: 1; }
+
+.zone {
+  position: absolute;
+  border: 2px dashed var(--g-ziel);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--g-ziel) 14%, transparent);
+  display: grid; place-items: center;
+  font: 800 13px/1.1 Nunito, sans-serif;
+  color: #fff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+  text-align: center; padding: 4px;
+}
+.zone.drauf { background: color-mix(in srgb, var(--g-ziel) 42%, transparent); border-style: solid; }
+.zone.gesperrt {
+  border-color: #999;
+  background: repeating-linear-gradient(135deg, rgba(120, 120, 120, 0.25) 0 8px, rgba(120, 120, 120, 0.1) 8px 16px);
+  font-size: 11px;
+}
+.zone.flaeche { inset: 10px; }
+.farbziele {
+  position: absolute; inset: 0;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 14px;
+}
+.farbziele .zone { position: static; }
+.farbziele .zone small { display: block; font-weight: 600; font-size: 11px; opacity: 0.9; }
+
+.ablage-hinweis {
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--g-ziel) 30%, transparent);
+  border: 3px dashed #fff;
+  color: #fff; font: 800 22px Nunito, sans-serif; text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+
+/* Der Geist, der beim Ziehen am Zeiger haengt */
+.geist {
+  position: fixed; z-index: 100; pointer-events: none;
+  transform: translate(-50%, -50%);
+  padding: 7px 12px; border-radius: 999px;
+  background: var(--g-schrift); color: var(--g-grund);
+  font-weight: 800; font-size: 13px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  display: flex; align-items: center; gap: 6px;
+}
+.geist .punkt { width: 16px; height: 16px; border-radius: 50%; border: 2px solid #fff; }
+body.zieht, body.zieht * { cursor: grabbing; }
+body.zug-offen iframe { pointer-events: none; }
+
+/* ── Das Blatt rechts ─── */
+.blatt .reiter { width: 100%; display: flex; margin-bottom: 12px; }
+.blatt .reiter button { flex: 1; font-size: 12px; padding: 6px 4px; }
+.blatt-kopf { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.blatt-kopf .sym {
+  width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center;
+  background: var(--g-flaeche2); border: 1px solid var(--g-linie); font-size: 18px;
+}
+.blatt-kopf .unter { font-size: 12px; color: var(--g-leise); }
+.feld { margin: 0 0 12px; }
+.feld-kopf { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; font-weight: 700; font-size: 13px; }
+.feld-kopf .wert { margin-left: auto; font-weight: 600; color: var(--g-leise); font-variant-numeric: tabular-nums; }
+.feld-kopf .zurueck { padding: 0 4px; border: 0; background: none; color: var(--g-leise); font-size: 13px; }
+.feld.ungesetzt .feld-kopf > span:first-child::after {
+  content: '  · nicht im Thema';
+  font-weight: 600; font-size: 11px; color: var(--g-leise);
+}
+.feld input[type='range'] { width: 100%; accent-color: var(--g-akzent); }
+.wahl { display: flex; flex-wrap: wrap; gap: 4px; }
+.wahl button { padding: 5px 9px; font-size: 12px; border-radius: 8px; }
+.wahl button[aria-pressed='true'] { background: var(--g-schrift); color: var(--g-grund); border-color: var(--g-schrift); }
+.schalter { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; font-size: 13px; }
+.schalter input { width: 18px; height: 18px; accent-color: var(--g-akzent); }
+.farbfeld { display: flex; align-items: center; gap: 8px; }
+.farbfeld input[type='color'] { width: 44px; height: 32px; border: 1px solid var(--g-linie); border-radius: 8px; padding: 2px; background: var(--g-flaeche2); }
+.farbfeld code { font-size: 12px; color: var(--g-leise); }
+.bildwahl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.bildwahl button { aspect-ratio: 5/3; padding: 0; background-size: cover; background-position: center; font-size: 11px; }
+.bildwahl button[aria-pressed='true'] { outline: 3px solid var(--g-ziel); outline-offset: 1px; }
+.trenner { border: 0; border-top: 1px solid var(--g-linie); margin: 14px 0; }
+.leer-hinweis { color: var(--g-leise); font-size: 13px; }
+.leer-hinweis ol { padding-left: 18px; }
+.themen-liste { display: grid; gap: 6px; }
+.thema-zeile { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--g-linie); border-radius: 10px; background: var(--g-flaeche2); }
+.thema-zeile b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thema-zeile .aktiv { font-size: 11px; color: var(--g-gut); font-weight: 800; }
+.fehlerliste { margin: 6px 0 0; padding-left: 18px; font-size: 12px; }
+
+/* ── Meldung ─── */
+.meldung {
+  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
+  z-index: 50; max-width: min(640px, calc(100vw - 32px));
+  background: var(--g-schrift); color: var(--g-grund);
+  padding: 10px 16px; border-radius: 12px; box-shadow: var(--g-schatten);
+  font-weight: 700;
+}
+.meldung.schlecht { background: var(--g-schlecht); color: #fff; }
+.meldung.gut { background: var(--g-gut); color: #fff; }
+
+/* ── Schmal: Tablet hochkant und kleiner ─── */
+@media (max-width: 1180px) {
+  .werkbank { grid-template-columns: 220px minmax(0, 1fr); }
+  .blatt { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--g-linie); }
+}
+@media (max-width: 760px) {
+  .werkbank { grid-template-columns: minmax(0, 1fr); }
+  .palette { border-right: 0; border-bottom: 1px solid var(--g-linie); max-height: 38vh; }
+  .knoepfe { margin-left: 0; }
+}

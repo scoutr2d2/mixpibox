@@ -1,0 +1,5 @@
+# Erzeugt von vorbereiten.mjs (Kopie von NewDesign/) bzw. electron-builder.
+app/
+dist/
+node_modules/
+package-lock.json

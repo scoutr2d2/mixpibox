@@ -153,6 +153,17 @@
 <body>
 <div class="rahmen">
 
+  <!-- ── MASKOTTCHEN-ECKE (Gestalter, E144, 27.09.2026) ───
+       MixPi in einer Ecke des Schirms. REIN SCHMUECKEND: `pointer-events:
+       none` in app.css, es kann nie einen Knopf verdecken. Zwei Bilder statt
+       eines wechselnden `src`: der Tausch hoert <-> spielt ist dann eine
+       Klasse (body.ton-laeuft) und kein Nachladen im Takt. Die Zuordnung der
+       Bilder steht in maskottchen.json (`wo`). AB WERK AUS. -->
+  <div class="maskottchen" id="maskottchen" hidden aria-hidden="true" data-ecke="unten-rechts">
+    <img class="mk-ruhe" src="bilder/mixpi-hoert.png" alt="" width="256" height="256" loading="lazy">
+    <img class="mk-spielt" src="bilder/mixpi-spielt.png" alt="" width="256" height="256" loading="lazy">
+  </div>
+
   <!-- ── DER EINE RUECKWEG ───
        „an die freie stelle soll ein systemweiter zurueck button hin"
        (Benutzer, 03.08.2026).
@@ -771,6 +782,22 @@
            genau das Problem — „es öffnet einfach den alten bereich".
            SETZ ES NICHT WIEDER HINEIN, ohne den anderen Weg zu entfernen. -->
     </header>
+
+    <!-- ── TITELBAND (Gestalter, E144, 27.09.2026) ───
+         Ein Band quer ueber die Spalte: ein fester Name und/oder der laufende
+         Titel. AB WERK AUS (`hidden`) — eine Box ohne gestaltetes Thema sieht
+         aus wie davor. Andockbar oben (hier, unter dem Kopf) oder unten
+         (`body.tb-unten`, per `order` in app.css — derselbe Knoten, kein
+         zweiter). Der laufende Teil ist ein ANZEIGEORT und wird von
+         `anzeigeMalen` mitgefuellt; wann er zu sehen ist, sagt
+         `titelband.malen()` in app.js. -->
+    <div class="titelband" id="titelband" hidden>
+      <span class="tb-text" id="tb-text"></span>
+      <span class="tb-laufend" id="tb-laufend" hidden data-anzeigeort="Titelband">
+        <span class="tb-titel" data-np="titel"></span>
+        <span class="tb-unter" data-np="unter"></span>
+      </span>
+    </div>
 
     <!-- ── Startseite: das Album-Raster ─── -->
     <main class="buehne" id="buehne">

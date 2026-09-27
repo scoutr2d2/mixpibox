@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- Der kleine Dialog „Mit einer Box verbinden" der Desktop-App (main.cjs). -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+<title>Mit einer Box verbinden</title>
+<style>
+  :root { color-scheme: light dark; font: 14px/1.4 system-ui, sans-serif; }
+  body { margin: 0; padding: 18px; }
+  h1 { font-size: 16px; margin: 0 0 6px; }
+  p { margin: 0 0 12px; opacity: 0.75; }
+  input { width: 100%; box-sizing: border-box; padding: 8px 10px; font: inherit; border-radius: 8px; border: 1px solid #8886; }
+  .knoepfe { display: flex; gap: 8px; justify-content: flex-end; margin-top: 12px; }
+  button { font: inherit; padding: 7px 14px; border-radius: 8px; border: 1px solid #8886; background: none; cursor: pointer; }
+  button.haupt { background: #ff6b57; color: #fff; border-color: #ff6b57; }
+  .fehler { color: #d23c3c; min-height: 1.4em; margin-top: 6px; opacity: 1; }
+</style>
+</head>
+<body>
+  <h1>Mit einer Box verbinden</h1>
+  <p>Adresse der Box im Heimnetz, z. B. <code>192.168.1.20</code> oder <code>http://mixpibox:8200</code>.</p>
+  <form id="f">
+    <input id="adresse" autofocus placeholder="192.168.1.20" autocomplete="off" spellcheck="false">
+    <div class="fehler" id="fehler"></div>
+    <div class="knoepfe">
+      <button type="button" id="ohne">Ohne Box</button>
+      <button type="submit" class="haupt">Verbinden</button>
+    </div>
+  </form>
+<script>
+  const q = new URLSearchParams(location.search)
+  const eingabe = document.getElementById('adresse')
+  eingabe.value = q.get('adresse') || ''
+  async function los(wert) {
+    document.getElementById('fehler').textContent = 'verbinde …'
+    const r = await window.mixpiDesktop.boxVerbinden(wert)
+    document.getElementById('fehler').textContent = r.ok ? '' : r.fehler
+  }
+  document.getElementById('f').addEventListener('submit', (e) => { e.preventDefault(); los(eingabe.value) })
+  document.getElementById('ohne').addEventListener('click', () => los(''))
+</script>
+</body>
+</html>

@@ -10644,3 +10644,119 @@ body.ruhige-marke .spielt .leute-bild::before {
      Covern ab, ohne ihn dicker zu machen. */
   filter: drop-shadow(0 0 3px var(--accent, #ff5c85));
 }
+
+/* ══ DER GESTALTER — ANDOCKEN, TITELBAND, MASKOTTCHEN, HINTERGRUND (E144) ═══
+ *
+ * Die Felder und ihre Uebersetzung stehen in app.js bei `gestaltungAnwenden`.
+ * Hier nur die Form. JEDE REGEL HAENGT AN EINER KLASSE, die ab Werk fehlt —
+ * ohne gestaltetes Thema greift keine Zeile dieses Abschnitts.
+ *
+ * ── DAS KISSEN OBEN ───
+ * Die Reihenfolge in der Spalte kommt aus `order`, nicht aus einem zweiten
+ * Knoten: Kopf, (Titelband oben), Kissen, Buehne. Beim Einfahren
+ * (platz-machen) gilt dieselbe Lehre wie unten — ein AUSSENABSTAND blendet
+ * sauber ueber, `align-self`/`position` nicht (llmwiki
+ * platz-beim-blaettern-schaukelt-sich-auf). Nur die Seite dreht sich um: ein
+ * negativer UNTERER Abstand laesst die Buehne unter das stehende Kissen
+ * ruecken, und die Buehne bekommt denselben Betrag OBEN als Polster, damit
+ * die erste Reihe nicht dauerhaft darunter liegt.
+ *
+ * GRENZE, bewusst: eine offene App (`.sch-buehne`, fest, Stufe 8) haelt unten
+ * den Platz des Kissens frei. Steht das Kissen oben, reicht sie bis zum Fuss
+ * und liegt UEBER ihm — waehrend einer App ist das Kissen dann verdeckt. */
+body.mp-oben .kopf { order: -3; }
+body.mp-oben .titelband { order: -2; }
+body.mp-oben .mp {
+  order: -1;
+  margin-top: 2px;
+  margin-bottom: var(--mp-rand);
+  transition: width 220ms ease, margin-bottom 220ms ease;
+}
+body.mp-oben.platz-machen .mp {
+  margin-top: 2px;
+  margin-bottom: calc(-1 * (var(--mp-hoehe) + var(--mp-rand)));
+}
+body.mp-oben.platz-machen .buehne {
+  padding-bottom: 10px;
+  padding-top: calc(8px + var(--mp-hoehe) + var(--mp-rand));
+}
+body.mp-oben .sch-buehne { bottom: 0; }
+
+/* ── LINKS ODER MITTIG ── `align-self` steht FEST je Einstellung und wechselt
+ * nie waehrend einer Bewegung — nur dann ist es erlaubt (siehe `.mp`). */
+body.mp-links .mp { align-self: flex-start; margin-left: 12px; margin-right: 0; }
+body.mp-mitte .mp { align-self: center; margin-right: 0; }
+
+/* ── Die Vorschau im Gestalter zeigt das Kissen auch ohne Wiedergabe ── */
+body.gestalter-muster .mp[hidden] { display: flex; }
+
+/* ── DAS TITELBAND ─── */
+.titelband[hidden],
+.tb-text[hidden],
+.tb-laufend[hidden] { display: none; }
+.titelband {
+  flex: 0 0 auto;
+  min-width: 0;
+  margin: 0 12px 6px 16px;
+  padding: 4px 16px;
+  border-radius: 16px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 2px 10px rgba(46, 42, 59, 0.07);
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  font-family: 'Baloo 2', Nunito, sans-serif;
+  font-size: calc(20px * var(--mupi-tb-f, 1));
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.tb-text { flex: 0 0 auto; font-weight: 800; color: var(--accent); }
+.tb-laufend { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tb-unter { margin-left: 8px; font-size: 0.72em; color: var(--muted); }
+/* Unten angedockt: ganz an den Fuss, unter das Kissen. Die Regel steht NACH
+ * `body.mp-oben .titelband` — gleiche Gewichtung, die spaetere gewinnt. */
+body.tb-unten .titelband { order: 3; margin: 6px 12px var(--mp-rand) 16px; }
+body.tb-unten.kissen-da:not(.mp-oben) .mp { margin-bottom: 0; }
+
+/* ── DAS MASKOTTCHEN IN DER ECKE ───
+ * Stufe 4: ueber den Kacheln, unter dem Kissen (5) und jeder Vollbild-Ansicht
+ * (6+). `pointer-events: none` — es ist Schmuck und darf keinen Tipp fangen.
+ * Unten weicht es dem Kissen aus, solange eines steht. */
+.maskottchen[hidden] { display: none; }
+.maskottchen {
+  position: fixed;
+  z-index: 4;
+  pointer-events: none;
+  width: calc(84px * var(--mupi-mk-f, 1));
+  height: calc(84px * var(--mupi-mk-f, 1));
+}
+.maskottchen img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.maskottchen .mk-spielt { display: none; }
+body.ton-laeuft .maskottchen.mk-lebendig .mk-spielt { display: block; }
+body.ton-laeuft .maskottchen.mk-lebendig .mk-ruhe { display: none; }
+.maskottchen[data-ecke='unten-rechts'] { right: 10px; bottom: 8px; }
+.maskottchen[data-ecke='unten-links'] { left: 98px; bottom: 8px; }
+.maskottchen[data-ecke='oben-rechts'] { right: 10px; top: calc(var(--griff) + 4px); }
+.maskottchen[data-ecke='oben-links'] { left: 98px; top: calc(var(--griff) + 4px); }
+body.platz-machen .maskottchen[data-ecke$='links'] { left: 10px; }
+body.kissen-da:not(.mp-oben) .maskottchen[data-ecke^='unten'],
+body.gestalter-muster:not(.mp-oben) .maskottchen[data-ecke^='unten'] {
+  bottom: calc(var(--mp-hoehe) + var(--mp-rand) + 6px);
+}
+body.tb-da.tb-unten .maskottchen[data-ecke^='unten'] {
+  bottom: calc(var(--mp-hoehe) + var(--mp-rand) + 52px);
+}
+
+/* ── DER HINTERGRUND ───
+ * Auf `.rahmen` und nicht auf `body`: html/body tragen `--bg` weiter als
+ * Unterlage (und die Vollbild-Ansichten ihren eigenen Grund). Die Leiste
+ * bleibt `--surface` — sie ist Bedienung, kein Bild. */
+body.hg-eigen .rahmen { background: var(--mupi-hg); }
