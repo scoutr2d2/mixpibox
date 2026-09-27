@@ -1,0 +1,192 @@
+id: generic
+version: "5"
+title: Generisches Linux/Debian/Pi/DietPi-Wissen
+description: >
+  Projekt-UNABHÄNGIGE Fehler-Signaturen, Config-/Perf-Hinweise und How-tos, die für
+  jede DietPi/Debian-Installation gelten. Dieses Paket wird vom remote-step-installer
+  IMMER geladen (Standard-Wissen), zusätzlich zu den fest eingebauten Signaturen in
+  diagnose.py. Projekt-Spezifisches (z.B. MuPiBox) kommt aus einem eigenen Paket, das
+  man per `wiki fetch <repo>` holt.
+
+entries:
+  # ── zusätzliche cross-project Signaturen (über die diagnose.py-Builtins hinaus) ──
+  - kind: signature
+    id: gen-git-auth
+    title: "git clone/pull scheitert an Auth"
+    sev: med
+    match: "Authentication failed|could not read Username|fatal: Authentication|Permission denied \\(publickey\\)"
+    cause: "git-Zugangsdaten/Key fehlen oder passen nicht (privates Repo)"
+    fix: "Token/SSH-Key prüfen; für http ein PAT im URL/Helper, für ssh den Key im agent-forwarding"
+    tags: [git, auth]
+
+  - kind: signature
+    id: gen-inodes-full
+    title: "kein Platz — aber df zeigt frei (Inodes voll)"
+    sev: high
+    match: "No space left on device"
+    cause: "evtl. sind die INODES voll (viele kleine Dateien), nicht die Bytes"
+    fix: "rsi.py exec 'df -i'  → wenn IUse% 100%: viele kleine Dateien aufräumen (Cache/Logs)"
+    tags: [disk, inodes]
+
+  - kind: signature
+    id: gen-service-start-fail
+    title: "systemd-Dienst startet nicht"
+    sev: med
+    match: "Failed to start|Job for .* failed|Unit .* not found|activating \\(auto-restart\\)"
+    cause: "ein Dienst kommt nicht hoch (Config/Abhängigkeit/Port belegt)"
+    fix: "rsi.py exec 'systemctl status <unit> --no-pager -l; journalctl -u <unit> -b --no-pager | tail -40'"
+    tags: [systemd]
+
+  - kind: signature
+    id: gen-python-extern-managed
+    title: "pip: externally-managed-environment"
+    sev: med
+    match: "externally-managed-environment|PEP 668"
+    cause: "Debian 12+/Trixie blockt globales pip (PEP 668)"
+    fix: "System-Paket 'python3-<x>' nutzen, sonst venv, oder (bewusst) '--break-system-packages'"
+    tags: [python, pip, trixie]
+
+  # ── DietPi-Grundwissen: Login + Versionen (auch für ältere Installationen) ──
+  - kind: note
+    id: gen-dietpi-login
+    title: "DietPi Standard-Login (root/dietpi)"
+    source:
+      - "https://dietpi.com/docs/install/"
+      - "https://dietpi.com/forum/t/default-users-on-dietpi/1373"
+    tags: [dietpi, login, password]
+    body: |
+      Ein frisches DietPi hat zwei Konten: **root** und **dietpi**. Beim ERSTEN Boot
+      teilen sich beide das globale Passwort **`dietpi`** (bzw. das in `dietpi.txt`
+      unter `AUTO_SETUP_GLOBAL_PASSWORD=` gesetzte). Erst-Login als **root**. Nach dem
+      First-Run-Setup sollte das Passwort geändert sein. Ein PROJEKT-Image kann den
+      Default überschreiben — z.B. die MuPiBox nutzt `mupibox` (siehe das mupibox-Paket).
+
+  - kind: note
+    id: gen-dietpi-versions
+    title: "DietPi-Versionen (neu + alt) und Debian-Basis"
+    source:
+      - "https://dietpi.com/docs/releases/"
+      - "https://github.com/MichaIng/DietPi/releases"
+      - "https://www.debian.org/News/2025/20250809"
+    tags: [dietpi, debian, versions]
+    body: |
+      **DietPi-Software-Version** (eigene Zählung, ~monatliche Releases):
+      - v9-Reihe: v9.0 (Jan 2024) … v9.20 (Dez 2025).
+      - **v10-Reihe seit Jan 2026**: v10.0 (Jan 2026), v10.2 (Mär 2026), v10.4 (Mai 2026,
+        Orange-Pi-5B + Security-Fixes). Aktuell = die neueste v10.x.
+      **Debian-Basis** (bestimmt Paketstand + Pfade): Buster 10 · Bullseye 11 ·
+      Bookworm 12 · **Trixie 13 (DietPi-Default seit Aug 2025)** · Forky 14 (sehr neu).
+      Der Installer erkennt beides via `/sysinfo` (Codename → `$CODENAME`/`$DEBIAN_MAJOR`,
+      DietPi-Version aus `G_DIETPI_VERSION_*`). Alte Bullseye/Buster-Boxen → mehr
+      Paket-Abweichungen (andere Node-/GPIO-Wege), aber die Erkennung trägt.
+
+  # ── Optimierung möglich (DietPi-weit) ──────────────────────────────────────
+  - kind: optim
+    id: gen-optim-after-dietpi-upgrade
+    title: "Nach DietPi-/Debian-Upgrade: neuere Paketversionen mitnehmen"
+    current: "auf der Vorgänger-Basis gepinnte/ältere Pakete"
+    better: "die neueren Versionen, die die neue Basis mitbringt (Kernel, Mesa/KMS, PHP, Node-Repo, mpv, …)"
+    gain: "Perf + Sicherheits-Fixes praktisch gratis — die Distro liefert sie schon mit"
+    since: "jeweils mit der neuen DietPi-/Debian-Basis (s. gen-dietpi-versions)"
+    how: "nach dem Upgrade `apt full-upgrade`; dann gezielt prüfen: Kernel/Firmware (KMS-Treiber), PHP (OPcache), Node-Repo-Suite, Grafik-Stack, Player (mplayer→mpv)"
+    source: "https://dietpi.com/docs/releases/"
+    tags: [dietpi, upgrade, packages]
+    body: |
+      Eine neue DietPi-/Debian-Version bringt automatisch neuere Pakete (Kernel, Mesa/KMS,
+      PHP, Grafik). Nach einem Upgrade lohnt der bewusste Blick, was jetzt aktueller ist —
+      der Installer erkennt die Basis via `/sysinfo`, die „Optimierung möglich"-Einträge
+      (`kind: optim`) im Projekt-Paket nennen die konkreten Swaps.
+
+  - kind: optim
+    id: gen-optim-nala
+    title: "apt → nala (parallele Downloads + Transaktions-Undo)"
+    current: "apt-get für alle Paket-Schritte"
+    better: "nala — apt-Frontend mit parallelen Downloads, klarerer Ausgabe und `nala history undo`"
+    gain: "spürbar schnellere Downloads (mehrere Pakete pro Spiegel gleichzeitig statt seriell) und ein RÜCKGÄNGIG für eine ganze Transaktion — für einen Schritt-Installer sehr wertvoll"
+    since: "in Debian ab Bookworm (`apt install nala`); DietPi Trixie hat es"
+    how: "`apt install -y nala`, dann in den Recipe-Schritten `nala install -y …` statt `apt-get install -y …`; optional `nala fetch` (schnellste Spiegel). ACHTUNG: erst die Signaturen prüfen (siehe unten)"
+    source:
+      - "https://gitlab.com/volian/nala"
+      - "https://ostechnix.com/nala-commandline-frontend-for-apt/"
+    tags: [apt, nala, downloads, rollback]
+    body: |
+      **Was es bringt:** nala lädt standardmäßig mehrere Pakete pro Spiegel PARALLEL
+      (statt apts seriellem Download) — auf einer Box mit vielen Paketen der größte
+      Zeitgewinn. Dazu protokolliert es jede Transaktion (`/var/lib/nala/history.json`)
+      und kann sie mit `nala history undo <ID>` zurücknehmen — genau das, was einem
+      Schritt-Installer sonst fehlt (ein missratener Schritt lässt sich als GANZES
+      zurückrollen, nicht nur einzelne Pakete).
+
+      **Vorbehalt (wichtig, deshalb nicht per Default):** unsere Fehler-Signaturen und
+      die `anim.py`-Fortschrittserkennung sind auf apts Ausgabe geeicht
+      („Unable to locate package", „Unpacking …", „N newly installed"). nala formatiert
+      anders → Signaturen könnten NICHT greifen und der Fortschrittsbalken unbestimmt
+      bleiben. Empfehlung: **optional** einsetzen (z.B. für große Installationsschritte),
+      apt als Default lassen, und wenn nala fest genutzt wird, die betroffenen Signaturen
+      im Wiki nachziehen (`wiki capture`). Nala ist ein zusätzliches Paket — auf einem
+      frischen DietPi erst zu installieren.
+
+  # ── How-tos für den Umgang mit dem Tool selbst ─────────────────────────────
+  - kind: howto
+    id: gen-read-evidence
+    title: "Die Evidenz-Proben lesen"
+    tags: [diagnose, howto]
+    body: |
+      `rsi.py diagnose <run_id>` sammelt generische Beweise — nützlich AUCH ohne
+      passende Signatur (= unbekanntes Problem). Was die Proben bedeuten:
+      - **failed_units / journal_err**: was systemd/der Boot als Fehler sieht.
+      - **dpkg_audit / dpkg_broken / apt_fix_check**: kaputte Paket-Zustände; oft heilt
+        `dpkg --configure -a` bzw. `apt-get -f install`.
+      - **disk / mem**: Platz/RAM — bei „No space"/„Killed" zuerst hier schauen.
+      - **dmesg_bad**: Kernel-Klartext — Unterspannung, I/O-Fehler, OOM-Kills.
+      - **apt_lock**: wer hält den apt/dpkg-Lock (ein Hintergrund-apt?).
+      - **dns**: löst die Box Namen auf? (Download-Fehler).
+      Kein Treffer in den Signaturen? → den ganzen Block dem Chat/LLM geben (`--llm`).
+
+  - kind: howto
+    id: gen-add-knowledge
+    title: "Wissen ablegen (und versionieren)"
+    tags: [wiki, howto]
+    body: |
+      Neue Lektion festhalten, damit Mensch UND LLM künftig davon profitieren:
+      - eine kurze Markdown-Notiz schreiben und ablegen:
+        `wiki.py learn lektion.md --wiki <paket-ordner>`  (hebt die Version an)
+      - oder strukturierte Einträge (signature/config/perf) direkt in die `pack.yaml`
+        des Projekt-Pakets eintragen.
+      Projekt-Wissen gehört in ein EIGENES Paket/Repo (z.B. llmwiki_mupibox); dieses
+      `generic`-Paket nur für wirklich projekt-unabhängiges Wissen. Danach committen +
+      `git tag vN`, dann holt `wiki fetch` reproduzierbar eine Version.
+
+  - kind: howto
+    id: gen-local-llm
+    title: "LLM lokal auf dem Controller einrichten (für diagnose --llm)"
+    source:
+      - "https://ollama.com/"
+      - "https://docs.openwebui.com/"
+    tags: [llm, ollama, controller, diagnose, setup]
+    body: |
+      WICHTIG: der LLM-Aufruf passiert im CONTROLLER (`diagnose.py` läuft auf dem
+      Laptop), NICHT auf der Box — die Box liefert nur die Beweise (`/diagnose`).
+      „Lokal" heißt also **auf dem Rechner**. Konfiguration über Umgebungsvariablen;
+      der Endpoint muss OpenAI-kompatibel sein (`/chat/completions` wird automatisch
+      angehängt, 120 s Timeout).
+
+      1) Ollama — am einfachsten, nichts verlässt das Netz, kein Key:
+         - Ollama installieren (ollama.com), Modell ziehen:
+           `ollama pull llama3.1`   (oder `qwen2.5:7b`, `mistral`)
+         - `export RSI_LLM_URL=http://localhost:11434/v1`
+         - `export RSI_LLM_MODEL=llama3.1`
+         - RSI_LLM_KEY bleibt leer.
+
+      2) Open WebUI davor (UI/Auth) ODER ein Firmen-/Cloud-Endpoint:
+         - `export RSI_LLM_URL=<origin>/api`   (Open WebUI) bzw. der OpenAI-kompatible Endpoint
+         - `export RSI_LLM_KEY=<bearer-token>`
+         - `export RSI_LLM_MODEL=<modellname>`
+
+      Nutzen:  `rsi.py diagnose <run_id> --wiki mupibox --llm`
+
+      Modell-Tipp für einen Laptop: ein 7-8B quantisiertes Modell (z.B. llama3.1:8b,
+      qwen2.5:7b) ist ein guter Kompromiss aus Qualität und Tempo. Datenschutz: mit
+      lokalem Ollama bleibt das (ohnehin secret-redigierte) Diagnose-Bündel im eigenen
+      Netz; ein Cloud-Endpoint bekommt es zu sehen. Auf der Box selbst LOHNT ein LLM
+      nicht (RAM/CPU sind beim Install knapp) — Reasoning gehört auf den Laptop.

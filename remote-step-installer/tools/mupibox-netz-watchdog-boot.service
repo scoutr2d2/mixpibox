@@ -1,0 +1,20 @@
+[Unit]
+Description=MuPiBox: WLAN-Aenderung zuruecksetzen, wenn sie nie bestaetigt wurde
+# VOR dem Netz: der Sinn ist ja, dass die alte Konfiguration gilt, BEVOR
+# wpa_supplicant mit der neuen startet.
+Before=network-pre.target wpa_supplicant.service
+Wants=network-pre.target
+DefaultDependencies=no
+After=local-fs.target
+Requires=local-fs.target
+
+[Service]
+Type=oneshot
+# --beim-start: ein Marker beim Hochfahren bedeutet, dass die Box neu
+# gestartet ist, OHNE dass jemand bestaetigt hat — der fluechtige Zeitgeber
+# hat den Neustart nicht ueberlebt. Genau dafuer gibt es diese Einheit.
+ExecStart=/opt/mupibox-tools/netz-watchdog.py rollback --beim-start
+RemainAfterExit=no
+
+[Install]
+WantedBy=sysinit.target

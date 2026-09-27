@@ -1,0 +1,32 @@
+{
+  "kennung": "mixpi-archive",
+  "name": "Internet Archive",
+  "fassung": "0.1.0",
+  "haupt": "index.mjs",
+  "rechte": ["medienquelle", "netz"],
+  "sektion": "medien",
+  "icon": "icon.svg",
+  "felder": [
+    {
+      "schluessel": "sprache",
+      "art": "text",
+      "name": "Sprache",
+      "hinweis": "Zweibuchstabiges Kuerzel wie bei der Suche des Archivs: ger fuer Deutsch, eng fuer Englisch. Leer laesst alle Sprachen zu — dann steht viel Englisches zwischen den Treffern.",
+      "vorgabe": "ger"
+    },
+    {
+      "schluessel": "treffer",
+      "art": "zahl",
+      "name": "Treffer je Suche",
+      "hinweis": "Wie viele Werke eine Suche hoechstens liefert. Mehr als 50 macht die Liste unuebersichtlich, ohne mehr zu finden.",
+      "vorgabe": 25
+    }
+  ],
+  "aktionen": [
+    {
+      "kennung": "pruefen",
+      "name": "Erreichbarkeit messen",
+      "hinweis": "Fragt das Archiv dreimal an und nennt die Antwortzeiten."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Starter für controller/connect.py — wählt automatisch den richtigen Python.
+[ -n "${BASH_VERSION:-}" ] || exec bash "$0" "$@"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PY="$HERE/.venv/bin/python"
+[ -x "$PY" ] || PY="$(command -v python3 || command -v python)"
+exec "$PY" "$HERE/controller/connect.py" "$@"

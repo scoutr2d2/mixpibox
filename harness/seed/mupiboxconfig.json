@@ -1,0 +1,41 @@
+{
+  "mupibox": {
+    "host": "MuPiBox-Sim",
+    "ip_control_backend": false,
+    "playerMode": "system",
+    "theme": "blue",
+    "installedThemes": ["blue", "green", "red", "dark", "light", "aurora"],
+    "customTheme": "",
+    "startVolume": "40",
+    "maxVolume": "100",
+    "audioDevice": "Master",
+    "AudioDevices": ["Master"],
+    "mediaCheckTimer": "300",
+    "ttsLanguage": "de"
+  },
+  "interfacelogin": {
+    "state": "Off",
+    "password": ""
+  },
+  "spotify": {
+    "deviceId": "",
+    "clientId": "",
+    "clientSecret": "",
+    "accessToken": "",
+    "refreshToken": ""
+  },
+  "mupihat": {
+    "hat_active": true,
+    "selected_battery": "Default",
+    "battery_types": ["Default"],
+    "current_limit": ["medium"]
+  },
+  "fan": {
+    "fan_active": false
+  },
+  "telegram": {
+    "active": false,
+    "token": "",
+    "chatId": ""
+  }
+}

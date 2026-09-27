@@ -1,0 +1,53 @@
+{
+  "id": "firetv-alexa",
+  "name": "Fire TV Alexa-Sprachfernbedienung (2./3. Generation)",
+  "_art": "Was fuer ein Geraet das ist — `controller` oder `fernbedienung`. Die Statusleiste der Box liest es (GET /api/eingabegeraete), um das richtige Zeichen zu setzen: ein Spielpad sieht anders aus als eine Fernbedienung, und beide koennen gleichzeitig verbunden sein.",
+  "art": "fernbedienung",
+  "bild": "firetv-alexa.jpg",
+  "pairing_hint": {
+    "text": "Zuerst den Fire TV Stick ausschalten oder vom Strom nehmen. Dann an der Fernbedienung die Home-Taste 10 Sekunden gedrückt halten und loslassen. Danach unten „Suchen“ drücken.",
+    "warnung": "Diese Fernbedienung hat KEINE Leuchte. Es ist also nichts zu sehen, wenn sie bereit ist — das ist normal und kein Fehler. Wer auf ein Blinken wartet, wartet vergebens.",
+    "bild": "firetv-alexa-pairing.jpg",
+    "zuerst": "SOLANGE DER FIRE TV STICK LÄUFT, GEHÖRT IHM DIE FERNBEDIENUNG. Sie ist mit ihm gekoppelt und meldet sich bei niemand anderem — der Suchlauf der Box findet dann nichts, ganz gleich wie lange man Home hält. Den Stick also vorher ausschalten (Strom ziehen genügt). Danach sucht die Fernbedienung eine neue Verbindung."
+  },
+  "match": {
+    "name_prefix": [
+      "Amazon Fire TV Remote",
+      "Fire TV Remote",
+      "AFTM",
+      "Amazon Remote"
+    ],
+    "vendor_id": "1949"
+  },
+  "keys": {
+    "103": "Hoch",
+    "108": "Runter",
+    "105": "Links",
+    "106": "Rechts",
+    "96": "Auswählen (Mitte)",
+    "158": "Zurück",
+    "172": "Home",
+    "139": "Menü",
+    "164": "Wiedergabe / Pause",
+    "168": "Zurückspulen",
+    "208": "Vorspulen"
+  },
+  "unsupported_keys": {
+    "lautstaerke": "Lauter, Leiser und Ton-aus laufen bei diesem Modell über INFRAROT an den Fernseher — am Gerät nachgemessen: sie erzeugen auf dem Pi keinen einzigen Tastencode. Sie lassen sich deshalb nicht zuordnen, egal was hier stünde.",
+    "mikrofon": "Die Alexa-Taste sendet keinen Tastencode, sondern startet eine Sprachaufnahme über einen herstellereigenen Kanal. Ohne den Experimental-Teil kommt hier nichts an.",
+    "einschalten": "Die Ein/Aus-Taste läuft ebenfalls über Infrarot und bleibt tot."
+  },
+  "vorbelegung": {
+    "164": "abspielen-anhalten",
+    "96": "abspielen-anhalten",
+    "208": "naechster-titel",
+    "168": "voriger-titel",
+    "103": "lauter",
+    "108": "leiser",
+    "172": "startseite",
+    "158": "zurueck"
+  },
+  "audio": "unknown",
+  "hinweis": "Lauter/Leiser liegen auf Hoch/Runter, weil die echten Lautstärketasten per Infrarot laufen und den Pi nie erreichen (am Gerät gemessen). Menü (139) ist bewusst frei — dort passt später der Langdruck fürs Ausschalten.",
+  "gemessen": "06.09.2026 an Box .81 mit einer echten Fire-TV-Stick-Fernbedienung, Tastendruck für Tastendruck über /dev/input/event6 mitgeschnitten. ZWEI ANNAHMEN WAREN FALSCH: die Mitteltaste sendet 96 (KP_ENTER), NICHT 28 (ENTER) — wer 28 zuordnet, bekommt eine Taste, die nie feuert. Und Lauter/Leiser/Ton-aus (115/114/113) kamen ÜBERHAUPT NICHT an: dieses Modell schickt sie per Infrarot an den Fernseher, und Infrarot erreicht den Pi nicht. Deshalb liegen Lauter/Leiser in der Vorbelegung auf Hoch/Runter."
+}

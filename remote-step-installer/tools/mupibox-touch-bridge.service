@@ -1,0 +1,54 @@
+[Unit]
+# Die Bruecke springt fuer den Kerneltreiber edt_ft5x06 ein, der auf dieser Box
+# zwar anbindet, aber nie eine Unterbrechung bekommt und deshalb 0 Ereignisse
+# liefert (Herleitung im Kopf von touch-bridge.py). Sie muss vor der Oberflaeche
+# stehen, damit der Kiosk-Browser das Geraet von Anfang an sieht — der Kiosk ist
+# KEIN systemd-Dienst (DietPi-Autostart 11), deshalb hier kein Before= darauf.
+#
+# HIER STAND `After=multi-user.target`, UND DAS WAR EIN KREIS.
+# Gemeint war "der fruehe Platz im Target"; bewirkt hat es das Gegenteil —
+# After= wartet, bis das GANZE Target erreicht ist. Am 09.08.2026 an der
+# laufenden Box gesehen:
+#     mixpibox-selbstlauf.service   start running   (baut die Box)
+#     mupibox-touch-bridge.service  start waiting   (wartet aufs Target)
+#     multi-user.target             start waiting   (wartet auf den Selbstlauf)
+# Der Selbstlauf hing dabei in `systemctl enable --now mupibox-touch-bridge`
+# und wartete auf genau den Dienst, der auf ihn wartete. Neun Minuten lang
+# 0 kB/s und Last 0,01 — die Box sah langsam aus und stand in Wahrheit still.
+# Ein Dienst, der per WantedBy zu einem Target gehoert, darf sich nicht
+# dahinter einordnen. Ohne Zeile startet er als TEIL des Targets, parallel zu
+# den anderen — und damit frueh genug.
+Description=MuPiBox Touch-Bruecke (FT5x06 per I2C abfragen)
+
+[Service]
+Type=simple
+ExecStartPre=-/sbin/modprobe i2c-dev
+ExecStartPre=-/sbin/modprobe uinput
+# --auto haelt sich raus, wenn der Kerneltreiber eine Unterbrechungsleitung hat
+# (funktionierende Verdrahtung), und uebernimmt nur sonst. So bleibt das Rezept
+# auch auf Hardware richtig, auf der der Kernel seine Arbeit tut.
+# --drehung: der Controller sitzt im Gehaeuse anders herum als das Panel.
+# Am Geraet gemessen: Beruehrung OBEN LINKS meldete x~750 y~415 (beide
+# Achsen am Maximum) = 180 Grad. Nachmessen mit --probe und einer
+# BEKANNTEN Ecke; gleiche Wertebereiche beweisen die Ausrichtung NICHT.
+#
+# ACHTUNG, DIE 180 SIND AN GENAU EINEM GEHAEUSE GEMESSEN (BACKLOG E12/X5).
+# Diese Unit kommt seit dem 04.08.2026 ueber autosetup und den Update-Weg auf
+# JEDE Karte. Wo der Kerneltreiber selbst Ereignisse liefert, ist das
+# folgenlos — --auto beendet sich dann mit 0 und die Bruecke haelt sich heraus.
+# Wo sie einspringt und der Controller ANDERS herum sitzt, tippt das Kind an
+# der falschen Stelle. Dann hier den Wert aendern (0, 90, 180 oder 270):
+#   systemctl stop mupibox-touch-bridge
+#   /opt/mupibox-tools/touch-bridge.py --probe 15   # dabei OBEN LINKS tippen
+#   sudoedit /etc/systemd/system/mupibox-touch-bridge.service
+#   systemctl daemon-reload && systemctl start mupibox-touch-bridge
+ExecStart=/opt/mupibox-tools/touch-bridge.py --auto --drehung 180
+# Ein sauberes "nicht noetig" ist Ruecklauf 0 -> nicht neu starten.
+Restart=on-failure
+RestartSec=2
+TimeoutStartSec=15
+# Eingaben sollen auch dann durchkommen, wenn die Oberflaeche gerade rechnet.
+Nice=-5
+
+[Install]
+WantedBy=multi-user.target

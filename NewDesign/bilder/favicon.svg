@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="MixPi">
+<!--
+  DAS MIXPI ALS REITERSYMBOL — 08.08.2026, Betreiber: „wir brauchen ein
+  favicon mixpi".
+
+  ══ ES IST NICHT DIE FIGUR, SONDERN IHR KOPF ═══════════════════════════════
+  Die ganze Figur (NewDesign/bilder/mixpi-hoert.png) hat Arme, Beine und einen
+  Koerper. Auf 16 Bildpunkten wird daraus ein Fleck. Gezeichnet ist deshalb
+  nur, was ein Mensch bei 16 px noch als MixPi wiedererkennt: der Kopf, die
+  violetten Kopfhoerer und die Stifte im Haar.
+
+  ══ SECHS STIFTE, WEIL ES SECHS SIND ═══════════════════════════════════════
+  Hier standen erst VIER, mit der Begruendung, fuenf beruehrten sich bei 16 px.
+  Der Betreiber, nachdem er es gesehen hat: „ich denke 6 punkte sind wichtig :
+  wie in der vorlage". Er hat recht — es sind sechs, gezaehlt in
+  mixpi-hoert.png, und ihre Reihenfolge ist blau, gruen, stahlblau, gelb,
+  pink, orange. Die Farben unten sind aus dem Bild GEZAEHLT (haeufigster
+  Farbwert je Fleck), nicht ausgedacht.
+
+  WAS ES BEI 16 PX KOSTET, und das ist der ehrliche Teil: Sechs Koepfe auf
+  diesem Bogen stehen 3,1 Einheiten auseinander, ihr Durchmesser ist 2,7 —
+  bei 16 px sind das noch 0,2 Bildpunkte Luft. Sie laufen dort zu einem
+  Farbband zusammen. Das tut die Vorlage bei dieser Groesse auch, und ein
+  Farbband ist immer noch die richtige Auskunft: bunte Stifte im Haar.
+  Bei 32 und 48 px stehen sie einzeln.
+
+  ══ KEINE KACHEL DAHINTER — GEMESSEN ═══════════════════════════════════════
+  Vier Entwuerfe standen nebeneinander, je auf hellem und dunklem Reiter
+  (creme, dunkelblau, violett, ohne Grund):
+    * VIOLETT faellt aus. Der Grund hat die Farbe der Kopfhoerer, und Buegel
+      und Ohrmuscheln verschwinden darin.
+    * CREME und DUNKELBLAU sehen je auf EINEM Reiter gut aus und auf dem
+      anderen wie ein Fleck in der falschen Farbe.
+    * OHNE GRUND traegt auf beiden: Der dunkle Umriss haelt die weisse Figur
+      auf hellem Reiter, die weisse Fuellung haelt sie auf dunklem.
+  Ein Reiter kann hell oder dunkel sein, und welcher, weiss diese Datei nicht.
+
+  ══ DIE GROESSE IST GEMESSEN UND NICHT GESCHAETZT ══════════════════════════
+  Das Zeichen ist BREITENBEGRENZT: die Ohrmuscheln spannen 26 der 32
+  Einheiten, Kopf und Buegel nur 20,5 in der Hoehe. Ohne Zutun saesse es also
+  mit einem Drittel Luft unten im Quadrat. `scale(1.18)` um die eigene Mitte
+  fuellt es aus und laesst 0,6 Einheiten Luft an den Seiten; 1,26 stiess an.
+
+  ══ DIE FARBEN SIND AUS DER FIGUR GEZAEHLT ═════════════════════════════════
+  Weiss #FEFEFE, Umriss #00032B, Kopfhoerer #8B57FD.
+
+  ══ WER DIE ANDEREN GROESSEN MACHT ═════════════════════════════════════════
+  tools/favicon-bauen.py — es leitet 16/32/48/ico/Kachel aus DIESER Datei ab
+  und setzt dasselbe Zeichen als data:-Adresse in die Verwaltung. Sein
+  Pruefzweig meldet, wenn eine Ableitung nicht mehr dazu passt.
+
+  ZWEI BINDESTRICHE HINTEREINANDER SIND IN DIESEM KOMMENTAR VERBOTEN. Ein
+  XML-Kommentar darf sie nicht enthalten, und ein SVG ist XML. Der Name des
+  Pruefschalters (Bindestrich, Bindestrich, „pruefen") stand hier zweimal
+  ausgeschrieben, und rsvg brach beide Male ab: „Comment must not contain
+  (double-hyphen)". Die Datei war dann kein Bild mehr, sondern ein Fehler —
+  dieselbe Sorte Falle wie ein Backtick in einer Vorlage. Beim zweiten Mal
+  stand er im ZITAT DER FEHLERMELDUNG, die davor warnt.
+-->
+  <g transform="translate(16 16) scale(1.18) translate(-16 -17.15)">
+    <!-- Der Buegel liegt HINTER dem Kopf; der breite dunkle Pfad darunter ist
+         sein Umriss (zwei Pfade statt stroke+fill, weil ein Bogen keine
+         Flaeche hat, die man umranden koennte). -->
+    <path d="M6.5 18 A 9.5 9.5 0 0 1 25.5 18" fill="none" stroke="#00032B" stroke-width="5.2" stroke-linecap="round"/>
+    <path d="M6.5 18 A 9.5 9.5 0 0 1 25.5 18" fill="none" stroke="#8B57FD" stroke-width="3.2" stroke-linecap="round"/>
+
+    <!-- DIE SECHS STIFTE — erst alle dunklen Umrisse, dann alle Farben.
+         In dieser Reihenfolge, weil sich benachbarte Stifte beruehren: Malte
+         man je Stift Umriss und Farbe zusammen, legte der naechste Umriss
+         sich ueber die Farbe des vorigen und fraesse sie an. -->
+    <path d="M8.01 9.73 L9.33 11.09" stroke="#00032B" stroke-width="1.85" stroke-linecap="round"/><circle cx="8.01" cy="9.73" r="1.80" fill="#00032B"/>
+    <path d="M10.89 7.70 L11.73 9.40" stroke="#00032B" stroke-width="1.85" stroke-linecap="round"/><circle cx="10.89" cy="7.70" r="1.80" fill="#00032B"/>
+    <path d="M14.24 6.64 L14.53 8.51" stroke="#00032B" stroke-width="1.85" stroke-linecap="round"/><circle cx="14.24" cy="6.64" r="1.80" fill="#00032B"/>
+    <path d="M17.76 6.64 L17.47 8.51" stroke="#00032B" stroke-width="1.85" stroke-linecap="round"/><circle cx="17.76" cy="6.64" r="1.80" fill="#00032B"/>
+    <path d="M21.11 7.70 L20.27 9.40" stroke="#00032B" stroke-width="1.85" stroke-linecap="round"/><circle cx="21.11" cy="7.70" r="1.80" fill="#00032B"/>
+    <path d="M23.99 9.73 L22.67 11.09" stroke="#00032B" stroke-width="1.85" stroke-linecap="round"/><circle cx="23.99" cy="9.73" r="1.80" fill="#00032B"/>
+
+    <path d="M8.01 9.73 L9.33 11.09" stroke="#00ACFD" stroke-width="0.95" stroke-linecap="round"/><circle cx="8.01" cy="9.73" r="1.35" fill="#00ACFD"/>  <!-- blau -->
+    <path d="M10.89 7.70 L11.73 9.40" stroke="#11DE47" stroke-width="0.95" stroke-linecap="round"/><circle cx="10.89" cy="7.70" r="1.35" fill="#11DE47"/>  <!-- gruen -->
+    <path d="M14.24 6.64 L14.53 8.51" stroke="#43719A" stroke-width="0.95" stroke-linecap="round"/><circle cx="14.24" cy="6.64" r="1.35" fill="#43719A"/>  <!-- stahlblau -->
+    <path d="M17.76 6.64 L17.47 8.51" stroke="#FEEE04" stroke-width="0.95" stroke-linecap="round"/><circle cx="17.76" cy="6.64" r="1.35" fill="#FEEE04"/>  <!-- gelb -->
+    <path d="M21.11 7.70 L20.27 9.40" stroke="#FD34A2" stroke-width="0.95" stroke-linecap="round"/><circle cx="21.11" cy="7.70" r="1.35" fill="#FD34A2"/>  <!-- pink -->
+    <path d="M23.99 9.73 L22.67 11.09" stroke="#FF7001" stroke-width="0.95" stroke-linecap="round"/><circle cx="23.99" cy="9.73" r="1.35" fill="#FF7001"/>  <!-- orange -->
+    <ellipse cx="16" cy="19.4" rx="7.6" ry="8.0" fill="#FEFEFE" stroke="#00032B" stroke-width="1.7"/>
+
+    <!-- Die Ohrmuscheln stehen VOR dem Kopf — so, wie ein Kopfhoerer sitzt. -->
+    <rect x="3.0" y="15.4" width="5.4" height="8.2" rx="2.6" fill="#8B57FD" stroke="#00032B" stroke-width="1.6"/>
+    <rect x="23.6" y="15.4" width="5.4" height="8.2" rx="2.6" fill="#8B57FD" stroke="#00032B" stroke-width="1.6"/>
+
+    <!-- DIE AUGEN SIND KURZ UND DICK, und das ist der Unterschied zwischen
+         einem Gesicht und einem grauen Balken: Der erste Versuch hatte lange
+         duenne Boegen (Strichbreite 1,5, Weite 3,0) — bei 16 px lief das zu
+         einem Streifen zusammen. Fuer 16 px ersetzt favicon-bauen.py sie
+         ausserdem durch zwei Punkte; die Begruendung steht dort. -->
+    <path d="M11.9 19.3 q1.2 1.6 2.4 0" fill="none" stroke="#00032B" stroke-width="1.9" stroke-linecap="round"/>
+    <path d="M17.7 19.3 q1.2 1.6 2.4 0" fill="none" stroke="#00032B" stroke-width="1.9" stroke-linecap="round"/>
+  </g>
+</svg>

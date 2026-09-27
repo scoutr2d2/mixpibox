@@ -1,0 +1,170 @@
+/*
+  Die Werkstatt faerbt sich NICHT selbst nach dem Thema, an dem gerade
+  gearbeitet wird — sie hat ihre eigenen, ruhigen Farben.
+
+  WARUM DAS WICHTIG IST: Ein Werkzeug, das mitfaerbt, sieht beeindruckend aus
+  und macht sich bei genau der Einstellung unbedienbar, die man gerade pruefen
+  will (Schrift auf Schrift, Knopf auf Knopf). Die Farben des Themas gehoeren
+  in das Fenster rechts und nirgendwo sonst.
+*/
+:root {
+  --grund: #16151c;
+  --flaeche: #1e1d26;
+  --flaeche2: #262532;
+  --schrift: #ece9f2;
+  --gedaempft: #9a95a8;
+  --rand: #34323f;
+  --ruf: #6ea8ff;
+  --warn: #ffb454;
+  --schlecht: #ff6b6b;
+  --gut: #5ad19a;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--grund);
+  color: var(--schrift);
+  font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.fuellung { flex: 1; }
+
+/* ── Kopfzeile ─────────────────────────────────────────────────────────── */
+.kopf {
+  display: flex; align-items: center; gap: 0.9rem;
+  padding: 0.6rem 1rem;
+  background: var(--flaeche);
+  border-bottom: 1px solid var(--rand);
+  position: sticky; top: 0; z-index: 5;
+}
+.kopf h1 { font-size: 1.05rem; margin: 0; font-weight: 650; }
+.themenwahl { display: flex; align-items: center; gap: 0.4rem; font-size: 0.9rem; color: var(--gedaempft); }
+select, input[type=text] {
+  background: var(--flaeche2); color: var(--schrift);
+  border: 1px solid var(--rand); border-radius: 8px;
+  padding: 0.35rem 0.5rem; font: inherit; font-size: 0.9rem;
+}
+.hinweis { font-size: 0.82rem; color: var(--gedaempft); }
+.stand { font-size: 0.85rem; color: var(--gedaempft); min-height: 1.2em; }
+.stand.gut { color: var(--gut); }
+.stand.schlecht { color: var(--schlecht); }
+
+button {
+  font: inherit; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--rand); background: var(--flaeche2); color: var(--schrift);
+  padding: 0.4rem 0.8rem;
+}
+button:disabled { opacity: 0.45; cursor: default; }
+button.haupt { background: var(--ruf); border-color: var(--ruf); color: #08131f; font-weight: 600; }
+button.haupt:disabled { background: var(--flaeche2); border-color: var(--rand); color: var(--gedaempft); }
+
+/* ── Buehne ────────────────────────────────────────────────────────────── */
+.buehne {
+  display: grid;
+  grid-template-columns: minmax(360px, 1fr) auto;
+  gap: 1rem; padding: 1rem;
+  align-items: start;
+}
+@media (max-width: 1200px) { .buehne { grid-template-columns: 1fr; } }
+
+.spalte { min-width: 0; }
+
+/* ── Reiter ────────────────────────────────────────────────────────────── */
+.reiter { display: flex; gap: 0.4rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+.reiter button {
+  background: transparent; border-color: transparent;
+  color: var(--gedaempft); padding: 0.35rem 0.7rem;
+}
+.reiter button[aria-selected="true"] {
+  background: var(--flaeche); border-color: var(--rand); color: var(--schrift);
+}
+
+/* ── Tafeln ────────────────────────────────────────────────────────────── */
+.tafel[hidden] { display: none; }
+
+.gruppe {
+  background: var(--flaeche); border: 1px solid var(--rand);
+  border-radius: 12px; padding: 0.8rem 0.9rem; margin-bottom: 0.8rem;
+}
+.gruppe > h2 { font-size: 0.98rem; margin: 0 0 0.15rem; }
+.gruppe > p.wozu { margin: 0 0 0.7rem; font-size: 0.85rem; color: var(--gedaempft); }
+
+.zeile {
+  display: grid;
+  grid-template-columns: 2.2rem 1fr 7.5rem auto auto;
+  gap: 0.6rem; align-items: center;
+  padding: 0.35rem 0; border-top: 1px solid var(--rand);
+}
+.zeile:first-of-type { border-top: 0; }
+
+/*
+  Ein Farbfeld, gross genug zum Treffen. `-moz-color-swatch`/`-webkit-color-swatch`
+  nehmen dem Feld seinen eingebauten Rahmen — sonst sitzt die Farbe in einem
+  grauen Kasten und man vergleicht mit dem Kasten statt mit der Farbe.
+*/
+input[type=color] {
+  width: 2.2rem; height: 2.2rem; padding: 0;
+  border: 1px solid var(--rand); border-radius: 8px;
+  background: transparent; cursor: pointer;
+}
+input[type=color]::-webkit-color-swatch-wrapper { padding: 2px; }
+input[type=color]::-webkit-color-swatch { border: 0; border-radius: 6px; }
+input[type=color]::-moz-color-swatch { border: 0; border-radius: 6px; }
+
+.benennung { min-width: 0; }
+.benennung b { font-weight: 600; font-size: 0.92rem; }
+.benennung small { display: block; color: var(--gedaempft); font-size: 0.79rem; }
+.benennung code { font-size: 0.75rem; color: var(--gedaempft); }
+
+input.hex { width: 7.5rem; font-family: ui-monospace, monospace; font-size: 0.85rem; text-transform: uppercase; }
+input.hex.falsch { border-color: var(--schlecht); }
+
+/*
+  „gesetzt" heisst: DIESES Thema sagt etwas ueber die Farbe. Ohne die Marke
+  saehe man einer Zeile nicht an, ob der Wert vom Thema kommt oder aus app.css
+  durchscheint — und genau dieser Unterschied ist es, den ein Thema ausmacht.
+*/
+.marke {
+  font-size: 0.7rem; padding: 0.1rem 0.4rem; border-radius: 999px;
+  border: 1px solid var(--rand); color: var(--gedaempft); white-space: nowrap;
+}
+.marke.an { border-color: var(--ruf); color: var(--ruf); }
+
+.zuruecknehmen { padding: 0.25rem 0.5rem; font-size: 0.78rem; }
+
+/* ── Kontrastzeile ─────────────────────────────────────────────────────── */
+.kontraste { margin-top: 0.6rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.kontrast {
+  font-size: 0.78rem; padding: 0.15rem 0.5rem; border-radius: 999px;
+  border: 1px solid var(--rand); color: var(--gedaempft);
+}
+.kontrast.schlecht { border-color: var(--schlecht); color: var(--schlecht); }
+.kontrast.knapp { border-color: var(--warn); color: var(--warn); }
+.kontrast.gut { border-color: var(--gut); color: var(--gut); }
+
+.meldung {
+  border: 1px solid var(--warn); color: var(--warn);
+  border-radius: 10px; padding: 0.5rem 0.7rem; margin-bottom: 0.8rem; font-size: 0.85rem;
+}
+
+/* ── Vorschau ──────────────────────────────────────────────────────────── */
+.vorschau { position: sticky; top: 4rem; }
+.vorschaukopf {
+  display: flex; align-items: center; gap: 0.6rem;
+  font-size: 0.82rem; color: var(--gedaempft); margin-bottom: 0.4rem;
+}
+.klein { display: flex; align-items: center; gap: 0.3rem; }
+.klein-knopf { padding: 0.2rem 0.5rem; font-size: 0.78rem; }
+
+.schirmhalter {
+  width: 800px; height: 480px;
+  border: 1px solid var(--rand); border-radius: 12px; overflow: hidden;
+  background: #000;
+}
+@media (max-width: 1200px) { .schirmhalter { width: 100%; max-width: 800px; } }
+#schirm { width: 800px; height: 480px; border: 0; display: block; }
+
+.fussnote { font-size: 0.78rem; color: var(--gedaempft); margin: 0.5rem 0 0; max-width: 800px; }

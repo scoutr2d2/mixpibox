@@ -1,0 +1,29 @@
+{
+  "_wozu": "Chromium-Regeln fuer den Kiosk. Lag bis zum 06.09.2026 NUR auf der Box (von Hand angelegt) und haette kein Neuaufsetzen ueberlebt.",
+  "_urlsperre": "URLBlocklist/URLAllowlist sind der Riegel, der eine Kinderbox im Kinderzimmer haelt: der Kiosk darf AUSSCHLIESSLICH die eigene Adresse oeffnen. Anlass war eine gekoppelte Fernbedienung, deren Home-Taste Chromiums Startseite oeffnete — auf der Box war das google.com, und von dort kam man mit der Fernbedienung nicht mehr weg (Betreiber: 'ich stehe auf der google suche, komme nicht zurueck'). Der exklusive Griff des Fernbedienungs-Dienstes verhindert das schon; diese Sperre ist die zweite Tuer, fuer den Fall, dass der Griff einmal aussetzt (Dienstneustart, Wiederverbinden).",
+  "_startseite": "HomepageLocation/NewTabPageLocation/RestoreOnStartup zeigen auf die Box selbst — damit fuehrt selbst eine durchgerutschte Home-Taste dorthin, wo das Kind hin will.",
+  "TranslateEnabled": false,
+  "PasswordManagerEnabled": false,
+  "PasswordLeakDetectionEnabled": false,
+  "AutofillAddressEnabled": false,
+  "AutofillCreditCardEnabled": false,
+  "AutoFillEnabled": false,
+  "DefaultNotificationsSetting": 2,
+  "PromptForDownloadLocation": false,
+  "URLBlocklist": [
+    "*"
+  ],
+  "URLAllowlist": [
+    "http://localhost:8200",
+    "http://127.0.0.1:8200",
+    "http://localhost:8200/*",
+    "http://127.0.0.1:8200/*"
+  ],
+  "HomepageLocation": "http://localhost:8200/neu/",
+  "HomepageIsNewTabPage": false,
+  "NewTabPageLocation": "http://localhost:8200/neu/",
+  "RestoreOnStartup": 4,
+  "RestoreOnStartupURLs": [
+    "http://localhost:8200/neu/"
+  ]
+}

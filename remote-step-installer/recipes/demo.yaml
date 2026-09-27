@@ -1,0 +1,48 @@
+name: Demo (gefahrlos)
+version: 1
+# Zum Ausprobieren OHNE echte Box: Agent lokal starten, diese Recipe fahren.
+# Es wird nichts installiert und nichts verändert — nur echo/sleep.
+#
+#   Terminal 1:  python3 agent/agent.py --port 8099        # zeigt den PAIR CODE
+#   Terminal 2:  cd controller && python3 stepctl.py --recipe ../recipes/demo.yaml --pair <CODE>
+#                (oder tui.py mit denselben Argumenten)
+steps:
+  - id: hallo
+    name: "Verbindung testen"
+    run: "echo 'Hallo von der Box'; uname -a"
+
+  - id: apt-demo
+    name: "Paket-Installation (simuliert)"
+    note: "zeigt die Pacman-Live-Anzeige mit echtem Fortschritt"
+    run: |
+      echo 'Reading package lists...'; sleep 0.5
+      echo 'Building dependency tree...'; sleep 0.3
+      echo '0 upgraded, 3 newly installed, 0 to remove.'; sleep 0.4
+      for p in "libuv1 1.48 [140 kB]" "nodejs 24.4.0 [12.4 MB]" "npm 10.9 [2.1 MB]"; do
+        echo "Get:1 http://deb.debian.org trixie/main arm64 $p"; sleep 0.4
+      done
+      echo 'Fetched 14.6 MB in 2s'; sleep 0.3
+      for p in libuv1 nodejs npm; do echo "Unpacking $p (1.0) ..."; sleep 0.4; done
+      for p in libuv1 nodejs npm; do echo "Setting up $p (1.0) ..."; sleep 0.4; done
+      echo 'Processing triggers for man-db ...'
+
+  - id: haenger
+    name: "Hängender Schritt (zum Abbrechen)"
+    note: "läuft 5 Minuten — Abbruch üben: CLI Strg-C, TUI Taste 'a'. Timeout greift nach 20s."
+    timeout: 20
+    optional: true
+    run: "echo 'ich haenge jetzt...'; sleep 300"
+
+  - id: fehler
+    name: "Fehlschlag (zum Diagnose-Üben)"
+    note: "scheitert mit einer bekannten Signatur → rsi.py diagnose <run_id> --wiki mupibox"
+    optional: true
+    workarounds:
+      - id: skip-it
+        name: "Schritt überspringen (Paket wird nicht gebraucht)"
+        run: "echo 'übersprungen — rpi-eeprom ist für die Box nicht nötig'"
+    run: "echo 'E: Unable to locate package rpi-eeprom' >&2; exit 100"
+
+  - id: fertig
+    name: "Abschluss"
+    run: "echo 'Demo durch.'"

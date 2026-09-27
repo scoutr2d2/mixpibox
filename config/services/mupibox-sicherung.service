@@ -1,0 +1,41 @@
+[Unit]
+# BACKLOG E29/B1 — die EINE Stelle, die sichert.
+#
+# Warum es diese Unit ueberhaupt gibt, obwohl das Skript auch von Hand laeuft:
+# der Update-Weg der Box wird bei jedem Klick FRISCH VON UPSTREAM geholt
+# (admin.php ruft `curl … start_mupibox_update.sh | sudo bash`). Eine
+# Sicherung, die nur im Fork-Skript steht, laeuft ueber diesen Knopf also NIE.
+# Was upstream nicht umgehen kann, ist die Datei selbst: aendert sich
+# mupiboxconfig.json, sichert mupibox-sicherung.path — egal, wer sie
+# geaendert hat und woher das Skript kam.
+Description=MuPiBox: Stand der Konfiguration sichern
+After=local-fs.target
+
+[Service]
+Type=oneshot
+User=dietpi
+Group=dietpi
+# --wenn-anders: hat sich seit dem letzten Stand nichts geaendert, entsteht
+# KEIN neuer. Das ist die Vorkehrung gegen den Fehler aus
+# [[aufraeum-sicherung-vor-der-entscheidung]]: dort verdraengten drei
+# folgenlose Sicherungen die eine, auf die es ankam.
+ExecStart=/usr/local/bin/mupibox/mupibox-sicherung.py --anlegen --grund selbsttaetig --wenn-anders
+# Die Staende zusaetzlich auf die FAT-Partition legen — das ist der Rueckweg
+# ohne SSH (E29/B3) und der einzige, der auch bei schwarzem Bildschirm geht.
+# Braucht root, deshalb als zweiter Schritt mit `+` (laeuft als root, nicht
+# als dietpi). Schlaegt er fehl, ist die Sicherung im Haus trotzdem da —
+# darum `-`.
+ExecStart=-+/usr/local/bin/mupibox/mupibox-sicherung.py --auf-karte
+# Und zusaetzlich auf das Netzlaufwerk, WENN eines eingerichtet ist (E29/B4).
+# Die Karte bleibt die Wahrheit und der Rueckweg ohne SSH: ein NAS hilft
+# niemandem, dessen Bildschirm schwarz bleibt. Deshalb steht diese Zeile
+# ZULETZT und mit `-` — ein ausgeschaltetes NAS darf den Sicherungslauf nicht
+# rot faerben, und die Staende im Haus sind dann trotzdem da. Ohne nas.json
+# sagt der Schritt das und endet mit 0. Laeuft als dietpi (kein `+`): der
+# Einhaengepunkt gehoert ihm (uid=dietpi in der .mount-Einheit).
+ExecStart=-/usr/local/bin/mupibox/mupibox-sicherung.py --aufs-nas
+# Eine Sicherung, die haengt, waere schlimmer als keine: sie liefe in eine
+# Wiederherstellung hinein und blockierte den Start.
+TimeoutStartSec=120
+Nice=10
+IOSchedulingClass=idle

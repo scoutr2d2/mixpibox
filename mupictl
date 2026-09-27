@@ -1,0 +1,177 @@
+#!/usr/bin/env bash
+# mupictl — MuPiBox developer control tool ("ADB for MuPiBox").
+#
+# One entry point for two targets (MODERNIZATION.md §5, B8):
+#   --local   (default)  the Docker simulation in ./harness   (no Pi needed)
+#   --device HOST        a real MuPiBox over the network (ssh/scp; DietPi user 'dietpi')
+#
+# The control-from-PC spectrum:  deploy  ->  update  ->  flash   (B8/B9)
+#
+# Examples:
+#   ./mupictl up                 # start the local sim (backends + MuPiHAT mock)
+#   ./mupictl up --frontend      # also start the Angular dev server on :4200
+#   ./mupictl logs backend-api   # follow a service log
+#   ./mupictl state              # show the simulated battery/HAT state
+#   ./mupictl api /api/data      # curl the backend-api
+#   ./mupictl --device mupibox.local shell
+#   ./mupictl --device 192.168.1.50 forward   # tunnel :8200/:5005/:5000/:5900 to localhost
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HARNESS="$ROOT/harness"
+COMPOSE=(docker compose -f "$HARNESS/docker-compose.yml")
+SSH_USER="${MUPIBOX_SSH_USER:-dietpi}"
+DEVICE="${MUPIBOX_DEVICE:-}"
+
+c() { printf '\033[%sm%s\033[0m' "$1" "$2"; }
+info() { echo "$(c '1;36' '[mupictl]') $*"; }
+err()  { echo "$(c '1;31' '[mupictl]') $*" >&2; }
+
+# ----- argument parsing: pull out --local / --device HOST anywhere ------------
+ARGS=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --local)  DEVICE=""; shift ;;
+    --device) DEVICE="${2:-}"; shift 2 ;;
+    --device=*) DEVICE="${1#*=}"; shift ;;
+    *) ARGS+=("$1"); shift ;;
+  esac
+done
+set -- "${ARGS[@]:-}"
+CMD="${1:-help}"; [ $# -gt 0 ] && shift || true
+
+# ----- local (Docker sim) helpers --------------------------------------------
+seed_state() {
+  mkdir -p "$HARNESS/state" "$HARNESS/state/media"
+  [ -f "$HARNESS/state/mupihat.json" ]     || echo '{}' > "$HARNESS/state/mupihat.json"
+  [ -f "$HARNESS/state/resume.json" ]      || echo '[]' > "$HARNESS/state/resume.json"
+  [ -f "$HARNESS/state/active_resume.json" ] || echo '[]' > "$HARNESS/state/active_resume.json"
+  [ -f "$HARNESS/state/data.json" ]        || cp "$HARNESS/seed/data.json" "$HARNESS/state/data.json"
+  # Diese zwei fehlten hier bis zum 26.08.2026, obwohl docker-compose.yml sie
+  # SCHREIBBAR einhaengt (der /spotify-Login schreibt den Refresh-Token in die
+  # mupiboxconfig). Auf einem frischen Klon legt Docker fuer einen fehlenden
+  # Bind-Mount ein VERZEICHNIS an — backend-api bekam also einen Ordner, wo
+  # seine config.json liegen soll. Gefunden von tools/simulationsrezept-pruefen.py.
+  [ -f "$HARNESS/state/config-api.json" ]  || cp "$HARNESS/seed/config-api.json" "$HARNESS/state/config-api.json"
+  [ -f "$HARNESS/state/mupiboxconfig.json" ] || cp "$HARNESS/seed/mupiboxconfig.json" "$HARNESS/state/mupiboxconfig.json"
+}
+
+local_up() {
+  seed_state
+  local profile=()
+  for a in "$@"; do [ "$a" = "--frontend" ] && profile=(--profile frontend); done
+  info "starting the local sim ${profile:+(with frontend) }..."
+  "${COMPOSE[@]}" "${profile[@]}" up -d
+  echo
+  info "backend-api : http://localhost:8200  (/api/data, /api/mupihat, /api/config)"
+  info "backend-player: http://localhost:5005"
+  [ "${profile:-}" ] && info "frontend UI : http://localhost:4200  (first start compiles Angular — give it a minute)"
+  info "logs: ./mupictl logs   ·   state: ./mupictl state   ·   stop: ./mupictl down"
+}
+
+# ----- device (real box) helpers ---------------------------------------------
+need_device() { [ -n "$DEVICE" ] || { err "no device set. Use --device <host> or export MUPIBOX_DEVICE"; exit 2; }; }
+dssh() { need_device; ssh "$SSH_USER@$DEVICE" "$@"; }
+
+device_forward() {
+  need_device
+  info "forwarding $DEVICE -> localhost: 8200(api) 5005(player) 5000(mupihat-debug) 5900(vnc). Ctrl-C to stop."
+  ssh -N \
+    -L 8200:localhost:8200 \
+    -L 5005:localhost:5005 \
+    -L 5000:localhost:5000 \
+    -L 5900:localhost:5900 \
+    "$SSH_USER@$DEVICE"
+}
+
+device_deploy() {
+  need_device
+  # Seit 05.08.2026 gibt es EINEN Ausrollweg, und der macht alles, was hier
+  # frueher als TODO stand: bauen (und die Bauausgabe auf ihren Zeitstempel
+  # pruefen), die Nutzerdaten sichern, atomar tauschen, ueber systemd neu
+  # starten und danach am Geraet nachmessen. Ein zweiter halber Weg daneben
+  # waere genau das Problem, das er abschafft.
+  info "-> tools/ausliefern.py --box $SSH_USER@$DEVICE $*"
+  exec python3 "$ROOT/tools/ausliefern.py" --box "$SSH_USER@$DEVICE" "$@"
+}
+
+usage() {
+  cat <<EOF
+mupictl — MuPiBox developer control tool
+
+  Target:  --local (default, Docker sim in ./harness)  |  --device <host> (real box)
+
+  Local (sim) commands:
+    up [--frontend]     start the sim (backends + MuPiHAT mock [+ Angular dev server])
+    down                stop and remove the sim
+    restart [svc]       restart all / one service
+    ps | status         show running services
+    logs [svc]          follow logs (all or one service)
+    state               show the simulated MuPiHAT battery state + /api/mupihat
+    api <path>          curl the backend-api (e.g. api /api/data)
+    mock                generate local library media from your recordings (env MOCK_SRC)
+    hwinfo              detect platform + MuPiHAT presence on this host (sim → no HAT)
+    hwapply [--apply]   set hat_active from detection (auto-sentinel; dry-run unless --apply)
+    shell <svc>         open a shell in a service container
+    build               build the sim images
+
+  Device (real box) commands — deploy -> update -> flash (B8/B9):
+    shell               ssh into the box
+    logs [unit]         follow a systemd journal on the box (e.g. mupibox-server)
+    state               show /tmp/mupihat.json on the box
+    hwinfo              detect platform + MuPiHAT presence on the box (I²C probe)
+    hwapply [--apply]   set hat_active on the box from I²C detection (dry-run unless --apply)
+    forward             tunnel :8200/:5005/:5000/:5900 to localhost
+    deploy              build here and rsync to the box (on-device install: TODO)
+    discover            find MuPiBoxes on the LAN (needs avahi-browse)
+    flash               [B9] PC-driven recovery re-flash — not implemented yet
+
+  Examples:
+    ./mupictl up --frontend
+    ./mupictl --device mupibox.local forward
+EOF
+}
+
+# ----- dispatch --------------------------------------------------------------
+if [ -z "$DEVICE" ]; then
+  case "$CMD" in
+    up)       local_up "$@";;
+    down)     "${COMPOSE[@]}" down "$@";;
+    restart)  "${COMPOSE[@]}" restart "$@";;
+    ps|status)"${COMPOSE[@]}" ps;;
+    logs)     "${COMPOSE[@]}" logs -f "$@";;
+    build)    "${COMPOSE[@]}" build "$@";;
+    shell)    [ $# -ge 1 ] || { err "usage: shell <service>"; exit 2; }; "${COMPOSE[@]}" exec "$1" sh;;
+    api)      curl -sS "http://localhost:8200${1:-/api/data}" | (command -v jq >/dev/null && jq . || cat);;
+    hwinfo)   "$ROOT/scripts/hwdetect/hwdetect.sh" | (command -v jq >/dev/null && jq . || cat);;
+    hwapply)  MUPIBOX_CONFIG="${MUPIBOX_CONFIG:-$HARNESS/seed/mupiboxconfig.json}" "$ROOT/scripts/hwdetect/hat-apply.sh" "$@";;
+    mock)     seed_state; node "$HARNESS/mock-media.mjs" && info "mock library generated (live — backend-api re-reads data.json; media dir is bind-mounted).";;
+    state)
+      echo "$(c '1;33' 'simulated /tmp/mupihat.json:')"
+      cat "$HARNESS/state/mupihat.json" 2>/dev/null || echo "(sim not started — run ./mupictl up)"
+      echo; echo "$(c '1;33' 'backend-api /api/mupihat:')"
+      curl -sS http://localhost:8200/api/mupihat 2>/dev/null | (command -v jq >/dev/null && jq . || cat) || echo "(backend-api not reachable)"
+      ;;
+    help|-h|--help) usage;;
+    *) err "unknown local command: $CMD"; usage; exit 2;;
+  esac
+else
+  case "$CMD" in
+    shell)   dssh;;
+    logs)    dssh "sudo journalctl -f ${1:+-u $1}";;
+    state)   dssh "cat /tmp/mupihat.json";;
+    hwinfo)  need_device; ssh "$SSH_USER@$DEVICE" 'sh -s' < "$ROOT/scripts/hwdetect/hwdetect.sh" | (command -v jq >/dev/null && jq . || cat);;
+    hwapply) need_device
+      rtmp=$(ssh "$SSH_USER@$DEVICE" 'mktemp -d')
+      scp -q "$ROOT/scripts/hwdetect/hwdetect.sh" "$ROOT/scripts/hwdetect/hat-apply.sh" "$SSH_USER@$DEVICE:$rtmp/"
+      ssh "$SSH_USER@$DEVICE" "sh $rtmp/hat-apply.sh $*; rm -rf $rtmp";;
+    forward) device_forward;;
+    deploy)  device_deploy "$@";;
+    discover)
+      command -v avahi-browse >/dev/null || { err "avahi-browse not installed (apt install avahi-utils)"; exit 2; }
+      info "browsing the LAN for MuPiBoxes (Ctrl-C to stop)…"; avahi-browse -rt _ssh._tcp | grep -i mupi || true;;
+    flash)   err "[B9] PC-driven recovery re-flash is not implemented yet — see MODERNIZATION.md §7 (B9).";;
+    help|-h|--help) usage;;
+    *) err "unknown device command: $CMD"; usage; exit 2;;
+  esac
+fi

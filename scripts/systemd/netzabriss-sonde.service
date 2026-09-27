@@ -1,0 +1,12 @@
+[Unit]
+Description=MixPi Netzabriss-Sonde (Funkbild-Protokoll)
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 /home/dietpi/netzabriss/sonde.py
+Restart=always
+RestartSec=5
+User=dietpi
+
+[Install]
+WantedBy=multi-user.target

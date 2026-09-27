@@ -1,0 +1,67 @@
+{
+  "kennung": "mixpi-gruppen",
+  "name": "Interpreten-Gruppen (Jev)",
+  "fassung": "0.1.0",
+  "haupt": "index.mjs",
+  "rechte": ["netz"],
+  "sektion": "medien",
+  "icon": "icon.svg",
+  "aktionen": [
+    {
+      "kennung": "durchlauf",
+      "name": "Gruppen jetzt vorschlagen",
+      "hinweis": "Liest die Bibliothek, sucht Namenspaare, die zusammengehoeren koennten, und fragt Jev nach jedem. Laeuft im Hintergrund; die Vorschlaege stehen danach unter Medien → Interpreten → Gruppen. Es wird NICHTS zusammengelegt — das tust du dort selbst."
+    },
+    {
+      "kennung": "verbindung",
+      "name": "Verbindung pruefen",
+      "hinweis": "Stellt Jev eine einzige Frage („Die Maus\" gegen „Die Sendung mit der Maus\") und nennt Antwort und Antwortzeit."
+    },
+    {
+      "kennung": "vergessen",
+      "name": "Antworten vergessen",
+      "hinweis": "Wirft die gemerkten Jev-Antworten weg; der naechste Durchlauf fragt jedes Paar neu. Deine Entscheidungen (angenommen/abgelehnt) bleiben."
+    }
+  ],
+  "felder": [
+    {
+      "schluessel": "anbieter",
+      "art": "text",
+      "name": "Anbieter",
+      "hinweis": "„openrouter\" (Vorgabe) oder „typesafe\". Beide fuehren dasselbe Modell Jev; es gilt der Schluessel des gewaehlten Anbieters.",
+      "vorgabe": "openrouter"
+    },
+    {
+      "schluessel": "openrouterSchluessel",
+      "art": "geheim",
+      "name": "OpenRouter-Schluessel",
+      "hinweis": "Unter openrouter.ai/settings/keys. Jev braucht dort Guthaben (Prepaid); ein Durchlauf ueber die ganze Bibliothek kostet Bruchteile eines Cents. Gesendet werden Interpretennamen und einige Titel — sonst nichts."
+    },
+    {
+      "schluessel": "typesafeSchluessel",
+      "art": "geheim",
+      "name": "TypeSafe-Schluessel",
+      "hinweis": "Nur fuer Anbieter „typesafe\" (Zugang derzeit ueber Warteliste bei typesafe.ai)."
+    },
+    {
+      "schluessel": "modell",
+      "art": "text",
+      "name": "Modell",
+      "hinweis": "Leer lassen heisst: typesafe/jev-latest bei OpenRouter, jev-latest bei TypeSafe. Eine feste Fassung (z. B. typesafe/jev-1.13) haelt die Antworten ueber Monate vergleichbar."
+    },
+    {
+      "schluessel": "schwelle",
+      "art": "zahl",
+      "name": "Mindest-Sicherheit (0 bis 1)",
+      "hinweis": "Vorschlaege darunter werden nicht gezeigt, nur gezaehlt. 0,7 zeigt auch Zweifelsfaelle; 0,9 nur die klaren.",
+      "vorgabe": 0.7
+    },
+    {
+      "schluessel": "hoechstensPaare",
+      "art": "zahl",
+      "name": "Hoechstens so viele Paare je Durchlauf",
+      "hinweis": "Der Deckel gegen eine Rechnung, die niemand wollte. Die wahrscheinlichsten Paare kommen zuerst dran.",
+      "vorgabe": 300
+    }
+  ]
+}

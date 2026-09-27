@@ -1,0 +1,16 @@
+{
+  "kennung": "mixpi-mediathek",
+  "name": "ARD Mediathek",
+  "fassung": "0.1.0",
+  "haupt": "index.mjs",
+  "rechte": ["netz"],
+  "sektion": "medien",
+  "icon": "icon.svg",
+  "aktionen": [
+    {
+      "kennung": "pruefen",
+      "name": "Erreichbarkeit messen",
+      "hinweis": "Sucht einmal nach „Maus“ und nennt die Antwortzeit der ARD."
+    }
+  ]
+}

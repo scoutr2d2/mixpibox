@@ -1,0 +1,460 @@
+{
+ "suche": {
+  "teasers": [
+   {
+    "id": "Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtY2I3NGNiY2EtNTA5OC00MjMzLTgxZjMtZDRiNjk1YmI0ODdm",
+    "longTitle": "Klima-Maus Teil 6",
+    "shortTitle": "Klima-Maus Teil 6",
+    "duration": 1626,
+    "broadcastedOn": "2026-07-17T07:45:00Z",
+    "availableTo": "2026-11-03T08:45:00Z",
+    "coreAssetType": "EPISODE",
+    "isChildContent": true,
+    "maturityContentRating": "NONE",
+    "show": {
+     "id": "crid://wdr.de/kinder/tv/Sendung mit der Maus",
+     "title": "Die Maus ",
+     "shortSynopsis": "Hier gibt's Lach- und Sachgeschichten, Märchen, Lieder und die Abenteuer von Shaun, Trudes Tier, Rico und natürlich von Maus, Elefant und Ente."
+    },
+    "images": {
+     "aspect16x9": {
+      "src": "https://api.ardmediathek.de/image-service/images/urn:ard:image:c00892efefd9c6b6?w={width}&ch=0a0d82e25318f88a",
+      "title": "Klima-Maus Teil 6"
+     },
+     "aspect16x7": {
+      "src": "https://api.ardmediathek.de/image-service/images/urn:ard:image:3b6272f9833c5740?w={width}&ch=2d5d5f15a7e8a8e1",
+      "title": "Klima-Maus Teil 6"
+     }
+    }
+   },
+   {
+    "id": "Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtY2I3NGNiY2EtNTA5OC00MjMzLTgxZjMtZDRiNjk1YmI0ODdmL2F1ZGlvZGVza3JpcHRpb24",
+    "longTitle": "Klima-Maus Teil 6 (Audiodeskription)",
+    "shortTitle": "Klima-Maus Teil 6 (Audiodeskription)",
+    "duration": 1626,
+    "broadcastedOn": "2026-07-17T07:45:00Z",
+    "availableTo": "2026-11-03T08:45:00Z",
+    "coreAssetType": "EPISODE",
+    "isChildContent": true,
+    "maturityContentRating": "NONE",
+    "show": {
+     "id": "crid://wdr.de/kinder/tv/Sendung mit der Maus",
+     "title": "Die Maus ",
+     "shortSynopsis": "Hier gibt's Lach- und Sachgeschichten, Märchen, Lieder und die Abenteuer von Shaun, Trudes Tier, Rico und natürlich von Maus, Elefant und Ente."
+    },
+    "images": {
+     "aspect16x9": {
+      "src": "https://api.ardmediathek.de/image-service/images/urn:ard:image:c00892efefd9c6b6?w={width}&ch=0a0d82e25318f88a",
+      "title": "Klima-Maus Teil 6"
+     },
+     "aspect16x7": {
+      "src": "https://api.ardmediathek.de/image-service/images/urn:ard:image:3b6272f9833c5740?w={width}&ch=2d5d5f15a7e8a8e1",
+      "title": "Klima-Maus Teil 6"
+     }
+    }
+   },
+   {
+    "id": "Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtY2I3NGNiY2EtNTA5OC00MjMzLTgxZjMtZDRiNjk1YmI0ODdmL2dlYmFlcmRlbnNwcmFjaGU",
+    "longTitle": "Klima-Maus Teil 6 (mit Gebärdensprache)",
+    "shortTitle": "Klima-Maus Teil 6 (mit Gebärdensprache)",
+    "duration": 1626,
+    "broadcastedOn": "2026-07-17T07:45:00Z",
+    "availableTo": "2026-11-03T08:45:00Z",
+    "coreAssetType": "EPISODE",
+    "isChildContent": true,
+    "maturityContentRating": "NONE",
+    "show": {
+     "id": "crid://wdr.de/kinder/tv/Sendung mit der Maus",
+     "title": "Die Maus ",
+     "shortSynopsis": "Hier gibt's Lach- und Sachgeschichten, Märchen, Lieder und die Abenteuer von Shaun, Trudes Tier, Rico und natürlich von Maus, Elefant und Ente."
+    },
+    "images": {
+     "aspect16x9": {
+      "src": "https://api.ardmediathek.de/image-service/images/urn:ard:image:c00892efefd9c6b6?w={width}&ch=0a0d82e25318f88a",
+      "title": "Klima-Maus Teil 6"
+     },
+     "aspect16x7": {
+      "src": "https://api.ardmediathek.de/image-service/images/urn:ard:image:3b6272f9833c5740?w={width}&ch=2d5d5f15a7e8a8e1",
+      "title": "Klima-Maus Teil 6"
+     }
+    }
+   }
+  ],
+  "pagination": {
+   "pageNumber": 0,
+   "pageSize": 3,
+   "totalElements": 12992
+  }
+ },
+ "seite": {
+  "id": "player_ondemand-page-ard",
+  "title": "Klima-Maus Teil 6",
+  "isChildContent": true,
+  "fskRating": "NONE",
+  "targetAudienceAgeMin": null,
+  "targetAudienceAgeMax": null,
+  "widgets": [
+   {
+    "id": "Y3JpZDovL3dkci5kZS9CZWl0cmFnLXNvcGhvcmEtY2I3NGNiY2EtNTA5OC00MjMzLTgxZjMtZDRiNjk1YmI0ODdm",
+    "title": "Klima-Maus Teil 6",
+    "synopsis": "In der letzten Folge der Sachgeschichtenreihe zum Klima reist Laura nach Island. In der Nähe von Reykjavík besucht sie eine Anlage, die das Co2 aus der Luft herausfiltert. Darüber hinaus gibt es hier das größte Geothermie-Kraftwerk der Welt – dies versorgt die Anlage und die Hauptstadt Islands mit Energie. Das Co2, das aus der Luft gefiltert wird, kann dann im nächsten Schritt  in die Erde gepumpt werden. Darüber hinaus reist Johannes an die Universität Hamburg-Harburg und schaut sich dort eine Versuchsanlage zur Dachbegrünung an. Dachbegrünungen können u.a. helfen bei Starkregen die Abwassersysteme der Städte zu entlasten.",
+    "broadcastedOn": "2026-07-17T07:45:00Z",
+    "availableTo": "2026-11-03T08:45:00Z",
+    "geoblocked": false,
+    "blockedByFsk": false,
+    "blockedByLoginOnly": false,
+    "maturityContentRating": "NONE",
+    "image": {
+     "src": "https://api.ardmediathek.de/image-service/images/urn:ard:image:c00892efefd9c6b6?w={width}&ch=0a0d82e25318f88a",
+     "title": "Klima-Maus Teil 6"
+    },
+    "show": {
+     "id": "Y3JpZDovL3dkci5kZS9raW5kZXIvdHYvU2VuZHVuZyBtaXQgZGVyIE1hdXM",
+     "title": "Die Maus "
+    },
+    "mediaCollection": {
+     "embedded": {
+      "isGeoBlocked": false,
+      "meta": {
+       "title": "Klima-Maus Teil 6",
+       "synopsis": "In der letzten Folge der Sachgeschichtenreihe zum Klima reist Laura nach Island. In der Nähe von Reykjavík besucht sie eine Anlage, die das Co2 aus der Luft herausfiltert. Darüber hinaus gibt es hier das größte Geothermie-Kraftwerk der Welt – dies versorgt die Anlage und die Hauptstadt Islands mit Energie. Das Co2, das aus der Luft gefiltert wird, kann dann im nächsten Schritt  in die Erde gepumpt werden. Darüber hinaus reist Johannes an die Universität Hamburg-Harburg und schaut sich dort eine Versuchsanlage zur Dachbegrünung an. Dachbegrünungen können u.a. helfen bei Starkregen die Abwassersysteme der Städte zu entlasten.",
+       "durationSeconds": 1626,
+       "seriesTitle": "Die Maus "
+      },
+      "streams": [
+       {
+        "media": [
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546426.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 640,
+          "maxVResolutionPx": 360,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "SD 360p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546424.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 1920,
+          "maxVResolutionPx": 1080,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "HD 1080p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdradaptiv-vh.akamaihd.net/i/medp/ondemand/weltweit/fsk0/349/3491739/,3491739_67546426,3491739_67546427,3491739_67546425,3491739_67546428,3491739_67546424,.mp4.csmil/master.m3u8",
+          "mimeType": "application/vnd.apple.mpegurl",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 1920,
+          "maxVResolutionPx": 1080,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "Auto",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546428.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 1280,
+          "maxVResolutionPx": 720,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "HD 720p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546427.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 960,
+          "maxVResolutionPx": 540,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "SD 540p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546422.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "audio-description",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 960,
+          "maxVResolutionPx": 540,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "SD 540p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546423.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "audio-description",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 1280,
+          "maxVResolutionPx": 720,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "HD 720p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546419.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "audio-description",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 1920,
+          "maxVResolutionPx": 1080,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "HD 1080p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdradaptiv-vh.akamaihd.net/i/medp/ondemand/weltweit/fsk0/349/3491739/,3491739_67546421,3491739_67546422,3491739_67546420,3491739_67546423,3491739_67546419,.mp4.csmil/master.m3u8",
+          "mimeType": "application/vnd.apple.mpegurl",
+          "audios": [
+           {
+            "kind": "audio-description",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 1920,
+          "maxVResolutionPx": 1080,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "Auto",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546421.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "audio-description",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 640,
+          "maxVResolutionPx": 360,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "SD 360p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         }
+        ],
+        "kind": "main",
+        "kindName": "Normal",
+        "videoLanguageCode": ""
+       },
+       {
+        "media": [
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546637.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 960,
+          "maxVResolutionPx": 540,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "SD 540p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546636.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 640,
+          "maxVResolutionPx": 360,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "SD 360p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546638.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 1280,
+          "maxVResolutionPx": 720,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "HD 720p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdr-progressive.ard-mcdn.de/medp/ondemand/weltweit/fsk0/349/3491739/3491739_67546634.mp4",
+          "mimeType": "video/mp4",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 1920,
+          "maxVResolutionPx": 1080,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "HD 1080p",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         },
+         {
+          "url": "https://wdradaptiv-vh.akamaihd.net/i/medp/ondemand/weltweit/fsk0/349/3491739/,3491739_67546636,3491739_67546637,3491739_67546635,3491739_67546638,3491739_67546634,.mp4.csmil/master.m3u8",
+          "mimeType": "application/vnd.apple.mpegurl",
+          "audios": [
+           {
+            "kind": "standard",
+            "languageCode": "deu"
+           }
+          ],
+          "isAdaptiveQualitySelectable": false,
+          "maxHResolutionPx": 1920,
+          "maxVResolutionPx": 1080,
+          "isHighDynamicRange": false,
+          "videoCodec": "H.264",
+          "aspectRatio": "16:9",
+          "forcedLabel": "Auto",
+          "isProtocolRelative": false,
+          "isHbbtv": false,
+          "hasEmbeddedSubtitles": false,
+          "subtitles": []
+         }
+        ],
+        "kind": "sign-language",
+        "kindName": "DGS",
+        "videoLanguageCode": "dgs"
+       }
+      ]
+     }
+    }
+   }
+  ]
+ }
+}

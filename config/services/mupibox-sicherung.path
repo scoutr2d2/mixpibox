@@ -1,0 +1,29 @@
+[Unit]
+# BACKLOG E29/B2 — „VOR JEDEM UPDATE SICHERN", auf die einzige Art, die sich
+# nicht umgehen laesst.
+#
+# DAS PROBLEM: der Update-Knopf holt sein Skript frisch von upstream. Ein
+# `mupibox-sicherung.py --anlegen` im Fork-Skript (update/start_mupibox_update.sh)
+# ist richtig und steht auch dort — aber es laeuft nur, wenn jemand das
+# FORK-Skript startet. Wer den Knopf drueckt, faehrt upstream-Code.
+#
+# DIESE UNIT HAENGT NICHT AM SKRIPT, SONDERN AN DER DATEI. Wer auch immer
+# /etc/mupibox/mupiboxconfig.json anfasst — Verwaltung, conf_update.sh,
+# ein Umzug von upstream, jemand mit vi —, loest damit einen Stand aus.
+#
+# WICHTIG ZUM VERSTAENDNIS: der Stand entsteht NACH der Aenderung. Was einen
+# vor conf_update.sh rettet, ist deshalb nicht dieser Lauf, sondern der
+# VORIGE — und den gibt es, weil hier bei jeder Aenderung gesichert wird.
+# Ohne laufende Sicherung gibt es keinen „vorher".
+#
+# ABSICHTLICH NUR mupiboxconfig.json: data.json und vor allem resume.json
+# aendern sich waehrend des Hoerens staendig; ein Wachhund darauf waere ein
+# Dauerlaeufer. Fuer die deckt der Zeitgeber ab.
+Description=MuPiBox: sichern, sobald sich die Konfiguration aendert
+
+[Path]
+PathChanged=/etc/mupibox/mupiboxconfig.json
+Unit=mupibox-sicherung.service
+
+[Install]
+WantedBy=paths.target

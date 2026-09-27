@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Mediatheken">
+  <!-- Drei gestapelte Schirme mit einem Abspielzeichen: EIN Plugin, mehrere
+       Sender. Neutral gehalten, kein Senderlogo, keine Marke. Das Icon
+       gehoert dem Plugin und reist mit ihm (E77). -->
+  <style>
+    /* Tinte im Zeichen, nicht aus der Seite: als img geladen sieht dieses SVG
+       die color der Verwaltung nicht, und currentColor waere Schwarz auf
+       #121212. Siehe tools/plugin-icon-kontrast.py. */
+    svg { color: #f2f2f7; }
+  </style>
+  <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 3.5h12" />
+    <path d="M4.5 6.2h15" />
+    <rect x="2.5" y="8.5" width="19" height="12" rx="2" />
+    <path d="M10.4 11.8v5.4l4.8-2.7z" fill="currentColor" stroke-width="1.4" />
+  </g>
+</svg>

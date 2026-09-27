@@ -1,0 +1,47 @@
+[Unit]
+Description=MuPiBox MQTT Service
+Wants=network-online.target
+After=network-online.target
+DefaultDependencies=no
+
+[Service]
+Type=simple
+WorkingDirectory=/tmp/
+User=root
+PIDFile=/run/mupi_mqtt.pid
+# NUR STARTEN, WENN MQTT AUCH EINGERICHTET IST (E12/X8, am Geraet belegt am
+# 30.07.2026 in BEIDE Richtungen: active=false -> inactive mit
+# Result=exec-condition und NICHT in `systemctl --failed`; active=true -> laeuft).
+#
+# WARUM DAS HIER STEHEN MUSS: `mqtt.py` LIEST `mqtt.active` (Zeile 908) und
+# benutzt den Wert danach NIRGENDS. Der Schalter in der Konfiguration schaltet
+# also gar nichts — ohne diese Bedingung versucht der Dienst auf JEDER frischen
+# Box, den Beispiel-Broker `mqtt-example-broker.com` zu erreichen. Und weil
+# `check_server_availability` im Skript NIE False zurueckgibt, sondern endlos
+# wiederholt, stuende er dabei auf "active (running)", ohne je etwas zu tun.
+# „Laeuft" heisst bei diesem Dienst nicht „funktioniert".
+#
+# WARUM ExecCondition UND NICHT ExecStartPre: scheitert eine ExecCondition,
+# gilt der Dienst als UEBERSPRUNGEN, nicht als fehlgeschlagen. Genau das ist
+# richtig — „nicht eingerichtet" ist kein Fehler. Mit ExecStartPre stuende er
+# wieder in `systemctl --failed`, und das Symptom waere nur verschoben.
+#
+# WARUM DIE PRUEFUNG UEBER str(...) GEHT und nicht direkt ueber den Wahrheits-
+# wert: in dieser Konfiguration stehen Schalter mal als `false`, mal als
+# `"false"` (jq --arg schreibt IMMER eine Zeichenkette). Ein nacktes
+# `if m.get('active')` waere bei der Zeichenkette "false" WAHR — der Schalter
+# haette dann genau anders herum gewirkt als angeschrieben.
+ExecCondition=/usr/bin/python3 -c "import json,sys; m=json.load(open('/etc/mupibox/mupiboxconfig.json')).get('mqtt') or {}; sys.exit(0 if str(m.get('active')).strip().lower() in ('true','1','yes','on') else 1)"
+ExecStart=/usr/bin/python3 -B /usr/local/bin/mupibox/mqtt.py
+#ExecStop=/bin/kill -TERM $(cat /run/mupi_mqtt.pid)
+# WAR: Restart=on-abort — und das griff bei genau dem Fehler nicht, den dieser
+# Dienst wirklich hatte. Ein fehlender Konfigurationsschluessel ist in Python
+# ein KeyError, der Prozess endet mit Code 1 ("exited"); `on-abort` gilt nur
+# fuer einen Abbruch per Signal. Der Dienst blieb tot und versuchte es nie
+# wieder. `on-failure` deckt beides ab; die 30 s verhindern, dass ein Dienst,
+# der beim Start stirbt, in einer Schleife das Journal flutet.
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=basic.target

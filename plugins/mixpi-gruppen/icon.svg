@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+  <title>Interpreten-Gruppen</title>
+  <style>
+    svg { color: #f2f2f7; }
+  </style>
+  <ellipse cx="12" cy="12.4" rx="9.4" ry="8.2" stroke="currentColor" stroke-dasharray="3.2 2.4"/>
+  <g fill="currentColor" stroke="none">
+    <circle cx="8.4" cy="10.2" r="2.3"/>
+    <circle cx="15.4" cy="9.6" r="2.3"/>
+    <circle cx="12" cy="15.6" r="2.3"/>
+  </g>
+</svg>

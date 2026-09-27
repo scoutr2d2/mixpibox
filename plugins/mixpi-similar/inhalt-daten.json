@@ -1,0 +1,226 @@
+{
+  "_kommentar": "STARTBESTAND DER THEMENKARTE. Von Hand gepflegt, absichtlich. Die Schlagworte sind das, was die anderen Quellen NICHT wissen: wovon eine Serie handelt, welchen Ton sie hat, welche Form. Wer hier ergaenzt, ergaenzt in derselben Sprache — Schlagworte in Kleinschreibung, Thema zuerst, dann Ton, dann Form. Eigene Saetze kommen ueber POST /http/inhalt dazu und liegen dann im Datenordner; diese Datei bleibt der Bestand, der mit dem Plugin reist.",
+  "_schlagwort-sippen": {
+    "thema": "bauernhof, tiere, katze, hund, maus, baer, drache, pferde, natur, wald, meer, dorf, stadt, weltraum, fahrzeuge, eisenbahn, feuerwehr, polizei, baustelle, technik, detektiv, raetsel, wikinger, schule, kindergarten, familie, freundschaft, alltag, nacht, jahreszeiten, weihnachten",
+    "ton": "ruhig, humorvoll, spannend, gruselig, albern, warmherzig, lehrreich, tempo",
+    "form": "hoerspiel, lieder, wissen, vorlesegeschichte, serie, klassiker",
+    "welt": "skandinavien, astrid-lindgren, deutschland, fantasie, magie, alltagsnah, vorschule, grundschule"
+  },
+  "saetze": [
+    {
+      "name": "Pettersson und Findus",
+      "tags": ["bauernhof", "katze", "tiere", "dorf", "natur", "ruhig", "humorvoll", "warmherzig", "hoerspiel", "skandinavien", "jahreszeiten", "alltagsnah"],
+      "beschreibung": "Der alte Bauer Pettersson lebt mit seinem sprechenden Kater Findus allein auf einem schwedischen Hof. Die Geschichten sind ruhig und alltagsnah: eine Geburtstagstorte, ein Fuchs im Huehnerstall, der erste Schnee. Kein Boesewicht, kein Tempo, viel Werkstatt und Garten."
+    },
+    {
+      "name": "Michel aus Loenneberga",
+      "tags": ["bauernhof", "dorf", "familie", "humorvoll", "warmherzig", "hoerspiel", "skandinavien", "astrid-lindgren", "klassiker", "alltagsnah", "natur"],
+      "beschreibung": "Ein Bauernjunge in Smaaland stellt eine Dummheit nach der anderen an und wird dafuer in den Tischlerschuppen gesperrt, wo er Holzmaennchen schnitzt. Laendliches Schweden um 1900, warmherzig erzaehlt, mit einem gutmuetigen Blick auf den Unfug."
+    },
+    {
+      "name": "Pippi Langstrumpf",
+      "tags": ["freundschaft", "abenteuer", "humorvoll", "albern", "hoerspiel", "skandinavien", "astrid-lindgren", "klassiker", "fantasie", "stadt"],
+      "beschreibung": "Das staerkste Maedchen der Welt lebt allein mit Pferd und Affe in der Villa Kunterbunt und stellt jede Erwachsenenregel auf den Kopf. Uebermuetig und aufsaessig, mit einem Pferd auf der Veranda."
+    },
+    {
+      "name": "Ronja Raeubertochter",
+      "tags": ["wald", "natur", "abenteuer", "freundschaft", "spannend", "hoerspiel", "skandinavien", "astrid-lindgren", "fantasie", "klassiker", "jahreszeiten"],
+      "beschreibung": "Die Tochter eines Raeuberhauptmanns waechst im Mattiswald auf und freundet sich mit dem Sohn der verfeindeten Sippe an. Wilde Natur, Graugnome und Wilddruden, ein ernsterer Ton als bei Lindgrens juengeren Stoffen."
+    },
+    {
+      "name": "Bibi Blocksberg",
+      "tags": ["magie", "hexe", "schule", "familie", "stadt", "humorvoll", "spannend", "hoerspiel", "serie", "deutschland", "freundschaft"],
+      "beschreibung": "Eine kleine Hexe im Vorort Neustadt hext sich durch Schulalltag und Familienstreit, meist mit Folgen, die sie danach wieder geradebiegen muss. Alltag mit Zauberspruch, feste Figuren, lange Serie."
+    },
+    {
+      "name": "Bibi und Tina",
+      "tags": ["pferde", "tiere", "natur", "freundschaft", "magie", "abenteuer", "spannend", "hoerspiel", "serie", "deutschland", "dorf"],
+      "beschreibung": "Die Hexe Bibi und ihre Freundin Tina erleben auf dem Reiterhof Martinshof Abenteuer rund um Pferde, Turniere und den Grafen von Falkenstein. Pferdethema mit einer Prise Zauberei."
+    },
+    {
+      "name": "Benjamin Bluemchen",
+      "tags": ["tiere", "elefant", "zoo", "stadt", "freundschaft", "humorvoll", "warmherzig", "ruhig", "hoerspiel", "serie", "deutschland", "lehrreich"],
+      "beschreibung": "Ein sprechender Elefant im Neustaedter Zoo hilft seinem Freund Otto und dem Zoodirektor aus allerlei Verlegenheiten. Gemuetliches Tempo, viel Zoo, ein Buergermeister als wiederkehrender Widerpart."
+    },
+    {
+      "name": "Conni",
+      "tags": ["alltag", "kindergarten", "schule", "familie", "freundschaft", "ruhig", "warmherzig", "lehrreich", "hoerspiel", "serie", "deutschland", "alltagsnah"],
+      "beschreibung": "Conni erlebt die ersten Male eines Kindes: Zahnarzt, Schwimmbad, Uebernachtung bei der Freundin, erster Schultag. Ausgesprochen alltagsnah, ohne Fantastik, oft mit einem erklaerenden Ton."
+    },
+    {
+      "name": "Leo Lausemaus",
+      "tags": ["tiere", "maus", "familie", "kindergarten", "alltag", "ruhig", "warmherzig", "vorlesegeschichte", "deutschland", "alltagsnah", "lehrreich"],
+      "beschreibung": "Eine kleine Maus lernt, was Kinder lernen: teilen, aufraeumen, keine Angst im Dunkeln haben. Kurze Vorlesegeschichten fuer die Juengsten, sehr ruhig, mit erzieherischem Unterton."
+    },
+    {
+      "name": "Der kleine Drache Kokosnuss",
+      "tags": ["drache", "tiere", "abenteuer", "freundschaft", "fantasie", "humorvoll", "lehrreich", "hoerspiel", "serie", "deutschland", "wissen"],
+      "beschreibung": "Ein Feuerdrache, der nicht richtig fliegen kann, erkundet mit Stachelschwein Matilda und dem Fressdrachen Oskar die Dracheninsel. Abenteuer mit erklaerenden Einschueben ueber Ritter, Piraten oder Vulkane."
+    },
+    {
+      "name": "Die Olchis",
+      "tags": ["fantasie", "humorvoll", "albern", "familie", "abenteuer", "hoerspiel", "serie", "deutschland", "stadt", "tiere"],
+      "beschreibung": "Eine gruene Familie, die auf der Muellkippe von Schmuddelfing lebt, Schuhsohlen frisst und Sauberkeit verabscheut. Deftiger, alberner Humor, gern mit Ekelpointen, dazu ein Flugdrache."
+    },
+    {
+      "name": "Der Raeuber Hotzenplotz",
+      "tags": ["abenteuer", "spannend", "humorvoll", "klassiker", "wald", "dorf", "hoerspiel", "deutschland", "magie", "fantasie"],
+      "beschreibung": "Ein Raeuber mit sieben Messern stiehlt der Grossmutter die Kaffeemuehle, und Kasperl und Seppel ziehen aus, sie zurueckzuholen. Kasperletheater in Buchform, mit Zauberer Zwackelmann und einer Unke."
+    },
+    {
+      "name": "Jim Knopf und Lukas der Lokomotivfuehrer",
+      "tags": ["fahrzeuge", "eisenbahn", "abenteuer", "freundschaft", "fantasie", "meer", "spannend", "warmherzig", "klassiker", "hoerspiel", "deutschland"],
+      "beschreibung": "Auf der winzigen Insel Lummerland leben ein Lokomotivfuehrer und ein Findelkind, die mit ihrer Lokomotive Emma ueber das Meer nach Mandala und in die Drachenstadt reisen. Grosse Reise, warme Freundschaft, eine sprechende Lokomotive."
+    },
+    {
+      "name": "Das Sams",
+      "tags": ["fantasie", "familie", "humorvoll", "albern", "stadt", "alltag", "warmherzig", "klassiker", "hoerspiel", "deutschland", "magie"],
+      "beschreibung": "Ein Wesen mit blauen Wunschpunkten im Gesicht zieht bei dem schuechternen Herrn Taschenbier ein und krempelt sein Leben um. Wortspiele, Reime und ein Held, der lernt, sich zu wehren."
+    },
+    {
+      "name": "Urmel aus dem Eis",
+      "tags": ["tiere", "fantasie", "meer", "humorvoll", "albern", "warmherzig", "klassiker", "hoerspiel", "deutschland", "wissen", "freundschaft"],
+      "beschreibung": "Ein Urzeitwesen schluepft auf einer einsamen Insel aus einem Eisblock und wird von Professor Habakuk Tibatong und sprechenden Tieren grossgezogen. Sprachwitz, ein lispelndes Urmel, gutmuetige Absurditaet."
+    },
+    {
+      "name": "Die Sendung mit der Maus",
+      "auch": ["Die Maus", "Der Elefant", "MausZoom", "Die Maus, Eva mit Gitarre, Der Elefant", "Der Elefant, Die Maus, Eva mit Gitarre"],
+      "tags": ["wissen", "lehrreich", "technik", "alltag", "tiere", "maus", "humorvoll", "ruhig", "serie", "deutschland", "klassiker", "natur", "lieder"],
+      "beschreibung": "Sachgeschichten erklaeren, wie die Loecher in den Kaese kommen und wie ein Auto gebaut wird, dazwischen Lachgeschichten mit Maus und Elefant. Erklaeren als Form, ohne Rahmenhandlung. Dazu Kindernachrichten, Gutenachtgeschichten und Lieder unter demselben Dach."
+    },
+    {
+      "name": "Was ist Was",
+      "tags": ["wissen", "lehrreich", "technik", "natur", "weltraum", "tiere", "serie", "deutschland", "ruhig"],
+      "beschreibung": "Sachthemen von Dinosauriern ueber Vulkane bis zur Raumfahrt, als Hoerbuch mit Sprecherwechsel und Toneinspielungen aufbereitet. Reines Wissen, keine durchgehenden Figuren."
+    },
+    {
+      "name": "Die drei ??? Kids",
+      "tags": ["detektiv", "spannend", "freundschaft", "abenteuer", "stadt", "serie", "hoerspiel", "grundschule", "raetsel"],
+      "beschreibung": "Justus, Peter und Bob loesen als Grundschueler Faelle in Rocky Beach: gestohlene Fahrraeder, seltsame Lichter, verschwundene Tiere. Krimi im Kleinformat, ohne echte Bedrohung."
+    },
+    {
+      "name": "TKKG Junior",
+      "tags": ["detektiv", "spannend", "freundschaft", "schule", "stadt", "serie", "hoerspiel", "grundschule", "raetsel"],
+      "beschreibung": "Vier Freunde und ein Hund loesen Faelle rund um ihre Schule und die Nachbarschaft. Etwas mehr Tempo und Verfolgung als bei den Drei-Fragezeichen-Kids, dieselbe Altersstufe."
+    },
+    {
+      "name": "Die Schule der magischen Tiere",
+      "tags": ["magie", "tiere", "schule", "freundschaft", "fantasie", "spannend", "warmherzig", "serie", "hoerspiel", "deutschland", "grundschule"],
+      "beschreibung": "An der Wintersteinschule bekommt jedes Kind irgendwann ein sprechendes Tier als treuen Begleiter. Schulalltag und Freundschaftsprobleme, gemischt mit einer sanften Fantastik."
+    },
+    {
+      "name": "Der Grueffelo",
+      "tags": ["wald", "tiere", "maus", "fantasie", "humorvoll", "vorlesegeschichte", "klassiker", "warmherzig", "ruhig", "natur"],
+      "beschreibung": "Eine Maus erfindet ein Ungeheuer, um Fressfeinde abzuschrecken, und trifft es dann wirklich. Gereimte Geschichte, kurz, mit einem klugen kleinen Helden."
+    },
+    {
+      "name": "Lauras Stern",
+      "tags": ["freundschaft", "familie", "fantasie", "ruhig", "warmherzig", "stadt", "vorlesegeschichte", "deutschland", "alltagsnah", "nacht"],
+      "beschreibung": "Ein Maedchen findet einen heruntergefallenen Stern, pflegt ihn gesund und erlebt naechtliche Flugtraeume. Sehr ruhig, oft als Einschlafgeschichte, mit sanfter Fantastik im Alltag."
+    },
+    {
+      "name": "Der kleine Rabe Socke",
+      "tags": ["tiere", "wald", "freundschaft", "humorvoll", "albern", "warmherzig", "vorlesegeschichte", "deutschland", "natur", "alltagsnah"],
+      "beschreibung": "Ein frecher kleiner Rabe im Wald will alles zuerst und teilt ungern, lernt aber jedes Mal etwas dazu. Kurze Geschichten fuer die Juengsten, mit einem liebenswert unerzogenen Helden."
+    },
+    {
+      "name": "Der kleine Eisbaer",
+      "tags": ["tiere", "baer", "natur", "meer", "abenteuer", "ruhig", "warmherzig", "vorlesegeschichte", "freundschaft", "jahreszeiten"],
+      "beschreibung": "Lars, ein junger Eisbaer in der Arktis, treibt auf einer Scholle davon und findet ueberall Freunde. Weite Landschaft, ruhiger Ton, viel Tierbegegnung."
+    },
+    {
+      "name": "Feuerwehrmann Sam",
+      "tags": ["feuerwehr", "fahrzeuge", "technik", "dorf", "spannend", "tempo", "lehrreich", "serie", "hoerspiel", "freundschaft"],
+      "beschreibung": "In Pontypandy rueckt die Feuerwehr aus, weil wieder jemand unvorsichtig war. Einsatzfahrzeuge, Rettung, eine klare Gefahr-und-Loesung-Struktur mit Sicherheitslehre."
+    },
+    {
+      "name": "Paw Patrol",
+      "tags": ["fahrzeuge", "polizei", "feuerwehr", "tiere", "hund", "technik", "tempo", "spannend", "serie", "stadt", "freundschaft"],
+      "beschreibung": "Eine Staffel Rettungshunde mit Spezialfahrzeugen loest in der Abenteuerbucht jeden Notfall. Hohes Tempo, Einsatzformeln, viel Technik und Geraet."
+    },
+    {
+      "name": "Bob der Baumeister",
+      "tags": ["technik", "fahrzeuge", "baustelle", "dorf", "lehrreich", "humorvoll", "serie", "freundschaft", "tempo"],
+      "beschreibung": "Ein Bauunternehmer und seine sprechenden Baumaschinen bauen, reparieren und raeumen auf. Werkzeug und Maschinen stehen im Mittelpunkt, jede Folge loest eine Bauaufgabe."
+    },
+    {
+      "name": "Peppa Wutz",
+      "tags": ["familie", "alltag", "kindergarten", "tiere", "humorvoll", "ruhig", "warmherzig", "serie", "alltagsnah", "freundschaft"],
+      "beschreibung": "Eine Schweinefamilie erlebt sehr kleine Alltagsdinge: Matschpfuetzen, Grosselternbesuch, ein Ausflug. Sehr kurze Folgen fuer die Juengsten, freundlich und ohne Spannungsbogen."
+    },
+    {
+      "name": "Wickie und die starken Maenner",
+      "tags": ["abenteuer", "meer", "wikinger", "freundschaft", "humorvoll", "spannend", "klassiker", "serie", "skandinavien", "raetsel"],
+      "beschreibung": "Ein kleiner, aengstlicher Wikingerjunge rettet die Mannschaft seines Vaters immer wieder durch Nachdenken statt durch Kraft. Seefahrt, fremde Kuesten, der Kopf gewinnt gegen den Muskel."
+    },
+    {
+      "name": "Das Sandmaennchen",
+      "tags": ["nacht", "ruhig", "vorlesegeschichte", "warmherzig", "klassiker", "deutschland", "serie", "lieder"],
+      "beschreibung": "Kurze Gutenachtgeschichten mit immer gleichem Rahmen, gedacht fuer die letzten Minuten vor dem Schlafen. Ausgesprochen ruhig, mit vertrauter Melodie."
+    },
+    {
+      "name": "Rolfs Vogelhochzeit",
+      "tags": ["lieder", "tiere", "natur", "warmherzig", "klassiker", "deutschland", "vorschule", "humorvoll"],
+      "beschreibung": "Ein durchgehendes Liederprogramm ueber die Hochzeit zweier Voegel, gesungen und gesprochen. Kein Hoerspiel, sondern Lieder mit erzaehlendem Faden."
+    },
+    {
+      "name": "101 fabelhafte Freunde",
+      "auch": ["Ruby van der Bogen", "Ruby van der Bogen, 101 fabelhafte Freunde", "101 fabelhafte Freunde, Ruby van der Bogen"],
+      "tags": ["wissen", "lehrreich", "fantasie", "tiere", "magie", "serie", "deutschland", "humorvoll", "vorlesegeschichte", "grundschule"],
+      "beschreibung": "Sachwissen ueber Wesen, die es teils gibt und teils nicht: 101 Dinos, 101 Feen, 101 Meerjungfrauen, 101 Wichtel. Aufzaehlende Form mit Erklaerton, zwischen Sachbuch und Fantasie."
+    },
+    {
+      "name": "Der kleine Major Tom",
+      "auch": ["Major Tom"],
+      "tags": ["weltraum", "wissen", "lehrreich", "abenteuer", "technik", "freundschaft", "spannend", "serie", "deutschland", "grundschule"],
+      "beschreibung": "Ein Junge und seine Katze reisen als Astronauten durch das Sonnensystem, vorbei an Planeten, Raumstationen und Kometen. Abenteuergeschichte mit einem festen Sachanteil ueber Raumfahrt und Himmelskoerper."
+    },
+    {
+      "name": "Team Karacho",
+      "tags": ["lieder", "sprachen", "lehrreich", "freundschaft", "tempo", "humorvoll", "deutschland", "serie", "vorschule", "grundschule"],
+      "beschreibung": "Kinderlieder, die zweisprachig angelegt sind: dieselbe Nummer auf Deutsch und Vietnamesisch, Englisch oder Arabisch. Bewegung, Mitsingen und ein ausdruecklicher Bildungsauftrag rund um Sprache und Vielfalt."
+    },
+    {
+      "name": "Simone Sommerland, Karsten Gluecke und die Kita-Froesche",
+      "auch": ["Simone Sommerland", "Simone Sommerland, Karsten Glück, Die Kita-Frösche", "Die Kita-Froesche"],
+      "tags": ["lieder", "vorschule", "kindergarten", "bewegung", "humorvoll", "warmherzig", "deutschland", "serie", "klassiker"],
+      "beschreibung": "Die grossen Sammlungen mit Kinderliedern zum Mitsingen und Mitmachen: Bewegungslieder, Geburtstagslieder, Jahreszeitenlieder. Kein Hoerspiel, sondern Liedprogramme fuer Kita und Kinderzimmer."
+    },
+    {
+      "name": "Die Schluempfe",
+      "auch": ["Die Schlümpfe"],
+      "tags": ["fantasie", "dorf", "wald", "freundschaft", "humorvoll", "albern", "abenteuer", "klassiker", "serie", "lieder", "magie"],
+      "beschreibung": "Blaue Wichte in einem Pilzdorf, ein Zauberer als Widersacher und ein Papa Schlumpf, der alles zusammenhaelt. Sowohl Hoerspiele als auch Party-Liederalben, oft albern und mit einer eigenen Sprache."
+    },
+    {
+      "name": "Gabby's Dollhouse",
+      "auch": ["Gabbys Dollhouse", "Gabby’s Dollhouse Deutschland"],
+      "tags": ["katze", "tiere", "magie", "fantasie", "freundschaft", "humorvoll", "warmherzig", "serie", "vorschule", "lieder", "basteln"],
+      "beschreibung": "Ein Maedchen schrumpft sich in ihr Puppenhaus hinein, wo Katzenfiguren in bunten Zimmern leben und Bastelaufgaben loesen. Sehr bunt, sehr freundlich, mit Liedern und Katzen in jeder Rolle."
+    },
+    {
+      "name": "Hello Kitty Hoerspiele",
+      "auch": ["Hello Kitty", "EUROPA Hoerspiele & Kinderlieder", "EUROPA Hörspiele & Kinderlieder"],
+      "tags": ["katze", "freundschaft", "alltag", "stadt", "schule", "warmherzig", "ruhig", "hoerspiel", "serie", "alltagsnah", "gruselig"],
+      "beschreibung": "Kurze Hoerspielfolgen um Hello Kitty und ihre Freundinnen in Cherry Town: Schulfeste, Freundschaftsstreit, gelegentlich eine harmlose Gespenstergeschichte. Alltagsnah und freundlich."
+    },
+    {
+      "name": "Das Pummeleinhorn",
+      "tags": ["fantasie", "magie", "humorvoll", "albern", "freundschaft", "essen", "warmherzig", "serie", "deutschland", "alltagsnah"],
+      "beschreibung": "Ein rundliches Einhorn, das Kuchen liebt und Sport verabscheut, erlebt kleine Abenteuer mit seinen Mitbewohnern. Der Humor lebt von Gemuetlichkeit und Naschen statt von Tempo."
+    },
+    {
+      "name": "Quarks",
+      "auch": ["Quarks Science Cops"],
+      "_kommentar-auch": "NICHT „WDR\" als Alias, obwohl der Bestand die Sendung so fuehrt: der WDR produziert auch „Die Sendung mit der Maus\", und ein Sendername als Alias schoebe beide in einen Topf. Wo der `artist` ein SENDER ist, traegt der Titel die Serie — siehe README, Abschnitt Themenkarte.",
+      "tags": ["wissen", "lehrreich", "technik", "natur", "raetsel", "deutschland", "serie", "jugendlich"],
+      "beschreibung": "Wissenschaftsjournalismus in Podcastform: die Science Cops nehmen sich verbreitete Behauptungen vor und pruefen die Belege dazu. Deutlich aelter adressiert als die uebrigen Eintraege hier — eher Jugendliche und Erwachsene als Kindergartenkinder."
+    },
+    {
+      "name": "Das kleine Wir",
+      "auch": ["Nadine Thomae"],
+      "tags": ["gefuehle", "freundschaft", "familie", "schule", "kindergarten", "warmherzig", "ruhig", "lehrreich", "vorlesegeschichte", "deutschland", "alltagsnah"],
+      "beschreibung": "Das Wir ist ein flauschiges Wesen, das entsteht, wenn Menschen sich gut verstehen, und schrumpft, wenn sie streiten. Geschichten ueber Gefuehle, Streit und Versoehnung, ausdruecklich zum Reden darueber gedacht."
+    }
+  ]
+}

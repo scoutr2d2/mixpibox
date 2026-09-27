@@ -1,0 +1,49 @@
+{
+  "id": "firetv-basic",
+  "name": "Fire TV Basic-Fernbedienung (1. Generation, ohne Mikrofon)",
+  "_art": "Was fuer ein Geraet das ist — `controller` oder `fernbedienung`. Die Statusleiste der Box liest es (GET /api/eingabegeraete), um das richtige Zeichen zu setzen: ein Spielpad sieht anders aus als eine Fernbedienung, und beide koennen gleichzeitig verbunden sein.",
+  "art": "fernbedienung",
+  "bild": "firetv-basic.jpg",
+  "pairing_hint": {
+    "zuerst": "SOLANGE DER FIRE TV STICK LÄUFT, GEHÖRT IHM DIE FERNBEDIENUNG. Erst den Stick ausschalten oder vom Strom nehmen — sonst sucht die Fernbedienung gar keine neue Verbindung.",
+    "text": "Home-Taste 10 Sekunden gedrückt halten und loslassen. Hilft das nicht, „Zurück“ und „Home“ gleichzeitig 10 Sekunden halten.",
+    "warnung": "Auch diese Fernbedienung hat KEINE Leuchte — es ist nichts zu sehen, wenn sie bereit ist.",
+    "bild": "firetv-basic-pairing.jpg"
+  },
+  "match": {
+    "name_prefix": [
+      "Amazon Fire TV Remote",
+      "Fire TV Remote",
+      "AFTB"
+    ],
+    "vendor_id": "1949"
+  },
+  "keys": {
+    "103": "Hoch",
+    "108": "Runter",
+    "105": "Links",
+    "106": "Rechts",
+    "28": "Auswählen (Mitte)",
+    "158": "Zurück",
+    "172": "Home",
+    "139": "Menü",
+    "164": "Wiedergabe / Pause",
+    "168": "Zurückspulen",
+    "208": "Vorspulen"
+  },
+  "unsupported_keys": {
+    "lautstaerke": "Diese Generation hat gar keine Lautstärketasten. Lauter/Leiser gehören deshalb auf Hoch/Runter — die Vorbelegung macht das schon so."
+  },
+  "vorbelegung": {
+    "164": "abspielen-anhalten",
+    "28": "abspielen-anhalten",
+    "208": "naechster-titel",
+    "168": "voriger-titel",
+    "103": "lauter",
+    "108": "leiser",
+    "172": "startseite",
+    "158": "zurueck"
+  },
+  "audio": "none",
+  "hinweis": "Die schlichteste der unterstützten Fernbedienungen — und für eine Kinderbox die beste: sieben Tasten, kein Mikrofon, nichts zu verstellen."
+}

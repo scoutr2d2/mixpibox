@@ -1,0 +1,96 @@
+[Unit]
+# WEICHES AUSSCHALTEN AM KNOPF — der Waechter, den es bis heute nicht gab.
+#
+# ══ WARUM EINE UNIT UND NICHT postboot.d ═════════════════════════════════
+# Bis heute sollte `autosetup.sh` das Skript nach /var/lib/dietpi/postboot.d/
+# legen. AM GERAET NACHGESEHEN (Box .169, 07.08.2026, nur lesend):
+#     /usr/local/bin/mupibox/off_trigger.sh   gibt es nicht
+#     /var/lib/dietpi/postboot.d/             enthaelt nur readme.txt
+# Es ist also nie angekommen, und NIEMAND HAT ES GEMERKT — ein Jahr lang war
+# der Ausschalter der Box nichts weiter als die 6-Sekunden-Notabschaltung der
+# Platine. Das ist der eigentliche Grund fuer diese Datei: ein Starter, dessen
+# Ausbleiben still ist, ist der halbe Fehler. `systemctl status
+# mupi_offtrigger` beantwortet die Frage „laeuft der Waechter?" in einer
+# Zeile; ein fehlendes File in einem Verzeichnis beantwortet sie gar nicht.
+#
+# UND postboot.d KONNTE ES OHNEHIN NICHT. `/boot/dietpi/postboot` ruft die
+# Skripte dort NACHEINANDER auf und wartet auf ihr Ende:
+#     for f in /var/lib/dietpi/postboot.d/*; do … "$f" || echo …; done
+# off_trigger.sh endet nie (`while true`). Es haette den Rest von postboot —
+# Login-Banner und alles dahinter — dauerhaft aufgehalten und
+# dietpi-postboot.service auf „activating" stehen lassen. Der `sleep 30` am
+# Kopf des Skripts war nur der sichtbare Zipfel davon; er ist mitsamt dem
+# Umzug hierher entfallen (die Begruendung steht dort).
+Description=MuPiBox Ausschalter am Knopf (weiches Herunterfahren)
+Documentation=file:///usr/local/bin/mupibox/off_trigger.sh
+After=local-fs.target sysinit.target
+
+# ══ UND ER GIBT NICHT AUF ════════════════════════════════════════════════
+# Ohne diese Zeile hoert systemd nach 5 Versuchen in 10 Sekunden auf und laesst
+# die Unit auf `failed` stehen. Das ist die Vorgabe und fuer die meisten
+# Dienste richtig — hier waere es der Fehler noch einmal: der Knopf ist dann
+# wieder still weg, und zwar endgueltig bis zum naechsten Neustart. Wenn das
+# Skript startet, bevor der GPIO-Treiber da ist, ist das GENAU der Fall, in
+# dem der sechste Versuch geholfen haette. Die Kosten sind ein Anlauf alle
+# 5 Sekunden; das Skript wartet vorher selbst bis zu 30 s auf Konfiguration
+# und GPIO-Chip, ein Dauerlauf entsteht daraus also nicht.
+#
+# SIE STEHT IN [Unit] UND NICHT IN [Service]. Seit systemd 229 gehoeren
+# StartLimitIntervalSec/StartLimitBurst hierher; in [Service] nimmt systemd
+# sie stillschweigend nicht an („Unknown key name") — und still nicht
+# angenommen heisst hier: die Unit gibt nach fuenf Anlaeufen doch auf.
+StartLimitIntervalSec=0
+
+[Service]
+# `Type=simple` HAELT NICHTS AUF. systemd zaehlt den Dienst als gestartet,
+# sobald der Prozess da ist, und macht weiter — der Kiosk-Schirm wartet keine
+# Millisekunde auf ihn. Deshalb steht hier auch kein `Before=`: der Waechter
+# ist wichtig, aber nichts anderes haengt von ihm ab.
+Type=simple
+ExecStart=/usr/local/bin/mupibox/off_trigger.sh
+
+# ══ ER MUSS UEBERLEBEN ═══════════════════════════════════════════════════
+# Ein Ausschalter, der nach einem Fehler still weg ist, ist genau der Zustand
+# von heute — nur dass diesmal jeder glaubt, er sei da. Das Skript kann aus
+# lauter Gruenden enden, die mit dem Knopf nichts zu tun haben: `taster_wache.py`
+# bekommt die Leitung nicht, weil ein anderer Prozess sie haelt; `jq` faellt
+# ueber eine halb geschriebene Konfiguration; der OOM-Killer nimmt sich
+# irgendwas. `Restart=always` deckt ALLE diese Faelle ab — auch den sauberen
+# Abgang mit Code 0, denn ein Waechter, der sich beendet, hat aufgehoert zu
+# wachen.
+#
+# UND SEIT DEM 08.08.2026 ENDET DAS SKRIPT AUCH ABSICHTLICH, wenn der Helfer
+# nicht hochkommt oder mittendrin stirbt. Das ist der Sinn dieser Zeile: der
+# Neustartzaehler in `systemctl status` ist dann die ehrliche Antwort auf die
+# Frage „laeuft der Ausschalter?", waehrend ein Dienst, der „active (running)"
+# heisst und nichts bewacht, schlechter ist als gar keiner.
+Restart=always
+RestartSec=5
+
+# Das Skript startet `taster_wache.py` im Hintergrund; der Helfer HAELT DIE
+# GPIO-LEITUNG. `control-group` raeumt ihn beim Stoppen mit ab — sonst saesse
+# er weiter darauf und der naechste Start faende sie belegt.
+#
+# UND DER HELFER MUSS AUF SIGTERM AUCH WIRKLICH GEHEN.
+#
+# HIER STAND EINE FALSCHE BEGRUENDUNG (berichtigt am 08.08.2026): der Helfer
+# habe in seiner ersten Fassung mit `Event.wait()` ohne Frist gewartet und
+# SIGTERM wie SIGINT ueberlebt, erst `kill -9` habe geholfen. Das laesst sich
+# nicht nachstellen — `tools/waechter-signalfrist.py` misst auf der Box beide
+# Warteformen, direkt und unter `sudo`, und ALLE enden sauber nach 11 bis
+# 24 ms. Die Frist im Helfer bleibt trotzdem: sie kostet nichts und haelt die
+# Wartestelle auch dann ansprechbar, wenn sie einmal in einem Nebenfaden
+# landet (dort waere die alte Behauptung richtig gewesen).
+#
+# WAS DAVON UNBERUEHRT GILT: liefe das Stoppen je in die TimeoutStopSec unten,
+# schoesse systemd hart — und der harte Schuss liesse die Zustandsdatei stehen.
+# Nachgemessen ist beides: die Leitung gibt der Kernel beim Schliessen der
+# Datei frei, die DATEI aber bleibt liegen — und ein alter Stand „gedrueckt"
+# darin schaltet die Box beim naechsten Antippen ab. Deshalb loescht
+# `off_trigger.sh` sie vor jedem Start.
+# GEMESSEN am Geraet: `systemctl stop` dauert 36 ms.
+KillMode=control-group
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

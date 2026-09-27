@@ -1,0 +1,15 @@
+[Unit]
+Description=MuPiBox: Bluetooth-Wiederverbindung im Takt
+
+[Timer]
+# Kurz nach dem Start einmal — der Lautsprecher wird oft zeitgleich mit der
+# Box eingeschaltet und braucht ein paar Sekunden, bis er ansprechbar ist.
+OnBootSec=25s
+# Danach regelmaessig: wer den Lautsprecher SPAETER einschaltet, soll nicht
+# eine Minute warten muessen. 30 s sind billig — ein Versuch gegen ein
+# ausgeschaltetes Geraet kostet nichts.
+OnUnitActiveSec=30s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

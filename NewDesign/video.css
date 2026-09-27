@@ -1,0 +1,268 @@
+/* =====================================================================
+   MixPiBox — DIE BELOHNUNGS-VIDEOS (Reihe und Vollbild)
+   =====================================================================
+
+   WARUM NEBEN app.css UND NICHT DARIN: app.css lag beim Bau dieser Sache bei
+   99 % ihres Deckels (tools/neu-groessen-schau.mjs). Derselbe Schnitt, den
+   apps.js am 03.09.2026 fuer das JavaScript gemacht hat — und den der
+   Kommentar dort ausdruecklich auch fuer das CSS empfiehlt: „Wer den
+   naechsten Deckel hier anhebt, sollte ihn stattdessen machen: die
+   App-Regeln sind an ihren Praefixen sauber abgegrenzt."
+
+   ALLE REGELN HIER BEGINNEN MIT `video-` (plus `.videos` fuer den Kasten der
+   Reihe). Wer aufraeumt, weiss damit ohne Suche, was zu dieser Datei gehoert.
+
+   MASSE: die Reihe uebernimmt die 104 px der Weiterhoeren-Kacheln — nur im
+   Verhaeltnis 16:9 statt quadratisch, weil ein Videobild sonst beschnitten
+   wuerde und man von der Maus nur das Ohr saehe.
+   ===================================================================== */
+
+.videos { margin: 0 0 18px; }
+.videos[hidden] { display: none; }
+
+.video-reihe {
+  display: flex;
+  /* Oben buendig, aus demselben Grund wie bei `.weiter-reihe`: ein <button>
+     zentriert seinen Inhalt senkrecht, und eine zweizeilige Beschriftung
+     schoebe das Bild der Nachbarkachel nach unten. */
+  align-items: flex-start;
+  gap: 14px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.video-kachel {
+  flex: 0 0 auto;
+  width: 160px;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.video-bild {
+  position: relative;
+  width: 160px;
+  height: 90px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--line2, #26303c);
+}
+.video-bild img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+
+/* DAS ZEICHEN LIEGT DARUNTER, ABSOLUT — genau wie `.weiter-ersatz` im
+   Raster: das Bild deckt es zu, sobald es da ist, und es gibt keinen Sprung
+   im Aufbau. Ein `display: grid` an dieser Stelle legte die beiden Kinder in
+   ZWEI Zeilen statt uebereinander (in app.css steht, wie teuer das war). */
+.video-zeichen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* DIE ZAHL LIEGT AUF DEM BILD, nicht darunter: auf 480 px Hoehe kostet jede
+   zusaetzliche Textzeile in einer Reihe echte Kacheln. Sie ist das einzige,
+   was diese Kachel von jeder anderen unterscheidet — „noch zweimal" ist die
+   Auskunft, wegen der ein Kind hier ueberhaupt hinsieht. */
+.video-rest {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.66);
+  color: #fff;
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.video-name {
+  margin-top: 6px;
+  font-size: 13px;
+  line-height: 1.25;
+  /* Zwei Zeilen, dann Schluss: ein langer ARD-Titel („Zeitreisen mit der
+     Maus - Die 10er Jahre") schoebe sonst die ganze Reihe auseinander. */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ══ DER VOLLBILDSCHIRM ═══════════════════════════════════════════════
+ *
+ * ER LIEGT UEBER ALLEM, auch ueber dem grossen Player: waehrend ein Video
+ * laeuft, soll nichts darunter erreichbar sein. `#gross` liegt bei z-index
+ * 40, die Schublade darunter; 90 ist darueber und laesst Luft fuer das, was
+ * WIRKLICH oben bleiben muss (Wartungsschirm, Fehlerbild).
+ *
+ * `hidden` ALLEIN REICHT NICHT: es verliert gegen jedes eigene `display`.
+ * Deshalb steht die Sichtbarkeit hier zweimal — einmal ueber `[hidden]` und
+ * einmal ueber `body.video-laeuft`, das video.js setzt.
+ */
+.video-schirm {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+.video-schirm[hidden] { display: none; }
+
+.video-spieler {
+  width: 100%;
+  height: 100%;
+  /* CONTAIN UND NICHT COVER: der Schirm ist 800x480 (5:3), das Video 16:9.
+     Mit `cover` faellt oben und unten je ein Streifen weg — bei einer
+     Sachgeschichte ist das die Haelfte dessen, was gezeigt wird. */
+  object-fit: contain;
+  background: #000;
+}
+
+/* DER RUECKWEG IST EIN KNOPF UND KEINE GESTE. Ein Tipp auf das Bild haelt an
+   (das ist, was ein Kind meint); Schluss macht nur, wer hier drueckt. Er
+   sitzt oben LINKS wie jeder andere Rueckweg dieser Oberflaeche. */
+.video-weg {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  min-width: 96px;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ══ DIE SPIELLEISTE ══════════════════════════════════════════════════
+ *
+ * Betreiber, 20.09.2026: „das video braucht noch einen player menü mit
+ * volume."
+ *
+ * SIE VERSCHWINDET MIT `opacity` UND `pointer-events`, nicht mit `display`:
+ * ein Uebergang kann aus `display: none` nicht starten, und die Leiste
+ * spraenge sonst bei jeder Beruehrung ins Bild. Dieselbe Lehre wie bei der
+ * Schublade (llmwiki `die-schublade-traegt-ihren-inhalt-nicht-voraus`) —
+ * und mit derselben Kehrseite: unsichtbar heisst NICHT unerreichbar, also
+ * muss `pointer-events: none` dabeistehen, sonst faengt eine Leiste, die
+ * niemand sieht, den Tipp aufs Bild ab.
+ */
+.video-leiste {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+.video-leiste.offen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* 48 px, wie jedes Beruehrziel dieser Oberflaeche: ein Kinderfinger trifft
+   nichts Kleineres zuverlaessig. */
+.video-knopf {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  cursor: pointer;
+}
+
+/* DER BALKEN ZEIGT NUR. Kein Sprung, kein Ziehen — wer springen darf,
+   springt ans Ende, und dort haengt die Zaehlung (90 %). Die Begruendung
+   steht ausfuehrlich in index.html an der Leiste. */
+.video-fortschritt {
+  flex: 1 1 auto;
+  min-width: 60px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  overflow: hidden;
+}
+.video-fuell {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: #fff;
+}
+
+.video-zeit,
+.video-laut-zahl {
+  flex: none;
+  color: #fff;
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.video-ton {
+  flex: none;
+  display: flex;
+  align-items: center;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* DERSELBE REGLER WIE UEBERALL SONST — er traegt `data-laut-regler` und
+   laeuft durch `laut.setzen()`. Nur die Farben sind hier hell, weil er auf
+   Schwarz liegt. */
+.video-laut {
+  flex: 0 0 120px;
+  height: 28px;
+  accent-color: #fff;
+  cursor: pointer;
+}
+
+/* WAS SCHIEFGING, STEHT MITTEN IM BILD und nicht klein am Rand: es ist das
+   Einzige, was dann dasteht. */
+.video-wort {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  max-width: 80%;
+  text-align: center;
+  color: #fff;
+  font-family: 'Baloo 2', system-ui, sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  text-wrap: balance;
+}
+.video-wort:empty { display: none; }

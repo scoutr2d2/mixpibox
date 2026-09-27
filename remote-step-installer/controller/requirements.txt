@@ -1,0 +1,3 @@
+# Controller deps (the AGENT is pure stdlib — no deps on the Pi).
+PyYAML>=6.0          # recipe loading (CLI)
+textual>=0.60        # modern, themeable TUI (planned tui.py layer)

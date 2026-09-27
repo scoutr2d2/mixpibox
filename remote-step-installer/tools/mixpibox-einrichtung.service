@@ -1,0 +1,48 @@
+[Unit]
+Description=MixPiBox Einrichtungsbildschirm (QR aufs Handy)
+# Nach dem lokalen Dateisystem, aber AUSDRUECKLICH NICHT nach network-online:
+# der Schirm soll ja gerade dann zu sehen sein, wenn noch kein Netz da ist —
+# das ist sein ganzer Zweck. Er liest die Adresse in jedem Durchgang neu und
+# zeigt den QR, sobald eine da ist.
+After=local-fs.target
+# Er teilt sich den Framebuffer mit der Boot-Animation. Laeuft die noch, waeren
+# es zwei Programme auf einem Bild.
+After=mupibox-boot-splash.service
+Before=getty@tty1.service
+Conflicts=plymouth-quit.service
+# AUF DER FERTIGEN BOX GAR NICHT ERST STARTEN.
+# Die Marke schreibt der Selbstlauf, wenn ALLE Schritte durch sind. Ab da
+# gehoert der Bildschirm der MuPiBox-Oberflaeche allein — beide zeichnen auf
+# /dev/fb0, und wer zuletzt malt, gewinnt. Am Geraet als "der qr screen kommt
+# immer noch durch beim normalen boot" gesehen (09.08.2026).
+# Der Riegel sitzt hier UND im Rezept (dort wird die Unit gar nicht erst
+# eingeschaltet): schaltet sie jemand von Hand an, um ein WLAN nachzutragen,
+# soll sie auf einer fertigen Box trotzdem nicht im Weg stehen. Wer sie
+# wirklich braucht, loescht die Marke — dann ist es eine Entscheidung und
+# kein Unfall.
+ConditionPathExists=!/var/lib/mixpibox-lauf/fertig
+
+[Service]
+Type=simple
+# --paircode: derselbe Pfad, den die Agent-Unit schreibt. Ohne ihn zeigt der
+# Schirm die Adresse, aber nicht den Code — und dann steht jemand mit dem
+# Handy vor einer Anmeldung, die er nicht ausfuellen kann.
+# ERST SAGEN, WAS LAEUFT — DANN ZEIGEN.
+# Diese Unit startet den Schirm UNABHAENGIG vom Vorstart. Die Phasendatei
+# liegt in /run und ist nach jedem Neustart weg; ohne sie zeigt der Schirm
+# seinen Grundzustand mit QR-Code, und der blitzt dann bei jedem Boot kurz
+# auf, bevor der Vorstart die richtige Phase nachtraegt. Das Skript legt sie
+# vorher fest — aus DietPis Stufendatei, die es zu diesem Zeitpunkt schon
+# gibt. Ein `-` davor: kommt es nicht durch, startet der Schirm trotzdem.
+ExecStartPre=-/opt/mixpibox-einrichtung/phase-vorab.sh
+ExecStart=/usr/bin/python3 /opt/mixpibox-einrichtung/einrichtung-schirm.py --port 8099 --paircode /opt/step-agent/paircode
+# Das Bild gehoert der Konsole tty1; sonst schreibt systemd dazwischen.
+StandardOutput=null
+StandardError=journal
+# Ein kaputter Einrichtungsschirm darf den Start NIE aufhalten — eine stumme
+# Box waere der schlimmere Fehler als eine ohne QR-Code.
+TimeoutStartSec=10
+Restart=no
+
+[Install]
+WantedBy=basic.target

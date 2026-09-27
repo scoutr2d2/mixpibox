@@ -1,0 +1,19 @@
+{
+  "kennung": "mixpi-lrclib",
+  "name": "Songtexte (LRCLIB)",
+  "fassung": "0.1.0",
+  "haupt": "index.mjs",
+  "rechte": [
+    "songtext",
+    "netz"
+  ],
+  "felder": [
+    {
+      "schluessel": "dauerSpielraum",
+      "art": "zahl",
+      "name": "Erlaubte Abweichung der Laenge (Sekunden)",
+      "hinweis": "LRCLIB fuehrt dieselbe Nummer als Studio-, Single- und Live-Fassung. Nur ein Treffer, dessen Laenge so nah am laufenden Stueck liegt, gilt. Groesser eingestellt heisst: mehr Texte, davon mehr falsch getaktete.",
+      "vorgabe": 5
+    }
+  ]
+}

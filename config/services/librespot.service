@@ -1,0 +1,40 @@
+[Unit]
+Description=Spotify-Connect-Geraet der Box (librespot)
+Documentation=https://github.com/librespot-org/librespot/wiki/Options
+Wants=network-online.target
+After=network-online.target sound.target
+
+[Service]
+# ALS TONBENUTZER, nicht als root: der Ton laeuft ueber PipeWire, und das
+# gehoert der Benutzersitzung (uid 1000). Ein root-librespot findet keinen
+# Tonserver — genau daran scheiterte die alte Unit auf dieser Box.
+User=dietpi
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+# WARTEN, BIS ES EINE TONSENKE GIBT.
+# Beim Kaltstart ist der Tonserver der Benutzersitzung noch nicht so weit;
+# librespots rodio-Ausgang bricht dann hart ab (panic NoDeviceAvailable in
+# audio_backend/rodio.rs), systemd startet neu - am Geraet gemessen zwei
+# Fehlstarts, erst der dritte lief. Das kostet Minuten, in denen die Box
+# Befehle annimmt und nicht spielt.
+#
+# DIE BEDINGUNG IST NACHGEMESSEN (2026-08-02, tools/librespot-warten-messen.sh,
+# in einer transienten Unit mit User und Environment dieser Unit):
+#   Bedingung erfuellt   27 ms      ganze Schleife   51 ms
+# Sie funktioniert im Dienstkontext, weil GENAU DIESE Unit XDG_RUNTIME_DIR
+# oben selbst setzt. Von Hand per sudo nachgestellt fehlt das, dann meldet
+# pactl "Failed to load cookie file" - ein Messfehler, keine Boxstoerung.
+#
+# DER DECKEL IST 20 s, NICHT 90. Am Geraet vergehen zwischen dem Start dieses
+# Dienstes (13,11 s) und einer bereiten pipewire-pulse (14,21 s) rund 1,1 s -
+# 20 s sind das Achtzehnfache. Voll ausgeschoepft wird der Deckel nur, wenn
+# die Kiosk-Sitzung fehlt (ohne /run/user/1000/pulse scheitert pactl in 33 ms,
+# also 1 Runde je Takt). Dann gibt es ohnehin keinen Ton, und ein langer
+# Deckel verzoegert bloss die Erholung: Restart=always greift erst nach dem
+# Durchlauf. Takt 0,5 s statt 1 s, damit der Normalfall noch enger sitzt.
+ExecStartPre=/bin/bash -c 'for i in $(seq 1 40); do pactl list short sinks 2>/dev/null | grep -q . && exit 0; sleep 0.5; done; exit 0'
+ExecStart=/bin/bash -c 'source /etc/librespot/env-librespot && exec /usr/bin/librespot -q'
+Restart=always
+RestartSec=12
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+# E42/S4: holt neue Soloist-Builds, bevor der 90-Tage-Verfall zuschlaegt.
+# Einmal-Lauf; den Takt gibt soloist-updater.timer.
+[Unit]
+Description=Soloist-Build erneuern (90-Tage-Verfall)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mupibox/soloist-updater.sh

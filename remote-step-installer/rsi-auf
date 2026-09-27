@@ -1,0 +1,43 @@
+#!/bin/bash
+# rsi auf EINER BESTIMMTEN Box ausfuehren - mit Zielkontrolle.
+#
+# WOZU: `rsi` spricht immer mit localhost:8099, also mit der Box, auf die der
+# Tunnel gerade zeigt. `connect <adresse>` legt aber KEINEN neuen Tunnel an,
+# wenn schon einer laeuft - es meldet "vorhandener Tunnel funktioniert - wird
+# genutzt" und benutzt den ALTEN, egal zu welcher Box er fuehrt.
+#
+# Am 2026-07-29 hat mich das zweimal erwischt: Schritte, die dem Pi 4 galten,
+# liefen am Pi 5. Beim ersten Mal fiel es nur auf, weil eine Datei danach
+# unveraendert war; beim zweiten Mal, weil das Ziel mitgedruckt wurde.
+#
+# Dieses Skript raeumt den Tunnel weg, verbindet neu, PRUEFT das Modell und
+# bricht ab, wenn es nicht passt. Lieber gar nicht laufen als am falschen
+# Rechner.
+#
+#   ./rsi-auf 192.168.178.99 run audio --recipe recipes/mupibox.yaml
+#   ./rsi-auf 192.168.178.99 sysinfo
+#   MUPI_ERWARTET="Pi 4" ./rsi-auf 192.168.178.99 run …   # zusaetzlich pruefen
+
+set -u
+HIER="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ADR="${1:?Adresse fehlt}"; shift
+
+# Den alten Tunnel wegraeumen - er koennte woanders hinzeigen.
+pkill -f "ssh.*8099:localhost:8099" 2>/dev/null || true
+sleep 1
+
+"$HIER/connect" "$ADR" >/dev/null 2>&1 || { echo "Verbinden mit $ADR fehlgeschlagen"; exit 1; }
+
+MODELL=$("$HIER/rsi" sysinfo 2>/dev/null | grep -oE 'Raspberry Pi [0-9][^ ]*' | head -1)
+if [ -z "$MODELL" ]; then
+  echo "Kein Modell gelesen - Abbruch (lieber nichts tun als am falschen Rechner)"
+  exit 1
+fi
+echo "  ▸ Ziel: $MODELL  ($ADR)"
+
+if [ -n "${MUPI_ERWARTET:-}" ] && ! printf '%s' "$MODELL" | grep -q "$MUPI_ERWARTET"; then
+  echo "  ABBRUCH: erwartet war »$MUPI_ERWARTET«, verbunden ist »$MODELL«"
+  exit 1
+fi
+
+exec "$HIER/rsi" "$@"

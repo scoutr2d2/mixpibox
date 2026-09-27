@@ -1,0 +1,39 @@
+[Unit]
+# BACKLOG E29/B3 — die zweite Haelfte, die fehlte.
+#
+# B3 verlangt zwei Dinge: einen Rueckweg ohne SSH (der steht in
+# mupibox-wiederherstellung.service) UND „eine Probe, die ihn REGELMAESSIG
+# faehrt — sonst merkt man den Fehler an dem Tag, an dem er nicht mehr zu
+# beheben ist." `mupibox-sicherung.py --probe` gab es; was fehlte, war die
+# Stelle, die ihn ohne Zutun faehrt. Das ist diese Unit.
+#
+# Sie oeffnet den juengsten Stand, spielt ihn in ein Wegwerf-Verzeichnis
+# unter /tmp zurueck und vergleicht Byte fuer Byte. Sie fasst weder
+# /etc/mupibox noch server/config an — eine Probe, die die Box veraendert,
+# waere ein neuer Weg, Daten zu verlieren.
+Description=MuPiBox: den Rueckweg proben (E29/B3)
+Documentation=file:/usr/local/bin/mupibox/mupibox-sicherungsprobe.sh
+After=local-fs.target
+
+[Service]
+Type=oneshot
+# Als dietpi: die Probe liest nur Staende (die gehoeren dietpi) und schreibt
+# nach /tmp. Root braucht sie nicht — und was root in /home/dietpi anlegt,
+# laesst sich spaeter als dietpi nicht mehr ausraeumen.
+User=dietpi
+Group=dietpi
+ExecStart=/usr/local/bin/mupibox/mupibox-sicherungsprobe.sh
+# DAS URTEIL AUF DIE KARTE — und zwar in ExecStopPost, nicht als zweites
+# ExecStart. Faellt die Probe durch, bricht systemd die ExecStart-Kette ab;
+# das Urteil kaeme dann ausgerechnet im Fehlerfall NICHT auf die Karte, also
+# genau dann nicht, wenn es jemand braucht. ExecStopPost laeuft so oder so.
+# `+` weil die FAT-Partition root gehoert, `-` weil eine Box ohne Karte
+# deswegen nicht als „failed" dastehen soll.
+ExecStopPost=-+/usr/local/bin/mupibox/mupibox-sicherungsprobe.sh --auf-karte
+# Faellt die Probe durch, steht diese Unit auf „failed". Das ist gewollt:
+# `systemctl --failed` ist die einzige Stelle, an der es jemandem auffaellt,
+# der SSH hat. Wer keines hat, liest PROBE.txt auf der Karte.
+TimeoutStartSec=300
+# Die Probe eilt nie. Sie darf niemandem die Wiedergabe stoeren.
+Nice=15
+IOSchedulingClass=idle

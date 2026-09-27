@@ -1,0 +1,22 @@
+[Unit]
+Description=MixPi: die WLAN-Adapterwahl nach dem Start anwenden
+Documentation=file:/usr/local/bin/mupibox/mixpi-wlan-adapter.sh
+# NACH dem Netz, nicht davor: das Skript wartet darauf, dass die GEWAEHLTE
+# Schnittstelle eine Adresse hat, und legt erst dann die andere hin. Vorher
+# gaebe es nichts zu pruefen und es wuerde blind abschalten.
+After=network-online.target
+Wants=network-online.target
+# Ohne diese Datei gibt es keine Wahl - dann laeuft es durch und tut nichts.
+ConditionPathExists=/etc/mupibox/mixpi-wlan-adapter
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/mupibox/mixpi-wlan-adapter.sh
+# KEIN Restart: ein Skript, das genau einmal eine Schnittstelle hinlegt, darf
+# das nicht wiederholen. Scheitert es, bleibt die Box mit zwei Schnittstellen
+# oben - unschoen, aber erreichbar. Das ist die richtige Richtung.
+TimeoutStartSec=90
+
+[Install]
+WantedBy=multi-user.target

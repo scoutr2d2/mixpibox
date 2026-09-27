@@ -1,0 +1,164 @@
+<!-- MESSSEITE fuer die Wellen (30.08.2026): laedt NUR app.css und einen
+     nachgebauten gross-balken, um Amplitude und Lauf-Zustand der Animation
+     OHNE Box und ohne Attrappen-Server zu messen; genutzt von Hand im Browser.
+
+     ACHTUNG, hier stand einmal „Wird von keinem Bau mitgenommen". Das war
+     falsch: angular.json kopiert NewDesign/ mit dem Muster ** nach neu/, und diese
+     Seite lag am 30.08.2026 nachgemessen im Buendel
+     (src/deploy/www/browser/neu/wellen-messseite.html). Sie steht seitdem in
+     der ignore-Liste in src/frontend-box/angular.json und wird von
+     tools/newdesign-mitlieferung-deckung.py dort festgehalten.
+
+     ERWEITERT FUER E99 (BACKLOG): Der Balken traegt jetzt zusaetzlich die
+     Leinwand aus index.html (canvas mit der Klasse wellen-leinwand, id
+     gr-wellen) UND laedt app.js wirklich. app.js ist eine einzige IIFE ohne
+     Exporte und wirft auf dieser schlanken Seite frueher oder spaeter auf
+     eine fehlende Kennung (nachgemessen: Zeile ~6663, ein addEventListener
+     auf dem Ergebnis von getElementById('meldung'), das hier null ist) — das
+     ist OHNE BELANG, weil der Wellen-Zeichner (Ringpuffer, Leinwand,
+     Stille-Pause) ganz am Anfang der Datei steht, direkt nach der Funktion
+     farbeAus, und dort seinen Testzugang window.mupiWellenMessung VOR jeder
+     riskanten Zeile einhaengt. Ein Skript-Block, der spaeter wirft, haelt den
+     naechsten Skript-Block dieser Seite nicht auf — jeder Block ist ein
+     eigener Lauf. Die Konsole zeigt die Ausnahme trotzdem an; das ist
+     erwartet und kein Fehler dieser Messung.
+
+     WAS HIER GEMESSEN WIRD: synthetische Pegel-Folgen (Sinus-Huellkurven je
+     Band) speisen denselben Zeichner, den die echte Box aus dem Zustands-Poll
+     fuettert (wellenAusZustandFuettern in app.js). Die Zaehlung darunter
+     zeigt, dass NUR bei wirklich neuen Werten gezeichnet wird: bei „Musik"
+     (10 Hz) etwa 10 Zeichnungen/s, bei „Stille" (10 Hz, aber lauter Nullen)
+     nach ~3 s wieder NULL Zeichnungen/s trotz laufender Speisung — das ist
+     die Stille-Pause aus app.js, nicht ein Fehler dieser Seite. -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Wellen-Messseite</title>
+<link rel="stylesheet" href="app.css">
+<style>
+  body { background: #1a1626; padding: 60px; color: #fff7ec; font-family: sans-serif; }
+  .messfeld { width: 600px; }
+  .mp-balken { height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+  .gross-balken i { display: block; height: 100%; width: 40%; background: var(--player-akzent, #ff6b57); }
+
+  .steuerung { margin-top: 40px; max-width: 640px; }
+  .steuerung button {
+    font: inherit;
+    padding: 8px 14px;
+    margin: 0 8px 8px 0;
+    border-radius: 8px;
+    border: 1px solid #665;
+    background: #2a2440;
+    color: inherit;
+    cursor: pointer;
+  }
+  .steuerung button.an { background: var(--player-akzent, #ff6b57); color: #2B1E14; border-color: transparent; }
+  .messwerte { margin-top: 18px; font-variant-numeric: tabular-nums; line-height: 1.7; }
+  .messwerte b { color: var(--player-akzent, #ff6b57); }
+  label.regenbogen { display: inline-flex; align-items: center; gap: 8px; margin-left: 8px; }
+</style>
+</head>
+<body class="status-wellen ton-laeuft">
+<div class="messfeld">
+  <div class="gross-bahn">
+    <div class="mp-balken gross-balken"><i id="gr-fuell"></i></div>
+    <!-- Dritter Entwurf: eigenes Frequenz-Feld unter dem Balken, wie im
+         grossen Player unter den Tasten (index.html). -->
+    <div class="wellen-feld"><canvas class="wellen-leinwand" id="gr-wellen" aria-hidden="true"></canvas></div>
+  </div>
+</div>
+
+<div class="steuerung">
+  <div>
+    <button type="button" id="btn-musik">Musik speisen (10 Hz)</button>
+    <button type="button" id="btn-stille">Stille speisen (10 Hz)</button>
+    <button type="button" id="btn-stopp">Speisung stoppen</button>
+    <label class="regenbogen"><input type="checkbox" id="chk-regenbogen"> Regenbogen</label>
+  </div>
+  <div class="messwerte">
+    <div>Speisung: <b id="mw-modus">aus</b></div>
+    <div>Zeichnungen gesamt: <b id="mw-gesamt">0</b></div>
+    <div>Zeichnungen/s (letzte Sekunde): <b id="mw-hz">0</b></div>
+    <div>body-Klassen: <b id="mw-klassen">–</b></div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+<script>
+  // Kein Backtick in dieser Datei (sie wird von Wachen als Vorlage gelesen,
+  // siehe llmwiki backticks-beenden-jede-vorlage) — nur einfache und doppelte
+  // Anfuehrungszeichen.
+  (function () {
+    'use strict';
+
+    var zugang = window.mupiWellenMessung;
+    var status = document.getElementById('mw-modus');
+    if (!zugang) {
+      status.textContent = 'FEHLT — window.mupiWellenMessung nicht gefunden (siehe Kommentar oben)';
+      return;
+    }
+
+    var laufendeSpeisung = null; // die setInterval-ID der Speisung, oder null
+    var letzterZaehler = 0;
+
+    function pegelMusik(t) {
+      // Vier Baender, vier Frequenzen/Phasen — je unabhaengiger sie sich
+      // bewegen, desto deutlicher trennen sich die vier Linien auf der
+      // Leinwand voneinander.
+      return [
+        Math.max(0, Math.sin(t * 0.6)),
+        Math.max(0, Math.sin(t * 1.1 + 1.3)),
+        Math.max(0, Math.sin(t * 1.7 + 2.6)),
+        Math.max(0, Math.sin(t * 2.4 + 3.9)),
+      ];
+    }
+
+    function speisungStarten(name, pegelFn) {
+      speisungStoppen();
+      status.textContent = name + ' (10 Hz)';
+      var start = performance.now();
+      laufendeSpeisung = setInterval(function () {
+        var t = (performance.now() - start) / 1000;
+        zugang.neuerPegel(pegelFn(t));
+      }, 100);
+    }
+
+    function speisungStoppen() {
+      if (laufendeSpeisung !== null) {
+        clearInterval(laufendeSpeisung);
+        laufendeSpeisung = null;
+      }
+      status.textContent = 'aus';
+    }
+
+    document.getElementById('btn-musik').addEventListener('click', function () {
+      speisungStarten('Musik', pegelMusik);
+    });
+    document.getElementById('btn-stille').addEventListener('click', function () {
+      speisungStarten('Stille', function () { return [0, 0, 0, 0]; });
+    });
+    document.getElementById('btn-stopp').addEventListener('click', speisungStoppen);
+    document.getElementById('chk-regenbogen').addEventListener('change', function (e) {
+      document.body.classList.toggle('wellen-regenbogen', e.target.checked);
+    });
+
+    // DIE ZAEHLUNG — EIGENE UHR, NUR FUER DIE ANZEIGE HIER. Der Zeichner in
+    // app.js selbst haengt an KEINEM Timer (siehe die grosse Begruendung
+    // dort); diese Sekunden-Uhr liest nur ab, was er inzwischen freiwillig
+    // gezeichnet hat, sie loest selbst kein einziges Zeichnen aus.
+    setInterval(function () {
+      var jetzt = zugang.zaehler();
+      document.getElementById('mw-gesamt').textContent = String(jetzt);
+      document.getElementById('mw-hz').textContent = String(jetzt - letzterZaehler);
+      letzterZaehler = jetzt;
+      var klassen = [];
+      if (document.body.classList.contains('status-wellen')) klassen.push('status-wellen');
+      if (document.body.classList.contains('wellen-echt')) klassen.push('wellen-echt');
+      if (document.body.classList.contains('wellen-regenbogen')) klassen.push('wellen-regenbogen');
+      document.getElementById('mw-klassen').textContent = klassen.length ? klassen.join(' ') : '(keine)';
+    }, 1000);
+  })();
+</script>
+</body>
+</html>

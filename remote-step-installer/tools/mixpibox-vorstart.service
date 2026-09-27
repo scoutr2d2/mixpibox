@@ -1,0 +1,46 @@
+[Unit]
+Description=MixPiBox Vorstart: die Box ohne Netz einrichtbar machen
+# NACH dem Dateisystem und DietPis Vorlauf — vorher gibt es kein /opt und
+# keine Funkschnittstelle.
+After=dietpi-preboot.service local-fs.target
+# Die Boot-Partition MUSS haengen, bevor wir starten: Skript und Log liegen
+# dort. `local-fs.target` allein garantiert die Reihenfolge nicht in jedem
+# Fall — RequiresMountsFor tut es.
+RequiresMountsFor=/boot/firmware
+# VOR der Stelle, an der es ohne Netz knallt: `dietpi-login` startet den
+# First-Run-Setup auf tty1, und der laedt Pakete. Ohne Netz endet er mit
+# "Unknown install state/First run setup failed" — am Geraet gesehen am
+# 08.08.2026. Deshalb muss hier vorher jemand ein Netz besorgt haben.
+Before=dietpi-postboot.service getty@tty1.service getty-pre.target
+
+[Service]
+Type=oneshot
+# DIE BROTKRUME: ein Zeitstempel auf der ROOT-Partition (die ueberlebt und
+# ist nie schreibgeschuetzt, wenn die Box ueberhaupt laeuft). Damit ist "lief
+# der Dienst ueberhaupt?" nie wieder eine Glaubensfrage — ein ganzer Boot war
+# genau das: /opt aktuell, kein Log, keine Spur.
+ExecStartPre=/bin/sh -c 'date -Is > /var/lib/mixpibox-vorstart.letzter-start'
+ExecStartPre=/bin/sh -c 'cat /proc/mounts > /var/lib/mixpibox-vorstart.mounts'
+
+RemainAfterExit=yes
+# SELBSTHEILUNG VOR JEDEM START: eine harte Kartenentnahme hat die Kopie in
+# /opt einmal ZERRISSEN ("line 58: syntax error ... `n mixpibox-vorstart'" —
+# mitten im Wort abgeschnitten), und systemd startete die kaputte Datei beim
+# naechsten Boot direkt: Box tot bis zum Login, ohne Erklaerung. Der Pruefer
+# im Skript half nicht — er lief ja im Skript, das nicht mehr lief.
+# Deshalb prueft die UNIT: ist /opt kaputt, wird die (gepruefte) Fassung von
+# der FAT-Partition geholt, dann erst gestartet.
+ExecStart=/bin/bash -c 'V=/opt/mixpibox-einrichtung/vorstart.sh; if ! bash -n "$V" 2>/dev/null; then for B in /boot/firmware/einrichtung/vorstart/vorstart.sh /boot/einrichtung/vorstart/vorstart.sh; do [ -f "$B" ] && bash -n "$B" 2>/dev/null && install -m 755 "$B" "$V" && echo "vorstart.sh war kaputt - aus FAT geheilt" && break; done; fi; exec bash "$V"'
+# Der Dienst HAELT DEN START AUF, und das ist Absicht: er wartet darauf, dass
+# jemand die Box per Handy ins WLAN bringt. Das Zeitlimit muss deshalb ueber
+# der Wartezeit im Skript liegen (20 min), sonst schiesst systemd ihn ab,
+# waehrend jemand gerade tippt.
+# infinity, seit der Vorstart DietPis Erstinstallation selbst weiterfuehrt:
+# Updates + Software dauern 10-20 Minuten, auf traegen Spiegeln mehr. Ein
+# Timeout mitten in dpkg hinterlaesst einen halben Paketstand.
+TimeoutStartSec=infinity
+StandardOutput=journal+console
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,56 @@
+{
+  "satz": "kunst",
+  "lizenz": "CC0",
+  "bilder": [
+    {
+      "datei": "adeline.jpg",
+      "id": "135299",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "platanen.jpg",
+      "id": "125249",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "pappeln.jpg",
+      "id": "135310",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "rotes-tuch.jpg",
+      "id": "135382",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "seerosen.jpg",
+      "id": "136510",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "fruehlingsblumen.jpg",
+      "id": "130391",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "niedrigwasser.jpg",
+      "id": "125234",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "gaertnerhaus.jpg",
+      "id": "95272",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "kaschmir.jpg",
+      "id": "171296",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "prater.jpg",
+      "id": "151298",
+      "quelle": "cleveland"
+    }
+  ]
+}

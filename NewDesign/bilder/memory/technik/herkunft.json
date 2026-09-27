@@ -1,0 +1,41 @@
+{
+  "satz": "technik",
+  "lizenz": "CC0",
+  "bilder": [
+    {
+      "datei": "uhr.jpg",
+      "id": "14298",
+      "quelle": "met"
+    },
+    {
+      "datei": "turmuhr.jpg",
+      "id": "142773",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "standuhr.jpg",
+      "id": "156855",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "auto.jpg",
+      "id": "118676",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "gitarre.jpg",
+      "id": "98679",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "trommel.jpg",
+      "id": "110818",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "lokomotive.jpg",
+      "id": "268079",
+      "quelle": "met"
+    }
+  ]
+}

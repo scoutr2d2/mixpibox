@@ -1,0 +1,19 @@
+[Unit]
+# BACKLOG E11c/S4 — der Wachhund unter der Oberflaeche.
+#
+# Er faengt den Fall, den `OnFailure=` NICHT faengt: der Kiosk hat gar keine
+# Unit. Chromium startet aus chromium-autostart.sh ueber die automatische
+# Anmeldung von getty@tty1; bleibt es dort aus, ist fuer systemd nichts
+# geschehen — getty laeuft, kein Dienst ist "failed", und der Schirm ist
+# schwarz. Herleitung im Kopf von mupibox-kioskwache.py.
+Description=MuPiBox Kioskwache (kommt die Oberflaeche?)
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/mupibox/mupibox-kioskwache.py
+# Ein Wachhund, der selbst haengt, ist schlimmer als keiner.
+TimeoutStartSec=60
+# Ein Fehler hier darf nichts aufhalten — er ist ein Netz, kein Tor.
+SuccessExitStatus=0 1
+RemainAfterExit=no

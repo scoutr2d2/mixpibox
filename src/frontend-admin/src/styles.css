@@ -1,0 +1,73 @@
+/* Alles oertlich, nichts aus dem Netz.
+ *
+ * Das ist keine Stilfrage, sondern Befund 1 der Bestandsaufnahme: der alte
+ * PHP-Admin zog 13 Dateien von 9 fremden Hosts (Bootstrap, jQuery, FontAwesome,
+ * sogar raw.githubusercontent.com) und war damit in einem Netz ohne Internet
+ * unbenutzbar — genau dort, wo eine Kinder-Musikbox oft steht. Deshalb hier
+ * KEIN @import, KEIN Webfont, KEIN CDN. Systemschriften sehen ueberall gut aus
+ * und kosten nichts. */
+:root {
+  --grund: #121212;
+  --flaeche: #1c1c1e;
+  --rand: #2f2f33;
+  --schrift: #f2f2f7;
+  --gedaempft: #9a9aa0;
+  --leit: #3880ff;
+  --warn: #ffc409;
+  --fehler: #eb445a;
+  --gut: #2dd36f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--grund);
+  color: var(--schrift);
+  font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: 0;
+  border-radius: 10px;
+  padding: 0.8rem 1.2rem;
+  background: var(--leit);
+  color: #fff;
+}
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.still { background: transparent; color: var(--gedaempft); border: 1px solid var(--rand); }
+
+input {
+  font: inherit;
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--rand);
+  background: var(--grund);
+  color: var(--schrift);
+}
+input:focus { outline: 2px solid var(--leit); outline-offset: 1px; }
+
+/* Die Regel oben gilt fuer JEDES input — auch fuer Kaestchen und Radios. Ohne
+   diese Ausnahme werden die ueber die ganze Zeile gezogen (gemessen: bis 551 px
+   breit) und bleiben dabei 13 px hoch: 1,8 mm Trefferflaeche am 5-Zoll-Schirm.
+   Hier wird nur die Verzerrung zurueckgenommen und eine fassbare Groesse
+   gesetzt. WIE GROSS Trefferflaechen sein muessen, ist eine Gestaltungsfrage
+   und steht offen — siehe ADMIN-BOARD-ANALYSE.md, Abschnitt L4. */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 1.4rem;
+  height: 1.4rem;
+  padding: 0;
+  flex: none;
+  accent-color: var(--leit);
+  cursor: pointer;
+}
+
+/* Wer die Bewegung abbestellt hat, bekommt keine. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

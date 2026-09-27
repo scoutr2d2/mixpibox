@@ -1,0 +1,19 @@
+{
+	"_": "MixPiBox-Fassungsverzeichnis. Bis zum 31.08.2026 stand hier das Verzeichnis von splitti/MuPiBox — 40 Upstream-Releases, auf deren Archive die Ausrollwege zeigten. Das war kein Verzeichnis DIESES Projekts, sondern die Einladung, es durch ein anderes zu ersetzen. Was die Felder bedeuten, steht in dokumentation/mixpibox-fassungen.md.",
+
+	"produkt": "MixPiBox",
+	"quelle": "http://git.local:3000/achim/box.git",
+
+	"_version": "Die Fassung, die DIESER Baum traegt — nicht die zuletzt veroeffentlichte. Sie benennt die Karte (scripts/make-boot-sd.sh) und ist auch dann da, wenn noch nichts veroeffentlicht wurde. Frueher musste dafuer `.release.stable[-1].version` herhalten; das koppelte den Kartennamen an eine Veroeffentlichung, die es nicht gibt.",
+	"version": "v1.0.0",
+
+	"_release": "Die Kanaele. Neuester Eintrag am ENDE (so liest sie neuestesAngebot() in src/backend-api/src/aktualisierung.ts). Sie sind LEER, und das ist die wahre Auskunft: dieser Fork hat noch nichts veroeffentlicht. Die 56 git-Tags im Baum sind Upstream-Releases (1.0.2 bis 4.2.4) und eigene Arbeitsmarken (ruecksprung-*, vor-*) — KEINE MixPiBox-Fassungen. Ein leerer Kanal fuehrt zum Urteil `keinAngebot`, und das ist richtig; ein gefuellter mit fremden Adressen waere eine Verwechslung.",
+	"_namensform": "vX.Y.Z fuer stable, vX.Y.Z-beta.N fuer beta, vX.Y.Z-dev.N fuer dev. Das fuehrende `v` trennt MixPiBox-Fassungen von den nackten Upstream-Tags (4.2.4) — im selben Repo, in derselben Tag-Liste. Wer `git tag` liest, sieht sofort, welche Marke wem gehoert.",
+	"_eintrag": "Jeder Eintrag: version, url (das Artefakt), sha256 (Pflicht — ohne Pruefsumme wird nichts eingespielt), releaseinfo. Optional `mindestens`: die aelteste Fassung, von der aus direkt aktualisiert werden darf.",
+
+	"release": {
+		"stable": [],
+		"beta": [],
+		"dev": []
+	}
+}

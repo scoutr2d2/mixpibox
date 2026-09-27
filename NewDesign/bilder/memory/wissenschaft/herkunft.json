@@ -1,0 +1,36 @@
+{
+  "satz": "wissenschaft",
+  "lizenz": "CC0",
+  "bilder": [
+    {
+      "datei": "mikroskop.jpg",
+      "id": "147777",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "sonnenuhr.jpg",
+      "id": "122167",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "sonnenuhr-tragbar.jpg",
+      "id": "188861",
+      "quelle": "met"
+    },
+    {
+      "datei": "himmelsglobus.jpg",
+      "id": "193606",
+      "quelle": "met"
+    },
+    {
+      "datei": "globus.jpg",
+      "id": "4023",
+      "quelle": "met"
+    },
+    {
+      "datei": "globus-keramik.jpg",
+      "id": "198711",
+      "quelle": "met"
+    }
+  ]
+}

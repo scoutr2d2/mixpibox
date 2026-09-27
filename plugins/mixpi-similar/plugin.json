@@ -1,0 +1,147 @@
+{
+  "kennung": "mixpi-similar",
+  "name": "Aehnliche Interpreten",
+  "fassung": "0.2.0",
+  "haupt": "index.mjs",
+  "rechte": ["netz"],
+  "sektion": "medien",
+  "icon": "icon.svg",
+  "aktionen": [
+    {
+      "kennung": "probe",
+      "name": "Vorschlaege probieren",
+      "hinweis": "Fragt alle eingeschalteten Quellen nach „Pettersson und Findus\" und zeigt, was zurueckkommt — samt der Quellen, die stumm blieben."
+    },
+    {
+      "kennung": "kartei_leeren",
+      "name": "Zwischenspeicher verwerfen",
+      "hinweis": "Wirft alle gemerkten Antworten weg. Die naechste Frage geht wieder wirklich hinaus."
+    }
+  ],
+  "felder": [
+    {
+      "schluessel": "gewichtInhalt",
+      "art": "zahl",
+      "name": "Gewicht: Themenkarte (Inhalt)",
+      "hinweis": "Aehnlichkeit nach THEMA statt nach Hoerverhalten — die einzige Quelle, die „ruhiger Bauernhof\" von „Rettungsfahrzeuge mit Martinshorn\" unterscheidet. Steht bewusst am hoechsten. 0 schaltet sie ab.",
+      "vorgabe": 1.5
+    },
+    {
+      "schluessel": "gewichtDeezer",
+      "art": "zahl",
+      "name": "Gewicht: Deezer",
+      "hinweis": "Am 06.09.2026 gemessen die beste NETZ-Quelle fuer deutsche Kinderhoerspiele (3 von 4 Serien mit brauchbaren Treffern). Braucht keinen Zugang. 0 schaltet sie ab.",
+      "vorgabe": 1.0
+    },
+    {
+      "schluessel": "gewichtLastfm",
+      "art": "zahl",
+      "name": "Gewicht: Last.fm",
+      "hinweis": "Braucht einen Schluessel (Feld unten). Ohne Schluessel bleibt die Quelle stumm, auch wenn hier eine Zahl steht — der Eltern-Bereich sagt es dann im Befinden. 0 schaltet sie ab.",
+      "vorgabe": 1.0
+    },
+    {
+      "schluessel": "gewichtListenbrainz",
+      "art": "zahl",
+      "name": "Gewicht: ListenBrainz",
+      "hinweis": "Bewusst niedrig: fuer Kinderhoerspiele am 06.09.2026 fast leer (1 von 4 Serien) — und zu „Benjamin Bluemchen\" kam als zweiter Treffer Rammstein. Hoerdaten messen, wer dasselbe hoert, nicht, was zusammenpasst. Wer sie hochdreht, sollte „Mindestens Quellen\" auf 2 stellen.",
+      "vorgabe": 0.3
+    },
+    {
+      "schluessel": "lastfmSchluessel",
+      "art": "geheim",
+      "name": "Last.fm API-Schluessel",
+      "hinweis": "Kostenlos unter last.fm/api/account/create. Bleibt das Feld leer, meldet sich Last.fm gar nicht erst."
+    },
+    {
+      "schluessel": "mindestensQuellen",
+      "art": "zahl",
+      "name": "Mindestens so viele Quellen",
+      "hinweis": "Ein Vorschlag muss in so vielen Quellen vorkommen. 1 laesst alles durch; 2 verlangt eine zweite Stimme und ist der Riegel gegen einzelne Ausreisser aus den Hoerdaten.",
+      "vorgabe": 1
+    },
+    {
+      "schluessel": "grenze",
+      "art": "zahl",
+      "name": "Hoechstens so viele Vorschlaege",
+      "vorgabe": 20
+    },
+    {
+      "schluessel": "fusionK",
+      "art": "zahl",
+      "name": "Daempfung k",
+      "hinweis": "Wie stark der erste Platz einer einzelnen Quelle wiegt. Gross (60) heisst: zwei Quellen auf Platz 10 schlagen eine Quelle auf Platz 1 — Uebereinstimmung zaehlt mehr als Ueberzeugung. Klein (1) dreht das um.",
+      "vorgabe": 60
+    },
+    {
+      "schluessel": "haltbarkeitTage",
+      "art": "zahl",
+      "name": "Antworten so lange merken (Tage)",
+      "hinweis": "Danach wird neu gefragt. Ist das Netz weg, gilt der alte Stand trotzdem und wird als „stale\" ausgewiesen.",
+      "vorgabe": 30
+    },
+    {
+      "schluessel": "kontakt",
+      "art": "text",
+      "name": "Kontakt fuer fremde Dienste",
+      "hinweis": "Wird an die Kennung angehaengt, mit der sich die Box bei MusicBrainz und Deezer meldet. Freiwillig, aber hoeflich — im Log des Betreibers steht dann, wer fragt."
+    },
+    {
+      "schluessel": "ollamaAdresse",
+      "art": "text",
+      "name": "Ollama-Adresse (freiwillig)",
+      "hinweis": "Leer lassen heisst: die Themenkarte vergleicht ueber Schlagworte. Mit Adresse werden zusaetzlich Einbettungen gerechnet. ACHTUNG: localhost geht NICHT — ein Plugin darf die eigene Box nicht anfragen. Es muss ein anderer Rechner im Netz sein, z. B. http://192.168.178.20:11434"
+    },
+    {
+      "schluessel": "ollamaModell",
+      "art": "text",
+      "name": "Ollama-Modell",
+      "vorgabe": "nomic-embed-text"
+    },
+    {
+      "schluessel": "wachlisteAn",
+      "art": "schalter",
+      "name": "Wachliste beobachten",
+      "hinweis": "Prueft im Hintergrund, ob es zu beobachteten Interpreten etwas Neues gibt. Nur was NACH dem Eintragen erscheint, wird gemeldet — der Altbestand nie.",
+      "vorgabe": true
+    },
+    {
+      "schluessel": "pruefIntervallStunden",
+      "art": "zahl",
+      "name": "Jeden Eintrag pruefen alle … Stunden",
+      "hinweis": "Es wird immer nur EIN Eintrag je Weckruf geprueft, und zwar der am laengsten nicht gepruefte. Bei dreissig Eintraegen und 24 Stunden ist damit alle 48 Minuten einer dran.",
+      "vorgabe": 24
+    },
+    {
+      "schluessel": "fensterVon",
+      "art": "text",
+      "name": "Nur pruefen ab (HH:MM)",
+      "hinweis": "Damit die Box tagsueber nichts nebenher tut. Ueber Mitternacht ist erlaubt (z. B. 22:00 bis 06:00). Steht hier etwas Krummes, wird ohne Fenster geprueft.",
+      "vorgabe": "02:00"
+    },
+    {
+      "schluessel": "fensterBis",
+      "art": "text",
+      "name": "Nur pruefen bis (HH:MM)",
+      "vorgabe": "05:00"
+    },
+    {
+      "schluessel": "ntfyAdresse",
+      "art": "text",
+      "name": "ntfy-Adresse (freiwillig)",
+      "hinweis": "z. B. https://ntfy.sh oder der eigene Server. Leer heisst: kein Push. Die Meldung liegt in JEDEM Fall im Posteingang."
+    },
+    {
+      "schluessel": "ntfyThema",
+      "art": "text",
+      "name": "ntfy-Thema",
+      "hinweis": "Der Name, den das Telefon abonniert. Wer ntfy.sh benutzt, waehle etwas Langes und Unrateebares — jeder, der das Thema kennt, liest mit."
+    },
+    {
+      "schluessel": "webhookAdresse",
+      "art": "text",
+      "name": "Webhook-Adresse (freiwillig)",
+      "hinweis": "Bekommt das Ereignis als JSON per POST. ACHTUNG: die eigene Box geht nicht — ein Plugin darf sie nicht anfragen. Es muss ein anderer Rechner im Netz sein."
+    }
+  ]
+}

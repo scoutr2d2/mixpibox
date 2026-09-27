@@ -1,0 +1,28 @@
+[Unit]
+Description=MixPiBox: die Installation faehrt die Box selbst weiter
+# Das Rezept installiert Pakete — dafuer braucht es das Netz. Hier ist Warten
+# richtig (anders als beim Einrichtungs-AP, der ja gerade fuer den Fall OHNE
+# Netz da ist).
+After=network-online.target
+Wants=network-online.target
+# Der Agent liefert die Umgebungserkennung (Modell, Distro, Boot-Pfade), die
+# der Fahrer fuer den Prefix und fuer `when:` braucht.
+After=step-agent.service
+
+[Service]
+Type=oneshot
+# --nur-wenn-angefangen: ohne begonnenen Lauf endet es SOFORT und still. Die
+# Unit laeuft bei jedem Start, weil sie einen Lauf fortsetzen muss, den ein
+# Neustart unterbrochen hat — das Rezept enthaelt mehrere. Sie darf deshalb
+# nicht von sich aus loslegen; die Standdatei ist die Zustimmung.
+ExecStart=/usr/bin/python3 /opt/mixpibox-lauf/selbstlauf.py --lauf /opt/mixpibox-lauf --nur-wenn-angefangen
+RemainAfterExit=no
+# Die Installation dauert 10 bis 20 Minuten, ueber mehrere Neustarts hinweg.
+# Kein Zeitlimit: ein Abbruch mittendrin hinterliesse eine halb eingerichtete
+# Box, und der Fahrer haelt seine Grenzen je Schritt selbst ein.
+TimeoutStartSec=infinity
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

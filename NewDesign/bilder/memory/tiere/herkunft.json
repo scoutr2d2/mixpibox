@@ -1,0 +1,66 @@
+{
+  "satz": "tiere",
+  "lizenz": "CC0",
+  "bilder": [
+    {
+      "datei": "papagei.jpg",
+      "id": "142738",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "schmetterling.jpg",
+      "id": "679354",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "hund.jpg",
+      "id": "144854",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "schaf.jpg",
+      "id": "170791",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "kuh.jpg",
+      "id": "109582",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "tiger.jpg",
+      "id": "136595",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "hahn.jpg",
+      "id": "152546",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "vogel.jpg",
+      "id": "679088",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "katze.jpg",
+      "id": "126212",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "pferd.jpg",
+      "id": "132819",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "elefant.jpg",
+      "id": "150549",
+      "quelle": "cleveland"
+    },
+    {
+      "datei": "fisch.jpg",
+      "id": "118852",
+      "quelle": "cleveland"
+    }
+  ]
+}

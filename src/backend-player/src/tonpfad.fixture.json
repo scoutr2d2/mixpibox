@@ -1,0 +1,326 @@
+[
+  {
+    "id": 0,
+    "type": "PipeWire:Interface:Core",
+    "version": 4,
+    "info": {
+      "cookie": 1234567,
+      "user-name": "dietpi",
+      "host-name": "mixpibox",
+      "version": "1.2.7",
+      "name": "pipewire-0"
+    }
+  },
+  {
+    "id": 40,
+    "type": "PipeWire:Interface:Client",
+    "version": 3,
+    "info": {
+      "props": {
+        "application.name": "Spotify",
+        "application.process.binary": "soloist",
+        "object.id": 40
+      }
+    }
+  },
+  {
+    "id": 47,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "info": {
+      "props": {
+        "media.class": "Audio/Sink",
+        "node.name": "alsa_output.platform-soc_sound.stereo-fallback",
+        "node.description": "MuPiHAT MAX98357A",
+        "object.id": 47,
+        "factory.name": "api.alsa.pcm.sink"
+      }
+    }
+  },
+  {
+    "id": 60,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "info": {
+      "props": {
+        "media.class": "Audio/Sink",
+        "node.name": "klangwerk",
+        "node.description": "Klangwerk",
+        "object.id": 60,
+        "factory.name": "support.null-audio-sink"
+      }
+    }
+  },
+  {
+    "id": 62,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "info": {
+      "props": {
+        "media.class": "Stream/Output/Audio",
+        "node.name": "klangwerk.ausgang",
+        "node.description": "Klangwerk Ausgang",
+        "object.id": 62
+      }
+    }
+  },
+  {
+    "id": 71,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "info": {
+      "props": {
+        "media.class": "Stream/Output/Audio",
+        "node.name": "entzerrer.ausgang",
+        "node.description": "Entzerrer Ausgang",
+        "object.id": 71
+      }
+    }
+  },
+  {
+    "id": 85,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "info": {
+      "props": {
+        "media.class": "Stream/Output/Audio",
+        "node.name": "spotify",
+        "node.description": "Spotify",
+        "application.name": "Spotify",
+        "application.process.binary": "soloist",
+        "client.id": 40,
+        "object.id": 85
+      }
+    }
+  },
+  {
+    "id": 90,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "info": {
+      "props": {
+        "media.class": "Stream/Input/Audio",
+        "node.name": "mixpi-mitschnitt",
+        "media.name": "pw-record",
+        "object.id": 90
+      }
+    }
+  },
+  {
+    "id": 92,
+    "type": "PipeWire:Interface:Node",
+    "version": 3,
+    "info": {
+      "props": {
+        "media.class": "Stream/Input/Audio",
+        "node.name": "mixpi-pegel",
+        "media.name": "pw-record",
+        "object.id": 92
+      }
+    }
+  },
+  {
+    "id": 86,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "info": {
+      "direction": "output",
+      "props": {
+        "node.id": 85,
+        "object.id": 86,
+        "port.id": 0,
+        "port.direction": "out",
+        "port.name": "output_FL",
+        "audio.channel": "FL"
+      }
+    }
+  },
+  {
+    "id": 87,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "info": {
+      "direction": "output",
+      "props": {
+        "node.id": 85,
+        "object.id": 87,
+        "port.id": 1,
+        "port.direction": "out",
+        "port.name": "output_FR",
+        "audio.channel": "FR"
+      }
+    }
+  },
+  {
+    "id": 63,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "info": {
+      "direction": "input",
+      "props": {
+        "node.id": 60,
+        "object.id": 63,
+        "port.id": 0,
+        "port.direction": "in",
+        "port.name": "playback_FL",
+        "audio.channel": "FL"
+      }
+    }
+  },
+  {
+    "id": 64,
+    "type": "PipeWire:Interface:Port",
+    "version": 3,
+    "info": {
+      "direction": "input",
+      "props": {
+        "node.id": 60,
+        "object.id": 64,
+        "port.id": 1,
+        "port.direction": "in",
+        "port.name": "playback_FR",
+        "audio.channel": "FR"
+      }
+    }
+  },
+  {
+    "id": 120,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "info": {
+      "output-node-id": 85,
+      "output-port-id": 86,
+      "input-node-id": 60,
+      "input-port-id": 63,
+      "state": "active",
+      "props": {
+        "object.id": 120,
+        "link.output.node": 85,
+        "link.output.port": 86,
+        "link.input.node": 60,
+        "link.input.port": 63
+      }
+    }
+  },
+  {
+    "id": 121,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "info": {
+      "output-node-id": 85,
+      "output-port-id": 87,
+      "input-node-id": 60,
+      "input-port-id": 64,
+      "state": "active",
+      "props": {
+        "object.id": 121,
+        "link.output.node": 85,
+        "link.output.port": 87,
+        "link.input.node": 60,
+        "link.input.port": 64
+      }
+    }
+  },
+  {
+    "id": 122,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "info": {
+      "output-node-id": 71,
+      "output-port-id": 72,
+      "input-node-id": 60,
+      "input-port-id": 63,
+      "state": "active",
+      "props": {
+        "object.id": 122,
+        "link.output.node": 71,
+        "link.input.node": 60
+      }
+    }
+  },
+  {
+    "id": 123,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "info": {
+      "output-node-id": 71,
+      "output-port-id": 73,
+      "input-node-id": 60,
+      "input-port-id": 64,
+      "state": "active",
+      "props": {
+        "object.id": 123,
+        "link.output.node": 71,
+        "link.input.node": 60
+      }
+    }
+  },
+  {
+    "id": 126,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "info": {
+      "output-node-id": 85,
+      "output-port-id": 86,
+      "input-node-id": 90,
+      "input-port-id": 91,
+      "state": "active",
+      "props": {
+        "object.id": 126,
+        "link.output.node": 85,
+        "link.input.node": 90
+      }
+    }
+  },
+  {
+    "id": 130,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "info": {
+      "output-node-id": 62,
+      "output-port-id": 65,
+      "input-node-id": 47,
+      "input-port-id": 48,
+      "state": "active",
+      "props": {
+        "object.id": 130,
+        "link.output.node": 62,
+        "link.input.node": 47
+      }
+    }
+  },
+  {
+    "id": 131,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "info": {
+      "output-node-id": 62,
+      "output-port-id": 66,
+      "input-node-id": 47,
+      "input-port-id": 49,
+      "state": "active",
+      "props": {
+        "object.id": 131,
+        "link.output.node": 62,
+        "link.input.node": 47
+      }
+    }
+  },
+  {
+    "id": 132,
+    "type": "PipeWire:Interface:Link",
+    "version": 3,
+    "info": {
+      "output-node-id": 47,
+      "output-port-id": 50,
+      "input-node-id": 92,
+      "input-port-id": 93,
+      "state": "active",
+      "props": {
+        "object.id": 132,
+        "link.output.node": 47,
+        "link.input.node": 92
+      }
+    }
+  }
+]

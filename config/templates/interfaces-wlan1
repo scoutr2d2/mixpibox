@@ -1,0 +1,17 @@
+# Ein USB-Funkstick als ZWEITE Karte (wlan1) — Vorlage aus der Handarbeit an
+# Box .62 (20.08.2026): der Realtek-Stick hoert an seinem Platz 14 dB besser
+# als der eingebaute Funk. wlan0 bleibt unangetastet.
+#
+# `allow-hotplug` heisst: ohne eingesteckten Stick passiert hier NICHTS —
+# die Datei darf deshalb auf JEDER Box liegen, auch ohne zweite Karte.
+# `wireless-power off` gilt ab dem ifup dieser Karte; die Unit
+# wifi-powersave-off.service setzt es zusaetzlich fuer alle wl*-Karten
+# (seit 05.09.2026 je Karte, nicht nur fuer die erste).
+#
+# Die Zugangsdaten liegen GETRENNT von wlan0 in einer eigenen wpa-Datei —
+# der Stick soll andere Netze bevorzugen duerfen (5 GHz) als der eingebaute
+# Funk, siehe config/templates/wpa_supplicant-wlan1.conf.
+allow-hotplug wlan1
+iface wlan1 inet dhcp
+	wireless-power off
+	wpa-conf /etc/wpa_supplicant/wpa_supplicant-wlan1.conf

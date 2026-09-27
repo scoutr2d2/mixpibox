@@ -1,0 +1,5 @@
+# Bauergebnis — wird aus src/ erzeugt, gehoert nicht in die Versionierung
+# (gleiche Regel wie /www bei frontend-box).
+/www-admin
+/out-tsc
+/.angular

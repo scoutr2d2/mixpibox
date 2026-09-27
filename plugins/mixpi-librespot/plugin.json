@@ -1,0 +1,17 @@
+{
+  "kennung": "mixpi-librespot",
+  "name": "librespot",
+  "fassung": "0.1.0",
+  "haupt": "index.mjs",
+  "rechte": ["geraetestand"],
+  "konfig": ["maschine"],
+  "sektion": "streaming/spotify",
+  "icon": "icon.svg",
+  "aktionen": [
+    {
+      "kennung": "pruefen",
+      "name": "Stand prüfen",
+      "hinweis": "Fragt Dienst und Bitrate der freien Spotify-Maschine ab."
+    }
+  ]
+}

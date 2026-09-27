@@ -1,0 +1,13 @@
+[Unit]
+Description=MuPiBox: vertraute Bluetooth-Lautsprecher wieder verbinden
+# Nach BlueZ — vorher gibt es nichts zu fragen.
+After=bluetooth.service
+Wants=bluetooth.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/mupibox-tools/bt-reconnect.py --leise
+# Ein fehlgeschlagener Verbindungsversuch ist KEIN Dienstfehler: der
+# Lautsprecher ist dann schlicht aus. Sonst faerbt sich systemctl rot,
+# obwohl alles in Ordnung ist.
+SuccessExitStatus=0 1

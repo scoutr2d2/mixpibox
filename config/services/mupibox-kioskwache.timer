@@ -1,0 +1,16 @@
+[Unit]
+# Die Fristen stehen im Skript, nicht hier — hier steht nur, WIE OFT gefragt
+# wird. Der Wachhund entscheidet selbst anhand von /proc/uptime, ob er schon
+# darf (vor 130 s nie: solange laeuft die Boot-Animation und zeigt ehrlich, an
+# welchem Meilenstein es haengt).
+Description=MuPiBox Kioskwache regelmaessig fragen
+
+[Timer]
+# Erst nach der Boot-Animation ueberhaupt anfangen zu fragen. Frueher waere
+# reine Last in genau der Minute, in der die Box am meisten zu tun hat.
+OnBootSec=130s
+OnUnitActiveSec=20s
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

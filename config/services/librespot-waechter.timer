@@ -1,0 +1,12 @@
+[Unit]
+Description=MuPiBox: Waechter fuer librespot im Takt
+
+[Timer]
+# Nicht zu haeufig: jeder Lauf kostet eine Spotify-Anfrage, und eine tote
+# Sitzung faellt erst auf, wenn jemand hoeren will - fuenf Minuten sind genau.
+OnBootSec=3min
+OnUnitActiveSec=5min
+AccuracySec=30s
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,36 @@
+[Unit]
+Description=Control service, to automate warn and shutdown
+After=local-fs.target sysinit.target mupi_hat.service
+DefaultDependencies=no
+
+[Service]
+Type=simple
+WorkingDirectory=/tmp/
+User=root
+ExecStart=/usr/local/bin/mupibox/mupihat_automation.sh
+
+# ══ IMMER NEU STARTEN, NICHT NUR NACH EINEM ABBRUCH (E52, 20.08.2026) ══════
+#
+# Hier stand Restart=on-abort. Das greift NUR, wenn ein Signal den Dienst
+# faellt — bei einem SAUBEREN `exit 0` nicht. Genau so verschwand die
+# Tiefentlade-Abschaltung still: das Skript pruefte einmal, ob ein Akku da
+# ist, bekam beim Kaltstart noch keinen Wert, meldete "No Battery connected,
+# service stopped" und endete ordentlich. systemd sah keinen Fehler, und die
+# Box lief bis zum naechsten Neustart ohne Abschaltung.
+#
+# Das Skript wartet jetzt selbst auf einen gueltigen Wert (mupihat_automation.sh).
+# Diese Zeile ist der zweite Riegel: sollte es doch je enden, kommt es
+# zurueck. 30 s Abstand, damit ein dauerhaft scheiterndes Skript die Box
+# nicht mit Neustarts beschaeftigt.
+Restart=always
+RestartSec=30
+
+# ExecStop IST ENTFALLEN. Es lautete
+#     ExecStop=/bin/kill -TERM $(cat /run/mupi_hat_control.pid)
+# und konnte gar nicht arbeiten: die PID-Datei wurde im Skript mit `echo $!`
+# geschrieben, an einer Stelle OHNE Hintergrundauftrag — `$!` ist dort leer,
+# die Datei also auch, und `kill -TERM` bekam kein Argument. systemd beendet
+# einen Type=simple-Dienst ohnehin selbst ueber seine Prozessgruppe.
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,236 @@
+[
+  {
+    "type": "spotify",
+    "category": "music",
+    "title": "External Playback",
+    "artist": "Unknown",
+    "cover": "../assets/images/nocover_mupi.png",
+    "shuffle": true
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Hello Kitty - Alle Hörspiele",
+    "artist": "EUROPA Hörspiele & Kinderlieder",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84b7535b493ae7d684e66d6441",
+    "playlistid": "1DYDHYJ98WZbHa2OZ4Dljg",
+    "spotify_url": "https://open.spotify.com/playlist/1DYDHYJ98WZbHa2OZ4Dljg"
+  },
+  {
+    "type": "spotify",
+    "category": "music",
+    "title": "EMMA6 - Complete",
+    "artist": "EMMA6",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da8414eff9f1f941402b4c76d182",
+    "playlistid": "55XPZzSH04MoODZpb6nCV2",
+    "spotify_url": "https://open.spotify.com/playlist/55XPZzSH04MoODZpb6nCV2"
+  },
+  {
+    "type": "jellyfin-album",
+    "category": "music",
+    "id": "7d9a37e2732ca78bc68eacb3232960c0",
+    "artist": "Kapelle Petra",
+    "title": "HAMM",
+    "cover": "http://192.168.178.199:8899/Items/7d9a37e2732ca78bc68eacb3232960c0/Images/Primary?api_key=WEGGENOMMEN"
+  },
+  {
+    "type": "spotify",
+    "category": "music",
+    "title": "Liki und die Lichterkinder - Hörspiele",
+    "artist": "kidsclubedutainment",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da848f7ef783e07bb7bcf845ec69",
+    "playlistid": "2GRiKPvowfnWMbydOeBQ7p",
+    "spotify_url": "https://open.spotify.com/playlist/2GRiKPvowfnWMbydOeBQ7p"
+  },
+  {
+    "type": "spotify",
+    "category": "music",
+    "title": "Lichterkinder (Komplett) | Alle Lieder der Lichterkinder",
+    "artist": "Lichterkinder",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da84b1715e1f4df4cff557f18237",
+    "playlistid": "6plWvrOIkNapJQzZnJKvkI",
+    "spotify_url": "https://open.spotify.com/playlist/6plWvrOIkNapJQzZnJKvkI"
+  },
+  {
+    "type": "spotify",
+    "category": "music",
+    "title": "Greatest Hits",
+    "artist": "Red Hot Chili Peppers",
+    "id": "53tvjWbVNZKd3CvpENkzOC",
+    "cover": "https://i.scdn.co/image/ab67616d0000b2735590b4ee88187cb06a5b102d"
+  },
+  {
+    "type": "spotify",
+    "category": "music",
+    "title": "Die Zukunft wird groß",
+    "artist": "Das Lumpenpack",
+    "id": "0PyuOAMz1lv0z737JcQNOg",
+    "cover": "https://i.scdn.co/image/ab67616d0000b2738697e0af4780997bb8973697"
+  },
+  {
+    "type": "spotify",
+    "category": "music",
+    "title": "Das Pummeleinhorn🦄🍪🌸🌷",
+    "artist": "🩵Jojo 🩵",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da847ca38f41cfc3b2129c5eb616",
+    "playlistid": "2QqQXuDKNR8HK1cFxf0NhW",
+    "spotify_url": "https://open.spotify.com/playlist/2QqQXuDKNR8HK1cFxf0NhW"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Biene Maja - Alle Hörspiele",
+    "artist": "EUROPA Hörspiele & Kinderlieder",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da84a73d3858ac5858c092a4b98b",
+    "playlistid": "6e3kTR2HyYsZzU8vrUT9cv",
+    "spotify_url": "https://open.spotify.com/playlist/6e3kTR2HyYsZzU8vrUT9cv"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Die Maus - Alle Folgen (Hörspiele)",
+    "artist": "lismio: Kids - Hörbücher & Musik",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da84e49a4207a4ec8c4b112327c6",
+    "playlistid": "46rrdOcrXpm1iOTNAh8nz1",
+    "spotify_url": "https://open.spotify.com/playlist/46rrdOcrXpm1iOTNAh8nz1"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Sandmännchen Geschichten und Lieder",
+    "artist": "matze.sp.hh",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da840318ffba2702f619708e33e2",
+    "playlistid": "6UQv65SF9Y0Bz9qSSu6tCj",
+    "spotify_url": "https://open.spotify.com/playlist/6UQv65SF9Y0Bz9qSSu6tCj"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "-WAS IST WAS- Alle Hörspiele",
+    "artist": "𝓛𝓮𝓸𝓷𝓲𝓮♡",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000da84b4b2c162fbde52375c0567f3",
+    "playlistid": "3BXRUnjGLzKLmoevnVLh6y",
+    "spotify_url": "https://open.spotify.com/playlist/3BXRUnjGLzKLmoevnVLh6y"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Checker Tobi",
+    "artist": "jasche-98",
+    "cover": "https://image-cdn-ak.spotifycdn.com/image/ab67706c0000da84c396a414cf7b8975adf80282",
+    "playlistid": "3NYrKKWiWlMc5JtPPfJA5y",
+    "spotify_url": "https://open.spotify.com/playlist/3NYrKKWiWlMc5JtPPfJA5y"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Folge 1: Der Wackelzahn (Das Original-Hörspiel zur TV-Serie)",
+    "artist": "Kleine Prinzessin",
+    "id": "0fWSpghYzVJdPa8S9k5nmL",
+    "cover": "https://i.scdn.co/image/ab67616d0000b2732b1fcd3461a7f9f0961b67c5"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Folge 2: Abenteuer im Schloss (Das Original-Hörspiel zur TV-Serie)",
+    "artist": "Kleine Prinzessin",
+    "id": "67ISaegBRs86efmvC9g3nZ",
+    "cover": "https://i.scdn.co/image/ab67616d0000b273dc8e86345244c9ca53aa0f80"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Folge 6: Der Geburtstagskuchen (Das Original-Hörspiel zur TV-Serie)",
+    "artist": "Kleine Prinzessin",
+    "id": "12iVIzbKsm2Pxw2BMU5ZMF",
+    "cover": "https://i.scdn.co/image/ab67616d0000b2739404856bcfd3e2d474b1de64"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Die kleine Ballerina",
+    "artist": "Prinzessin Lillifee",
+    "id": "5Vdkk661wIB1r81chcBf5w",
+    "cover": "https://i.scdn.co/image/ab67616d0000b2736fa1443adb8e4ef1d7371d29"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Folge 5: Die Spielstunde im Königreich (Das Original-Hörspiel zur TV-Serie)",
+    "artist": "Kleine Prinzessin",
+    "id": "5uLtVEL7IK3XalCa5kx4Wk",
+    "cover": "https://i.scdn.co/image/ab67616d0000b273b03b5edec9fd26be768a2acc"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Kleine Prinzessin - alle Hörbücher",
+    "artist": "Kleine Prinzessin",
+    "playlistid": "1Wg0zj9r7mXKMUO5h91QXM",
+    "cover": "https://mosaic.scdn.co/640/ab67616d00001e022b1fcd3461a7f9f0961b67c5ab67616d00001e0238faf67d3bed5f2cfde289a5ab67616d00001e02dc8e86345244c9ca53aa0f80ab67616d00001e02f0134e85810a12bb32057aed"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Major Tom (alle Hörspiele)",
+    "artist": "Der kleine Major Tom",
+    "playlistid": "0dOx2eLhuDusJvgYXYzzWP",
+    "cover": "https://mosaic.scdn.co/640/ab67616d00001e022e71e15d8170cd0a42e2eb56ab67616d00001e024d6eaf26e67fb4948ac97f1cab67616d00001e028c374a01202266e86787d3cfab67616d00001e02ffb562f10a3a1ec0c6f9d8b2"
+  },
+  {
+    "type": "spotify",
+    "category": "music",
+    "title": "Team Karacho - Zweisprachige Kinderlieder | Stars singen Songs für Kids",
+    "artist": "EUROPA Hörspiele & Kinderlieder",
+    "playlistid": "3PKX5L2IqC945ZAnLql85m",
+    "cover": "https://image-cdn-fa.spotifycdn.com/image/ab67706c0000d72cc5a3532c52a9c8a3bafe0a91"
+  },
+  {
+    "type": "spotify",
+    "category": "music",
+    "title": "HAMM",
+    "artist": "Kapelle Petra",
+    "id": "0l0nQidfDmC4SiTdrpHr4v",
+    "cover": "https://i.scdn.co/image/ab67616d0000b27371c3bbd34cb11b09d69369dc"
+  },
+  {
+    "type": "jellyfin-album",
+    "category": "music",
+    "title": "Die Zukunft wird groß",
+    "artist": "Das Lumpenpack",
+    "id": "e131865d504a657a93533722fc88bc90",
+    "cover": "http://192.168.178.199:8899/Items/e131865d504a657a93533722fc88bc90/Images/Primary?api_key=WEGGENOMMEN"
+  },
+  {
+    "type": "ard",
+    "category": "audiobook",
+    "title": "Die Maus zum Hören",
+    "artist": "Die Maus",
+    "id": "69106028",
+    "cover": "https://api.ardmediathek.de/image-service/images/urn:ard:image:e24f3bfe04125c29?w=512&ch=b710cc19a9544f5f"
+  },
+  {
+    "type": "spotify",
+    "category": "audiobook",
+    "title": "Die Maus zum Hören",
+    "artist": "Westdeutscher Rundfunk",
+    "audiobookid": "0j3oVELRmPoHbo1B15ITfr",
+    "cover": "https://i.scdn.co/image/ab6765630000ba8ac811c8fb3874ac89229ebaf7"
+  },
+  {
+    "type": "spotify",
+    "category": "other",
+    "title": "Quarks Science Cops",
+    "artist": "Quarks",
+    "audiobookid": "0rQTpxXFmKsC8vu6O56KNk",
+    "cover": "https://i.scdn.co/image/ab6765630000ba8a2144a8bbc45b432b8a145263"
+  },
+  {
+    "type": "ard",
+    "category": "other",
+    "title": "Quarks Science Cops",
+    "artist": "WDR",
+    "id": "83030960",
+    "cover": "https://api.ardmediathek.de/image-service/images/urn:ard:image:89269fde7425e5e4?w=512&ch=dc1c6d6a37735238"
+  }
+]

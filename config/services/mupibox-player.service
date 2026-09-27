@@ -1,0 +1,50 @@
+[Unit]
+# DER ABSPIELDIENST DER BOX (Port 5005, spotify-control.js).
+#
+# Herkunft und Grund wie bei mupibox-server.service: bis zum 14.08.2026 lag
+# diese Unit NUR im remote-step-installer, und `autosetup.sh` startete die
+# App auf einer frisch geflashten Karte stattdessen ueber pm2.
+#
+# Inhalt von der laufenden Box .57 abgelesen (14.08.2026).
+Description=MuPiBox Player (spotify-control.js)
+After=local-fs.target mupibox-alsa-init.service
+# Zum fehlenden alsa-init auf autosetup-Boxen siehe mupibox-server.service —
+# gemessen harmlos.
+Wants=mupibox-alsa-init.service
+
+[Service]
+Type=simple
+User=dietpi
+# XDG_RUNTIME_DIR IST NICHT SCHMUCK, sondern der Unterschied zwischen Ton und
+# Stille. PipeWire ist ein SITZUNGSdienst und horcht unter /run/user/<uid>.
+# Ein Systemdienst bekommt diese Variable nicht von selbst — auch nicht, wenn
+# er als derselbe Benutzer laeuft.
+#
+# WAS OHNE SIE PASSIERT (am Geraet gemessen, Pi 5, 2026-08-01): mpv meldet
+# "current-ao: None", nimmt "loadfile" mit "success" an, legt die Datei in die
+# Liste — und STARTET SIE NIE. "playlist-count" steigt, "playlist-pos-1"
+# bleibt -1, "idle-active" bleibt true. Es sieht aus, als sei die Wiedergabe
+# kaputt; in Wirklichkeit fehlt der Tonausgang. Jellyfin und lokale Dateien
+# waren damit stumm, WAEHREND Spotify spielte — denn librespot.service traegt
+# diese Zeile laengst.
+#
+# Dasselbe mpv mit denselben Argumenten, nur MIT der Variablen, spielt
+# dieselbe Adresse sofort (current-ao: pipewire, time-pos laeuft).
+#
+# NEBENBEI, BEIM ABLESEN VON DER BOX AUFGEFALLEN (14.08.2026): auf der Box
+# steht dieser Abschnitt LUECKENHAFT da ("mpv meldet , nimmt  mit  an"). Das
+# Rezept schreibt die Unit mit einem Heredoc OHNE Anfuehrungszeichen am
+# Begrenzer — noetig, damit die Pfade eingesetzt werden —, und die Shell hat
+# die in Rueckwaerts-Hochkommata gesetzten Wortbeispiele im Kommentar als
+# BEFEHLE ausgefuehrt und durch ihre (leere) Ausgabe ersetzt. Hier, in einer
+# statischen Datei, passiert das nicht; deshalb stehen die Beispiele wieder in
+# geraden Anfuehrungszeichen. Nur die Kommentare waren betroffen, keine
+# wirksame Zeile.
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+WorkingDirectory=/home/dietpi/.mupibox/spotifycontroller-main
+ExecStart=/usr/bin/node /home/dietpi/.mupibox/spotifycontroller-main/spotify-control.js
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

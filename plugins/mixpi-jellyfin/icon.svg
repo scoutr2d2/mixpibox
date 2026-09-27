@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Jellyfin">
+  <!-- Ein neutraler Medienserver: Kasten mit Wiedergabepfeil. Kein Logo,
+       keine Marke - das Icon gehoert dem Plugin und reist mit ihm (E77). -->
+  <style>
+    /* Tinte im Zeichen, nicht aus der Seite: als img geladen sieht dieses SVG
+       die color der Verwaltung nicht, und currentColor waere Schwarz auf
+       #121212. Siehe tools/plugin-icon-kontrast.py. */
+    svg { color: #f2f2f7; }
+  </style>
+  <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">
+    <rect x="3.2" y="4.5" width="17.6" height="12.5" rx="2" />
+    <path d="M10 8.5v4.6l4.2-2.3z" fill="currentColor" stroke="none" />
+    <path d="M8 20h8" stroke-linecap="round" />
+  </g>
+</svg>
