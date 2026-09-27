@@ -217,22 +217,30 @@ describe('Suchbestand der Verwaltung', () => {
    * haengen unter „Medien". Ohne die Erhebung ueber den Verweis waeren ihre
    * dreissig Eintraege LAUTLOS aus der Suche gefallen — nichts waere kaputt,
    * man faende sie nur nicht mehr. Genau davor schuetzt dieser Bestand.
+   *
+   * „Gruppen" kam am 26.09.2026 mit der Erweiterung mixpi-gruppen als dritte
+   * Unterseite dazu (Weg /gruppen) — ohne Eintrag in der Kopfleiste.
    */
   describe('Unterseiten', () => {
     const unterseiten = unterseitenLesen()
 
-    test('Doppelte und Interpreten haengen genau an einer Elternseite', () => {
+    test('Doppelte, Gruppen und Interpreten haengen genau an einer Elternseite', () => {
       const gefunden = unterseiten
         .filter((u) => u.eltern.length === 1)
         .map((u) => `${u.eltern[0]} › ${u.name} (${u.weg})`)
         .sort()
-      assert.deepEqual(gefunden, ['Medien › Doppelte (/verschmelzung)', 'Medien › Interpreten (/interpreten)'])
+      assert.deepEqual(gefunden, [
+        'Medien › Doppelte (/verschmelzung)',
+        'Medien › Gruppen (/gruppen)',
+        'Medien › Interpreten (/interpreten)',
+      ])
     })
 
     test('ihre Eintraege sind trotzdem im Bestand — und nennen den Weg', () => {
       for (const [text, weg] of [
         ['Abgleichen', '/verschmelzung'],
         ['Freigeschaltet', '/interpreten'],
+        ['Bestehende Gruppen', '/gruppen'],
       ]) {
         const t = eintraege.find((e) => e.text === text)
         assert.ok(t, `„${text}" fehlt im Suchbestand.`)
@@ -244,7 +252,7 @@ describe('Suchbestand der Verwaltung', () => {
     test('die alten Wege sind unveraendert — kein Lesezeichen zerbricht', () => {
       // Der Umzug hat die Bedienung verschoben, nicht die Adresse. Waere ein
       // Pfad mitgewandert, liefe jedes gesetzte Lesezeichen ins Leere.
-      for (const weg of ['/verschmelzung', '/interpreten']) {
+      for (const weg of ['/verschmelzung', '/interpreten', '/gruppen']) {
         assert.ok(
           eintraege.some((e) => e.weg === weg && e.bereich === 'Seite'),
           `Der Weg ${weg} fuehrt nicht mehr auf eine Seite des Bestands.`,

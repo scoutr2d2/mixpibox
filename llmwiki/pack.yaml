@@ -1,5 +1,5 @@
 id: mupibox
-version: "636"
+version: "637"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -65164,3 +65164,40 @@ entries:
       Verwaltungsseite „Aufzeichnen", Knopf „Aufnehmen" in der Medienliste,
       der Strom-Zweck fuer die Aufnahme, die PipeWire-Senke
       `62-mixpi-mitschnitt.conf` (alle drei Installationswege kopieren sie).
+  - id: github-fassung-ohne-aufnahme-per-patch
+    title: "GitHub bekommt eine Fassung ohne die Aufnahme — per Patch nur beim Veroeffentlichen, lokal bleibt alles"
+    kind: entscheidung
+    tags: [github, veroeffentlichung, patch, aufnahme, ausschluss, 2026]
+    stand: "27.09.2026: GitHub 5bf4ba15, Zweig github-ohne-aufnahme 9d4a2e44, Patch 117 Pfade."
+    source: 'Betreiber 27.09.2026: „wichtig ist hier kann alles so bleiben nur eben github muss das … raus", dann „aber nur für github" und „Auch die Verdrahtung raus".'
+    body: >
+      DIE LAGE: die Aufnahme-Erweiterung steckte nicht nur im Plugin, sondern in
+      rund 114 veroeffentlichten Dateien (Verwaltungsseite, Knoepfe, Zweck des
+      zweiten Stroms, Plugin-Recht, Senken-Vorlage in allen drei
+      Ausrollwegen, Schluessel in Konfiguration und Sicherung, Tonweg, Doku).
+      Die Ausschlussliste allein haelt nur ganze Dateien zurueck; der
+      Veroeffentlicher laedt sonst immer die lokalen Blobs hoch.
+      DIE LOESUNG: Zweig `github-ohne-aufnahme` ueber main traegt EINEN Commit,
+      der die Verdrahtung entfernt — und wird NIE nach main gemergt. Aus ihm
+      entsteht mit `python3 tools/github-veroeffentlichen.py --patch-aus
+      github-ohne-aufnahme` die Datei tools/github-ohne-aufnahme.patch
+      (lokal committet, selbst ausgeschlossen). Der Veroeffentlicher wendet sie
+      im Zwischenindex an (`git apply --cached` mit eigenem GIT_INDEX_FILE),
+      VOR beiden Wachen; die Installationswache liest die Rezepte seitdem aus
+      den veroeffentlichten Blobs statt von der Platte.
+      ZWEI FALLEN DABEI: (1) der Patch muss ein Drei-Punkt-Diff sein
+      (HEAD...zweig) — zwei Punkte naehmen alles zurueck, was auf main seit dem
+      Abzweigen dazukam; (2) Pfade, die die Ausschlussliste zurueckhaelt, raus
+      aus dem Patch — im Zweig liegt die Erweiterung geloescht (damit die Tests
+      den oeffentlichen Stand abbilden), im Zwischenindex gibt es sie nicht,
+      und `git apply` scheiterte an der Loeschung.
+      PFLEGE: passt der Patch nicht mehr, bricht die Veroeffentlichung ab. Dann
+      den Zweig auf main neu aufsetzen (rebase), auf ihm pruefen wie die CI
+      (backend-api, backend-player, test:plugins, ng test, check-types, Lint,
+      mixpi-github-fassung --selbsttest, mixpi-zieher-probe, Gestalter-Wachen,
+      npm run build), committen, --patch-aus, Trockenlauf. Beim ersten Mal:
+      3189/241/404/242 gruen, voller Bau, 1805 Blobs gegen 9 Muster ohne
+      Treffer, gebauter Baum = Zweig bis auf die zwei Veroeffentlicher-Dateien.
+      „Mitschnitt" ist im Code DOPPELT belegt (auch Hoerverlauf und
+      Mess-Protokolle) — beim Entfernen nur die Audio-Aufnahme treffen.
+    related: ["aufnahme-erweiterung-bleibt-lokal"]
