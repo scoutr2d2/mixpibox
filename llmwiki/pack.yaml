@@ -1,5 +1,5 @@
 id: mupibox
-version: "619"
+version: "620"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -64325,3 +64325,128 @@ entries:
       aus server.ts zurueck (der eine Fall, den der Zeilenumbruch-Riegel
       allein nicht faengt).
     related: ["arbeitsbereich-der-nichts-deklariert-ist-unsichtbar", "dauerrote-wache-ist-keine", "gegenprobe-statt-gruen-glauben"]
+  - id: ursprung-5-0-gegen-fork-gelesen
+    kind: referenz
+    title: MuPiBox Classic 5.0.x gegen den Fork gelesen — was sich zu uebernehmen lohnt
+    tags: [ursprung, upstream, vergleich, fork, ideen, 2026]
+    quelle:
+      - https://github.com/splitti/MuPiBox (Tags 4.2.4 .. 5.0.2, 148 Commits, 102 Dateien)
+      - https://github.com/splitti/MuPiBox/commit/19b263b5d12cae1e6c7882e852e0193e96b7a34c
+    body: |
+      STAND 27.09.2026, AM CODE GELESEN, NICHT AN DER BOX GEMESSEN. Vier
+      Stichproben im Fork gegengelesen und bestaetigt (mplayer-Umlaute,
+      find-Zaehlung, Dienst-Zyklus, dhclient-Leak); die Zeilennummern
+      gelten fuer diesen Tag und wandern.
+
+      WIE MIT DEM URSPRUNG UMGEGANGEN WIRD — Betreiber, 27.09.2026:
+      „nach das interesse vom grund projekt an der mixpibox gegeben ist
+      werde ich nur die fortschitte protokollieren. und ggf ideen
+      uebernehmen wenn sinnvoll" — gleich darauf berichtigt: „nicht
+      gegeben". Gemeint ist also: Das Grundprojekt hat KEIN Interesse an
+      der MixPiBox. Deshalb fliesst nichts zurueck (keine PRs nach
+      splitti/MuPiBox anbieten), und in die andere Richtung gilt: KEIN
+      Nachziehen von Upstream, kein Zusammenfuehren. Neue Upstream-Fassungen werden gelesen, der
+      Fund kommt als eigener Eintrag hierher (oder als Nachtrag an diesen),
+      und einzelne IDEEN werden im Fork-Stil nachgebaut, wenn sie tragen.
+      Der verlinkte Commit 19b263b5 selbst hebt nur version.json auf 5.0.2.
+
+      NACHLESEN OHNE AUSCHECKEN:
+        git clone --filter=blob:none --no-checkout \
+          https://github.com/splitti/MuPiBox up
+        git -C up log --oneline 4.2.4..5.0.2
+        git -C up show 5.0.2:<pfad>
+
+      ── LOHNT SICH (nach Gewinn geordnet) ──────────────────────────────
+
+      1. COVER ALS THUMBNAILS (Upstream f52a7707). Cover mit `&w=400`
+         angefragt (64..800), PIL verkleinert (`im.draft()`, LANCZOS,
+         JPEG q82 optimize, ~40 KB), Ablage `~/.mupibox/thumbs/<sha1>.jpg`,
+         Schluessel = Pfad+mtime+Groesse. Hoechstens 2 Jobs, `nice -n 10`,
+         gleiche Anfragen per Job-Map zusammengelegt, 90 s nach Start
+         vorgewaermt, >60 Tage alt geloescht; ohne PIL 10 min Original.
+         FORK: liefert lokale Cover in voller Groesse (server.ts ~15265,
+         Fall 5); Problem ist bekannt, siehe
+         nichts-geht-komprimiert-ueber-die-leitung — gebaut ist nichts.
+         Nebenbefund: `coverAusSpeicher` (server.ts ~11366) liest synchron.
+
+      2. LATIN-1-TAGS UNTER MPLAYER (74d89309). Upstream trennt Zeilen aus
+         Rohbytes: TextDecoder utf-8 fatal, sonst windows-1252.
+         FORK: src/backend-player/src/mplayer-wrapper.ts:149 `byline` +
+         `toString()` -> Umlaute werden U+FFFD. mpv ist nicht betroffen,
+         mplayer bleibt aber Rueckfall (Pi 4 ohne mpv, Bestandsboxen ohne
+         playerEngine).
+
+      3. TITEL ZAEHLEN PER SHELL. FORK spotify-control.ts:1781
+         `find "…${currentMeta.path}" -type f -name "*.mp3" -or …| wc -l`:
+         Pfad ungeschuetzt in der Shell, `-type f` gilt mangels Klammern
+         nur fuer mp3, .ogg und Grossschreibung fehlen. Upstream zaehlt
+         per readdirSync. Ebenso Albumname: Upstream vorletztes
+         Pfadsegment, Fork fest `split('/')[7]` (spotify-control.ts:436).
+
+      4. WLAN.
+         a) Toleranter WLAN-Waechter (fe299733): ersetzt DietPis Monitor
+            (Neuaufbau nach EINEM verlorenen Ping) durch 3 Pings/Pruefung,
+            Neuaufbau erst nach 3 Fehlpruefungen. FORK: fehlt ganz. Vorher
+            an der Box pruefen, ob dietpi-wifi-monitor ueberhaupt laeuft.
+         b) /tmp/network.json selbst heilen: FORK check_network.sh ~70-77
+            `sudo echo -n "[]" ${NETWORKCONFIG}` OHNE `>` — heilt nichts.
+            Gleich in get_network.sh ~71. (Der remote-step-installer-Weg
+            repariert es in mupibox-network-sync.sh; autosetup nicht.)
+         c) autoswitch_wifi.sh + mupi_autoconnect-wifi.service: alle drei
+            Upstream-Fehler stehen im Fork noch (902139de, 687453b3,
+            4ca431dd): pro Wechsel ein weiteres dhclient, Vergleich gegen
+            best statt aktuelle SSID ohne 10-dBm-Abstand, und der Zyklus
+            `Before=basic.target` + `After=network.target`, den systemd
+            still verwirft. Wirkt heute nicht, weil der Dienst nie
+            eingeschaltet wird (BACKLOG, dienste.ts). NUR ALLE DREI ZUSAMMEN
+            beheben oder Skript+Dienst streichen — den Zyklus allein zu
+            loesen machte das kaputte Skript scharf.
+         d) enablewifi-Zweig spotify-control.ts ~3040: `head -n -1` loescht
+            blind die letzte Zeile der config.txt (Upstream:
+            set_onboard_wifi.sh). Kein Sender gefunden -> entfernen.
+
+      5. ALTES UPDATE-SKRIPT update/start_mupibox_update.sh, falls es noch
+         ein Weg fuer laufende Boxen ist (der eigentliche Weg
+         mixpi-zieher.py ist klar besser als Upstream). Upstream hat:
+         jq vorab in Temp laden und `--version` pruefen (sonst leeres
+         /usr/bin/jq, das die Konfiguration leert), `*.pre-update`-Kopie
+         der JSONs, `unzip -tq` mit 5 Versuchen, Zielordner per `unzip -Z1`
+         statt geraten, Pflichtdateien pruefen, Dashboard ueber Temp +
+         ELF-Pruefung, MuPiHAT-Vorlagen `cp -rf` statt `mv` (mv in einen
+         nicht leeren Ordner schlug immer fehl). Fork hat davon nichts.
+
+      6. KLEINE IDEEN: Kategorien einzeln ausblenden (hiddenCategories);
+         SSID eintippen fuer versteckte Netze (Fork-WLAN-Fach tippt nie
+         eine SSID); Ladering beim Puffern von Radio/Podcast (im Fork ueber
+         mpv `paused-for-cache`/`cache-buffering-state`, nicht mplayer);
+         ungenutzte Pakete aus autosetup/Update streichen (id3tool,
+         python3-gpiozero, mesa-utils, libsdl2-dev, python3-smbus,
+         libwidevinecdm0, autoconf, automake, mutagen) — i2c-tools BLEIBT
+         (hwdetect.sh, server.ts); mqtt.py fragt fest wlan0 ab, obwohl der
+         Fork wlan1 kennt; Feed-Cache im Podcast-Plugin.
+
+      ── FORK SCHON BESSER / BETRIFFT UNS NICHT ─────────────────────────
+      * Zurueck-Navigation (Ionic-Stack statt History), Coverflow-Wackeln,
+        Cover-Flip, 60-s-Neuladen: alles Angular-Box, die es seit E118
+        nicht mehr gibt; NewDesign hat Fristen an jedem Abruf, 3D bewusst
+        weg (Speicher).
+      * Titelliste per Halten: Upstreams playTrackFromList hat KEINE
+        Sprungsperre — zwei schnelle Spotify-Spruenge landen falsch. Nicht
+        so uebernehmen; siehe titelkarte-abgeloest-durch-lanes.
+      * USB-WLAN-Automatik per udev: kollidiert mit Wahl+Riegel des Forks
+        (zwei-schnittstellen-ein-teilnetz-arp-flux); Treiber-Dropdown
+        unnoetig (usb-stecker-brauchen-keine-treiber).
+      * NAS als Medienquelle: bewusst nicht gewaehlt (mixpi-netzlaufwerk-
+        nas). Upstream verschluesselt das Passwort mit AES-GCM, Schluessel
+        per scrypt aus der Pi-Seriennummer — auf der Box nachrechenbar,
+        also Verschleierung. Die 0600-root-Datei ausserhalb der Sicherung
+        ist besser. Falls die Quelle je kommt: mapWithConcurrency und
+        statfs-Platzpruefung vor Download sind gute Muster.
+      * Bluetooth-Haenger: Node-Backend mit Zeitgrenzen, kein PHP-Sperren.
+        Upstreams set_bluetooth_chip.sh (hciuart maskieren) fehlt als
+        Funktion, ist optional.
+      * Podcast-XML: Plugin liest schon per Regex. MQTT: Fork nutzt
+        will_set + loop_start; Upstreams neues mqtt.py hat in
+        handle_shutdown ein undefiniertes `e` (NameError bei SIGTERM).
+      * Update-Hauptweg, librespot (0.8.0 aus Paket + Waechter).
+    related: ["mupibox-ng-die-zweite-linie-des-ursprungs", "nichts-geht-komprimiert-ueber-die-leitung", "titelkarte-abgeloest-durch-lanes", "zwei-schnittstellen-ein-teilnetz-arp-flux", "usb-stecker-brauchen-keine-treiber", "mixpi-netzlaufwerk-nas", "mupi-update-knopf-loescht-den-fork"]
