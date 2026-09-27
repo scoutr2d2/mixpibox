@@ -1,0 +1,47 @@
+name: Handy-App
+
+# Prueft und baut die Android-App aus handy-app/ (Flutter). Das APK liegt
+# danach als Artefakt „mixpibox-app" am Lauf — herunterladen, aufs Handy,
+# installieren („Unbekannte Quellen" erlauben).
+#
+# WARUM HIER UND NICHT LOKAL: Die Android-Werkzeuge (dl.google.com) sind in
+# den Cloud-Sitzungen, in denen die App am 27.09.2026 entstand, gesperrt;
+# analysiert und getestet wurde dort, gebaut nicht. Der GitHub-Laeufer hat
+# das Android-SDK schon an Bord.
+#
+# SIGNIERT MIT DEM DEBUG-SCHLUESSEL (Vorgabe der Flutter-Vorlage). Fuer den
+# eigenen Haushalt genuegt das; ein Update ueber ein anders signiertes APK
+# verlangt vorher Deinstallieren. Ein eigener Schluessel: handy-app/README.md.
+
+on:
+  push:
+    paths: ['handy-app/**', '.github/workflows/handy-app.yml']
+  pull_request:
+    paths: ['handy-app/**', '.github/workflows/handy-app.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  app:
+    name: Analysieren, testen, APK bauen
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: handy-app
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build apk --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mixpibox-app
+          path: handy-app/build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error

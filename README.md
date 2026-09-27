@@ -35,7 +35,8 @@ Unterhalt und Schäden liegen hier.
 Der Ursprung führt inzwischen zwei Linien — **Classic** (Release 5.0.1 vom
 21.09.2026) und das angekündigte, nicht veröffentlichte **NG**. Dieser Fork ist
 keins von beiden, sondern ein eigener Neubau aus derselben Idee. Was NG
-ankündigt und es hier nicht gibt: RFID, Tasten als Bedienweg, eine App. Was es
+ankündigt und es hier nicht gibt: RFID, Tasten als Bedienweg. Eine Handy-App
+gibt es seit dem 27.09. als Gerüst (`handy-app/`, noch nie an einer Box). Was es
 hier gibt, steht in Abschnitt 3; der Vergleich in Abschnitt 4 misst gegen den
 Stand der Abzweigung, nicht gegen Classic 5.
 
@@ -48,6 +49,10 @@ dessen Leute diesen Code nie gesehen haben.
 
 Aus dem Commit-Log, nicht aus dem Gedächtnis. Was davon halb ist, steht in 3.9.
 
+* **27.09.** **Handy-App** (Android, Flutter) in `handy-app/`: mehrere Boxen,
+  Kinderprofile wechseln, abspielen, Lautstärke, Mediathek — und alle Boxen auf
+  einmal still. Die Box bleibt unverändert. Ein Gerüst: getestet gegen eine
+  Attrappe, **noch nie an einer echten Box**; das APK baut die CI.
 * **25.09.** **Kinderzeit-Regeln je Kind** jetzt auch in der Verwaltung: je Kind
   „wie die Hausregel" oder eigene Regeln. Der Ein-Knopf-Weg richtet Vorlesen,
   Fernbedienung, Entzerrer und die Mitschnitt-Senke ein wie die anderen Wege.
@@ -705,7 +710,7 @@ Ohne diesen Befehl liegen die Haken zwar im Baum, laufen aber **nie** —
 **Wo das Wissen steht.** Die teuer erkauften Einzelheiten — welche Messung
 welche Vermutung widerlegt hat, welcher Workaround warum nötig war — stehen
 nicht im Code und nicht in dieser Datei, sondern im Wissenspaket
-**`llmwiki/pack.yaml`** (1118 Einträge, Fassung 620). Es ist bewusst Daten,
+**`llmwiki/pack.yaml`** (1119 Einträge, Fassung 621). Es ist bewusst Daten,
 kein Code, und wird nie ausgeführt. Gelesen wird es nicht von Hand:
 
 ```bash

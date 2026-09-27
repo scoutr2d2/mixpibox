@@ -1,5 +1,5 @@
 id: mupibox
-version: "620"
+version: "621"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -64387,3 +64387,41 @@ entries:
       als „stellbar“. WER EIN FORMATFELD ERGAENZT: Whitelist, Wirkung in
       app.js, Eintrag in katalog.mjs, dann format.mjs neu bauen.
     related: ["bloecke-format-mixpi-thema", "classic-und-themen-tauschen", "darstellung-auf-der-box-statt-im-browser", "darstellung-nur-wirksame-felder", "mixpi-maskottchen-familie"]
+  - id: handy-app-flutter-fernbedienung
+    title: "Handy-App (Flutter/Android): mehrere Boxen, Kinderprofile, alle auf einmal still — ohne Aenderung an der Box"
+    kind: entscheidung
+    tags: [app, flutter, android, fernbedienung, profile, herkunft, auth, 2026]
+    stand: "27.09.2026 Geruest in handy-app/: flutter analyze sauber, 17 Tests gegen eine Attrappe, zwei davon per Sabotage gegengeprobt. NIE an einer echten Box, NIE auf einem Handy gelaufen. APK baut nur die CI (.github/workflows/handy-app.yml) - in der Cloud-Sitzung war dl.google.com gesperrt."
+    source: 'Betreiber 27.09.2026: „eine flutter android app für die mixpibox zum steuern (macht flutter sin?) auch multiple gerääte stuern und profile".'
+    body: >
+      MACHT FLUTTER SINN? JA, aus drei Gruenden: (1) die Box hat alles, was
+      eine Fernbedienung braucht, schon als HTTP-Schnittstelle (/api/box,
+      /api/auth/login, /player/local + /player/state, /player/current/<befehl>,
+      /api/profile, /api/profil/aktiv, /api/werke, /api/spielen) - die App ist
+      reiner Client, die Box bleibt unveraendert. (2) Ein Code fuer Android und
+      spaeter iOS. (3) Ein Kotlin-Einzelgaenger haette nichts, was Flutter hier
+      nicht auch hat; eine Web-App dagegen scheitert am Herkunftsriegel.
+
+      DER NICHT OFFENSICHTLICHE GRUND GEGEN EINE WEB-APP: herkunft.ts weist
+      Browser-Anfragen einer FREMDEN Seite ab (Origin != Host). Eine native
+      App schickt kein Origin und gilt dort wie curl als „keine Herkunft" -
+      sie kommt durch, ohne dass an der Box ein CORS-Loch aufgeht. Die
+      Namenspruefung (eigene-namen.ts) laesst die IP-Adressen der Box zu.
+
+      ZWEI FALLEN, DIE DIE APP SCHON UMGEHT: /api/box liegt HINTER dem
+      Anmeldetor (nicht in OFFENE_PFADE) - eine Box mit Passwort antwortet
+      401 `anmeldung erforderlich`, und die Netzsuche muss das als Box
+      zaehlen. Und der Bildpfad aus /api/werke kommt fertig kodiert
+      (bildPfad in werke.ts): Uri.replace(path:) machte aus %20 ein %2520,
+      also resolve().
+
+      PROFILE HEISSEN HIER KINDERPROFILE DER BOX, nicht App-Einstellungen.
+      „Profil auf allen Boxen" ordnet ueber den NAMEN zu - dieselbe Person
+      kann auf zwei Boxen verschiedene Kennungen haben. Farb-, Muster- und
+      Bildpasswoerter gehen nur am Schirm; die App sagt das, statt es zu
+      versuchen.
+
+      WENN SICH EINE SCHNITTSTELLE AENDERT, muss die Attrappe in
+      handy-app/test/box_client_test.dart mitziehen - sonst bleiben die
+      Tests gruen, waehrend die App an der Box scheitert.
+    related: ["mupi-admin-dienste-und-netzwerk-neu", "geraetename-geht-an-den-dienst", "gegenprobe-statt-gruen-glauben"]

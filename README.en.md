@@ -36,7 +36,8 @@ Maintenance and breakage are handled here.
 The origin now runs two lines — **Classic** (release 5.0.1 from
 21.09.2026) and the announced, not yet published **NG**. This fork is
 neither of them, but a separate rebuild from the same idea. What NG
-announces and what does not exist here: RFID, buttons as a control path, an app. What
+announces and what does not exist here: RFID, buttons as a control path. A phone app
+exists since 27.09. as a scaffold (`handy-app/`, never run against a box yet). What
 exists here is listed in section 3; the comparison in section 4 measures against the
 state at the fork point, not against Classic 5.
 
@@ -48,6 +49,10 @@ whose people have never seen this code.
 
 From the commit log, not from memory. Which of this is half-done is in 3.9.
 
+* **27.09.** **Phone app** (Android, Flutter) in `handy-app/`: several boxes,
+  switch child profiles, play, volume, media library — and silence all boxes at
+  once. The box itself is unchanged. A scaffold: tested against a mock, **never
+  against a real box yet**; CI builds the APK.
 * **25.09.** **Screen-time (Kinderzeit) rules per child** now in the admin too:
   per child "like the house rule" or own rules. The one-button path sets up
   read-aloud, remote control, equalizer and the recording sink like the other paths.
@@ -693,7 +698,7 @@ Without this command the hooks sit in the tree but **never** run —
 **Where the knowledge is.** The dearly bought details — which measurement
 refuted which assumption, which workaround was necessary and why — are
 neither in the code nor in this file but in the knowledge pack
-**`llmwiki/pack.yaml`** (1118 entries, version 620). It is deliberately data,
+**`llmwiki/pack.yaml`** (1119 entries, version 621). It is deliberately data,
 not code, and is never executed. It is not read by hand:
 
 ```bash
