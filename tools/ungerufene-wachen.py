@@ -102,6 +102,33 @@ WO DIESE WACHE WEITER BLIND IST — gemessen am 19.09.2026, nicht vermutet
         (librespot-mitlesen.sh:88, taster-wache-am-geraet.sh:65) — beide in
         einer Kommentarzeile, also ohnehin draussen. Ein eigener Riegel dafuer
         waere heute Aufwand ohne Gegenstand.
+    (d) EIN SAMMELLAEUFER, DER NUR EINEN TEIL SEINES MUSTERS FAEHRT, gilt hier
+        als Ruf fuer das GANZE Muster. Die Wache liest `SAMMELRUF = "…"`
+        (siehe dort), nicht, was das Werkzeug danach aussortiert. Darum
+        ueberspringt `tools/installer-tests.py` nichts: seine BEKANNT-Liste
+        wird mitgefahren und nur milder beurteilt.
+    (e) DIE PFADLISTEN-ACHSE (AUDIT-2026-09-25 Rang 5, erste Haelfte) ist
+        weiter offen: ein nacktes Wort in einer Schalen-Liste
+        (`for p in … tools/x.mjs …; do pfad "$p"`) zaehlt als
+        Kommandostellung. Daher die Meldung „BEKANNT, ABER GERUFEN" fuer
+        `admin-vorschau.mjs` (readme-behauptungen-pruefen.sh:94) — sie stand
+        schon vor dem 28.09. da und ist ein Fehlalarm dieser Achse.
+
+DIE BAEUME, NICHT NUR `tools/` (28.09.2026)
+    Bis dahin las die Wache `tools/` flach und schluesselte nach dem
+    Basisnamen. Unsichtbar waren damit `tools/box/`, `tools/e2e/`,
+    `remote-step-installer/tools/` und die 30 Testdateien unter
+    `remote-step-installer/tests/`, die in keinem Laeufer hingen (drei davon
+    einen Monat lang rot). Drei Audits meldeten je einen dieser Orte
+    (08-30 R4, 09-23 R3b, 09-25 R5) — ein wiederkehrender Befund, also an der
+    Naht behoben: `BAEUME` rekursiv, Schluessel ist der Pfad ab der Wurzel,
+    Rufe werden je Rufer aufgeloest (`aufloesen()`). NACHGERECHNET am
+    28.09.2026: die alte und die neue Fassung geben fuer JEDES `tools/*`
+    denselben Zustand — keine alte Deckung verschoben. Neu sichtbar wurden 85
+    urteilende Dateien: 33 gedeckt (die 30 Installer-Tests ueber den
+    Sammelruf von `installer-tests.py`, drei in `tools/e2e/`) und 52 offen
+    (27 in `tools/box/`, 25 in `remote-step-installer/tools/`) — die sind mit
+    der Baseline vom 28.09. eingefroren.
 
 DIE ANDERE RICHTUNG, damit die Liste nicht verrottet: ein BEKANNT-Eintrag, den
 es nicht mehr gibt oder der inzwischen doch in einem Laeufer haengt, wird
@@ -167,6 +194,7 @@ IN EINEN LAEUFER GEHOERT `--pruefen`. Ohne Schalter waere der Schritt ab dem
 """
 
 import datetime
+import posixpath
 import re
 import subprocess
 import sys
@@ -174,6 +202,23 @@ from pathlib import Path
 
 WURZEL = Path(__file__).resolve().parent.parent
 WERKZEUGE = WURZEL / "tools"
+
+# ── Die Baeume, in denen Wachen wohnen (28.09.2026) ─────────────────────────
+# Bis hierher las die Wache `WERKZEUGE.iterdir()` und schluesselte nach dem
+# BASISNAMEN. Damit war alles unsichtbar, was nicht direkt in `tools/` liegt:
+# `tools/box/` (30 Werkzeuge, AUDIT-2026-09-23 R3b), `tools/e2e/`,
+# `remote-step-installer/tools/` (AUDIT-2026-09-25 Rang 5) — und die ganze
+# Testmenge `remote-step-installer/tests/` (30 Dateien, jede mit
+# `sys.exit(1 if … else 0)`), die in KEINEM Laeufer hing. Derselbe Befund kam
+# in drei Audits je Fundort wieder; behoben wird er darum an der Naht: ALLE
+# Baeume rekursiv, und der Schluessel ist der Pfad ab der Wurzel. Zwei Dateien
+# gleichen Namens in zwei Baeumen (es gibt sie) sind zwei Werkzeuge.
+BAEUME = ["tools", "remote-step-installer/tools", "remote-step-installer/tests"]
+
+# Der Installer ist ein eigenes Projekt im Baum: seine Werkzeuge rufen sich
+# ueber `tools/x.py` relativ zu SEINER Wurzel. Ein Ruf wird darum zuerst im
+# Projekt des Rufers aufgeloest, dann an der Wurzel.
+PROJEKTE = ["remote-step-installer"]
 
 # ── Die Laeufer ─────────────────────────────────────────────────────────────
 # NUR diese beiden. `package.json` und die Testlaeufer rufen keine Werkzeuge,
@@ -248,6 +293,17 @@ BEKANNT: dict[str, str] = {
         "das Internet. Von Hand vor dem Ausliefern: node tools/mediathek-probe.mjs — und "
         "`--vorlage-erneuern` macht die Alterung der Zeugen-Vorlage sichtbar"
     ),
+    # 28.09.2026 eingetragen, beide an dem Tag von Hand gefahren und gruen.
+    # Der Zwilling fuer mixpi-mediathekview; am Baum decken ihn 26 Zeugen
+    # gegen plugins/mixpi-mediathekview/mvw.fixture.json.
+    "mediathekview-probe.mjs": (
+        "faehrt mixpi-mediathekview gegen den ECHTEN Dienst (suchen, Kennung aufloesen, HEAD auf "
+        "die MP4) und braucht dafuer das Internet. Von Hand: node tools/mediathekview-probe.mjs"
+    ),
+    "videoquellen-probe.mjs": (
+        "fragt acht Sender ueber das Internet, ob am Ende eine progressive MP4 steht oder nur HLS "
+        "— eine Marktfrage an fremde Dienste, kein Befund ueber den Baum"
+    ),
     # ── Braucht ein angeschlossenes Handy (27.09.2026) ─────────────────────
     #
     # Beide bedienen die Handy-App auf einem per USB freigegebenen Telefon.
@@ -293,10 +349,30 @@ BEKANNT: dict[str, str] = {
     # Ausfuehrungsstellung verlangt, ist die Meldung weg — die Eintraege waren
     # richtig, AUDIT-2026-09-19 Rang 9 haette zwei gute Ausnahmen ausgetragen.
     "welche-box.sh": "fragt, mit WELCHER Box man gerade redet — eine Auskunft, kein Urteil",
+    # 28.09.2026 eingetragen. Der Kopf von box-finden.py nannte `--pruefen`
+    # „fuer tools/pruefen.sh" — dort hing es nie, und es gehoert nicht hin:
+    # unter `--pruefen` gibt es IMMER 0 (eine ausgeschaltete Box ist kein
+    # Fehler im Baum), ohne Schalter heisst 1 „nicht gefunden". Die Seite am
+    # Baum (Kennmarke `box == 'mixpibox'`, mDNS-Namen) bewacht
+    # auffindbarkeit-deckung.py.
+    "box-finden.py": "sucht die Box im Heimnetz (gemerkter Fund, mDNS, Suchlauf) — Ausgang 1 heisst „Box nicht gefunden\", eine Auskunft ueber die Steckdose",
+    "ansage-kommt-an.py": "laesst die Box per SSH einen Satz SPRECHEN und schneidet den Monitor der Endstation mit — hoerbar, am Geraet",
+    "nachrichten-sonde.py": "liest die drei Nachrichten-Wege der Box (lesend); Ausgang 1 heisst „Box nicht erreichbar\", ein schlechtes Ergebnis steht im Bericht",
+    # Beide nur lokal (tools/github-ausschluss.txt: tools/mitschnitt-*), wie
+    # taster-druck-mitschnitt.sh unten. Auf dem veroeffentlichten Stand zeigen
+    # die Eintraege ins Leere; `--pruefen` blockt daran nicht.
+    "mitschnitt-fehler-befreien.py": "holt Titel der Mitschnitt-Liste per SSH aus `fehler` zurueck — ein Eingriff an der Box auf Zuruf, ohne --wirklich nur Anzeige",
+    "mitschnitt-quelle-anlegen.py": "legt per Box-API Quell-Eintraege fuer verwaiste Kacheln der Test-Erweiterung an und fragt dafuer den Dienst — ohne --schreiben eine Probe, aber auch die braucht Box und Netz",
     "jellyfin-weiterreicher-probe.sh": "spielt ueber den Jellyfin-Weiterreicher der Box (BACKLOG E15/S2)",
     "schirm-auf-null.mjs": "--ziel zeigt auf die echte Box; der Sandkastenteil ist der kleinere",
     "schirm-auf-null-api.mjs": "dasselbe ueber PUT /api/schirm/helligkeit an der Box",
     "mixpi-wartung.sh": "SCHALTET den Sperr-Schirm der echten Box (POST /api/wartung) — ein Eingriff auf Zuruf, kein Urteil; ohne Box endet es mit 2",
+    # ── Braucht ein NAS im Netz (28.09.2026) ───────────────────────────────
+    "nas-sonde.py": (
+        "misst ein Netzlaufwerk: Freigaben suchen, Rate, Abrissprobe (--haengen). Ausgang 1 "
+        "heisst „Messung fand nicht statt\" (Werkzeug fehlt, Pfad weg), ein schlechtes Ergebnis "
+        "steht im Bericht; nur `--zustand` geht ohne NAS und urteilt dann ueber diesen Rechner"
+    ),
     # ── Browser + Vorschau ─────────────────────────────────────────────────
     # OFFEN: das ist der naechste Stapel. Diese gehoeren nicht in den schnellen
     # Teil, sondern in den Vorschau-Block weiter oben — jede einzeln nachgemessen,
@@ -324,6 +400,12 @@ BEKANNT: dict[str, str] = {
     # Ein Laeufer, der von einer fremden Schnittstelle abhaengt, wird rot,
     # wenn dort jemand anders etwas umbaut — das ist kein Befund ueber uns.
     "archive-probe.mjs": "fragt das Internet Archive",
+    # 28.09.2026: beide fahren das ECHTE Plugin gegen den echten Dienst; was
+    # am Baum haengt, decken die Zeugen gegen gekuerzte echte Antworten
+    # (plugins/mixpi-kindernachrichten/*.fixture.xml, 49 Zeugen;
+    # plugins/mixpi-klexikon/klexikon.fixture.json, 38 Zeugen).
+    "kindernachrichten-probe.mjs": "fragt die vier Feeds (WDR, ZDF, Deutschlandfunk, GEOlino) und macht HEAD auf die Tonadressen",
+    "klexikon-probe.mjs": "fragt klexikon.zum.de (Suche, Artikel, Kategorien) und misst die Laufzeiten gegen die 8-s-Frist",
     "ard-modul-probe.ts": "haelt das ARD-Modul gegen die ECHTE Schnittstelle (BACKLOG E4)",
     "ard-sender-probe.mjs": "fragt die ARD-Audiothek nach Live-Sendern",
     # ── Aendert Quelldateien, misst einen Vorschlag, oder braucht ein Paket ─
@@ -336,7 +418,17 @@ BEKANNT: dict[str, str] = {
     "interpret-freigeschaltet-seite.mjs": "eine Einzelfrage aus dem Bau der Freischaltung, kein Dauerurteil",
     "dienstwechsel-am-dienst.mjs": "startet den echten Abspieldienst mit Tonmaschine — nicht hermetisch genug fuer den schnellen Teil",
     "update-frische-box-probe.sh": "braucht `zip`; ohne das Paket bricht sie jetzt mit 2 ab statt einen roten Schritt zu melden",
+    "pruefen-einzelschritt.py": "faehrt EINEN Schritt aus pruefen.sh fuer eine Gegenprobe; sein Ausgang ist das Urteil von pruefen.sh selbst, das ohnehin laeuft",
+    # (Hier stand bis 28.09.2026 die Sorte „Ohne Gegenstand" mit
+    # pruef-zeitformate.js: gruen, aber ihr Gegenstand war eine eingefrorene
+    # Leiche. Der Betreiber hat die Zeit-Kette an dem Tag geloescht. Wer
+    # wieder so einen Fall findet, fragt nach dem Loeschen, statt ihn hier
+    # zu parken — eingehaengt waere er eine Attrappe von Wache.)
 }
+# Die Schluessel oben sind Basisnamen aus der Zeit, als die Wache nur `tools/`
+# kannte; ohne Schraegstrich meinen sie `tools/<name>`. Neue Eintraege ausserhalb
+# von `tools/` (oder in einem Unterordner) tragen den Pfad ab der Wurzel.
+BEKANNT = {(k if "/" in k else f"tools/{k}"): v for k, v in BEKANNT.items()}
 
 luecken: list[str] = []
 
@@ -467,8 +559,42 @@ def ohne_kommentare(inhalt: str, suffix: str) -> str:
 #   (ausliefern.py:1223) steht sehr wohl in einer Argumentliste — nur ist der
 #   Pfad dort ein Satzteil. `AUSNAHMEN = {"tools/werkzeug-inventur.py": …}`
 #   ist umgekehrt ein sauberes Wort — aber ein Datenfeld, kein Ruf.
-WERKZEUGPFAD = re.compile(r"tools/([A-Za-z0-9._-]+\.(?:py|sh|mjs|ts|js))")
-NACHBARMODUL = re.compile(r"\./([A-Za-z0-9._-]+\.(?:mjs|ts|js))")
+#
+# DER GANZE PFAD, NICHT DER BASISNAME (28.09.2026, siehe `BAEUME`): das Muster
+# nimmt Unterordner mit (`tools/e2e/x.test.mjs`, `tools/box/y.sh`) und den
+# Testordner des Installers. Was es findet, ist noch ROH — `aufloesen()` macht
+# daraus den Pfad ab der Wurzel, je nachdem, WER ruft.
+WERKZEUGPFAD = re.compile(
+    r"((?:remote-step-installer/)?(?:tools|tests)/(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+\.(?:py|sh|mjs|ts|js))"
+)
+NACHBARMODUL = re.compile(r"(\.\.?/(?:[A-Za-z0-9._-]+/)*[A-Za-z0-9._-]+\.(?:mjs|ts|js))")
+
+# ── Sammelrufe: ein Laeufer, der einen ganzen Ordner faehrt ─────────────────
+# `tools/installer-tests.py` ruft keine Testdatei beim Namen, es faehrt
+# `WURZEL.glob(SAMMELRUF)` — ein Ruf, der seinen Pfad erst baut, also genau
+# der blinde Fleck (a) im Kopf. Statt zu raten, liest die Wache die BINDUNG
+# `SAMMELRUF = "<muster>"` im Werkzeug und legt dasselbe Muster an die Wurzel.
+# Das Werkzeug benutzt die Konstante selbst: aendert jemand das Muster, zieht
+# die Wache mit, statt an einer zweiten Liste zu veralten.
+SAMMELRUF = re.compile(r"^SAMMELRUF\s*=\s*[\"']([^\"']+)[\"']", re.M)
+
+
+def aufloesen(roh: str, rufer: str) -> str:
+    """Der Pfad ab der Wurzel, den ein Ruf `roh` aus der Datei `rufer` meint.
+
+    `./x.mjs` und `../x.mjs` gelten ab dem Ordner des Rufers. Ein nackter
+    `tools/x.py` zuerst im Projekt des Rufers (der Installer ruft seine
+    eigenen Werkzeuge so), dann an der Wurzel. Findet sich keine Datei, bleibt
+    der Wurzel-Pfad stehen: GENANNT ist gerufen, auch wenn es die Datei nicht
+    (mehr) gibt — `BEKANNT, ABER GERUFEN` und die Bilanz brauchen den Namen.
+    """
+    if roh.startswith(("./", "../")):
+        return posixpath.normpath(posixpath.join(posixpath.dirname(rufer), roh))
+    kandidaten = [f"{p}/{roh}" for p in PROJEKTE if rufer.startswith(p + "/")] + [roh]
+    for kandidat in kandidaten:
+        if (WURZEL / kandidat).is_file():
+            return kandidat
+    return roh
 
 # Was die Sorte an Zeichenketten und Kommentaren kennt. Ein Treffer wird
 # IMMER als Ganzes verschluckt — genau deshalb stolpert der Abtaster weder
@@ -599,8 +725,7 @@ def rufe(inhalt: str, selbst: str, suffix: str = "") -> set[str]:
             gefunden |= namen
     if schale and pos < len(inhalt):
         gefunden |= set(WERKZEUGPFAD.findall(inhalt[pos:]))
-    gefunden.discard(selbst)
-    return gefunden
+    return {aufloesen(roh, selbst) for roh in gefunden} - {selbst}
 
 
 # ── Die Ausgangsformen je SORTE ─────────────────────────────────────────────
@@ -677,7 +802,12 @@ def urteilt(inhalt: str, suffix: str) -> bool:
 
 
 # ── Erreichbarkeit von den Laeufern aus, ueber Ecken ────────────────────────
-inhalte = {p.name: text_von(p) for p in WERKZEUGE.iterdir() if p.is_file() and p.suffix in ENDUNGEN}
+inhalte = {
+    p.relative_to(WURZEL).as_posix(): text_von(p)
+    for baum in BAEUME if (WURZEL / baum).is_dir()
+    for p in (WURZEL / baum).rglob("*")
+    if p.is_file() and p.suffix in ENDUNGEN and "__pycache__" not in p.parts
+}
 
 # NUR WAS GIT KENNT. Ein Werkzeug, das gerade nebenan entsteht, ist noch keine
 # ungerufene Wache — es ist Arbeit im Gang. Waere es hier rot, meldete dieser
@@ -687,10 +817,10 @@ inhalte = {p.name: text_von(p) for p in WERKZEUGE.iterdir() if p.is_file() and p
 # gefiltert: lieber zu viel melden als still die halbe Liste verschlucken.
 try:
     verzeichnet = subprocess.run(
-        ["git", "-C", str(WURZEL), "ls-files", "tools"],
+        ["git", "-C", str(WURZEL), "ls-files", "-z", *BAEUME],
         capture_output=True, text=True, timeout=20, check=True,
-    ).stdout.split()
-    bekannt_bei_git = {Path(z).name for z in verzeichnet}
+    ).stdout.split("\0")
+    bekannt_bei_git = set(verzeichnet)
     if bekannt_bei_git:
         ungezaehlt = sorted(set(inhalte) - bekannt_bei_git)
         inhalte = {n: t for n, t in inhalte.items() if n in bekannt_bei_git}
@@ -706,9 +836,8 @@ for rel in LAEUFER:
         luecken.append(f"LAEUFER FEHLT: {rel} — die Wache haelt sonst alles fuer gedeckt")
         continue
     laeufer_da += 1
-    name = pfad.name
-    erreicht.add(name)
-    rand.extend(rufe(text_von(pfad), name))
+    erreicht.add(rel)
+    rand.extend(rufe(text_von(pfad), rel))
 
 if laeufer_da and not rand:
     luecken.append(
@@ -722,6 +851,10 @@ while rand:
         continue
     erreicht.add(name)
     rand.extend(rufe(inhalte.get(name, ""), name))
+    # Ein Sammelruf (siehe `SAMMELRUF`) zaehlt nur aus einem ERREICHTEN
+    # Werkzeug und nur aus dessen Code, nicht aus einem Kommentar, der ihn zitiert.
+    for muster in SAMMELRUF.findall(ohne_kommentare(inhalte.get(name, ""), Path(name).suffix)):
+        rand.extend(p.relative_to(WURZEL).as_posix() for p in WURZEL.glob(muster) if p.is_file())
 
 # ── Erste Richtung: urteilt, aber niemand ruft es ───────────────────────────
 sag("── Werkzeuge, die ein Urteil faellen und in keinem Laeufer haengen ──")
@@ -733,18 +866,18 @@ for name in sorted(inhalte):
         continue
     zeilen = len(inhalte[name].splitlines())
     offen.append(name)
-    luecken.append(f"UNGERUFENE WACHE: tools/{name} ({zeilen} Zeilen) urteilt ueber den Ausgang, laeuft aber nirgends")
-    sag(f"  UNGERUFENE WACHE: `tools/{name}` ({zeilen} Zeilen) — urteilt, laeuft nirgends")
+    luecken.append(f"UNGERUFENE WACHE: {name} ({zeilen} Zeilen) urteilt ueber den Ausgang, laeuft aber nirgends")
+    sag(f"  UNGERUFENE WACHE: `{name}` ({zeilen} Zeilen) — urteilt, laeuft nirgends")
 
 # ── Zweite Richtung: die Ausnahmeliste gegen die Wirklichkeit ───────────────
 sag("── Die BEKANNT-Liste gegen den Baum ──")
 for name, grund in sorted(BEKANNT.items()):
-    if not (WERKZEUGE / name).exists():
-        luecken.append(f"BEKANNT ZEIGT INS LEERE: tools/{name} gibt es nicht mehr — Eintrag austragen")
-        sag(f"  BEKANNT ZEIGT INS LEERE: `tools/{name}` gibt es nicht mehr")
+    if not (WURZEL / name).exists():
+        luecken.append(f"BEKANNT ZEIGT INS LEERE: {name} gibt es nicht mehr — Eintrag austragen")
+        sag(f"  BEKANNT ZEIGT INS LEERE: `{name}` gibt es nicht mehr")
     elif name in erreicht:
-        luecken.append(f"BEKANNT, ABER GERUFEN: tools/{name} haengt inzwischen in einem Laeufer — Eintrag austragen")
-        sag(f"  BEKANNT, ABER GERUFEN: `tools/{name}` — Eintrag austragen")
+        luecken.append(f"BEKANNT, ABER GERUFEN: {name} haengt inzwischen in einem Laeufer — Eintrag austragen")
+        sag(f"  BEKANNT, ABER GERUFEN: `{name}` — Eintrag austragen")
 
 if "--alle" in sys.argv:
     sag("── Was aus genanntem Grund draussen bleibt ──")
@@ -769,7 +902,7 @@ if "--alle" in sys.argv:
 # `tools/werkzeug-inventur.py` (E71/A3) - und die Zahl stieg von 130 auf 131,
 # ohne dass ein Werkzeug dazugekommen waere. Fuer das URTEIL bleibt `erreicht`
 # unveraendert richtig: wer genannt wird, ist gerufen.
-wirklich_da = {n for n in erreicht if (WERKZEUGE / n).exists()}
+wirklich_da = {n for n in erreicht if (WURZEL / n).is_file()}
 wachen = {n for n, t in inhalte.items() if urteilt(t, Path(n).suffix)}
 bilanz = (
     f"BILANZ: {len(wachen & erreicht)} von {len(wachen)} Werkzeugen mit Urteil haengen in einem "
@@ -819,7 +952,7 @@ if EINFRIEREN:
         f"# Eingefroren am {datetime.date.today():%Y-%m-%d}. "
         "Neu einfrieren: python3 tools/ungerufene-wachen.py --einfrieren",
     ]
-    zeilen += [f"{zustand_} tools/{name}" for name, zustand_ in sorted(jetzt.items())]
+    zeilen += [f"{zustand_} {name}" for name, zustand_ in sorted(jetzt.items())]
     BASELINE.write_text("\n".join(zeilen) + "\n", encoding="utf-8")
     verteilung = {z: sum(1 for v in jetzt.values() if v == z) for z in RANG}
     print(
@@ -849,7 +982,7 @@ if PRUEFEN:
             teile = zeile.split()
             if len(teile) != 2 or teile[0] not in RANG:
                 raise ValueError(f"unlesbare Zeile: {zeile!r}")
-            frueher[teile[1].removeprefix("tools/")] = teile[0]
+            frueher[teile[1]] = teile[0]
     except (OSError, ValueError) as fehler:
         print(f"Baseline unlesbar ({kurzpfad(BASELINE)}): {fehler}", file=sys.stderr)
         print("Neu einfrieren:  python3 tools/ungerufene-wachen.py --einfrieren", file=sys.stderr)

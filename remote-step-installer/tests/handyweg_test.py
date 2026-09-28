@@ -123,13 +123,17 @@ pruefe("systemctl disable mixpibox-einrichtung.service" in rez,
        "auf der fertigen Box AUSGESCHALTET — der Bildschirm gehoert der Oberflaeche")
 pruefe("systemctl enable mixpibox-einrichtung.service" not in rez,
        "und nirgends doch wieder eingeschaltet")
-# hostapd/dnsmasq bringen eigene Dienste mit, die beim Installieren SOFORT
-# starten. Auf einer Kinderbox waeren das ein DNS-Server auf Port 53 und ein
-# Zugangspunkt, die niemand bestellt hat.
-pruefe(re.search(r"apt-get install[^\n]*hostapd[^\n]*dnsmasq", rez) is not None,
-       "hostapd und dnsmasq werden installiert (ohne sie kein eigenes WLAN)")
-pruefe(re.search(r"systemctl (disable --now|mask) hostapd dnsmasq", rez) is not None,
-       "und sofort stillgelegt — sie sind Werkzeug, kein Dienst")
+# hostapd UND dnsmasq KOMMEN NICHT MEHR AUF DIE BOX (BACKLOG E143/9,
+# 28.09.2026). Bis dahin installierte das Rezept beide und maskierte ihre
+# Dienste — und `weg_waehlen()` gab ihnen dann Vorrang vor dem Weg, auf dem
+# allein die Uebergabe ins Heimnetz funktioniert. Gesucht wird in JEDER
+# Zeile, die kein Kommentar ist: auch eine zweite Paketzeile anderswo im
+# Rezept holte sie zurueck.
+_zeilen = [z for z in rez.splitlines() if not z.lstrip().startswith("#")]
+pruefe(not any(re.search(r"apt-get install\b.*\b(hostapd|dnsmasq)\b", z) for z in _zeilen),
+       "hostapd und dnsmasq werden NIRGENDS im Rezept installiert")
+pruefe(re.search(r"apt-get install[^\n]*\biw\b", rez) is not None,
+       "iw schon — die Netzliste fuers Handy scannt damit")
 # DER RUECKFALL DARF NICHT AN IHNEN HAENGEN. Auf einer frischen Karte gibt es
 # sie nicht, und genau dort soll er greifen.
 for datei in ["kleiner-dhcp.py", "mixpibox-einrichtung-ap.service"]:
@@ -139,7 +143,7 @@ pruefe("systemctl disable mixpibox-einrichtung.service mixpibox-einrichtung-ap.s
        "BEIDE Units liegen bereit und sind AUS — wer sie braucht, schaltet bewusst ein")
 kopf = rez[:rez.index("- id: einrichtungsschirm")] if "- id: einrichtungsschirm" in rez else rez
 pruefe("hostapd" not in kopf,
-       "sie stehen NICHT in der grossen Paketzeile (dort liefe dnsmasq sofort los)")
+       "und auch nicht in der grossen Paketzeile vor dem Einrichtungsschritt")
 
 print("\n── 4. Die Uebergabe: wann darf die Box uebernehmen?")
 pruefe(agent.app_laeuft(port=1, frist=0.2) is False,

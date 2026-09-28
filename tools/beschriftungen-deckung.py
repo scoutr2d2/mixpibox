@@ -77,7 +77,14 @@ BOX = (WURZEL / "NewDesign",)
 # unter `NewDesign/gestalter/`, und seine Beschriftungen („Grundfarbe",
 # „Fläche" in katalog.mjs) meldete die Wache als ERFUNDEN — sie stehen am
 # Schirm, die Wache las die Endung nur nicht.
-ENDUNGEN = {".ts", ".html", ".js", ".mjs"}
+# DIE HANDY-APP IST DIE DRITTE OBERFLAECHE (28.09.2026). Seit sie Kinderzeit,
+# Sperre und Sicherung kann, zitiert das Handbuch ihre Knoepfe („Für Mo–Fr",
+# „Alle Kinder") — und diese Wache meldete sie als ERFUNDEN, weil sie nur
+# Verwaltung und Box kannte. Die Absaetze nennen dabei regelmaessig einen
+# Menuepunkt der Verwaltung als WORT („Sicherung"), obwohl der Weg durch die
+# App fuehrt; ohne eigene Sorte schlug die Wache sie der Verwaltung zu.
+HANDY = (WURZEL / "handy-app/lib",)
+ENDUNGEN = {".ts", ".html", ".js", ".mjs", ".dart"}
 
 # Zitate, die in einem Absatz mit Menuepunkt stehen und trotzdem keine
 # Beschriftung der Verwaltung sind. Der Wert ist der Grund — er steht hier,
@@ -99,6 +106,9 @@ AUSNAHMEN = {
 # der Box als Vorschau" samt ihrer Knöpfe — ohne die Wendung schlug die Wache
 # die Knöpfe des Gestalters der Verwaltung zu.
 BOX_MARKER = ("an der Box selbst", "auf der Box selbst", "Box-Oberfläche", "an der Box unter", "Oberfläche der Box")
+# Und die Wendungen, mit denen es auf die Handy-App umschwenkt — nach derselben
+# Regel: der naechste Vorgaenger vor dem Zitat bestimmt die Oberflaeche.
+HANDY_MARKER = ("Handy-App", "in der App", "die App ")
 
 luecken: list[str] = []
 
@@ -213,15 +223,18 @@ def main() -> int:
             # waere ein stiller Fehler.
             ohne_zitate = re.sub(r"„[^“]*“", lambda t: " " * len(t.group(0)), davor)
             bis_menue = max((ohne_zitate.rfind(p) for p in genannt), default=-1)
-            wo, gegen = (BOX, "Box-Oberflaeche") if bis_box > bis_menue else (ADMIN, "Verwaltung")
+            bis_handy = max((klein.rfind(m.casefold()) for m in HANDY_MARKER), default=-1)
+            # Bei Gleichstand gewinnt die Verwaltung — wie vor der dritten Sorte.
+            kandidaten = [(bis_menue, 2, ADMIN, "Verwaltung"), (bis_box, 1, BOX, "Box-Oberflaeche"), (bis_handy, 0, HANDY, "Handy-App")]
+            _, _, wo, gegen = max(kandidaten, key=lambda k: (k[0], k[1]))
             gepruefte += 1
             if steht_in(wo, zitat):
                 continue
-            andere = ADMIN if wo is BOX else BOX
-            if steht_in(andere, zitat):
+            anderswo = [name for _, _, orte, name in kandidaten if orte is not wo and steht_in(orte, zitat)]
+            if anderswo:
                 luecken.append(
                     f"  OBERFLAECHE: „{zitat}“ gibt es nicht in der {gegen}, "
-                    f"sondern auf der anderen Oberflaeche ({weg})"
+                    f"sondern in: {', '.join(anderswo)} ({weg})"
                 )
             else:
                 luecken.append(

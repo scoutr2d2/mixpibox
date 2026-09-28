@@ -33,10 +33,13 @@
  * „Top-level await is currently not supported" ab, bevor eine Zeile laeuft.
  * `tools/ard-modul-probe.ts` kommt ohne aus und darf `.ts` bleiben.
  */
+import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { dienstVon, medienSchluessel, pluginKennungAus } from '../src/backend-api/src/medien.ts'
 import { kennungZerlegen } from '../src/backend-api/src/plugin-vertrag.ts'
+import { sprechAblegen } from '../src/backend-api/src/sprechstrom.ts'
 import { werkAus } from '../src/backend-api/src/werke.ts'
 
 const HIER = path.dirname(fileURLToPath(import.meta.url))
@@ -57,10 +60,23 @@ const sagen = (frage: string, gut: boolean, befund = '') => {
 }
 
 const plugin = (await import(path.join(WURZEL, 'plugins', kennung, 'index.mjs'))).default
-const kontext = {
+const rechte: string[] = JSON.parse(fs.readFileSync(path.join(WURZEL, 'plugins', kennung, 'plugin.json'), 'utf8')).rechte ?? []
+const kontext: Record<string, unknown> = {
   protokoll: () => {},
   einstellungen: Object.freeze({ sprache: 'ger', treffer: 3 }),
   holen: (a: string, g: RequestInit) => fetch(a, g),
+}
+/* RECHT `sprechen` (28.09.2026): ohne es wirft ein Vorlese-Plugin an Stelle 6
+ * „Piper ist nicht eingerichtet" — das waere ein Befund ueber diesen
+ * Entwicklerrechner, nicht ueber die Kette. Genommen wird der ECHTE
+ * `sprechAblegen` des Laufwerks mit einem Wegwerfordner; gesprochen wird
+ * hier nichts, die Adresse zeigt auf die Route einer Box. */
+if (rechte.includes('sprechen')) {
+  const anschluss = {
+    ordner: fs.mkdtempSync(path.join(os.tmpdir(), 'kette-sprechen-')),
+    basis: 'http://127.0.0.1:8200/api/sprechen',
+  }
+  kontext.sprechen = (text: string, gaben?: unknown) => sprechAblegen(text, gaben, anschluss, kennung)
 }
 
 console.log(`Kette fuer ${kennung}, Suchbegriff "${begriff}"\n${'─'.repeat(66)}\n`)

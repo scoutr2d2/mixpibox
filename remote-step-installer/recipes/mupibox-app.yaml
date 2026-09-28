@@ -843,7 +843,7 @@ steps:
   - id: fernbedienung
     name: "Fernbedienung und Controller ausrollen (Leser + Zuordnung + Geraeteprofile)"
     note: >-
-      SIE FEHLTE AUF DEM REZEPT-WEG (README 3.9, nachgeprueft 25.09.2026):
+      SIE FEHLTE AUF DEM REZEPT-WEG (README 3.10, nachgeprueft 25.09.2026):
       autosetup.sh und der Update-Weg legten Leser, Zuordnung und
       Geraeteprofile seit E134/E137 ab - dieses Rezept keins davon. Der
       Dienste-Schritt oben kopiert zwar mixpi-fernbedienung.service mit
@@ -902,7 +902,7 @@ steps:
       DERSELBE AUFRUF WIE IN autosetup.sh UND IM UPDATE-WEG. Bis zum
       25.09.2026 fehlte er hier: das Skript kam mit 'extras' zwar nach
       /usr/local/bin/mupibox/, aber niemand rief es - eine Rezept-Box fiel
-      beim Vorlesen auf die Browser-Stimme (espeak-ng) zurueck (README 3.9).
+      beim Vorlesen auf die Browser-Stimme (espeak-ng) zurueck (README 3.10).
 
       OPTIONAL MIT ABSICHT, wie in den beiden Schalen-Wegen: der Schritt
       holt rund 244 MB aus dem Netz (venv mit onnxruntime + Stimme von
@@ -920,8 +920,11 @@ steps:
       - src: ${MUPI_REPO:-$HOME/Downloads/mixpibox}/scripts/mupibox/piper-einrichten.sh
         dest: /usr/local/bin/mupibox/piper-einrichten.sh
         mode: "0755"
+    # `--ab-werk-an` wie in autosetup.sh: eine frisch aufgesetzte Box liest ab
+    # Werk vor (BACKLOG E12/X12), sofern Piper spricht und noch keine
+    # vorlesen.json liegt. Der Update-Weg uebergibt es NICHT.
     run: |
-      /usr/local/bin/mupibox/piper-einrichten.sh
+      /usr/local/bin/mupibox/piper-einrichten.sh --ab-werk-an
     check: "/usr/local/bin/mupibox/piper-einrichten.sh --pruefen >/dev/null"
 
   - id: librespot

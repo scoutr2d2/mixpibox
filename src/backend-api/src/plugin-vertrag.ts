@@ -57,7 +57,24 @@ import { ZEILEN_DECKEL, type Songzeile } from './songtext'
  * doppelte Sperre nennt BACKLOG E84/B2 als Grund, warum das ein
  * Anmeldepunkt wird und kein Plugin-Sonderweg.
  */
-export const RECHTE = ['medienquelle', 'ereignisse', 'netz', 'klang', 'geraetestand', 'songtext'] as const
+/*
+ * `sprechen` (28.09.2026, mixpi-klexikon) schaltet `kontext.sprechen(text)`
+ * frei: die Box liest einen Text mit ihrer eigenen Stimme (Piper) vor. Zurueck
+ * kommt eine fertige Quelle (`{ art: 'strom', adresse }`), die das Plugin in
+ * eine Folge legt; gesprochen wird erst, wenn der Abspieler sie abruft
+ * (sprechstrom.ts).
+ *
+ * WARUM ES DEN KERN BRAUCHT: `kontext.holen` verwehrt die eigene Box, also
+ * kommt ein Plugin weder an den laufenden Piper-Dienst noch an
+ * `/api/vorlesen`. Und selbst Piper aufzurufen waere der falsche Weg: ein
+ * zweites Sprachmodell neben dem des Kerns kostet auf einem Pi mit 2 GB
+ * rund 200 MB (gemessen, siehe llmwiki `vorlesen-tts`), und die 8-s-Frist
+ * reisst jeder Artikel, der laenger als ein paar Saetze ist.
+ *
+ * WARUM EIN EIGENES RECHT: wer die Plugin-Liste liest, soll sehen, dass
+ * dieses Plugin die Box SPRECHEN laesst — was es sagt, bestimmt das Plugin.
+ */
+export const RECHTE = ['medienquelle', 'ereignisse', 'netz', 'klang', 'geraetestand', 'songtext', 'sprechen'] as const
 export type Recht = (typeof RECHTE)[number]
 
 /** Systemereignisse, auf die ein Plugin horchen kann. */
@@ -779,6 +796,79 @@ export function songtextPruefen(roh: unknown): SongtextUrteil {
 
   zeilen.sort((a, b) => a.zeitMs - b.zeitMs)
   return { ok: true, zeilen, absaetze: [], synchron: true, maengel }
+}
+
+/**
+ * Der groesste Rumpf, den eine Plugin-Route zurueckgeben darf.
+ *
+ * 256 KB sind reichlich fuer JSON-Listen (die 18 ARD-Regale wiegen ~2 KB) und
+ * klein genug, dass ein Plugin die Verwaltung nicht mit einem Katalogabzug
+ * erschlaegt. Der Deckel sitzt im WIRT und nicht im Laufwerk — der Worker
+ * teilt seinen Speicher mit dem Plugin, seine Pruefungen sind biegbar.
+ */
+export const HTTP_ANTWORT_HOECHSTENS = 256 * 1024
+
+/**
+ * Was aus der Antwort einer Plugin-Route wird (E77) — die EINE Regel, die der
+ * Wirt (`pluginHttp`) und der Pruefstand (tools/mixpi-plugin-pruefstand.mjs)
+ * beide anwenden. Der Pruefstand hatte eine eigene Kopie („200-499") und hiess
+ * damit eine 302 gut, die die Box abweist.
+ *
+ * DURCH GEHEN 2xx UND 4xx, und genau EIN 5xx: 502 MIT `fehler` (Text).
+ *
+ *   * 3xx NIE — eine Umleitung ueber diese Flaeche waere ein stiller Weg nach
+ *     draussen.
+ *   * 500, 503, 504 … NIE. Ein Plugin, das „ich bin kaputt" melden will, WIRFT:
+ *     dann steht der Stapel im Journal, wo ihn jemand sucht, und die Route
+ *     antwortet 502 mit der Meldung. Ein durchgereichtes 500 saehe aus, als
+ *     kaeme es vom Kern; 503/504 tragen HTTP-Zusagen (Retry-After, eine Frist
+ *     am Tor), die hier niemand einloest.
+ *   * 502 JA, weil es NICHTS VERSTECKT: 502 ist genau der Status, den die Route
+ *     fuer „hinter mir ging es schief" ohnehin vergibt. Meldet das Plugin ihn
+ *     selbst, aendert sich am Status nichts — es kommt nur der Grund mit („Das
+ *     Archiv antwortete mit HTTP 503"). Und ein Dienst DRAUSSEN, der nicht
+ *     antwortet, ist kein Fehler des Plugins: haette es werfen muessen, stuende
+ *     bei jedem Aufruf ein Stapel im Journal, solange der Jellyfin-Server im
+ *     Regal aus ist.
+ *   * 502 NUR MIT `fehler`: jede 502 dieser Route traegt einen Grund — die
+ *     Aufrufer im Kern lesen `inhalt.fehler` (Jellyfin-Suche, Videofreigabe).
+ *
+ * WARUM DAS ERST AM 28.09.2026 SO KAM: bis dahin galt „nur 2xx und 4xx", und
+ * sieben Plugins gaben bei Fehlern draussen trotzdem `{ status: 502, inhalt:
+ * { fehler } }` zurueck — die naheliegende Form, und ihre eigenen Zeugen (die
+ * das Plugin allein pruefen) waren gruen. Der Wirt ersetzte den Grund durch
+ * „Status 502 ist nicht erlaubt"; in der Verwaltung stand nie, WARUM etwas
+ * nicht ging, und die Kernsuche erkannte „kein Jellyfin-Zugang" nicht mehr.
+ * Der Vertrag lag quer zur Erwartung jedes Autors — also wurde der Vertrag
+ * geaendert, nicht die sieben Plugins (llmwiki
+ * `plugin-502-verlor-seinen-grund-beim-wirt`).
+ */
+export function httpAntwortPruefen(roh: unknown): { status: number; inhalt: unknown } {
+  const r = (roh ?? null) as { status?: unknown; inhalt?: unknown } | null
+  const s = r?.status
+  const inhalt = r?.inhalt ?? null
+  const fehler = (inhalt as { fehler?: unknown } | null)?.fehler
+  const mitGrund = typeof fehler === 'string' && fehler.trim() !== ''
+  const erlaubt =
+    s === undefined ||
+    (typeof s === 'number' &&
+      Number.isInteger(s) &&
+      ((s >= 200 && s < 300) || (s >= 400 && s < 500) || (s === 502 && mitGrund)))
+  if (!erlaubt) {
+    return {
+      status: 502,
+      inhalt: {
+        fehler:
+          s === 502
+            ? 'Status 502 ohne Grund — ein Plugin meldet 502 nur mit `fehler` (Text)'
+            : `Status ${String(s)} ist nicht erlaubt (2xx, 4xx oder 502 mit fehler)`,
+      },
+    }
+  }
+  if (JSON.stringify(inhalt).length > HTTP_ANTWORT_HOECHSTENS) {
+    return { status: 502, inhalt: { fehler: 'Antwort zu gross (Deckel 256 KB)' } }
+  }
+  return { status: s === undefined ? 200 : (s as number), inhalt }
 }
 
 /**

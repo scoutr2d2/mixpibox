@@ -41,12 +41,14 @@ import {
   type Feld,
   type Fund,
   fundPruefen,
+  httpAntwortPruefen,
   type Manifest,
   manifestPruefen,
   songtextPruefen,
   type Titel,
 } from './plugin-vertrag'
 import type { Songzeile } from './songtext'
+import type { SprechAnschluss } from './sprechstrom'
 
 /** Speicher je Plugin. Reicht fuer HTTP und JSON; ein Leck stirbt hier statt im Kern. */
 const SPEICHER_MB = 48
@@ -128,6 +130,14 @@ const geladen = new Map<string, Eintrag>()
 
 /** Die Kern-Konfig-Gruppen, wie beim Laden hereingereicht (E80). */
 let kernKonfigStand: Record<string, unknown> = {}
+
+/**
+ * Der Anschluss an den Sprechstrom (Recht `sprechen`, 28.09.2026) — oder null,
+ * wenn die Box nicht sprechen kann (kein Piper). Dann bekommt auch ein Plugin
+ * MIT dem Recht kein `kontext.sprechen` und sagt das selbst; eine Quelle, die
+ * spaeter still 503 liefert, waere die schlechtere Auskunft.
+ */
+let sprechStand: SprechAnschluss | null = null
 
 /** Was DIESES Plugin davon sehen darf — nach seinem Manifest gefiltert. */
 function kernKonfigFuer(m: Manifest): Record<string, unknown> {
@@ -215,6 +225,11 @@ function workerStarten(e: Eintrag): void {
       einstellungen: e.einstellungen,
       fristMs: FRIST_MS,
       eigeneAdressen: eigeneAdressen(),
+      // DURCHGEREICHT, NICHT GEFILTERT: ob ein Plugin `kontext.sprechen`
+      // bekommt, entscheidet das Laufwerk am Manifest — EIN Riegel, den
+      // tools/plugin-gegenprobe.sh einzeln kaputtmachen kann. Zwei Riegel
+      // hintereinander liessen jeden fuer sich ungeprueft.
+      sprechen: sprechStand ?? undefined,
     },
     // DIE GRENZE, DIE DEN KERN RETTET. Ohne sie holt bei einem Speicherleck der
     // OOM-Killer den Prozess — und der heisst server.js, nicht plugin.js.
@@ -373,8 +388,14 @@ export function pluginsLaden(
    * (KONFIG_GRUPPEN); gefiltert je Plugin wird beim Worker-Start.
    */
   kernKonfig: Record<string, unknown> = {},
+  /**
+   * Wohin `kontext.sprechen` die Texte legt und unter welcher Adresse der
+   * Kern sie spricht (sprechstrom.ts). Null = die Box kann nicht sprechen.
+   */
+  sprechen: SprechAnschluss | null = null,
 ): LadeErgebnis {
   kernKonfigStand = kernKonfig
+  sprechStand = sprechen
   const abgewiesen: LadeErgebnis['abgewiesen'] = []
   let ordner: string[] = []
   try {
@@ -660,22 +681,17 @@ export async function pluginAktion(kennung: string, aktionsKennung: string): Pro
 }
 
 /**
- * Der groesste Rumpf, den eine Plugin-Route zurueckgeben darf.
- *
- * 256 KB sind reichlich fuer JSON-Listen (die 18 ARD-Regale wiegen ~2 KB) und
- * klein genug, dass ein Plugin die Verwaltung nicht mit einem Katalogabzug
- * erschlaegt. Der Deckel sitzt im WIRT und nicht im Laufwerk — der Worker
- * teilt seinen Speicher mit dem Plugin, seine Pruefungen sind biegbar.
- */
-const HTTP_ANTWORT_HOECHSTENS = 256 * 1024
-
-/**
  * Eine Plugin-Route rufen (E77).
  *
- * STATUS NUR 200-499: ein Plugin, das 500 melden will, hat einen Fehler, und
- * der gehoert als solcher gemeldet (502 der Route), nicht als durchgereichter
- * Server-Status, der aussieht, als kaeme er vom Kern. 3xx faellt mit heraus —
- * Umleitungen ueber diese Flaeche waeren ein stiller Weg nach draussen.
+ * DURCH GEHEN 2xx, 4xx und ein 502 MIT `fehler` — die Regel und ihre
+ * Begruendung stehen bei `httpAntwortPruefen` in plugin-vertrag.ts, damit der
+ * Pruefstand dieselbe anwendet. Ein WURF des Plugins wird hier zum 502 mit
+ * seiner Meldung; der Stapel geht vorher ins Journal (siehe `rufen`).
+ *
+ * Der erste Wurf erlaubte „200-499" — und liess damit 3xx durch, obwohl der
+ * Kommentar das Gegenteil behauptete. Der Integrationszeuge nahm den Kommentar
+ * beim Wort und ueberfuehrte den Code: eine 302 aus einem Plugin waere ein
+ * stiller Weg nach draussen.
  */
 export async function pluginHttp(
   kennung: string,
@@ -685,24 +701,7 @@ export async function pluginHttp(
   if (!e) return { status: 404, inhalt: { fehler: 'nicht geladen' } }
   if (!e.kann.http) return { status: 404, inhalt: { fehler: `${kennung} hat keine http()-Methode` } }
   try {
-    const roh = (await rufen(e, 'http', anfrage)) as { status?: unknown; inhalt?: unknown } | null
-    // NUR 2xx UND 4xx. Der erste Wurf erlaubte „200-499" — und liess damit
-    // 3xx durch, obwohl der Kommentar das Gegenteil behauptete. Der
-    // Integrationszeuge nahm den Kommentar beim Wort und ueberfuehrte den
-    // Code: eine 302 aus einem Plugin waere ein stiller Weg nach draussen.
-    const s = roh?.status
-    const status =
-      typeof s === 'number' && Number.isInteger(s) && ((s >= 200 && s < 300) || (s >= 400 && s < 500))
-        ? s
-        : s === undefined
-          ? 200
-          : 0
-    if (status === 0) return { status: 502, inhalt: { fehler: `Status ${String(roh?.status)} ist nicht erlaubt (200-499)` } }
-    const inhalt = roh?.inhalt ?? null
-    if (JSON.stringify(inhalt).length > HTTP_ANTWORT_HOECHSTENS) {
-      return { status: 502, inhalt: { fehler: 'Antwort zu gross (Deckel 256 KB)' } }
-    }
-    return { status, inhalt }
+    return httpAntwortPruefen(await rufen(e, 'http', anfrage))
   } catch (f) {
     return { status: 502, inhalt: { fehler: (f as Error).message } }
   }

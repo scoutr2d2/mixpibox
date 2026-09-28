@@ -3,9 +3,9 @@
 Tests fuer das eigene WLAN der Box (tools/einrichtung-ap.py).
 
 OHNE ROOT UND OHNE FUNK: geprueft werden die reinen Teile — was in die
-Konfigurationen geschrieben wird, wie der WLAN-QR aussieht, und ob das
-Werkzeug ehrlich sagt, welche Pakete fehlen. Ob hostapd damit wirklich
-hochkommt, sagt nur eine Box.
+Konfigurationen geschrieben wird, wie der WLAN-QR aussieht, und dass es nur
+noch EINEN Weg gibt (wpa_supplicant, seit 28.09.2026 ohne hostapd — BACKLOG
+E143/9). Ob der AP damit wirklich hochkommt, sagt nur eine Box.
 
 WARUM DAS TROTZDEM LOHNT: Die Fehler, die hier drinstecken koennen, sind
 still. Ein fehlendes `wpa=2` macht ein OFFENES Netz — im Kinderzimmer, vor der
@@ -16,6 +16,7 @@ Netznamen zerlegt den QR-Code, und das faellt erst am Handy auf.
 """
 import importlib.util
 import os
+import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -73,43 +74,21 @@ pruefe(
 )
 pruefe(ap.wifi_qr("Offen", "") == "WIFI:S:Offen;T:nopass;;", "ohne Passwort: nopass")
 
-print("── 3. hostapd: WPA2 und nichts Schwaecheres")
-conf = ap.hostapd_conf("wlan0", "MeinAP", "geheim123")
-pruefe("interface=wlan0" in conf, "Schnittstelle steht drin")
-pruefe("ssid=MeinAP" in conf, "Netzname steht drin")
-pruefe("wpa=2" in conf, "WPA2")
-pruefe("rsn_pairwise=CCMP" in conf, "CCMP")
-pruefe("wpa_key_mgmt=WPA-PSK" in conf, "PSK")
-pruefe("wpa_passphrase=geheim123" in conf, "Passwort steht drin")
-# DIE STILLE GEFAHR: faellt eine dieser Zeilen weg, ist das Netz OFFEN — und
-# davor steht ein Programm, das als root laeuft.
-pruefe("wpa=1" not in conf, "kein WPA1")
-pruefe("TKIP" not in conf, "kein TKIP")
-pruefe("hw_mode=g" in conf and "channel=6" in conf, "2,4 GHz, Kanal 6")
-
-print("── 4. dnsmasq: eigene Instanz, die sich nicht einmischt")
-d = ap.dnsmasq_conf("wlan0")
-pruefe("interface=wlan0" in d, "nur auf dieser Schnittstelle")
-pruefe("bind-interfaces" in d, "bind-interfaces — sonst Streit mit einer laufenden dnsmasq")
-pruefe("except-interface=lo" in d, "und lo bleibt aussen vor")
-pruefe("dhcp-range=192.168.4.10,192.168.4.50" in d, "DHCP-Bereich")
-pruefe("dhcp-option=3,192.168.4.1" in d, "Gateway: die Box selbst")
-pruefe(
-    "address=/#/192.168.4.1" in d,
-    "jeder Name zeigt auf die Box",
-    "damit das Handy von selbst 'Anmelden' anbietet statt eine Adresse zu verlangen",
-)
-
-print("── 5. Fehlende Pakete werden BENANNT, nicht verschwiegen")
-pruefe(ap.fehlende_pakete(lambda p: True) == [], "alles da -> leere Liste")
-pruefe(
-    ap.fehlende_pakete(lambda p: False) == ["hostapd", "dnsmasq"],
-    "nichts da -> beide genannt",
-)
-pruefe(
-    ap.fehlende_pakete(lambda p: p != "dnsmasq") == ["dnsmasq"],
-    "nur eines fehlt -> nur dieses genannt",
-)
+print("── 3.–5. Kein hostapd-Weg mehr (BACKLOG E143/9, 28.09.2026)")
+# HIER STANDEN BIS ZUM 28.09. hostapd-Konfiguration, dnsmasq-Konfiguration und
+# die Liste der fehlenden Pakete. Der hostapd-Weg hatte VORRANG, sobald die
+# Pakete da waren — aber die Uebergabe ins Heimnetz (`wechsel_aus_ap()` im
+# Agenten) redet ueber `wpa_cli` mit dem AP-wpa_supplicant, den es auf dem
+# hostapd-Weg nicht gibt. Deshalb ist er ganz entfernt, nicht nur nachrangig.
+for name in ("hostapd_conf", "dnsmasq_conf", "fehlende_pakete"):
+    pruefe(not hasattr(ap, name), f"{name} gibt es nicht mehr")
+pruefe(ap.weg_waehlen(lambda p: True) == "wpa",
+       "liegen hostapd und dnsmasq von frueher noch da, gilt trotzdem wpa")
+# NUR AUFRUFE ZAEHLEN, keine Erwaehnung im Kommentar: eine Argumentliste, die
+# mit "hostapd" oder "dnsmasq" beginnt, waere ein Start des alten Wegs.
+_quelle = open(os.path.join(REPO, "tools", "einrichtung-ap.py"), encoding="utf-8").read()
+pruefe(re.search(r'\[\s*"(hostapd|dnsmasq)"', _quelle) is None,
+       "einrichtung-ap.py startet weder hostapd noch dnsmasq")
 
 print("── 6. Der Schirm und der AP sprechen dieselbe Adresse")
 _spec2 = importlib.util.spec_from_file_location(
@@ -237,9 +216,6 @@ pruefe("key_mgmt=NONE" in offen, "ohne Passwort: offenes Netz (key_mgmt=NONE)")
 pruefe("psk" not in offen, "  keine psk-Zeile")
 pruefe("WPA-PSK" not in offen and "CCMP" not in offen,
        "  keine WPA-Reste, an denen ein Handy scheitern koennte")
-h_offen = ap.hostapd_conf("wlan0", "MixPiBox-Einrichtung", None)
-pruefe("wpa=" not in h_offen and "wpa_passphrase" not in h_offen,
-       "hostapd-Weg genauso offen")
 pruefe("WPA-PSK" in ap.wpa_ap_conf("X", "geheim123"),
        "MIT Passwort bleibt WPA2 moeglich (die Funktion kann beides)")
 pruefe(ap.wifi_qr("MixPiBox-Einrichtung", "") == "WIFI:S:MixPiBox-Einrichtung;T:nopass;;",

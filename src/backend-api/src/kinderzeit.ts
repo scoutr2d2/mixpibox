@@ -60,6 +60,7 @@ export type Grund =
   | 'zuFrueh' // vor dem erlaubten Beginn
   | 'zuSpaet' // nach dem erlaubten Ende
   | 'aufgebraucht' // Tagesdauer verbraucht
+  | 'gesperrt' // die Eltern haben die Box gesperrt (boxsperre.ts) — gilt auch ohne Kinderzeit
 
 export interface Urteil {
   /** Darf JETZT gespielt werden? */
@@ -71,6 +72,8 @@ export interface Urteil {
   fensterBis: string
   /** Wann es heute (wieder) losgeht ("HH:MM"), wenn es noch zu frueh ist. */
   fensterAb: string
+  /** Nur bei `gesperrt`: Ende der Sperre als „HH:MM" (boxsperre.ts). */
+  gesperrtBis?: string
 }
 
 /** "HH:MM" → Minuten seit Mitternacht; null bei Unsinn oder leer. */
@@ -249,7 +252,12 @@ export function pruefen(regeln: Regeln, verbrauch: Verbrauch, jetzt: Date): Urte
  * `ueberMin` = wie lange die Grenze schon ueberschritten ist.
  */
 export function abbrechen(regeln: Regeln, urteil: Urteil, ueberMin: number): boolean {
-  if (!regeln.aktiv || urteil.erlaubt) return false
+  if (urteil.erlaubt) return false
+  // DIE SPERRE DER ELTERN VOR ALLEM ANDEREN: sie gilt auch, wenn die
+  // Kinderzeit aus ist (`regeln.aktiv` false), und sie kennt keine Nachsicht —
+  // wer „jetzt Pause" drueckt, meint jetzt, nicht nach dem Lied.
+  if (urteil.grund === 'gesperrt') return true
+  if (!regeln.aktiv) return false
   // Ein gesperrter Tag oder ein zu frueher Start sind keine Faelle fuer
   // Nachsicht — dort lief ohnehin nichts, was zu Ende gehen koennte.
   if (urteil.grund === 'tagGesperrt' || urteil.grund === 'zuFrueh') return true

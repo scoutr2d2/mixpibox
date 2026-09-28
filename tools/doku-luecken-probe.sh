@@ -756,10 +756,14 @@ fi
 
 # ── DIE BAUANLEITUNG DES ABBILDS ───────────────────────────────────────────
 # Hier stand bis 27.09.2026 `tools/abbild-pfade-pruefen.py` ueber der
-# Wurzel-`Dockerfile`. Die baute seit dem 23.10.2024 nicht mehr; statt sie zu
-# reparieren ist sie samt `docker/` und librespot 0.6.0 geloescht — die
-# Entwicklungs-Simulation lebt in `harness/`, gewacht von
-# `simulationsrezept-pruefen.py` weiter unten.
+# Wurzel-`Dockerfile`. Das Cloud-Review jenes Tages (GitHub-Stand 41df5e05)
+# hat sie samt `docker/` und librespot 0.6.0 geloescht. Lokal kamen allein
+# seine Texte an (ca94f361, „ohne ihre Loeschungen"), darunter dieser
+# Absatz; Dockerfile und Wache blieben liegen, die Wache lief nirgends mehr.
+# Am 28.09.2026 hing sie kurz in `tools/pruefen.sh`, am selben Tag hat der
+# Betreiber die Loeschung auch lokal entschieden: Dockerfile, `docker/`,
+# librespot 0.6.0 und die Wache sind weg. Die Entwicklungs-Simulation lebt
+# in `harness/`, gewacht von `simulationsrezept-pruefen.py` weiter unten.
 
 # ── DIE ANALYSE-TEXTE DER WURZEL ───────────────────────────────────────────
 # `doku-widerruf-probe.sh` liest FUENF Handbuecher. Die neun Analyse-MDs der

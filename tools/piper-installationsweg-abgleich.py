@@ -30,6 +30,17 @@ WAS ES PRUEFT
      beiden hiesse: es haengt davon ab, wie die Box entstanden ist.
   5. Das Skript liegt in scripts/mupibox/ (nur von dort wird es nach
      /usr/local/bin/mupibox kopiert) und ist ausfuehrbar.
+  6. AB WERK AN NUR AUF DEN ERSTWEGEN (BACKLOG E12/X12, 28.09.2026): die zwei
+     Wege, die eine Box NEU aufsetzen (autosetup.sh, Rezeptschritt `piper` in
+     mupibox-app.yaml), uebergeben `--ab-werk-an` bei JEDEM Aufruf — und der
+     Update-Weg bei KEINEM. Der zweite Teil ist der wichtigere: dort hiesse
+     der Schalter, dass jede laufende Box ohne vorlesen.json nach dem Update
+     ploetzlich bei jedem Tipp spricht (llmwiki
+     `ein-neuer-schalter-darf-nichts-wegnehmen`). Gezaehlt werden nur echte
+     Aufrufe: Kommentarzeilen, `--pruefen` und `--stimme` nicht, im Rezept nur
+     das `run:` des Schritts — ein zitierender Kommentar ist keine Gegenstelle.
+     Dass das Skript den Schalter richtig befolgt, prueft
+     tools/piper-ab-werk.test.sh am echten Skript.
 
 WAS ES NICHT KANN: sagen, ob `pip install piper-tts` auf DER Box durchlaeuft.
 Das haengt an Rad und Architektur (fuer armhf gibt es kein onnxruntime-Rad) und
@@ -41,6 +52,7 @@ ist ohne Geraet nicht zu beantworten. Die Gegenprobe am Geraet lautet:
 AUFRUF
     python3 tools/piper-installationsweg-abgleich.py
     python3 tools/piper-installationsweg-abgleich.py --pruefen   # still, RC=1 bei Befund
+    python3 tools/piper-installationsweg-abgleich.py --selbsttest  # Punkt 6 ohne Dateien
 """
 
 import os
@@ -55,6 +67,11 @@ AUSROLLWEGE = [
     os.path.join(WURZEL, "autosetup/autosetup.sh"),
     os.path.join(WURZEL, "update/start_mupibox_update.sh"),
 ]
+# Punkt 6: wer eine Box NEU aufsetzt, schaltet Vorlesen ein; das Update nicht.
+AUTOSETUP = AUSROLLWEGE[0]
+UPDATE = AUSROLLWEGE[1]
+REZEPT = os.path.join(WURZEL, "remote-step-installer/recipes/mupibox-app.yaml")
+AB_WERK = "--ab-werk-an"
 
 
 def lies(pfad: str) -> str:
@@ -79,7 +96,76 @@ def sh_vorgabe(text: str, variable: str) -> str:
     return t.group(1) if t else ""
 
 
+def ist_einrichtungsaufruf(zeile: str) -> bool:
+    """Ruft diese Zeile das Skript zum EINRICHTEN? Kommentar, Pruefen und
+    Stimme-Nachladen zaehlen nicht."""
+    z = zeile.strip()
+    return ("piper-einrichten.sh" in z and not z.startswith("#")
+            and "--pruefen" not in z and "--stimme" not in z)
+
+
+def aufrufe_sh(text: str) -> list:
+    return [z.strip() for z in text.splitlines() if ist_einrichtungsaufruf(z)]
+
+
+def aufrufe_rezept(pfad: str) -> list:
+    """Nur das `run:` des Schritts `piper` — die `note:` zitiert den Aufruf."""
+    try:
+        import yaml
+        doc = yaml.safe_load(lies(pfad)) or {}
+    except Exception:  # noqa: BLE001 — kaputtes Rezept ist ein Befund, kein Absturz
+        return []
+    for schritt in doc.get("steps") or []:
+        if isinstance(schritt, dict) and schritt.get("id") == "piper":
+            return aufrufe_sh(str(schritt.get("run") or ""))
+    return []
+
+
+def ab_werk_befunde(autosetup: str, rezept: list, update: str) -> list:
+    """Punkt 6 als reine Funktion, damit der Selbsttest sie ohne Dateien faehrt."""
+    befunde = []
+    for name, aufrufe in (("autosetup/autosetup.sh", aufrufe_sh(autosetup)),
+                          ("mupibox-app.yaml (Schritt piper)", rezept)):
+        if not aufrufe:
+            befunde.append(f"{name}: kein Einrichtungsaufruf gefunden — Muster veraltet?")
+        for a in aufrufe:
+            if AB_WERK not in a:
+                befunde.append(
+                    f"{name} ruft piper-einrichten.sh OHNE {AB_WERK} — eine frisch "
+                    f"aufgesetzte Box liest dann nicht vor:\n      {a}")
+    for a in aufrufe_sh(update):
+        if AB_WERK in a:
+            befunde.append(
+                f"update/start_mupibox_update.sh uebergibt {AB_WERK} — jede laufende "
+                f"Box ohne vorlesen.json spraeche nach dem Update bei jedem Tipp:\n      {a}")
+    if not aufrufe_sh(update):
+        befunde.append("update/start_mupibox_update.sh: kein Einrichtungsaufruf gefunden.")
+    return befunde
+
+
+def selbsttest() -> int:
+    ok = "  timeout 1200 /usr/local/bin/mupibox/piper-einrichten.sh --ab-werk-an >&3"
+    ohne = "  timeout 1200 /usr/local/bin/mupibox/piper-einrichten.sh >&3"
+    faelle = [
+        ("so gehoert es", ab_werk_befunde(ok, [ok.strip()], ohne) == []),
+        ("autosetup ohne Schalter faellt auf", len(ab_werk_befunde(ohne, [ok.strip()], ohne)) == 1),
+        ("Rezept ohne Schalter faellt auf", len(ab_werk_befunde(ok, [ohne.strip()], ohne)) == 1),
+        ("Update MIT Schalter faellt auf", len(ab_werk_befunde(ok, [ok.strip()], ok)) == 1),
+        ("zitierender Kommentar ist kein Aufruf",
+         aufrufe_sh("# piper-einrichten.sh --ab-werk-an\n" + ohne) == [ohne.strip()]),
+        ("--pruefen ist kein Einrichtungsaufruf",
+         aufrufe_sh("piper-einrichten.sh --pruefen >/dev/null") == []),
+        ("fehlendes Rezept faellt auf", len(ab_werk_befunde(ok, [], ohne)) == 1),
+    ]
+    schlecht = [n for n, g in faelle if not g]
+    for n, g in faelle:
+        print(f"  {'ok  ' if g else 'NEIN'}  {n}")
+    return 1 if schlecht else 0
+
+
 def main() -> int:
+    if "--selbsttest" in sys.argv:
+        return selbsttest()
     still = "--pruefen" in sys.argv
     befunde = []
 
@@ -134,6 +220,8 @@ def main() -> int:
                 f"{os.path.relpath(weg, WURZEL)} ruft piper-einrichten.sh NICHT auf — "
                 "dieser Weg liefert eine stumme Box."
             )
+
+    befunde += ab_werk_befunde(lies(AUTOSETUP), aufrufe_rezept(REZEPT), lies(UPDATE))
 
     if still:
         for b in befunde:

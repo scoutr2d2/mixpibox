@@ -42,7 +42,9 @@ geaendert), und das gehoert dort behoben und nicht hier umgangen.
 AUFRUF
     python3 tools/box-finden.py                 # findet und nennt die Adresse
     python3 tools/box-finden.py --nur-adresse   # nur die Adresse, fuer $(…)
-    python3 tools/box-finden.py --pruefen       # fuer tools/pruefen.sh
+    python3 tools/box-finden.py --pruefen       # still, Exit immer 0 (Box aus ist kein
+                                                # Fehler im Baum) — haengt darum in
+                                                # keinem Laeufer (28.09.2026)
     python3 tools/box-finden.py --box 192.168.178.62
 """
 

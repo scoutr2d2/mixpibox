@@ -250,6 +250,7 @@ import {
   verbrauchFuerHeute,
   verbrauchVorgabe,
 } from './kinderzeit'
+import { mitSperre, type Sperre, sperreAusAnfrage, sperreNormalisieren, sperrStand } from './boxsperre'
 import {
   ANZAHL_MAX as VIDEO_ANZAHL_MAX,
   type Freigaben as VideoFreigaben,
@@ -655,6 +656,7 @@ import {
   stimmenAusDateien as vlStimmenAusDateien,
   stimmeZerlegen as vlStimmeZerlegen,
 } from './vorlesen'
+import { type SprechAnschluss, sprechRoute } from './sprechstrom'
 import { type Erlaubt, type Nachricht, ungelesen as nUngelesen, vorlesenAn as nVorlesenAn } from './nachrichten'
 import { erlaubtPruefen as nErlaubtPruefen, listePruefen as nListePruefen } from './nachrichten-ablage'
 import { Nachrichtendienst, type NachrichtenKonf } from './nachrichten-dienst'
@@ -1437,6 +1439,17 @@ app.get('/api/wartung', (_req, res) => {
     // halb geschriebene Datei darf die Box nicht dauerhaft sperren.
     res.json({ aktiv: false })
   }
+})
+
+// ── BOX-SPERRE, LESE-SEITE (28.09.2026) ────────────────────────────────────
+//
+// VOR DEM TOR aus demselben Grund wie `/api/wartung` darueber: der Kiosk
+// fragt, ob er den Pausen-Schirm zeigen soll, und darf dabei nicht an der
+// Anmeldung haengen. Die Antwort ist ein Ja/Nein mit Uhrzeit und aendert
+// nichts. Setzen und Aufheben stehen HINTER dem Tor (bei der Kinderzeit).
+// Zustand und Regel: `boxSperre` weiter unten, boxsperre.ts.
+app.get('/api/boxsperre', (_req, res) => {
+  res.json(sperrStand(boxSperre, Date.now()))
 })
 
 // Die neue Verwaltungsoberflaeche unter /admin.
@@ -2345,6 +2358,29 @@ export function ablageUebernehmen(alt: string, neu: string): void {
  */
 let kzSatz: KzRegelSatz = regelSatzVorgabe()
 let kzSchreibLauf = 0
+
+/**
+ * DIE BOX-SPERRE DER ELTERN (boxsperre.ts) — box-weit, fuer jedes Kind.
+ *
+ * Sie haengt an `kzStand`, weil DORT jeder Startweg fragt: der /player-Proxy,
+ * `POST /api/spielen`, die Plugins (spielweg.ts). Ein eigener Kontrollpunkt
+ * waere ein vierter Weg, den der naechste Startweg vergisst — genau die Falle
+ * aus [[kinderzeit-erlaubnisliste-kennt-neue-verben-nicht]].
+ *
+ * SYNCHRON GELESEN beim Laden des Moduls: die Datei ist ein paar Byte gross,
+ * und `kzStand()` darf nicht warten. Geschrieben wird nur ueber die Wege.
+ * Eine abgelaufene Sperre bleibt als Datei liegen und ist trotzdem keine —
+ * `sperreNormalisieren`/`sperrStand` fragen die Uhr, nicht die Datei.
+ */
+const boxSperreFile = `${configBasePath}/mixpi-boxsperre.json`
+let boxSperre: Sperre | null = (() => {
+  try {
+    return sperreNormalisieren(JSON.parse(fs.readFileSync(boxSperreFile, 'utf8')), Date.now())
+  } catch {
+    // Keine oder kaputte Datei: nicht gesperrt (eine GRENZE darf nicht aussperren).
+    return null
+  }
+})()
 /** Seit wann die Grenze ueberschritten ist (fuer die Nachsicht); 0 = gar nicht. */
 let kzUeberSeit = 0
 
@@ -2500,7 +2536,7 @@ function kzStand(kennung = profilAktiv()): KzUrteil {
     konto.ungespeichert = true
     kzUeberSeit = 0
   }
-  return kzPruefen(regelnFuer(kzSatz, kennung), konto.verbrauch, jetzt)
+  return mitSperre(kzPruefen(regelnFuer(kzSatz, kennung), konto.verbrauch, jetzt), boxSperre, jetzt.getTime())
 }
 
 /** Dem Wiedergabedienst sagen, dass Schluss ist. */
@@ -2980,12 +3016,39 @@ const spielWerkzeuge: SpielWerkzeuge = {
 // Liste — kein Grund, den Server nicht hochzufahren.
 // `plugin-daten/<kennung>/` — ein Ordner je Plugin fuer seinen Zustand. Er
 // liegt IM Konfigurationsordner und damit dort, wo das Sicherungsnetz sucht.
+/**
+ * Der Anschluss fuer das Recht `sprechen` (28.09.2026) — oder null, wenn die
+ * Box nicht sprechen kann.
+ *
+ * DIESELBEN UMGEBUNGSNAMEN WIE IM VORLESE-ABSCHNITT weiter unten (piperVenv,
+ * stimmenDir) und wie beim Start des Servers (httpPort) — hier aber selbst
+ * gelesen: `pluginsLaden` laeuft beim Modulstart, und die Konstanten dort
+ * stehen 15.000 Zeilen tiefer; sie hier zu benutzen waere ein Zugriff vor
+ * ihrer Initialisierung (ReferenceError beim Hochfahren).
+ *
+ * EINMAL BEIM LADEN, wie die Stroeme: wer Piper nachtraeglich einrichtet,
+ * startet den Server ohnehin neu (piper-einrichten.sh laeuft im Update).
+ */
+const sprechOrdner = process.env.MUPIBOX_SPRECH_SPEICHER || '/home/dietpi/.mupibox/sprech-speicher'
+function sprechAnschlussBeimStart(): SprechAnschluss | null {
+  const venv = process.env.MUPIBOX_PIPER_VENV || '/home/dietpi/.mupibox/piper-venv'
+  const stimmen = process.env.MUPIBOX_PIPER_STIMMEN || '/home/dietpi/.mupibox/piper-stimmen'
+  try {
+    if (!fs.existsSync(`${venv}/bin/python`)) return null
+    if (vlStimmenAusDateien(fs.readdirSync(stimmen)).length === 0) return null
+  } catch {
+    return null
+  }
+  const port = Number(process.env.MUPIBOX_HTTP_PORT) || 8200
+  return { ordner: sprechOrdner, basis: `http://127.0.0.1:${port}/api/sprechen` }
+}
 const pluginLage = pluginsLaden(
   PLUGIN_ORDNER,
   pluginEinstellungenLesen(),
   pluginAusLesen(),
   `${configBasePath}/plugin-daten`,
   kernKonfigGruppen(),
+  sprechAnschlussBeimStart(),
 )
 if (pluginLage.abgewiesen.length > 0) {
   console.warn(
@@ -17268,6 +17331,51 @@ app.post('/api/kinderzeit/zuruecksetzen', async (req, res) => {
   res.json(kzStand(kennung))
 })
 
+// ── Box-Sperre: setzen und aufheben (28.09.2026) ─────────────────────────────
+//
+// HINTER DEM TOR, wie jede Einstellung der Eltern — das Lesen steht davor
+// (bei `/api/wartung`). `{minuten}` oder `{bis}` (ms); die Regel und die
+// Hoechstdauer stehen in boxsperre.ts.
+app.post('/api/boxsperre', express.json({ limit: '2kb' }), async (req, res) => {
+  const jetzt = Date.now()
+  let neu: Sperre
+  try {
+    neu = sperreAusAnfrage(req.body, jetzt)
+  } catch (e) {
+    return res.status(400).json({ error: 'ungueltig', satz: (e as Error).message })
+  }
+  // ERST SCHREIBEN, DANN GELTEN — umgekehrt stuende nach einem Fehler eine
+  // Sperre im Speicher, die der naechste Neustart still aufhebt.
+  try {
+    await kzSchreiben(boxSperreFile, neu)
+  } catch (e) {
+    return res.status(500).json({ error: 'nichtGespeichert', satz: `Die Sperre ließ sich nicht speichern: ${(e as Error)?.message ?? ''}` })
+  }
+  boxSperre = neu
+  // JETZT heisst jetzt: laeuft etwas, haelt es an, statt bis zum naechsten
+  // Takt (5 s) weiterzuspielen. Dasselbe Ereignis wie am Ende der Kinderzeit,
+  // damit ein Lichtplugin es genauso behandeln kann.
+  if (kzSpieltGerade()) {
+    kzStoppen()
+    pluginEreignisStreuen('kinderzeitEnde', { grund: 'gesperrt' })
+  }
+  console.info(`${new Date().toLocaleString()}: [MixPiBox-Server] Box gesperrt bis ${new Date(neu.bis).toLocaleString()}`)
+  res.json(sperrStand(boxSperre, Date.now()))
+})
+
+app.delete('/api/boxsperre', async (_req, res) => {
+  boxSperre = null
+  try {
+    await fs.promises.rm(boxSperreFile, { force: true })
+  } catch (e) {
+    // Die Datei bleibt liegen und haelt die Sperre ueber einen Neustart —
+    // das muss der Aufrufer erfahren, sonst glaubt er sie aufgehoben.
+    return res.status(500).json({ error: 'nichtEntfernt', satz: `Die Sperre ließ sich nicht aufheben: ${(e as Error)?.message ?? ''}` })
+  }
+  console.info(`${new Date().toLocaleString()}: [MixPiBox-Server] Box-Sperre aufgehoben`)
+  res.json(sperrStand(null, Date.now()))
+})
+
 /* ══ BELOHNUNGS-VIDEOS AUS DER MEDIATHEK (20.09.2026) ══════════════════════
  *
  * Betreiber: „ard videos einzelne videos freischalten mit abspiel haeufigkeit
@@ -17533,6 +17641,12 @@ app.get('/api/video/kind', (_req, res) => {
  */
 app.post('/api/video/start', express.json({ limit: '4kb' }), async (req, res) => {
   const kennung = profilAktiv()
+  // DIE SPERRE DER ELTERN GILT AUCH HIER — anders als die Kinderzeit (siehe
+  // oben: eine Belohnung frisst keine Hoerzeit). „Die Box macht Pause" heisst
+  // Pause fuer alles, nicht nur fuer den Ton.
+  if (sperrStand(boxSperre, Date.now()).aktiv) {
+    return res.status(403).json({ kinderzeit: true, ...mitSperre(kzStand(kennung), boxSperre, Date.now()) })
+  }
   const video = videoZeileAus((req.body ?? {}) as Record<string, unknown>)
   const stand = videofreigabenLesen(kennung)
   const urteil = videoUrteilen(stand, video)
@@ -18268,6 +18382,51 @@ async function vlSprich(text: string, e: VlEinstellungen): Promise<string> {
     void vlCacheDeckeln()
   }
 }
+
+// ── SPRECHSTROM: PLUGINS LASSEN DIE BOX VORLESEN (Recht `sprechen`) ─────────
+//
+// Die Einzelheiten stehen in sprechstrom.ts. Hier nur, was der Kern dazugibt:
+// den laufenden Piper-Dienst (derselbe wie fuers Vorlesen — ein zweites Modell
+// kostete rund 200 MB) und die Stimme aus den Vorlese-Einstellungen.
+//
+// DAS TEMPO GEHT JE ANFRAGE MIT (`length_scale`), damit ein Artikel nicht im
+// Kachel-Tempo kommt (bis 2 = halbe Geschwindigkeit) und der Dienst nicht bei
+// jedem Wechsel zwischen Kachelname und Artikel neu laedt. piper-tts 1.6 liest
+// das Feld in `/synthesize` (Quelle: http_server.py, OHF-Voice/piper1-gpl).
+// AM GERAET UNGEMESSEN (28.09.2026): ueberginge der Dienst das Feld, spraeche
+// der Artikel im Vorlese-Tempo — hoerbar, aber nicht falsch.
+//
+// KEIN RUECKFALL AUF DAS PROGRAMM wie bei vlSprich: 2 bis 14 s je Satzgruppe
+// waeren ein Strom aus Pausen. Ohne Dienst antwortet die Route ehrlich 503.
+//
+// HINTER DEM TOR, und das reicht: der Abspieler ruft ueber 127.0.0.1 an, und
+// die Rueckschleife laesst das Tor durch (auth.ts, Regel 2).
+async function sprechStueck(text: string, tempo: number): Promise<Buffer | null> {
+  const e = vlEinstellungen
+  if (!(await piperDienstStarten(e.stimme, e.tempo))) return null
+  try {
+    const a = await fetch(`http://127.0.0.1:${PIPER_PORT}/synthesize`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text, length_scale: tempo }),
+      signal: AbortSignal.timeout(VL_SPRECH_MS),
+    })
+    if (!a.ok) return null
+    const bytes = Buffer.from(await a.arrayBuffer())
+    return bytes.length < 1000 ? null : bytes
+  } catch {
+    return null
+  }
+}
+
+app.get(
+  '/api/sprechen/:name',
+  sprechRoute({
+    ordner: sprechOrdner,
+    sprich: sprechStueck,
+    melden: (text) => console.log(`${new Date().toLocaleString()}: [MuPiBox-Server] ${text}`),
+  }),
+)
 
 // ── DER DECKEL AUF DEM VORLESE-SPEICHER (14.08.2026) ────────────────────────
 //

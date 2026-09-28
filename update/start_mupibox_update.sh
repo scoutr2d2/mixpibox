@@ -920,6 +920,12 @@ echo "==========================================================================
 	# Das Skript ueberspringt, was schon da ist — ein zweites Update kostet also
 	# nichts. Und wie oben gilt: scheitert es, laeuft das Update weiter. Eine
 	# Box, die nicht vorliest, ist keine kaputte Box.
+	#
+	# HIER ABSICHTLICH OHNE `--ab-werk-an` (anders als autosetup.sh): diese Box
+	# laeuft schon, und wer den Vorlese-Schalter nie angefasst hat, hat keine
+	# vorlesen.json — sie spraeche nach dem Update ploetzlich bei jedem Tipp.
+	# Ein Update schaltet kein Verhalten still um (BACKLOG E12/X12, llmwiki
+	# `ein-neuer-schalter-darf-nichts-wegnehmen`).
 	echo -e "XXX\n${STEP}\nInstall Piper (text-to-speech)... \nXXX"
 	before=$(date +%s)
 	timeout -k 30 1200 /usr/local/bin/mupibox/piper-einrichten.sh >&3 2>&3 \

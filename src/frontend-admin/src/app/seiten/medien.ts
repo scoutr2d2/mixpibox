@@ -1106,9 +1106,17 @@ export const SCHNELL_NICHT_KLICKBAR = 'input, button, select, textarea, label, a
            die Suche nur „nicht erreichbar" — der Grund steht dann eine Zeile
            höher. -->
       <h2 id="anker-erweiterungen">Erweiterungen</h2>
+      <!-- DAS ANGEBOT (28.09.2026): jedes Plugin dieser Sektion wird nach
+           http/angebot gefragt und bekommt darunter seine eigene Liste zum
+           Aufnehmen — Kindernachrichten, Klexikon und jedes künftige, ohne
+           dass diese Seite es kennenlernt. Das Archiv behält seinen Kasten
+           darunter; es kennt die Route nicht und bekommt deshalb nichts. -->
       <mixpi-plugin-abschnitt
         [sektion]="'medien'"
         [leerHinweis]="'Kein Medien-Plugin angemeldet. Erweiterungen mit sektion medien erscheinen hier.'"
+        [angebot]="true"
+        [vorhanden]="pluginKennungen()"
+        (aufgenommen)="nachAufnahme()"
       />
 
       <!-- ══ INTERNET ARCHIVE (E88) ═══════════════════════════════════════
@@ -1423,6 +1431,18 @@ export class MedienSeite {
   protected readonly aktionMeldung = signal('')
 
   protected readonly eintraege = signal<Eintrag[]>([])
+
+  /** Die vollen Plugin-Medienkennungen der Bibliothek — fuer „schon da" im Angebot der Steckleiste. */
+  protected readonly pluginKennungen = computed(() =>
+    this.eintraege()
+      .filter((e) => String(e['type'] ?? '') === 'plugin')
+      .map((e) => String(e['id'] ?? '')),
+  )
+
+  /** Die Steckleiste hat etwas aufgenommen: die Bibliothek neu holen. */
+  protected nachAufnahme(): void {
+    void this.laden()
+  }
   protected readonly gesamt = signal(0)
   protected readonly kategorien = signal<string[]>(['music', 'audiobook', 'other'])
   protected readonly treffer = signal<Treffer[]>([])

@@ -1094,19 +1094,21 @@ steps:
       (Boot-Animation wegen Framebuffer, Farben und Schriften; qr.py;
       einrichtung-ap.py) ueber den EIGENEN Verzeichnispfad, nicht ueber
       Systempfade. Liegt einer davon woanders, faellt der Schirm STILL aus.
-      HOSTAPD UND DNSMASQ SIND KOMFORT, KEINE VORAUSSETZUNG. Der Rueckfall
-      laeuft auch ohne sie: `wpa_supplicant` (auf jeder Box mit WLAN vorhanden)
-      macht mit `mode=2` selbst ein Netz auf, und `kleiner-dhcp.py` spricht
-      DHCP und DNS in reiner Standardbibliothek. Genau deshalb funktioniert der
-      Weg jetzt auch auf einer FRISCHEN Karte — vorher hing er an zwei Paketen,
-      die erst das Netz gebracht haette, das er ersetzen sollte.
-      Wo sie da sind, haben sie Vorrang (ausgereifter). Sie werden hier
-      installiert UND SOFORT STILLGELEGT: sie sind Werkzeug, kein Dienst —
-      `einrichtung-ap.py` startet sie mit EIGENER Konfiguration als eigene
-      Prozesse. Wer sie laufen laesst, hat auf einer Kinderbox einen
-      DNS-Server auf Port 53 und einen Zugangspunkt, die niemand bestellt hat.
-      Genau deshalb stehen sie auch NICHT in der grossen Paketzeile:
-      `apt-get install dnsmasq` startet ihn beim Installieren.
+      HOSTAPD UND DNSMASQ KOMMEN NICHT MEHR AUF DIE BOX (BACKLOG E143/9,
+      Betreiber 28.09.2026: „raus damit"). Der AP laeuft seit dem 08.08.2026
+      ueber `wpa_supplicant` (auf jeder Box mit WLAN vorhanden, `mode=2`) und
+      `kleiner-dhcp.py` (DHCP und DNS in reiner Standardbibliothek) — nur so
+      geht er auch auf einer FRISCHEN Karte, auf der es beide Pakete nicht
+      gibt. Bis zum 28.09. installierte dieser Schritt sie trotzdem (und
+      maskierte ihre Dienste), und `weg_waehlen()` gab ihnen dann VORRANG —
+      aber die Uebergabe ins Heimnetz (`wechsel_aus_ap()` im Agenten) spricht
+      ueber `wpa_cli` mit dem AP-wpa_supplicant, den es auf dem hostapd-Weg gar
+      nicht gibt. Eine fertige Box, die ohne Router startete, haette also
+      ausgerechnet den Weg genommen, auf dem der Wechsel scheitert. Der
+      hostapd-Weg ist deshalb auch aus `einrichtung-ap.py` entfernt; Boxen,
+      auf denen die Pakete von frueher noch liegen, lassen sie ungenutzt und
+      maskiert liegen. Bleibt: `iw` — die Netzliste fuer das Handy scannt
+      damit, bevor der AP den Funk uebernimmt.
       DIE ZWEITE UNIT (`-ap`) IST DIE, DIE DEN RUECKFALL UEBERHAUPT AUSLOEST:
       sie wartet nach dem Start 45 s auf eine Adresse und macht nur dann das
       eigene Netz auf. Ohne sie laege alles bereit und niemand riefe es je auf.
@@ -1138,12 +1140,9 @@ steps:
         mode: "644"
     run: |
       set -e
-      DEBIAN_FRONTEND=noninteractive apt-get install -y hostapd dnsmasq iw
-      # Stilllegen, nicht entfernen: der AP braucht die Programme, aber NIE
-      # deren mitgelieferte Dienste. `mask` haelt auch den Fall ab, dass ein
-      # anderes Paket sie als Abhaengigkeit wieder anschaltet.
-      systemctl disable --now hostapd dnsmasq 2>/dev/null || true
-      systemctl mask hostapd dnsmasq 2>/dev/null || true
+      # Nur `iw` (Netzliste). hostapd und dnsmasq stehen hier absichtlich
+      # nicht mehr — siehe note; die Wache steht in tests/handyweg_test.py.
+      command -v iw >/dev/null || DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends iw
       # Uebersetzen heisst hier: laedt der Schirm seine Nachbarn wirklich? Ein
       # Syntaxfehler in einem der vier faellt sonst erst am dunklen Schirm auf.
       for f in einrichtung-schirm.py einrichtung-ap.py qr.py mupibox-boot-splash.py; do

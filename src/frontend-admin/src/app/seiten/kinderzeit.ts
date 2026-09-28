@@ -61,7 +61,9 @@ interface RegelSatz {
 
 interface Stand {
   erlaubt: boolean
-  grund: 'aus' | 'frei' | 'tagGesperrt' | 'zuFrueh' | 'zuSpaet' | 'aufgebraucht'
+  grund: 'aus' | 'frei' | 'tagGesperrt' | 'zuFrueh' | 'zuSpaet' | 'aufgebraucht' | 'gesperrt'
+  /** Nur bei `gesperrt`: Ende der Box-Sperre als „HH:MM“ (boxsperre.ts). */
+  gesperrtBis?: string
   restMin: number | null
   fensterAb: string
   fensterBis: string
@@ -987,7 +989,7 @@ export class KinderzeitSeite implements OnDestroy {
    * DIE REGELN GIBT ES JE KIND — SEIT DEM 25.09.2026 AUCH AUF DIESER SEITE.
    * Der Server fuehrt seit dem 02.08.2026 (d66ee6fc) eine Hausregel
    * (`standard`) und Ausnahmen je Kind (`je`); bis heute bearbeitete die
-   * Wochentabelle hier trotzdem nur die Hausregel (README 3.9).
+   * Wochentabelle hier trotzdem nur die Hausregel (README 3.10).
    *
    * GELADEN WIRD DER GANZE SATZ (`GET /api/kinderzeit/satz`), nicht die
    * Einzelregel mit `?profil=`: jene Antwort sagt nicht, ob das Kind EIGENE
@@ -1802,6 +1804,8 @@ export class KinderzeitSeite implements OnDestroy {
         return `Feierabend (war bis ${s.fensterBis})`
       case 'aufgebraucht':
         return 'Zeit aufgebraucht'
+      case 'gesperrt':
+        return s.gesperrtBis ? `Box gesperrt (bis ${s.gesperrtBis})` : 'Box gesperrt'
       default:
         return ''
     }

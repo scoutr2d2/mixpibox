@@ -8,6 +8,7 @@ import 'box_seite.dart';
 import 'dialoge.dart';
 import 'figur.dart';
 import 'koppeln.dart';
+import 'sperren.dart';
 
 /// Startseite: alle Boxen untereinander, oben die Befehle fuer alle.
 class UebersichtSeite extends StatelessWidget {
@@ -78,14 +79,15 @@ class _BoxKarte extends StatelessWidget {
       _ when lage.kopplungNoetig => 'Nicht gekoppelt — antippen',
       _ when lage.anmeldungNoetig => 'Anmeldung nötig — antippen',
       _ when w == null => lage.fehler ?? 'wird gefragt …',
+      _ when lage.gesperrt => 'Gesperrt ${lage.sperre!.bisText}',
       _ when !w.spielt => 'still',
       _ => [w.titel, w.album].where((s) => s.isNotEmpty).join(' · '),
     };
     final c = stand.client(box);
     final coverPfad = lage.coverPfad;
     final zeichen = Icon(
-      w == null ? Icons.cloud_off : (w.hoerbar ? Icons.graphic_eq : Icons.speaker),
-      color: w == null ? Theme.of(context).colorScheme.error : null,
+      w == null ? Icons.cloud_off : (lage.gesperrt ? Icons.lock : (w.hoerbar ? Icons.graphic_eq : Icons.speaker)),
+      color: w == null || lage.gesperrt ? Theme.of(context).colorScheme.error : null,
     );
     return Card(
       child: Column(
@@ -313,6 +315,14 @@ class _AlleMenue extends StatelessWidget {
             await _ausfuehren(context, 'Lauter', (c) => c.befehl('+5'));
           case 'profil':
             if (context.mounted) await _profilFuerAlle(context);
+          case 'sperren':
+            // „Alle still zur Schlafenszeit" mit Ende — dieselbe Wahl wie
+            // bei einer Box, an jede geschickt (28.09.2026).
+            final wahl = await sperrDauerWaehlen(context, titel: 'Alle Boxen sperren');
+            if (wahl == null || wahl.aufheben || !context.mounted) return;
+            await _ausfuehren(context, 'Gesperrt', (c) => c.sperren(minuten: wahl.minuten, bis: wahl.bis));
+          case 'entsperren':
+            await _ausfuehren(context, 'Entsperrt', (c) => c.entsperren());
         }
       },
       itemBuilder: (_) => const [
@@ -321,6 +331,8 @@ class _AlleMenue extends StatelessWidget {
         PopupMenuItem(value: 'leiser', child: ListTile(leading: Icon(Icons.volume_down), title: Text('Alle leiser'))),
         PopupMenuItem(value: 'lauter', child: ListTile(leading: Icon(Icons.volume_up), title: Text('Alle lauter'))),
         PopupMenuItem(value: 'profil', child: ListTile(leading: Icon(Icons.person), title: Text('Profil auf allen Boxen …'))),
+        PopupMenuItem(value: 'sperren', child: ListTile(leading: Icon(Icons.lock_outline), title: Text('Alle sperren …'))),
+        PopupMenuItem(value: 'entsperren', child: ListTile(leading: Icon(Icons.lock_open), title: Text('Alle entsperren'))),
       ],
     );
   }

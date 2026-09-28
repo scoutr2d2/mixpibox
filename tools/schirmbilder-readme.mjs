@@ -151,6 +151,25 @@ try {
     console.log(`  ausgelassen: Eltern-Bereich (${e.message})`)
   }
 
+  // 5. DER PAUSEN-SCHIRM DER BOX-SPERRE (28.09.2026). An der echten Box hiesse
+  //    das Bild: die Box fuer ein Kind sperren, das sie gerade benutzt — die
+  //    Attrappe stellt die Sperre ueber ihren Umschalter. Der Kinderschirm
+  //    fragt alle 5 s (TAKT_BOXSPERRE); danach wird sie wieder aufgehoben.
+  try {
+    // NEU LADEN statt den Eltern-Bereich von Bild 4 zu schliessen: ein
+    // Zurueck MITTEN in einer Auswertung reisst die Verbindung ab.
+    await send(ws, 'Page.navigate', { url: ZIEL })
+    await warte(2600)
+    await ev(`fetch('/vorschau/boxsperre-morgen').then(r => r.ok)`)
+    await warte(5600)
+    const da = await ev(`!!document.getElementById('mixpi-boxsperre')`)
+    if (da) await bild('05-box-pause')
+    else console.log('  ausgelassen: Pausen-Schirm (#mixpi-boxsperre erschien nicht)')
+    await ev(`fetch('/vorschau/boxsperre-aus').then(r => r.ok)`)
+  } catch (e) {
+    console.log(`  ausgelassen: Pausen-Schirm (${e.message})`)
+  }
+
   console.log(`\n${gemacht} Bild(er) in ${BILDER}. Sie gehoeren ANGESEHEN, bevor sie in die README wandern.`)
 } finally {
   try {

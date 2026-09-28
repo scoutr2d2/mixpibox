@@ -299,6 +299,10 @@ Alle Methoden sind **freiwillig**. Ein Plugin darf wenig können.
 | `http(anfrage, kontext)` | eigene Verwaltungs-Routen unter `/api/plugins/<kennung>/http/…` (E77) | – |
 | `songtext(frage, kontext)` | Zeilen mit Zeitmarken zum laufenden Stück, siehe unten (E84/B2) | `songtext` |
 
+Dazu **ein Werkzeug im Kontext**, keine Methode: `kontext.sprechen(text)` — die
+Box liest einen Text mit ihrer eigenen Stimme vor, siehe
+[Die Box vorlesen lassen](#die-box-vorlesen-lassen--recht-sprechen-28092026). Braucht `sprechen`.
+
 ### In der Verwaltung erscheinen — Sektion, Icon, Aktionen (E77)
 
 Seit dem 22.08.2026 kann ein Plugin sich **in einer Sektion der Verwaltung
@@ -355,10 +359,12 @@ alle freiwillig:
   > `id` vorschlagen. Dieser Weg ist generisch und trägt Verlauf,
   > Weiterhören, Favoriten und die gemerkte Stelle (E90) ohne Kernänderung.
   > `"sektion": "medien"` trägt die **Steuerung** (Schalter, Einstellungen,
-  > Aktionen), nicht den Inhalt. Was **nicht** generisch ist, ist nach wie vor
-  > die **Suchmaske** in `seiten/medien.ts`: dort stehen `mixpi-ardsounds` und
-  > `mixpi-archive` wörtlich in den URLs, und eine dritte Suchfläche braucht
-  > heute noch eine Kernänderung.
+  > Aktionen), nicht den Inhalt. Die **Suchmaske** ist seit dem 28.09.2026
+  > ebenfalls generisch: wer `http/angebot` beantwortet, bekommt seine Liste
+  > zum Aufnehmen in der Steckleiste (siehe
+  > [Etwas zum Aufnehmen anbieten](#etwas-zum-aufnehmen-anbieten--httpangebot-28092026)).
+  > Wörtlich in `seiten/medien.ts` stehen nur noch die beiden älteren Kästen
+  > von `mixpi-ardsounds` und `mixpi-archive`.
   >
   > Umgekehrt fehlt `streaming/deezer`: die Streaming-Seite baut ihre Anker aus
   > den vier Anbieter-Ids (`spotify`, `jellyfin`, `ardsounds`, `deezer`), im
@@ -414,14 +420,75 @@ alle freiwillig:
 **`http(anfrage, kontext)`** ist die freie Fläche dahinter: alles unter
 `/api/plugins/<kennung>/http/<pfad>` landet bei dir als
 `{ methode: 'GET'|'POST', pfad, abfrage, rumpf }`, zurück gibst du
-`{ status?, inhalt }`. Nur JSON, Status 200–499, höchstens 256 KB — der Wirt
-prüft das, nicht du. Die Routen liegen **hinter dem Tor der Verwaltung**; eine
-Fläche für den Kinderschirm ist damit bewusst nicht zu bauen, der einzige Weg
-zum Abspielen bleibt `spielweg.ts`.
+`{ status?, inhalt }`. Nur JSON, höchstens 256 KB, und als Status **2xx, 4xx
+oder 502 mit `fehler`** — der Wirt prüft das, nicht du. Die Routen liegen
+**hinter dem Tor der Verwaltung**; eine Fläche für den Kinderschirm ist damit
+bewusst nicht zu bauen, der einzige Weg zum Abspielen bleibt `spielweg.ts`.
+
+**Wenn etwas schiefgeht**, gibt es zwei Wege, und sie bedeuten Verschiedenes:
+
+| Was ist passiert? | Was du tust | Was die Verwaltung bekommt |
+|---|---|---|
+| Der Dienst **draußen** antwortet nicht, falsch, oder dir fehlt ein Recht/Zugang | `return { status: 502, inhalt: { fehler: 'Das Archiv antwortete mit HTTP 503' } }` | 502, `{ fehler: … }` — dein Satz, samt allem, was du sonst in `inhalt` legst |
+| **Dein Code** ist kaputt | nichts — du wirfst ohnehin | 502 mit der Meldung; der Stapel steht im Journal |
+
+`fehler` ist Pflicht: ein 502 ohne Grund ersetzt der Wirt durch „Status 502
+ohne Grund". Jedes andere 5xx (500, 503, 504) und jede Umleitung (3xx) ersetzt
+er durch „Status … ist nicht erlaubt" — dein Grund ist dann weg. Die Regel
+steht als `httpAntwortPruefen` in `plugin-vertrag.ts`, und der Prüfstand
+(`tools/mixpi-plugin-pruefstand.mjs --http PFAD`) wendet dieselbe an.
+
+> Bis 28.09.2026 galt „nur 2xx und 4xx", und ein zurückgegebenes 502 kam als
+> „Status 502 ist nicht erlaubt" an — obwohl sieben Plugins es genau so
+> schrieben und ihre eigenen Zeugen grün waren. Wer ein älteres Plugin liest,
+> das in `http()` wirft statt 502 zurückzugeben: beides kommt an, aber nur
+> der Wurf schreibt bei jedem Aussetzer draußen einen Stapel ins Journal.
 
 Wer eine Sektion hat, sollte auch `befinden()` können — die Steckleiste zeigt
 den Satz direkt unter dem Namen. Vollständiges Beispiel:
 [`mixpi-ardsounds/`](mixpi-ardsounds/).
+
+### Etwas zum Aufnehmen anbieten — `http/angebot` (28.09.2026)
+
+Ein Medien-Plugin in der Sektion `medien` bekommt seine **Liste zum Aufnehmen
+ohne Kernänderung**: die Steckleiste der Medien-Seite fragt jedes bereite
+Plugin einmal nach `GET /api/plugins/<kennung>/http/angebot` und zeigt, was
+zurückkommt, direkt unter seinem Stecker — je Eintrag ein Knopf „aufnehmen",
+der den `vorschlag` **unverändert** an `POST /api/medien` schickt.
+
+```js
+async http(anfrage, kontext) {
+  if (anfrage.pfad === 'angebot') {
+    return { inhalt: {
+      suche: true,                     // true = die Leiste zeigt ein Suchfeld
+      platzhalter: 'z. B. Mond',       // steht im Suchfeld
+      gesamt: 1,
+      werke: [{ kennung: 'mond', titel: 'Mond', hinweis: 'ein Satz darunter', bild: 'https://…',
+                vorschlag: { type: 'plugin', category: 'other', id: 'mixpi-klexikon:Mond',
+                             title: 'Mond', artist: 'Klexikon', cover: 'https://…' } }],
+    } }
+  }
+  return { status: 404, inhalt: { fehler: 'unbekannt' } }
+}
+```
+
+* **Mit Suchfeld** (`suche: true`) kommt dieselbe Route noch einmal mit
+  `?q=<wort>` — ein Knopf und die Eingabetaste, kein Suchen je Tastendruck.
+* **Ein 404 heißt „ich biete nichts an"**, kein Fehler: der Stecker bleibt,
+  wie er war. So bleibt [`mixpi-archive`](mixpi-archive/) mit seinem eigenen
+  Kasten darunter unberührt.
+* **„schon da" weiß die Bibliothek, nicht du**: die Seite vergleicht die `id`
+  deines Vorschlags mit ihren Einträgen. Der Vorschlag muss deshalb die Form
+  aus E87 haben — `type: "plugin"` und die **volle** Medienkennung in `id`.
+* Biete denselben Eintrag auch unter `http/suche?q=` an (`{ gesamt, werke }`):
+  das liest `tools/plugin-kette-probe.mts`, das die sechs Stellen der Kette
+  gegen den echten Dienst abgeht.
+
+Bis zum 28.09.2026 stand an dieser Stelle, dass **eine dritte Suchfläche eine
+Kernänderung braucht** — `seiten/medien.ts` trug für das Archiv und die ARD je
+einen eigenen Kasten mit der Adresse des Plugins. Beispiele für den neuen Weg:
+[`mixpi-kindernachrichten`](mixpi-kindernachrichten/) (feste Liste, ohne
+Suche) und [`mixpi-klexikon`](mixpi-klexikon/) (mit Suche).
 
 ### Eine Folgenliste liefern — `inhalt()` (E78)
 
@@ -641,6 +708,45 @@ Weiterverteilen wäre etwas anderes — insbesondere sollte kein Ausrollweg
 Textdateien mitschleppen. LRCLIB verlangt außerdem eine `User-Agent`-Kennung
 mit Namen und Verweis.
 
+### Die Box vorlesen lassen — Recht `sprechen` (28.09.2026)
+
+Mit `"rechte": [..., "sprechen"]` bekommt dein Plugin
+
+```js
+const quelle = await kontext.sprechen('Der Mond. Ein Mond ist ein natürlicher Satellit.', { tempo: 1.1 })
+// → { art: 'strom', adresse: 'http://127.0.0.1:8200/api/sprechen/<32 Zeichen>.wav' }
+```
+
+und legt `quelle` unverändert in eine Folge. **Der Aufruf ist billig**: er legt
+nur den Text ab (`~/.mupibox/sprech-speicher/<name>.json`) und gibt sofort
+zurück. Gesprochen wird erst, wenn der Abspieler die Adresse abruft — dann
+spricht der Kern über seinen laufenden Piper-Dienst **Satzgruppe für
+Satzgruppe** und schreibt jede sofort in die Antwort. Das Kind hört den ersten
+Satz, während der Rest noch gerechnet wird; ist der Text ganz durch, liegt er
+als `.wav` daneben und jeder weitere Abruf ist spulbar und kostet nichts.
+Einzelheiten und Messwerte: `src/backend-api/src/sprechstrom.ts`.
+
+* **Nur mit Recht UND auf einer Box mit Piper.** Fehlt eins davon, fehlt das
+  Feld (nicht: wirft). Frag `if (!kontext.sprechen)` und sag, warum —
+  „Piper ist nicht eingerichtet (Verwaltung → Vorlesen)".
+* **Text** 1 bis 20 000 Zeichen je Aufruf, Leerraum wird geglättet. Ein
+  Artikel gehört in mehrere Folgen (je Abschnitt eine), nicht in einen Aufruf.
+* **`tempo`** ist Pipers `length_scale`: 1 normal, größer langsamer, gebogen
+  auf 0,7 bis 2. Die **Stimme** ist die aus den Vorlese-Einstellungen.
+* **Derselbe Text mit demselben Tempo ist dieselbe Datei** — ruf `sprechen()`
+  ruhig bei jedem `inhalt()` erneut; `inhalt()` muss ohnehin zweimal dieselbe
+  Liste liefern.
+* **Warum der Kern das tut und nicht dein Plugin:** `kontext.holen` verwehrt
+  die eigene Box, also kämst du weder an den Piper-Dienst noch an
+  `/api/vorlesen`. Und selbst Piper zu starten wäre ein zweites Sprachmodell
+  neben dem des Kerns — rund 200 MB auf einem Pi mit 2 GB — und die
+  8-s-Frist risse bei jedem längeren Text.
+* **Am Gerät ungemessen (28.09.2026):** ob der Piper-Dienst der Box das Tempo
+  je Anfrage annimmt (piper-tts 1.6 liest `length_scale` in `/synthesize`).
+  Ginge es nicht, käme der Text im Tempo der Vorlese-Einstellung.
+
+Vollständiges Beispiel: [`mixpi-klexikon/`](mixpi-klexikon/).
+
 ### Die Ereignisse
 
 | Name | Wann | Nutzlast |
@@ -648,7 +754,7 @@ mit Namen und Verweis.
 | `wiedergabeGestartet` | etwas fängt an zu spielen | `{}` bzw. `{herkunft:'plugin'}` |
 | `wiedergabeGestoppt` | angehalten oder pausiert | `{verb:'stop'\|'pause'}` |
 | `lautstaerke` | Lautstärke geändert | `{wert}` (0–100) |
-| `kinderzeitEnde` | die Kinderzeit hat abgeschaltet | `{grund}` — `aufgebraucht`, `zuSpaet`, `tagGesperrt` |
+| `kinderzeitEnde` | die Kinderzeit hat abgeschaltet | `{grund}` — `aufgebraucht`, `zuSpaet`, `tagGesperrt`, `gesperrt` (die Eltern haben die Box gesperrt, `POST /api/boxsperre`) |
 
 Ereignisse sind **Mitteilungen, keine Aufträge**: der Kern wartet nicht auf dich
 und die Musik hängt nicht an dir. Wirft dein Plugin, landet das im Journal, und
@@ -1045,7 +1151,7 @@ ersten. (Nachgemessen; die Meldungen unten stehen wörtlich so da.)
 | `kennung` doppelt vergeben | „Kennung „x" ist bereits vergeben." (das **zweite** lädt nicht) |
 | `fassung` in der Form `1.0.0` | „ist keine Form „1.0.0"." |
 | `haupt` innerhalb des Ordners | „muss innerhalb des Plugin-Ordners liegen (kein `..` und kein `/` am Anfang)" |
-| `rechte` nur `medienquelle`, `ereignisse`, `netz`, `klang`, `geraetestand`, `songtext` | „`rechte` kennt „x" nicht. Erlaubt: medienquelle, ereignisse, netz, klang, geraetestand, songtext." — ein unbekanntes Recht wird **nicht** stillschweigend weggelassen |
+| `rechte` nur `medienquelle`, `ereignisse`, `netz`, `klang`, `geraetestand`, `songtext`, `sprechen` | „`rechte` kennt „x" nicht. Erlaubt: medienquelle, ereignisse, netz, klang, geraetestand, songtext, sprechen." — ein unbekanntes Recht wird **nicht** stillschweigend weggelassen |
 | `felder[].schluessel`: Buchstabe zuerst, dann Buchstaben/Ziffern/`_` | „taugt nicht als Schluessel — Buchstabe zuerst, dann Buchstaben, Ziffern, Unterstrich." — **das fängt auch `__proto__`**, weil es mit `_` anfängt |
 | `constructor`, `prototype` als Schlüssel | „ist nicht erlaubt — es wuerde den Prototyp veraendern." |
 | `felder[].art` nur `text`, `zahl`, `schalter`, `geheim` | „hat die Art „x"" |
@@ -1104,8 +1210,8 @@ aus E87); ad hoc über `/api/plugins/spielen` Gespieltes hat weiterhin keine
 Stelle. Die Einzelheiten stehen oben in [Was noch fehlt](#was-noch-fehlt).
 
 Eigene Endpunkte gibt es **seit E77 eingeschränkt**: `http()` unter
-`/api/plugins/<kennung>/http/…`, aber nur GET/POST, nur JSON, Status 200–499,
-256 KB Deckel, und **hinter dem Tor der Verwaltung**. Eine *eigene* Route, die
+`/api/plugins/<kennung>/http/…`, aber nur GET/POST, nur JSON, Status 2xx, 4xx
+oder 502 mit `fehler`, 256 KB Deckel, und **hinter dem Tor der Verwaltung**. Eine *eigene* Route, die
 der Kinderschirm erreicht, ist damit weiterhin nicht zu bauen — **Inhalte
 liefern kannst du trotzdem**: der E87-Weg (`type: "plugin"` in der Medienliste,
 `/api/werke/<s>/inhalt` Zweig `plugin`, Abspielen über `spielweg.ts`) trägt

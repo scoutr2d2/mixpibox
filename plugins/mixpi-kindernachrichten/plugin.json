@@ -1,0 +1,25 @@
+{
+  "kennung": "mixpi-kindernachrichten",
+  "name": "Kindernachrichten",
+  "fassung": "0.1.0",
+  "haupt": "index.mjs",
+  "rechte": ["medienquelle", "netz"],
+  "sektion": "medien",
+  "icon": "icon.svg",
+  "felder": [
+    {
+      "schluessel": "frischeTage",
+      "art": "zahl",
+      "name": "Nachrichten hoechstens so viele Tage alt",
+      "hinweis": "Gezaehlt in Kalendertagen: 0 heisst nur von heute, 3 laesst montags die Folge vom Freitag noch zu. Aeltere Nachrichtenfolgen erscheinen gar nicht erst — eine Nachricht von vor drei Wochen ist fuer ein Kind schlimmer als keine. Gilt nur fuer MausNachrichten, logo! und „Nachrichten von heute“, nicht fuer die Wissens-Podcasts.",
+      "vorgabe": 3
+    }
+  ],
+  "aktionen": [
+    {
+      "kennung": "pruefen",
+      "name": "Erreichbarkeit messen",
+      "hinweis": "Fragt alle vier Feeds gleichzeitig an und nennt je Quelle die Antwortzeit und die Groesse."
+    }
+  ]
+}

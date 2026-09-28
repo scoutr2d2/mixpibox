@@ -147,4 +147,86 @@ describe('Medien: die Steckleiste der Sektion medien', () => {
     const h = (fixture.nativeElement as HTMLElement).querySelector('#anker-erweiterungen')
     expect(h?.textContent).toContain('Erweiterungen')
   })
+
+  /* ══ DAS ANGEBOT (28.09.2026) ═════════════════════════════════════════════
+   * Jedes bereite Plugin der Sektion wird nach http/angebot gefragt. Gemessen
+   * wird wieder an der ZUSAMMENGESETZTEN Seite: die Zusage „ein neues
+   * Medien-Plugin braucht keine Zeile in medien.ts" haengt an den drei
+   * Bindungen dort (angebot, vorhanden, aufgenommen) — ein Zeuge gegen die
+   * Leiste allein bliebe gruen, wenn eine davon fehlt. */
+  const NACHRICHTEN: Stand = {
+    kennung: 'mixpi-kindernachrichten',
+    name: 'Kindernachrichten',
+    fassung: '0.1.0',
+    zustand: 'bereit',
+    sektion: 'medien',
+    icon: false,
+    aktionen: [],
+  }
+  const vorschlag = (id: string, title: string) => ({ type: 'plugin', category: 'other', id, title, artist: 'x', cover: '' })
+  const ANGEBOT = {
+    suche: false,
+    gesamt: 2,
+    werke: [
+      { kennung: 'heute', titel: 'Nachrichten von heute', hinweis: 'neueste Folgen', vorschlag: vorschlag('mixpi-kindernachrichten:heute', 'Nachrichten von heute') },
+      { kennung: 'logo', titel: 'logo!', hinweis: 'taeglich', vorschlag: vorschlag('mixpi-kindernachrichten:logo', 'logo!') },
+    ],
+  }
+  const angebotAnfrage = () => http.expectOne((r) => r.url.startsWith('/api/plugins/mixpi-kindernachrichten/http/angebot'))
+  const knoepfe = (): string[] =>
+    Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.angebot button')).map((k) => k.textContent?.trim() ?? '')
+
+  it('fragt ein Plugin der Sektion nach seinem Angebot und zeigt je Eintrag „aufnehmen"', async () => {
+    await aufbauen([NACHRICHTEN])
+    angebotAnfrage().flush(ANGEBOT)
+    await fixture.whenStable()
+    fixture.detectChanges()
+    expect(text()).toContain('Nachrichten von heute')
+    expect(knoepfe()).toEqual(['aufnehmen', 'aufnehmen'])
+  })
+
+  it('„schon da" kommt aus der Bibliothek der Seite, nicht vom Plugin', async () => {
+    await aufbauen([NACHRICHTEN])
+    ;(fixture.componentInstance as unknown as { eintraege: { set(v: unknown[]): void } }).eintraege.set([
+      { schluessel: 'plugin:mixpi-kindernachrichten:logo', type: 'plugin', id: 'mixpi-kindernachrichten:logo' },
+    ])
+    angebotAnfrage().flush(ANGEBOT)
+    await fixture.whenStable()
+    fixture.detectChanges()
+    expect(knoepfe()).toEqual(['aufnehmen', 'schon da'])
+  })
+
+  it('schickt beim Aufnehmen den Vorschlag UNVERAENDERT an /api/medien und laedt danach die Bibliothek neu', async () => {
+    await aufbauen([NACHRICHTEN])
+    angebotAnfrage().flush(ANGEBOT)
+    await fixture.whenStable()
+    fixture.detectChanges()
+    ;((fixture.nativeElement as HTMLElement).querySelector('.angebot button') as HTMLButtonElement).click()
+    const post = http.expectOne((r) => r.method === 'POST' && r.url === '/api/medien')
+    expect(post.request.body).toEqual(ANGEBOT.werke[0].vorschlag)
+    post.flush({})
+    await fixture.whenStable()
+    expect(http.match((r) => r.method === 'GET' && r.url === '/api/medien').length).toBe(1)
+  })
+
+  it('ein Plugin ohne Angebot (404) bleibt ein Stecker wie vorher — kein Kasten, keine Fehlermeldung', async () => {
+    await aufbauen([NACHRICHTEN])
+    angebotAnfrage().flush({ fehler: 'Unbekannter Pfad' }, { status: 404, statusText: 'Not Found' })
+    await fixture.whenStable()
+    fixture.detectChanges()
+    expect((fixture.nativeElement as HTMLElement).querySelectorAll('.angebot').length).toBe(0)
+  })
+
+  it('bietet das Plugin eine Suche an, geht das Wort als ?q= an dasselbe Angebot', async () => {
+    await aufbauen([NACHRICHTEN])
+    angebotAnfrage().flush({ ...ANGEBOT, suche: true, platzhalter: 'z. B. Mond' })
+    await fixture.whenStable()
+    fixture.detectChanges()
+    const feld = (fixture.nativeElement as HTMLElement).querySelector('.angebot input') as HTMLInputElement
+    expect(feld.placeholder).toBe('z. B. Mond')
+    feld.value = 'Mond'
+    feld.dispatchEvent(new Event('input'))
+    feld.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter' }))
+    expect(angebotAnfrage().request.urlWithParams).toBe('/api/plugins/mixpi-kindernachrichten/http/angebot?q=Mond')
+  })
 })

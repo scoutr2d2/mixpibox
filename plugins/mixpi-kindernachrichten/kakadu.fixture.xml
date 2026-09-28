@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ZEUGE fuer Kakadu (Deutschlandfunk Kultur), Form wie am 28.09.2026
+     gemessen: 55 Folgen, hier drei. Dauer als mm:ss, Tonadresse mit
+     refId-Anhang, guid ohne Adresse und ohne isPermaLink. Das Kanaldatum
+     steht auf dem 09.03.2026, obwohl die neueste Folge vom 25.09. ist; es
+     taugt also nicht als Frischezeichen. Fuenf der 55 Folgen tragen kein
+     eigenes Bild, hier die dritte. Die Sendeanstalt setzt ESI-Kommentare in
+     den Kanal. Beschreibungen, guids und Tonadressen sind ausgedacht. -->
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
+  <channel> <!--/esi/podcast-xml-podcast-summary.xml?drsearch%3Aprops=%7B%22sophoraId%22%3A%22kakadu-104%22%7D-->
+    <title>Kakadu – Der Kinderpodcast</title>
+ <link>https://www.kakadu.de/kakadu-104.html</link>
+ <atom:link rel="self" type="application/rss+xml" href="https://www.kakadu.de/kakadu-104.xml" />
+ <description>Der Kinderpodcast (ausgedacht). </description>
+ <category>Kids &amp; Family</category>
+ <language>de-DE</language>
+ <pubDate>Mon, 09 Mar 2026 09:58:03 +0100</pubDate>
+ <lastBuildDate>Mon, 09 Mar 2026 09:58:03 +0100</lastBuildDate>
+ <image>
+   <url>https://bilder.deutschlandfunk.de/FI/LE/_8/69/FILE_869f7ed9b25625bceb9bfe2d15fe6f96/kakadu-podcast-100-1920x1920.jpg</url>
+   <title>Kakadu – Der Kinderpodcast</title>
+   <link>https://www.kakadu.de/kakadu-104.html</link>
+ </image>
+ <itunes:image href="https://bilder.deutschlandfunk.de/FI/LE/_8/69/FILE_869f7ed9b25625bceb9bfe2d15fe6f96/kakadu-podcast-100-1920x1920.jpg" />
+ <itunes:author>Deutschlandfunk Kultur</itunes:author>
+ <itunes:explicit>No</itunes:explicit>
+ <itunes:type>episodic</itunes:type>
+ <itunes:category text="Kids &amp; Family" /> <!--/esi/podcast-xml-podcast-feed.xml?drsearch%3Aprops=%7B%22sortBy%22%3A%22broadcastDate%22%7D-->
+
+<item>
+  <title>Kakadu - eure Fragen: - Warum schlafen Fledermäuse kopfüber?</title>
+  <link>https://www.kakadu.de/fledermaeuse-100.html</link>
+  <description>Eine Kinderfrage und ihre Antwort (ausgedacht).</description>
+  <guid>00000000-0000-5000-8000-000000000925</guid>
+  <pubDate>Fri, 25 Sep 2026 10:00:48 +0200</pubDate>
+  <enclosure url="https://podcast-mp3.dradio.de/podcast/2026/09/25/kakadu_eure_fragen_fledermaeuse_drk_20260925_1000_00000925.mp3?refId=kakadu-104" length="25302183" type="audio/mpeg" />
+  <itunes:image href="https://bilder.deutschlandfunk.de/00/00/00/09/00000925/bild-fledermaeuse-100-1920x1920.jpg" />
+  <itunes:author>Eine Autorin</itunes:author>
+  <itunes:duration>26:18</itunes:duration>
+  <itunes:episodeType>full</itunes:episodeType>
+</item>
+
+<item>
+  <title>Kakadu - eure Fragen: - Wie kommt das Salz ins Meer?</title>
+  <link>https://www.kakadu.de/salz-100.html</link>
+  <description>Noch eine Kinderfrage (ausgedacht).</description>
+  <guid>00000000-0000-5000-8000-000000000922</guid>
+  <pubDate>Tue, 22 Sep 2026 10:00:00 +0200</pubDate>
+  <enclosure url="https://podcast-mp3.dradio.de/podcast/2026/09/22/kakadu_eure_fragen_salz_drk_20260922_1000_00000922.mp3?refId=kakadu-104" length="12398211" type="audio/mpeg" />
+  <itunes:image href="https://bilder.deutschlandfunk.de/00/00/00/09/00000922/bild-salz-100-1920x1920.jpg" />
+  <itunes:author>Ein Autor</itunes:author>
+  <itunes:duration>12:56</itunes:duration>
+  <itunes:episodeType>full</itunes:episodeType>
+</item>
+
+<item>
+  <title>Kakadu - bei euch - Ein Kind sammelt Müll</title>
+  <link>https://www.kakadu.de/muell-100.html</link>
+  <description>Ein Kind erzaehlt von seinem Hobby (ausgedacht). </description>
+  <content:encoded>
+    <![CDATA[Ein Kind erzaehlt von seinem Hobby & mehr (ausgedacht).]]>
+  </content:encoded>
+  <guid>00000000-0000-5000-8000-000000000728</guid>
+  <pubDate>Tue, 28 Jul 2026 10:00:00 +0200</pubDate>
+  <enclosure url="https://podcast-mp3.dradio.de/podcast/2026/07/28/kakadu_bei_euch_muell_drk_20260728_1000_00000728.mp3?refId=kakadu-104" length="10555329" type="audio/mpeg" />
+  <itunes:author>Eine Autorin</itunes:author>
+  <itunes:duration>10:56</itunes:duration>
+  <itunes:episodeType>full</itunes:episodeType>
+</item>
+</channel>
+</rss>

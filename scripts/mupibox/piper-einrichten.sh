@@ -73,12 +73,25 @@
 # Die Karte hat Platz (117 GB, 5,7 GB belegt); die ZEIT ist der Engpass, und
 # dafuer steht die Zeitgrenze von 1200 s in den Ausrollwegen.
 #
-# UND EINE EHRLICHE EINSCHRAENKUNG, die beim Gegenlesen am 04.08.2026 fehlte:
-# VORLESEN IST AB WERK AUS. `EINSTELLUNGEN_VORGABE.modus` in
-# src/backend-api/src/vorlesen.ts steht auf 'aus', und ohne vorlesen.json
-# bleibt es dabei. Jede frische Karte zahlt also ~244 MB und bis zu 20 Minuten
-# fuer ein Merkmal, das erst im Eltern-Bereich eingeschaltet wird — auch die
-# Karten, auf denen das nie jemand tut.
+# AB WERK AN — ABER NUR AUF EINER FRISCHEN BOX (BACKLOG E12/X12, Betreiber
+# 28.09.2026: „ja erst aktivieren"). Bis dahin stand hier die Einschraenkung,
+# dass jede frische Karte ~244 MB und bis zu 20 Minuten fuer ein Merkmal zahlt,
+# das ab Werk AUS ist. Jetzt legt `--ab-werk-an` nach gelungener Einrichtung
+# eine `vorlesen.json` mit `{"modus": "antippen"}` an — und zwar NUR, wenn
+# noch keine da ist, und NUR, wenn `bericht` sagt, dass die Box sprechen kann
+# (auf 32 Bit scheitert pip, dann bleibt es still aus statt still kaputt).
+#
+# WARUM NICHT EINFACH `EINSTELLUNGEN_VORGABE.modus` UMSTELLEN: die Vorgabe
+# gilt fuer jede Box OHNE vorlesen.json — also auch fuer jede, die seit
+# Monaten laeuft und den Schalter nie angefasst hat. Beim naechsten Update
+# spraeche die ploetzlich bei jedem Tipp. Das ist dieselbe Regel wie beim
+# Spiele-Schalter und beim Start-Modus (llmwiki
+# `ein-neuer-schalter-darf-nichts-wegnehmen`): „nicht gesagt" heisst auf einer
+# laufenden Box „wie bisher". Deshalb uebergeben den Schalter nur die beiden
+# Wege, die eine Box NEU aufsetzen (autosetup.sh, Rezeptschritt `piper` in
+# mupibox-app.yaml) — der Update-Weg nicht. Die Wache dafuer steht in
+# tools/piper-installationsweg-abgleich.py, der Verhaltenstest in
+# tools/piper-ab-werk.test.sh.
 #
 # WARUM TROTZDEM HIER UND NICHT ERST BEIM EINSCHALTEN: der Schalter im
 # Eltern-Bereich kann nur STIMMEN nachladen (POST /api/vorlesen/stimme), keinen
@@ -99,9 +112,16 @@
 #   piper-einrichten.sh                     einrichten; was da ist, bleibt
 #   piper-einrichten.sh --pruefen           nur nachsehen, nichts aendern
 #   piper-einrichten.sh --stimme de_DE-thorsten-medium   eine weitere Stimme
+#   piper-einrichten.sh --ab-werk-an        einrichten, und auf einer FRISCHEN
+#                                           Box Vorlesen einschalten (nur fuer
+#                                           autosetup.sh und das Rezept)
 set -u
 
 VENV="${MUPIBOX_PIPER_VENV:-/home/dietpi/.mupibox/piper-venv}"
+# Derselbe Name wie im Server (server.ts: `process.env.MUPIBOX_CONFIG_DIR`).
+KONFIG="${MUPIBOX_CONFIG_DIR:-/home/dietpi/.mupibox/Sonos-Kids-Controller-master/server/config}"
+AB_WERK_AN=0
+[ "${1:-}" = "--ab-werk-an" ] && AB_WERK_AN=1
 STIMMEN="${MUPIBOX_PIPER_STIMMEN:-/home/dietpi/.mupibox/piper-stimmen}"
 # de_DE-ramona-low ist die Vorgabe in src/backend-api/src/vorlesen.ts
 # (STIMME_VORGABE). Sie wurde nicht nach Datenblatt gewaehlt, sondern indem alle
@@ -229,5 +249,33 @@ fi
 ###############################################################################
 chown -R "${BESITZER}" "${VENV}" "${STIMMEN}" 2>/dev/null || true
 
+###############################################################################
+# 5. Ab Werk an — nur mit --ab-werk-an, nur ohne vorhandene Einstellung
+###############################################################################
+# Nur `modus` steht drin: Stimme, Tempo und Interpret kommen weiter aus
+# EINSTELLUNGEN_VORGABE in vorlesen.ts. Eine zweite Kopie dieser Werte hier
+# liefe beim naechsten Aendern dort still auseinander.
+ab_werk_einschalten() {
+  local ziel="${KONFIG}/vorlesen.json"
+  if [ -e "${ziel}" ]; then
+    sagen "vorlesen.json war schon da — bleibt, wie sie ist"
+    return 0
+  fi
+  if [ ! -d "${KONFIG}" ]; then
+    sagen "kein Konfigurationsordner unter ${KONFIG} — Vorlesen bleibt aus"
+    return 0
+  fi
+  # Atomar: eine halb geschriebene Datei liest der Server als `{}` = aus.
+  printf '{\n  "modus": "antippen"\n}\n' >"${ziel}.neu.$$" \
+    && chown "${BESITZER}" "${ziel}.neu.$$" 2>/dev/null
+  mv -f "${ziel}.neu.$$" "${ziel}" \
+    && sagen "Vorlesen ab Werk eingeschaltet (antippen): ${ziel}"
+}
+
 sagen "Stand:"
 bericht
+ok=$?
+if [ "${ok}" -eq 0 ] && [ "${AB_WERK_AN}" -eq 1 ]; then
+  ab_werk_einschalten
+fi
+exit "${ok}"

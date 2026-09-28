@@ -1,5 +1,5 @@
 id: mupibox
-version: "638"
+version: "654"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -41788,7 +41788,9 @@ entries:
       prueft gegen das Manifest). Dazu `http(anfrage)` als freie Flaeche
       unter /api/plugins/<k>/http/… — nur GET/POST, nur JSON, Status 2xx/4xx,
       Deckel 256 KB, alles GEPRUEFT IM WIRT (der Worker teilt den Speicher
-      mit dem Plugin).
+      mit dem Plugin). Seit 28.09.2026 auch 502 MIT `fehler` — vorher ging
+      der Grund jedes Plugin-502 verloren
+      ([[plugin-502-verlor-seinen-grund-beim-wirt]]).
 
       Verwaltungsseite: EINE generische Steckleiste (mixpi-plugin-abschnitt),
       die je Sektion fragt „wer hat sich gemeldet?" — statt je Plugin eine
@@ -64327,6 +64329,44 @@ entries:
       aus server.ts zurueck (der eine Fall, den der Zeilenumbruch-Riegel
       allein nicht faengt).
     related: ["arbeitsbereich-der-nichts-deklariert-ist-unsichtbar", "dauerrote-wache-ist-keine", "gegenprobe-statt-gruen-glauben"]
+  - id: leck-muster-kennt-den-wert-statt-der-sorte
+    kind: lesson
+    title: Ein Leck-Muster, das den gefundenen WERT kennt statt der SORTE, ist ein halber Fix
+    tags: [github, veroeffentlichung, geheimnisse, wache, leck, audit, 2026]
+    quelle: "Kritiker-Lauf 25.09.2026 (AUDIT-2026-09-25.md), Nachpruefung der BSSID-Korrektur 16994546"
+    body: |
+      WAS PASSIERT IST: Am 23.09. fand die gegnerische Nachpruefung die BSSID
+      des Heim-WLANs im veroeffentlichten Baum. Der Fix (16994546) maskierte
+      die BSSID an drei Stellen und nahm GENAU DIESE EINE BSSID namentlich in
+      LECK_MUSTER von tools/github-veroeffentlichen.py auf. Zwei Tage spaeter
+      stand fest: die SSID desselben Netzes (ganzschnellimnetz2_2G/_5G) ging
+      weiter mit hinaus — in vier veroeffentlichten Dateien, darunter
+      ausgelieferter Quelltext (server.ts:21024, spotify-maschine.ts:202,
+      BACKLOG, pack.yaml). Eine SSID ist ueber WLAN-Ortungsdatenbanken
+      genauso auf die Hausadresse aufloesbar wie die BSSID. Und das
+      Herstellerpraefix dc:39:6f blieb unmaskiert stehen — die halbe BSSID
+      ging weiter mit.
+
+      DIE REGEL: Wer nach einem Leck die Wache baut, traegt die SORTE des
+      Geheimnisses ein (MAC-Muster, SSID-Feldnamen, IP-Bereiche — je mit
+      begruendeter Ausnahmeliste), nicht den gefundenen WERT. Ein Muster,
+      das den Wert kennt, ist gruen, sobald der Router wechselt — und blind
+      fuer alle Geschwister desselben Geheimnisses (hier: die SSID, die
+      Lautsprecher-MACs in bluetooth.ts). Das ist wache-auf-sorte-nicht-
+      auf-pfad, nur am Inhalt statt am Dateinamen.
+
+      DIE ZWEITE HALBE TUER DERSELBEN BAUART: LECK_AUSNAHMEN gilt DATEIWEIT —
+      github-veroeffentlichen.py wird gar nicht mehr abgetastet; ein echter
+      Schluessel dort ginge ungeprueft hinaus. Ausnahmen gehoeren als
+      (datei, muster)-Paar.
+
+      VON DRAUSSEN (Recherche 25.09.2026): gitleaks v8 laeuft offline mit
+      Eigenregeln in TOML (MAC/SSID/IP je mit Allowlist) und gehoert als
+      Pflicht-Gate auf den GEFILTERTEN Export vor --push — nicht auf den
+      privaten Baum, sonst rot auf Absicht (192.168/git.local sind im
+      Eintrag github-veroeffentlichung-kuratiert-elternlos-und-die-wache-
+      in-beide-richtungen BEGRUENDET drin). GitHub Push Protection auf dem
+      oeffentlichen Repo ist kostenlos und bleibt das zweite Netz.
   - id: interpreten-gruppen-jev-schlaegt-vor-der-mensch-legt-zusammen
     kind: architektur
     title: 'Interpreten-Gruppen: Jev schlaegt vor, der Mensch legt zusammen — und die Kennungsablage hatte bis dahin keinen einzigen Verbraucher'
@@ -65230,3 +65270,984 @@ entries:
       sich damit nur noch die Breite — ein umspringender Aussenabstand
       weniger, vgl. [[platz-beim-blaettern-schaukelt-sich-auf]].
     related: ["theme-gestalter-ziehen-und-andocken-e144", "platz-beim-blaettern-schaukelt-sich-auf", "eingefahrenes-kissen-gibt-hoehe-frei"]
+  - id: pi3-1gb-machbarkeit-gemessen-am-pi5
+    title: "Laeuft die MixPiBox auf einem Pi 3 mit 1 GB? — am Pi 5 gemessen: so nicht, abgespeckt vielleicht; und 450 MB verwaiste Rohaufnahmen im RAM"
+    kind: referenz
+    tags: [pi3, hardware, speicher, cpu, chromium, zram, mitschnitt, dev-shm, 2026]
+    stand: "27.09.2026, Box .62 (Pi 5, 2 GB, zram 1 GB), gemessen per smaps_rollup (PSS, seitengroessen-unabhaengig) und /proc/<pid>/stat. Ein echter Pi 3 wurde NICHT gefahren."
+    source: 'Betreiber 27.09.2026: „mach mal eine untersuchung ob es auf einem raspi 3 mit 1gb laufen koennte".'
+    body: >
+      SPEICHER (PSS, Leerlauf): Chromium ~415-430 MB, Node-Server ~190 MB
+      (+ ~110 MB in zram), Abspieldienst (Node) ~66, Soloist ~49, Python-Dienste
+      (mupihat, fernbedienung, step-agent) ~49, Xorg ~43, PipeWire+WirePlumber
+      ~34 -> rund 1 GB Arbeitsmenge. Ein Pi 3 hat 1 GB minus GPU/CMA.
+      Ohne Abspecken passt das nicht.
+      CPU: Chromium im Leerlauf 6-14 % eines Pi-5-Kerns (dreimal mit Abstand
+      gemessen); die ERSTE Messung (185 %) war ein Uebergang —
+      [[einmal-hinsehen-ist-keine-messung]] gilt auch hier. Ein Pi-3-Kern (A53, 1,2 GHz) ist
+      grob drei- bis fuenfmal langsamer. Grundlast unabhaengig vom Schirm: die
+      Oberflaeche fragt die Fernbedienungs-Schlange alle 150 ms ab.
+      Hauptfaden-Kosten (tools/kiosk-last-messen.mjs, Vorschau): die bewegte
+      Spielt-Marke ist der teuerste Posten (~+70 %); Glas und Wellen kosten im
+      GPU-Prozess, den das Werkzeug nicht abbildet.
+      ARCHITEKTUR PASST: DietPi hat EIN 64-Bit-Abbild fuer Pi 2/3/4
+      ([[rpi4-heisst-bei-dietpi-rpi234]]), die Installer kennen pi3/bcm2837.
+      NEBENFUND, AM GERAET: /dev/shm hielt 450 MB verwaiste Rohaufnahmen
+      (.roh-*.wav) der lokalen Aufnahme-Erweiterung. Jedes Ausliefern
+      (Server-Neustart) brach eine laufende Aufnahme ab; resteRaeumen() beendet
+      verwaiste pw-record-Prozesse, loescht die Rohdatei aber NICHT. Das allein
+      trieb zram auf 700 MB. Auf 1 GB waere es der Absturz.
+      OFFEN: Chromium-Speicher WAEHREND der Wiedergabe (das Leck in
+      [[wiedergabe-leck-im-wpe-renderer]] war WPE; Chromium ungemessen),
+      Piper auf dem Pi 3, VC4/CMA-Verhalten. Billigster naechster Schritt ohne
+      Pi 3: eine TEST-Box (nicht die Kinderbox) mit total_mem=1024 in
+      config.txt auf 1 GB kappen und dieselben Messungen fahren.
+    related: ["mupi-hardware-recommended", "rpi4-heisst-bei-dietpi-rpi234", "wiedergabe-leck-im-wpe-renderer", "einmal-hinsehen-ist-keine-messung"]
+  - id: audit-buchung-ist-veroeffentlichungs-inhalt
+    title: "Die Buchung eines Leck-Funds ist selbst Veroeffentlichungs-Inhalt — und ein Lauf ohne Commit hat nicht stattgefunden"
+    kind: falle
+    tags: [audit, veroeffentlichung, leck, backlog, prozess, 2026]
+    stand: "28.09.2026, Kritiker-Lauf (AUDIT-2026-09-28.md), am Baum gemessen."
+    source: 'Kritiker-Lauf 28.09.2026, Pruefer C: der komplette Nachlass des 25.09.-Laufs (Audit, Backlog-Buchung, Wiki-Eintrag mit Pack 639->640) lag drei Tage UNCOMMITTET im Arbeitsbaum.'
+    body: >
+      ZWEI FEHLER DESSELBEN LAUFS, beide erst vom naechsten Lauf gefunden.
+      ERSTENS: Der 25.09.-Lauf meldete als Rang 1, dass die Heim-SSID in den
+      veroeffentlichten Baum geht — und schrieb sie dabei IM KLARTEXT in die
+      Backlog-Buchung und in den eigenen Wiki-Eintrag. BACKLOG.md und
+      pack.yaml werden mitveroeffentlicht: die Meldung des Lecks hat das Leck
+      von 4 auf 6 Fundstellen vergroessert. Die Regel: Wer einen Geheimnis-Fund
+      bucht, nennt den WERT nur maskiert (ganzschnell…, dc:39:6f:xx) — die
+      Sorte und die Fundstellen reichen dem Leser; das Muster gehoert
+      stattdessen in die Leck-Wache (github-lokal-muster.txt existiert seit
+      27.09. genau dafuer). Dasselbe Denkbild wie
+      [[leck-muster-kennt-den-wert-statt-der-sorte]], eine Ebene hoeher.
+      ZWEITENS: Der Lauf schrieb Audit, Buchung und Wiki-Eintrag — und
+      committete NICHTS. Drei Tage lang galt fuer jede Nachbarsitzung: die
+      Buchung existiert nicht (HEAD-BACKLOG ohne sie), und jede Pack-Erhoehung
+      auf 640 waere still kollidiert. Schritt 6 des Arbeitsablaufs sagt
+      „im selben Zug wie der Commit" — die Lehre hier ist die Umkehrung:
+      OHNE den Commit ist auch das Geschriebene nicht da. Ein Kritiker-Lauf
+      endet mit git log, nicht mit dem letzten Write.
+    related: ["leck-muster-kennt-den-wert-statt-der-sorte", "dauerrote-wache-ist-keine", "wiederkehrender-befund-ist-ablauffehler"]
+  - id: edit-am-laufenden-bash-skript-verschiebt-den-lesezeiger
+    title: "Ein Edit an einem LAUFENDEN Bash-Skript verschiebt dessen Lesezeiger — der Lauf wird zu Kauderwelsch und kann Neues starten"
+    kind: falle
+    tags: [bash, pruefen, parallel, werkzeug, falle, 2026]
+    stand: "28.09.2026, selbst erlebt und an der Fehlermeldung belegt (Kritiker-Lauf, AUDIT-2026-09-28.md par. 0)."
+    source: 'Kritiker-Lauf 28.09.2026: waehrend eines laufenden pruefen.sh-SCHNELL-Laufs fuegte eine Nachbarsitzung 5 Zeilen bei Zeile 417 ein.'
+    body: >
+      BASH LIEST DAS SKRIPT NICHT VORAB EIN, sondern haeppchenweise am
+      Byte-Versatz weiter. Fuegt jemand VOR dem aktuellen Lesepunkt Zeilen
+      ein, setzt der laufende Prozess am alten Versatz wieder auf — der
+      liegt jetzt mitten in einer anderen Zeile. Belegt an der Meldung
+      „tools/pruefen.sh: Zeile 520: 8.2026: Kommando nicht gefunden":
+      bash war mitten im Wort „13.08.2026" eines KOMMENTARS gelandet und
+      fuehrte den Rest als Befehl aus. So koennen auch ECHTE Befehle
+      zerteilt oder zusammengeklebt werden — hier startete der Kauderwelsch
+      eine ZWEITE pruefen.sh-Instanz (Kindprozess, per PID beendet, nicht
+      per pkill -f: [[pkill-toetet-die-eigene-shell]]).
+      DIE FOLGEN: (1) Ein Prueflauf, der laenger dauert als die Ruhe des
+      Baums, ist ab dem ersten fremden Edit an seinem EIGENEN Skript
+      entwertet — Ergebnisse danach nicht verwerten, Prozessbaum pruefen
+      (pgrep -af, auf ZWEI Instanzen achten). (2) Wer pruefen.sh oder einen
+      anderen Laeufer EDITIEREN will, sieht vorher nach, ob er laeuft.
+      (3) Python/Node laden die Datei ganz — die Falle ist bash-eigen
+      (und betrifft auch .sh-Wachen, die von pruefen.sh gerufen werden,
+      waehrend jemand SIE editiert). Dieselbe Wurzel wie
+      [[vorschau-wird-geliehen]]: der Baum gehoert einem nicht allein.
+    related: ["pkill-toetet-die-eigene-shell", "vorschau-wird-geliehen", "audit-buchung-ist-veroeffentlichungs-inhalt"]
+  - id: ab-werk-an-gehoert-in-den-erstweg-nicht-in-die-vorgabe
+    title: "Ab Werk an heisst: der Erstweg schreibt die Einstellung — die Code-Vorgabe gilt fuer jede laufende Box"
+    kind: knowhow
+    tags: [vorlesen, piper, vorgabe, umstieg, einrichtung, hostapd, sicherung, backlog, 2026]
+    stand: "28.09.2026, drei Betreiber-Entscheidungen an einem Tag (E12/X12, E143/9, E29/B6); am Baum gebaut, auf keiner Karte gelaufen."
+    source: 'Betreiber 28.09.2026: „X12 ja erst aktivieren, e143/9 raus damit, B6 zugangsdaten verschluesselt sichern". scripts/mupibox/piper-einrichten.sh --ab-werk-an, tools/piper-ab-werk.test.sh, tools/piper-installationsweg-abgleich.py Punkt 6, remote-step-installer/tools/einrichtung-ap.py.'
+    body: >
+      DIE FALLE BEI „AB WERK AN": Der naheliegende Einzeiler waere
+      `EINSTELLUNGEN_VORGABE.modus = 'antippen'` in vorlesen.ts. Die Vorgabe
+      gilt aber fuer JEDE Box ohne vorlesen.json — also auch fuer jede, die
+      seit Monaten laeuft und den Schalter nie angefasst hat. Nach dem
+      naechsten Update spraeche sie bei jedem Tipp. Fuer eine laufende Box
+      heisst „nicht gesagt" „wie bisher" ([[ein-neuer-schalter-darf-nichts-wegnehmen]]);
+      deshalb bleibt die Code-Vorgabe `aus`, und NUR die Wege, die eine Box
+      NEU aufsetzen (autosetup.sh, Rezeptschritt `piper`), rufen
+      `piper-einrichten.sh --ab-werk-an`. Das schreibt `{"modus": "antippen"}`
+      — und NUR den Modus, damit Stimme und Tempo nicht in einer zweiten Kopie
+      auseinanderlaufen — nur wenn keine vorlesen.json da ist und nur wenn
+      `bericht` sagt, dass Piper spricht (32 Bit: kein onnxruntime-Rad, dann
+      bleibt es still aus statt still kaputt). Der Update-Weg uebergibt den
+      Schalter nicht, und die Wache sagt es in BEIDE Richtungen: Erstwege mit,
+      Update ohne. Gezaehlt werden nur echte Aufrufe — Kommentar, `--pruefen`,
+      die `note:` des Rezepts zitieren den Aufruf und sind keine Gegenstelle.
+      DIE REGEL DAHINTER: Eine neue Werkseinstellung fuer ein Merkmal, das es
+      schon gibt, gehoert in den ERSTWEG, nie in die Vorgabe des Lesers.
+
+      AM SELBEN TAG, E143/9 (hostapd und dnsmasq raus): Nur die Paketzeile
+      aus dem Rezept zu streichen haette NICHT gereicht. `weg_waehlen()` gab
+      hostapd Vorrang, sobald er DA war — und auf jeder frueher mit dem Rezept
+      aufgesetzten Box liegt er noch (maskiert, aber installiert). Die
+      Uebergabe ins Heimnetz (`wechsel_aus_ap()`) redet per `wpa_cli` mit dem
+      AP-wpa_supplicant, den es auf dem hostapd-Weg nicht gibt. Deshalb ist
+      der Weg aus einrichtung-ap.py ganz entfernt, nicht nur nachrangig
+      ([[ap-ohne-hostapd-wpa-mode2]] ist jetzt der einzige). Wer eine
+      Abhaengigkeit aus dem Ausrollweg nimmt, muss fragen, was die Boxen tun,
+      auf denen sie von frueher noch liegt.
+
+      UND E29/B6 WAR SCHON FERTIG: entschieden und gebaut am 05.08.2026
+      ([[e29b6-zugangsdaten-verschluesselt-und-akkuverlauf-mit]]), samt
+      Verwaltungsseite — nur die Statuszelle im BACKLOG stand weiter auf
+      OFFEN. Die Entscheidung stand im Abschnitt „Entscheidungen des
+      Betreibers, 05.08.2026", nicht in der Zeile, die
+      `backlog-status-schau.py --offen` liest. Folge: dem Betreiber wurde
+      eine seit sieben Wochen erledigte Frage als offen vorgelegt, und er hat
+      sie noch einmal beantwortet. Vor dem Vorlegen einer ENTSCHEIDUNG- oder
+      OFFEN-Zeile: `wiki-suche.py --text <Kennung>` — steht dort „gebaut",
+      ist die Zelle alt, nicht die Arbeit.
+    related: ["ein-neuer-schalter-darf-nichts-wegnehmen", "vorlesen-tts", "ap-ohne-hostapd-wpa-mode2", "e29b6-zugangsdaten-verschluesselt-und-akkuverlauf-mit", "wiki-zustand-hat-haltbarkeit"]
+  - id: stellarium-auf-der-box
+    title: "Stellarium auf der Box? — geht, aber der Weg entscheidet: nativ (apt, Qt5, eigenes X-Fenster) oder Stellarium Web im Kiosk-Chromium"
+    kind: referenz
+    tags: [stellarium, kiosk, chromium, webgl, speicher, pi5, machbarkeit, 2026]
+    stand: "28.09.2026, Box .62 (Pi 5 Model B Rev 1.1, 2 GB, DietPi Trixie) nur lesend per ssh; NICHTS installiert, NICHTS am Geraet gestartet. Draussen: packages.debian.org, Stellarium-Wiki Raspberry-Pi, stellarium-web-engine Issue 1."
+    source: 'Betreiber 28.09.2026: „kann man stellarium auf die box bekommen?"'
+    body: >
+      KURZ: Ja, auf zwei Wegen — und sie unterscheiden sich nicht im Ob,
+      sondern darin, wie gut sie zu einem 800x480-Beruehrungsschirm ohne
+      Fenstermanager passen.
+
+      AM GERAET GELESEN (28.09.2026, zweimal mit Abstand):
+      `apt-cache policy stellarium` -> Kandidat 24.3-1 (Debian Trixie, arm64,
+      14,7 MB Paket, 28 MB installiert). Qt5 liegt NICHT auf der Box
+      (libqt5gui5 und libqt6gui6 je 0 Treffer in dpkg -l) — apt zieht also
+      den ganzen Qt5-Stapel mit. `v3d_dri.so` ist da (Mesa-Treiber des Pi 5).
+      Frei: 612 bzw. 662 MB `available` bei laufendem Kiosk, zram 1 GB fast
+      leer. Plattenplatz ist kein Thema (209 GB frei). Es laeuft Xorg +
+      chromium und KEIN Fenstermanager.
+
+      WEG 1, NATIV (apt install stellarium): Das Programm selbst ist fertig
+      paketiert. Der Pi 5 kann OpenGL 3.1 / GLES 3.1; das Stellarium-Wiki
+      nennt fuer den Pi 4 noch MESA_GL_VERSION_OVERRIDE=3.0 fuer den
+      Qt5-Bau — ob der Pi 5 das braucht, ist UNGEMESSEN. Leistung laut Wiki:
+      Pi 4 um 17-22 fps bei Full HD; bei 800x480 auf dem Pi 5 sollte es
+      fluessig sein, auch das UNGEMESSEN. Die Haken liegen woanders:
+      (a) Stellarium ist ein zweites X-Fenster neben dem Kiosk. Ohne
+      Fenstermanager muss es sich selbst vollflaechig machen
+      (`--full-screen yes`), und jemand muss es starten UND wieder beenden —
+      die Kinder-Oberflaeche kennt dafuer keinen Weg, das waere neuer Code im
+      Server (Prozess auf DISPLAY=:0) plus ein Zurueck.
+      (b) Die Bedienung ist fuer Maus und Tastatur gebaut: Leisten und Dialoge
+      sind auf 800x480 winzig, Zoomen geht ueber Mausrad/Bild-auf.
+      (c) Speicher: Chromium haelt ~430 MB
+      ([[pi3-1gb-machbarkeit-gemessen-am-pi5]]); Stellarium kommt obendrauf,
+      mit Texturen einige hundert MB. Mit 600+ MB frei und zram
+      ([[zram-statt-swap-auf-der-box]]) wahrscheinlich tragbar — nicht
+      gemessen.
+
+      WEG 2, STELLARIUM WEB IM KIOSK: Die Web-Fassung (stellarium-web-engine,
+      C -> WebAssembly + WebGL, AGPL-3.0) ist fuer Handys gebaut, also fuer
+      Finger: Wischen und Spreizen gehen von Haus aus. Der Kiosk-Chromium
+      startet schon mit `--ignore-gpu-blocklist --enable-gpu --use-gl=egl`
+      (scripts/chromium-autostart.sh) — WebGL sollte also gehen, ist fuer
+      INHALTE aber noch nie benutzt worden
+      ([[kiosk-browser-was-er-wirklich-koennen-muss]]: die Oberflaeche
+      braucht es nicht). Kein Qt, kein zweites Fenster, kein Fenstermanager.
+      DIE FALLE: die Engine holt ihre Himmelsdaten von data.stellarium.org,
+      der Name steht fest im Quelltext, und das Backend ist nicht
+      quelloffen. Ohne Netz kein Himmel. Offline-Abkoemmlinge gibt es:
+      UMa-Technology/skymap (ein dist.zip mit Sternen, Deep-Sky, DSS,
+      Landschaften, kein Backend) und Spica (PWA, Sterne bis Groessenklasse 7
+      mitgeliefert). Beide AGPL — die Box muss dann den Quelltext anbieten.
+      Einbau: NICHT als Plugin. `UiExtension` ist bewusst gestrichen
+      (plugins/README.md, Tabelle der Vertragsteile): fremdes JS in der
+      Kiosk-Seite koennte dem Kind den Ausschalter nehmen; vorgesehen ist
+      spaeter ein `iframe` mit engem `postMessage`-Vertrag. Bis dahin geht
+      es nur als Kernseite im eigenen Baum — oder Stellarium Web wird der
+      erste Fall, an dem dieser iframe-Vertrag gebaut wird.
+
+      EMPFEHLUNG: fuer eine Kinderbox Weg 2 (Finger, bleibt in der
+      Oberflaeche, offline ueber skymap). Weg 1 nur, wenn es um den vollen
+      Funktionsumfang geht und ein Erwachsener bedient.
+
+      BILLIGSTER NAECHSTER SCHRITT, der die Empfehlung widerlegen koennte:
+      im laufenden Kiosk-Chromium `chrome://gpu` bzw. eine WebGL-Probe lesen
+      und den Speicher des Renderers mit geladenem Sternenhimmel messen — an
+      einer TEST-Box oder mit Wartungsschirm, nicht an der Kinderbox im
+      Betrieb.
+    related: ["kiosk-browser-was-er-wirklich-koennen-muss", "pi3-1gb-machbarkeit-gemessen-am-pi5", "zram-statt-swap-auf-der-box", "achim-display", "mupi-pi5-opengl-disable-blackscreen", "wiki-zustand-hat-haltbarkeit", "einmal-hinsehen-ist-keine-messung"]
+  - id: handy-app-eltern-sperre-kinderzeit-woche-sicherung
+    kind: architektur
+    title: 'Handy-App fuer Eltern: Box sperren (mit Ende), Kinderzeit als Wochen-Kalender, Sicherung aufs Handy — und wo die Sperre haengen MUSS'
+    tags: [handy-app, boxsperre, kinderzeit, sicherung, kinderschirm, eltern, 2026]
+    source: >
+      28.09.2026, Betreiber: „handy app: box sperren, kinderzeit einstellen
+      kleiner 7 tages kalender, backup". Per Rueckfrage entschieden: ECHTE
+      Sperre mit Ende (nicht der Wartungsschirm), Sicherung MIT Zurueckspielen.
+      Gebaut in src/backend-api/src/boxsperre.ts (+ spec, integration.spec),
+      server.ts (kzStand, /api/boxsperre, /api/video/start), kinderzeit.ts
+      (Grund `gesperrt`, `abbrechen`), NewDesign/app.js+app.css (Pausen-Schirm),
+      handy-app/lib/seiten/sperren.dart, kinderzeit_seite.dart,
+      sicherung_seite.dart. Kiosk an der Vorschau (Port 8347) gemessen; Box und
+      Handy am Tag des Baus NICHT gemessen.
+    related: [kinderzeit, kaputte-datei-darf-nicht-aufsperren, kinderzeit-erlaubnisliste-kennt-neue-verben-nicht, weg-ins-admin-menue-wappen-halten, handy-app-flutter-fernbedienung, was-die-sicherung-nicht-traegt]
+    body: |
+      DIE SPERRE HAENGT AN `kzStand` (server.ts) — und NUR dort. Jeder Startweg
+      fragt diese eine Funktion: der /player-Proxy (istStartbefehl), POST
+      /api/spielen, die Plugins (spielweg.ts). `mitSperre(urteil, sperre, jetzt)`
+      aus boxsperre.ts legt sich darueber und gewinnt IMMER, auch ueber
+      „Kinderzeit aus". Ein eigener Kontrollpunkt waere ein vierter Weg, den der
+      naechste Startweg vergisst ([[kinderzeit-erlaubnisliste-kennt-neue-verben-nicht]]).
+      AUSNAHME, mit Absicht eigene Zeile: POST /api/video/start fragt kzStand
+      NICHT (Belohnungs-Videos fressen keine Hoerzeit) — dort steht die
+      Sperre deshalb ausdruecklich davor.
+
+      DIE STILLE FALLE, beim Bauen gefunden: `abbrechen()` in kinderzeit.ts
+      stieg mit `if (!regeln.aktiv) return false` als ERSTES aus. Mit einer
+      Sperre bei ausgeschalteter Kinderzeit haette der 5-s-Takt eine laufende
+      Wiedergabe also NIE beendet — der Start war gesperrt, aber was schon
+      lief (oder ueber einen Weg ohne Urteil anlief), spielte weiter. Jetzt
+      steht `grund === 'gesperrt' -> true` VOR der Aktiv-Pruefung, ohne
+      Nachsicht (wer „jetzt Pause" drueckt, meint jetzt). Zusaetzlich stoppt
+      POST /api/boxsperre sofort, statt auf den Takt zu warten.
+
+      IMMER MIT ENDE, hoechstens 24 h (MAX_MIN). Der teuerste Fehler ist die
+      VERGESSENE Sperre — Handy im Buero, Box fuer das Kind stumm, niemand
+      weiss warum. Deshalb gibt es in der App keinen Knopf „bis ich entsperre".
+      Die Sperre liegt in config/mixpi-boxsperre.json und UEBERSTEHT einen
+      Neustart (anders als /api/wartung in /tmp — eine Kindersperre, die der
+      Stecker aufhebt, ist keine). Sie ist eine GRENZE: kaputte Datei, `bis`
+      in der Vergangenheit oder jenseits von 24 h = nicht gesperrt
+      ([[kaputte-datei-darf-nicht-aufsperren]]). Eine abgelaufene Datei bleibt
+      liegen und ist trotzdem keine Sperre — die Uhr entscheidet, nicht die
+      Datei.
+
+      TOR: GET /api/boxsperre steht VOR torBauen (wie GET /api/wartung — der
+      Kiosk darf nicht an der Anmeldung haengen), POST/DELETE DAHINTER. supertest
+      kommt ueber die Rueckschleife und sieht das Tor nie; der Zeuge prueft
+      deshalb die REIHENFOLGE in server.ts.
+
+      KINDERSCHIRM: `#mixpi-boxsperre` (Mond, „Die Box macht Pause.", „Bis
+      19:30 Uhr." / „Bis morgen, 07:00 Uhr."), 5-s-Takt auf GET /api/boxsperre,
+      z-index 99998 (knapp unter dem Wartungsschirm). DER AUSGANG AN DER BOX:
+      den Mond WAPPEN_HALTEN_MS (1,2 s) halten -> `eltern.auf('', '', tat)` ->
+      dasselbe Tor wie ueberall -> DELETE. Ohne diesen Ausgang hinge eine
+      Sperre, die einen Neustart uebersteht, allein am Handy. Der Schirm tritt
+      unter `body.eltern-offen` zur Seite — sonst laege er (99998) ueber der
+      PIN-Eingabe (.eltern hat z-index 8), und der Weg hinaus waere zu.
+      Gemessen an der Vorschau: kurzer Tipp oeffnet nichts, Halten mit Sperre
+      „aus" hebt auf, mit „rechnen" steht die Aufgabe vor dem Schirm, Abbrechen
+      bringt den Schirm zurueck. Vorschau-Umschalter: /vorschau/boxsperre-an,
+      -morgen, -aus — sie stehen VOR dem Auffangzweig bei `/vorschau/`; die
+      erste Fassung stand dahinter und setzte still `lage.spielt =
+      'boxsperre-an'`.
+
+      APP: Schloss oben auf der Box-Seite (15/30 min, 1/2 h, bis morgen 7:00,
+      bis Uhrzeit; „bis 7" um 1 Uhr nachts heisst HEUTE frueh —
+      `naechsteUhrzeit`), roter Streifen auf „Jetzt", in der Uebersicht
+      „Gesperrt bis …" und „Alle sperren/entsperren". Der 4-s-Takt fragt
+      /api/boxsperre mit; eine alte Box ohne den Weg liefert ihre Startseite
+      (HTML) — das gilt als „unbekannt", nicht als Fehler. Ein 403 der
+      Kinderzeit (`{kinderzeit:true, grund}`) hat keinen Satz; die App baut ihn
+      jetzt aus dem Grund, statt „Die Box hat das abgelehnt." zu zeigen.
+
+      KINDERZEIT ALS WOCHE: sieben Balken 0–24 Uhr (oben Mitternacht), Fenster
+      farbig, gesperrter Tag schraffiert mit Mond, darunter die Dauer, heute
+      mit Strich bei „jetzt". Ein Kind OHNE eigene Regeln zeigt die geerbte
+      Hausregel gesperrt und bekommt eigene erst nach „Eigene Regeln" —
+      sonst friert der erste Speichern-Klick still eine Kopie der Hausregel
+      ein (dieselbe Falle, wegen der es /api/kinderzeit/satz gibt).
+      ALTE BOX OHNE /satz (vor 25.09.2026 — Box .62 fuhr am 28.09. noch den
+      20.09.): der Catch-all liefert die Startseite als HTML. Die erste
+      Fassung las das als LEEREN Satz (Kinderzeit aus, alles frei) — die
+      Woche waere leer erschienen, und das erste Speichern haette die echte
+      Hausregel der Box ueberschrieben. Jetzt faellt `kinderzeitSatz` auf
+      GET /api/kinderzeit zurueck (`vollstaendig: false`), und die Seite
+      bietet keine Kinder an, weil sie nicht weiss, wer eigene Regeln hat.
+      Gefunden erst beim Blick auf den Stand der echten Box, nicht im Test.
+
+      SICHERUNG: dieselben Wege wie die Verwaltung (sicherung.ts), Frist 3 min
+      (das Python braucht auf dem Pi Sekunden). Das Handy ist genau die dritte
+      Ablage, die [[was-die-sicherung-nicht-traegt]] vermisst. `ablegen` in
+      MainActivity.kt hatte `application/zip` fest verdrahtet — eine .tar.gz
+      bekam den falschen Typ; jetzt `mime` als Argument. Datei waehlen ueber
+      ACTION_OPEN_DOCUMENT + onActivityResult (FlutterActivity ist eine
+      Activity, kein AndroidX — kein Paket noetig), die Kopie im cacheDir wird
+      nach dem Pruefen geloescht.
+
+      ZWEI TESTFALLEN IN FLUTTER, beide beim Bauen aufgelaufen:
+        * ListTile mit FilledButton als `trailing` machte die Hinweis-Karte
+          1072 px hoch (der Knopf drueckt Titel und Untertitel auf einen
+          Streifen). Nur der Widget-Zeuge sah es — `find.byKey` fand den
+          Kalender nicht, weil die ListView ihn gar nicht mehr baute. Knopf
+          unter den Text, und ein Zeuge fuer die Hoehe (relativ zum Schirm, die
+          Testschrift ist breiter als jede echte).
+        * `pumpAndSettle` lief in die Frist, weil `warten` nur bis zum
+          Ablegen wartete: das echte `File.delete()` danach laeuft NUR in
+          `runAsync`, der Kreisel drehte weiter. Warten bis „abgelegt UND kein
+          Kreisel".
+
+      NACHMESSEN:
+          npx cross-env NODE_ENV=test tsx --test src/backend-api/src/boxsperre.spec.ts \
+            src/backend-api/src/boxsperre.integration.spec.ts
+          (cd handy-app && flutter test)
+          python3 tools/mupi-check.py kinderzeit    # an der Box: Zeile „Box-Sperre"
+      `mupi-check kinderzeit` stieg bei „Kinderzeit aus" frueh aus und haette
+      eine Sperre nie gemeldet — die Zeile steht jetzt davor.
+
+      AM GERAET, 28.09.2026 abends (Box .62, Honor PGT-N19): ausgeliefert aus
+      einem sauberen Baum auf c1e4d803 ([[ausliefern-baut-den-arbeitsbaum-fremde-arbeit-faehrt-mit]]),
+      App als Update installiert (gemerkte Boxen blieben). Der Betreiber
+      sperrte per App: Journal „Box gesperrt bis 21:36:54", Streifen und
+      rotes Schloss in der App etwa eine Sekunde NACH der Meldung (die Meldung
+      kommt vor dem Nachfragen), 22 s spaeter aufgehoben. DER PAUSEN-SCHIRM
+      AM ECHTEN KIOSK IST DAMIT NOCH NICHT GESEHEN: das einzige Schirmbild
+      der Box (ffmpeg x11grab, [[readme-bilder-von-echter-box-und-handy]])
+      fiel auf 21:22:42, das Aufheben auf 21:22:16 — kein Mond war dort
+      RICHTIG. Eine Fehlmessung, beinahe als Fehler gemeldet: Zeitstempel von
+      Zustand und Bild gegeneinander halten, bevor man urteilt.
+
+      HANDY OHNE ADB: das Honor meldete sich am USB nur mit der Konfiguration
+      `mtp_msc` (MTP + Massenspeicher), OHNE Schnittstelle 255/66/1 — dann
+      ist USB-Debugging aus, egal was `adb kill-server` tut. Nachsehen mit
+      `lsusb -v -d 339b:107d | grep -E "iConfiguration|bInterfaceSubClass"`;
+      am Handy steht bei Erfolg „USB-Debugging verbunden". `mtp-sendfile`
+      als Umweg scheiterte mit „Get Storage information failed" (gesperrter
+      Schirm).
+
+      README: eigener Abschnitt 3.7 „Die Handy-App" (seither 3.8 Fernbedienung,
+      3.9 Unter der Haube, 3.10 Was halb fertig ist). Bilder:
+      screenshots/43-handy-eltern.png (echtes Handy, Kindernamen ersetzt, die
+      Beispielwoche NICHT gespeichert) und 44-box-pause.png (aus der Vorschau,
+      tools/schirmbilder-readme.mjs Bild 5). Der Ohne-Aufnahme-Patch haengt an
+      der 3.7-Ueberschrift als Kontext und wurde mitgezogen.
+      Nebenfund: Material-Dialoge (Uhrzeit) zeigen „Cancel/OK" — der App
+      fehlen die deutschen Material-Lokalisierungen.
+  - kind: architektur
+    id: sprechstrom-plugins-lassen-die-box-vorlesen
+    title: 'Recht `sprechen`: ein Plugin legt nur den Text ab, der Kern spricht ihn live beim Abruf'
+    tags: [plugins, vorlesen, piper, tts, sprechen, klexikon, 2026]
+    source: 'Betreiber, 28.09.2026: „gibt es eine kinder news seite, oder sowas wie geolino das man als plugin machen könnte" → „ja machen wir 1 und 2"; gebaut fuer mixpi-klexikon'
+    body: |
+      WOZU: mixpi-klexikon liest Artikel aus dem Klexikon vor. Ein Plugin kam
+      bis dahin an keine Stimme: `kontext.holen` verwehrt die eigene Box
+      (also weder Piper-Dienst noch /api/vorlesen), und Piper selbst zu
+      starten waere ein zweites Sprachmodell neben dem des Kerns — rund
+      200 MB auf einem Pi mit 2 GB ([[vorlesen-tts]]). Dazu die 8-s-Frist je
+      Plugin-Ruf: ein Artikel ist Minuten Sprache.
+
+      DER WEG (src/backend-api/src/sprechstrom.ts):
+        1. `kontext.sprechen(text, { tempo })` im WORKER legt den Text als
+           `<hash>.json` in ~/.mupibox/sprech-speicher und gibt SOFORT
+           `{ art: 'strom', adresse: 'http://127.0.0.1:8200/api/sprechen/<hash>.wav' }`.
+           Gesprochen wird dabei nichts — deshalb passt jeder Text in die Frist.
+        2. Die Quelle geht wie jede andere durch fundPruefen/inhaltPruefen.
+        3. Ruft der Abspieler die Adresse ab, spricht `sprechRoute` den Text
+           Satzgruppe fuer Satzgruppe ueber den LAUFENDEN Piper-Dienst und
+           schreibt jede fertige Gruppe sofort in die Antwort (WAV-Kopf mit
+           Laenge 0xFFFFFFFF = „bis zum Ende", ffmpeg/mpv spielt das). Das
+           erste Stueck ist nur der erste Satz — er bestimmt die Stille nach
+           dem Antippen.
+        4. Erst wenn alles durch ist, liegt `<hash>.wav` daneben (mit
+           richtiger Laenge); danach sendFile mit Range, also spulbar.
+
+      ENTSCHEIDUNGEN, die man nicht zurueckdrehen sollte:
+        * Der Name ist ein Hash aus Text UND Tempo — die Route spricht nur,
+          was ein Plugin MIT dem Recht abgelegt hat, nie Text aus der Anfrage.
+          Sie liegt hinter dem Tor; der Abspieler kommt ueber 127.0.0.1 (die
+          Rueckschleife laesst das Tor durch, auth.ts).
+        * Eigener Speicher statt vorlesen-cache: der ist fuer Kachelnamen
+          gedeckelt (300 Dateien / 50 MB), ein Artikel ist 5–10 MB WAV.
+          Deckel hier: 200 MB fuer .wav nach mtime, Auftraege nach 60 Tagen,
+          .tmp nach einer Stunde.
+        * Steigt der Hoerer aus, hoert die Box auf zu rechnen und speichert
+          die halbe Datei NICHT. Faellt Piper vor dem ersten Stueck aus: 503;
+          danach endet der Strom nur (der Status ist schon gesendet).
+        * Kein Rueckfall auf das Piper-PROGRAMM wie bei vlSprich: 2–14 s je
+          Satzgruppe waeren ein Strom aus Pausen.
+        * Das Tempo geht je Anfrage mit (`length_scale` in /synthesize,
+          piper-tts 1.6 liest es laut http_server.py). So laedt der Dienst
+          nicht bei jedem Wechsel zwischen Kachelname (Vorlese-Tempo bis 2)
+          und Artikel neu. Die STIMME kommt aus den Vorlese-Einstellungen.
+        * EIN Riegel fuer das Recht, im Laufwerk (wie `holen`); der Wirt
+          reicht den Anschluss an jeden Worker — aber nur, wenn die Box
+          Piper hat (venv/bin/python + eine vollstaendige Stimme, einmal beim
+          Laden). Zwei Riegel hintereinander liessen sich einzeln nicht
+          gegenpruefen; tools/plugin-gegenprobe.sh Punkt 9 prueft den einen.
+        * Der Anschluss wird beim Modulstart mit EIGENEN Umgebungsnamen
+          gelesen (MUPIBOX_PIPER_VENV, MUPIBOX_PIPER_STIMMEN,
+          MUPIBOX_HTTP_PORT, MUPIBOX_SPRECH_SPEICHER): die Konstanten des
+          Vorlese-Abschnitts stehen 15.000 Zeilen tiefer in server.ts, ein
+          Zugriff darauf beim Laden waere ein ReferenceError.
+
+      AM GERAET UNGEMESSEN (Stand 28.09.2026, Bau ohne Box):
+        * ob der Piper-Dienst auf der Box `length_scale` je Anfrage annimmt
+          (sonst: Artikel im Vorlese-Tempo — hoerbar, nicht falsch);
+        * wie schnell die erste Satzgruppe auf dem Pi 5 kommt (warm gemessen
+          war ein Kachelname 0,15–0,27 s) und ob mpv den Strom ohne Laenge
+          ohne Stocken spielt;
+        * wie der Abspieler (Verb `plugin/<url>`) eine 503 dem Kind zeigt.
+
+      NACHMESSEN:
+          (cd src/backend-api && env NODE_ENV=test npx tsx --test \
+            src/sprechstrom.spec.ts src/sprechstrom.integration.spec.ts src/plugin-wirt.spec.ts)
+          bash tools/plugin-gegenprobe.sh
+          # am Geraet, nach dem Ausliefern: eine Klexikon-Kachel antippen und
+          # journalctl -u mupibox-server | grep -v python3 | grep -i sprech
+  - kind: entscheidung
+    id: medien-plugin-bietet-an-statt-eigener-kasten
+    title: 'http/angebot: ein neues Medien-Plugin braucht keine Zeile mehr in seiten/medien.ts'
+    tags: [plugins, verwaltung, medien, steckleiste, e87, 2026]
+    source: '28.09.2026, beim Bau von mixpi-kindernachrichten und mixpi-klexikon; plugins/README.md hatte „eine dritte Suchflaeche braucht heute noch eine Kernaenderung" als offene Stelle'
+    body: |
+      VORHER: seiten/medien.ts trug fuer mixpi-archive und mixpi-ardsounds je
+      einen eigenen Kasten, mit der Plugin-Adresse woertlich in der URL. Der
+      E87-Weg (type 'plugin' in der Medienliste) war generisch, das AUFNEHMEN
+      nicht — ein drittes Medien-Plugin haette einen dritten Kasten gebraucht.
+
+      JETZT: die Steckleiste (mixpi-plugin-abschnitt.ts) fragt auf der
+      Medien-Seite (`[angebot]="true"`) jedes BEREITE Plugin der Sektion
+      `medien` einmal nach GET /api/plugins/<k>/http/angebot. Antwort
+      `{ suche, platzhalter, gesamt, werke: [{ kennung, titel, hinweis, bild,
+      vorschlag }] }`; je Werk ein Knopf „aufnehmen", der den `vorschlag`
+      UNVERAENDERT an POST /api/medien schickt. `suche: true` zeigt ein
+      Suchfeld, das dieselbe Route mit ?q= fragt (Knopf/Eingabetaste, nicht
+      je Tastendruck).
+
+      DREI REGELN DARAN:
+        * 404 heisst „biete nichts an" und ist KEIN Fehler — so bleibt
+          mixpi-archive mit seinem eigenen Kasten unberuehrt (es kennt die
+          Route nicht). Fehlermeldung nur, wenn es vorher schon ein Angebot gab.
+        * „schon da" weiss die BIBLIOTHEK: medien.ts reicht die vollen
+          Plugin-Medienkennungen ihrer Eintraege herein (`vorhanden`), nach
+          dem Aufnehmen meldet die Leiste `aufgenommen`, die Seite laedt neu.
+        * Plugins bieten dieselben Werke auch unter http/suche an — das liest
+          tools/plugin-kette-probe.mts.
+
+      KEINE VERTRAGSAENDERUNG: `http()` ist eine freie Flaeche (E77); die
+      Konvention steht in plugins/README.md („Etwas zum Aufnehmen anbieten").
+      Ein Manifest-Feld „ich biete an" waere sauberer, aber es haette die
+      Vertrags-Doku-Wache und den Ohne-Aufnahme-Patch mitgezogen — der Preis
+      ist eine GET-Anfrage mit 404 je Plugin ohne Angebot beim Seitenaufbau.
+
+      FALLE BEIM BAU (vom Zeugen gefunden): Eingabetaste las das Suchwort aus
+      dem Vorlagen-Alias (`@if (angebote()[k]; as a)` → `a.wort`), also aus dem
+      Stand des LETZTEN Zeichnens. Tippen und Enter ohne Zeichnen dazwischen
+      schickten das alte Wort. Das Wort kommt jetzt aus dem Signal
+      (`suchen(kennung)`), nicht aus der Vorlage.
+
+      NACHMESSEN:
+          (cd src/frontend-admin && env CHROME_BIN=<playwright-chrome> npx ng test \
+            --watch=false --browsers=ChromeHeadless --include='src/app/seiten/medien.plugin-leiste.spec.ts')
+  - kind: referenz
+    id: klexikon-schnittstelle-2026
+    title: 'Klexikon (Kinderlexikon) als Quelle: MediaWiki-API, ein Volltext je Anfrage, Uebersichtsseiten per Kategorie — und die Lizenz steht zweimal verschieden da'
+    tags: [plugins, klexikon, mediawiki, vorlesen, wissen, lizenz, 2026]
+    source: 'Betreiber, 28.09.2026: „oder sowas wie geolino das man als plugin machen könnte"; gemessen beim Bau von plugins/mixpi-klexikon mit tools/klexikon-probe.mjs'
+    body: |
+      STAND 28.09.2026 — nachmessen, bevor man sich darauf stuetzt:
+          node tools/klexikon-probe.mjs          # Bilanz in der letzten Zeile
+          node tools/klexikon-probe.mjs --begriff Dinosaurier
+
+      WAS ES IST: https://klexikon.zum.de, Wikipedia fuer Kinder von 6–12,
+      MediaWiki 1.43.9 mit TextExtracts, PageImages, CirrusSearch. Keine
+      Anmeldung. Das GEOlino-artige WISSEN, das die GEOlino-Seite selbst nicht
+      hergibt ([[kindernachrichten-quellen-2026]]).
+
+      DIE EIGENHEITEN, die den Code von mixpi-klexikon erklaeren:
+        * VOLLTEXT NUR FUER EINEN TITEL JE ANFRAGE:
+          prop=extracts&explaintext=1&exsectionformat=wiki&redirects=1. Mit
+          mehreren Titeln kommt EIN Text (nicht unbedingt der des ersten), die
+          API warnt „exlimit … lowered to 1".
+        * Ueberschriften stehen als Zeilen `== … ==`. Etwa die Haelfte der
+          Artikel hat keine (Stichprobe 150). Keine `===`, kaum Markup, aber
+          Wegweiser-Zeilen „⇒ Hier gibt es eine Uebersicht …" im Text.
+        * `redirects=1` noetig („Hund" → „Hunde"); `titles=mond` wird zu „Mond".
+        * UEBERSICHTSSEITEN NICHT NACH DEM NAMEN ERKENNEN: „Staaten der Erde"
+          ist eine ohne das Praefix „Artikeluebersicht". Verlaesslich ist die
+          Kategorie: echte Artikel tragen „Klexikon-Artikel" (3529),
+          Uebersichten „Übersichtsseite" (18). Dazu Hilfeseiten im
+          Artikelnamensraum.
+        * Themen-Kategorien: „Tiere und Natur" (578), „Wissenschaft und
+          Technik" (586), „Erdkunde" (884), „Geschichte" (361) u. a. —
+          categorymembers liefert 500 je Anfrage, „Klexikon-Artikel" braucht 8.
+        * BILDER sind der teure und wackelige Teil: das Klexikon holt jedes
+          Vorschaubild bei Commons nach (kalt ~0,23 s je Bild; 20 Suchtreffer
+          kalt 4,7–5,0 s — deshalb liefert die Suche 12). Bei „Deutschland"
+          fehlte die Vorschau zeitweise ganz. Wikimedia antwortet 403 bei
+          LEEREM User-Agent.
+
+      „WISSEN DES TAGES" (mixpi-klexikon:heute): Titelliste aus den Themen,
+      7 Tage im Datenordner des Plugins; Index = Kalendertag × Schritt mod n
+      mit teilerfremdem Schritt — fest je Tag, nie zwei Tage hintereinander
+      derselbe, alle n kommen dran, bevor sich einer wiederholt. Folgennamen
+      „<Artikel>: <Ueberschrift>", damit die gemerkte Stelle (die auf den
+      Titel zurueckfaellt, weiterhoeren.ts `folgeWiederfinden`) nicht in
+      einem fremden Artikel mit gleicher Ueberschrift weitermacht.
+
+      DIE LIZENZ STEHT ZWEIMAL VERSCHIEDEN DA (28.09.2026): unter jedem
+      Artikel verlinkt der Seitenfuss CC BY-SA 4.0; die Systemnachricht
+      `MediaWiki:Copyright` sagt noch „3.0 Deutschland" und steht nicht mehr
+      unter den Artikeln. Das Plugin nennt 4.0. Fuer die Box egal: beide
+      verlangen Namensnennung (gesprochener Schlusssatz der letzten Folge,
+      `artist: Klexikon`), und die gesprochene Fassung verlaesst die Box nicht.
+
+      VORGELESEN WIRD UEBER DAS RECHT `sprechen`
+      ([[sprechstrom-plugins-lassen-die-box-vorlesen]]). Ohne Piper wirft
+      inhalt() mit Klartext; `befinden` sagt es in der Verwaltung.
+  - kind: referenz
+    id: kindernachrichten-quellen-2026
+    title: 'Kindernachrichten und Kinderwissen als Feed: logo!, MausNachrichten, Kakadu, GEOlino Spezial — und warum nicht die GEOlino-Seite'
+    tags: [plugins, kindernachrichten, podcast, rss, geolino, logo, maus, kakadu, 2026]
+    source: 'Betreiber, 28.09.2026: „gibt es eine kinder news seite, oder sowas wie geolino das man als plugin machen könnte"; gemessen mit tools/kindernachrichten-probe.mjs am 28.09.2026'
+    body: |
+      STAND 28.09.2026 — ZUSTAND, vor dem Weitergeben nachmessen:
+          node tools/kindernachrichten-probe.mjs      # Bilanz in der letzten Zeile
+
+      DIE VIER FEEDS (alle ohne Anmeldung, alle MP3):
+        MausNachrichten (WDR)  https://kinder.wdr.de/radio/diemaus/audio/maus-zoom/maus-zoom-106.podcast
+            werktags ~5 min, 200 Folgen zurueck bis 09.12.2025. Hiess frueher
+            „KiRaKa Klicker", dann „MausZoom" — die ADRESSE traegt noch
+            maus-zoom, der Kanaltitel heisst „MausNachrichten". Dauer hh:mm:ss.
+            Am 31.08.2026 stand „Trailer - Die Maus am Morgen" (1:18) dazwischen.
+        logo! (ZDF)            https://www.zdf.de/rss/podcast/audio/zdf/kinder/logo
+            taeglich ~10 min, nur 7 Folgen im Feed (die vom 25.09. fehlte).
+            Titel NUR das Datum („Montag, 28. September") — der Sendungsname
+            fehlt. Dauer in Sekunden. Kanalbild auf http:// (301 → https).
+        Kakadu (DLF Kultur)    https://www.kakadu.de/kakadu-104.xml
+            Kinderfragen, zuletzt dienstags und freitags, 10–30 min, 55 Folgen.
+            Dauer mm:ss. ESI-Kommentare im Kanal.
+        GEOlino Spezial        https://cdn.audiorella.com/podcasts/1688-geolino-spezial-der-wissenspodcast-fur-junge-entdeckerinnen-und-entdecker/feed.rss
+            monatlich ~20 min, 224 Folgen, 1,2 MB Feed. ENTHAELT WERBUNG: jede
+            Beschreibung traegt Rabattcodes, und die ausgelieferte Datei ist
+            eine andere Groesse als im Feed (dynamisch eingefuegte Werbung).
+            `&amp;` in der enclosure-URL — wer Attribute nicht dekodiert,
+            schickt `amp;awCollectionId` (spielt trotzdem, siehe unten).
+            Die 215 aelteren Folgen haben guids `gid://art19-episode-locator/…`
+            (Anbieterwechsel Anfang 2026).
+
+      WARUM NICHT DIE GEOLINO-WEBSEITE: keine Schnittstelle, kein Feed, die
+      Texte gehoeren dem Verlag. Auslesen hiesse eine fremde Seite abgrasen —
+      in einem Baum, der nach GitHub veroeffentlicht wird. Der Podcast ist der
+      saubere Weg. Fuer GEOlino-artiges WISSEN steht das Klexikon bereit
+      ([[klexikon-schnittstelle-2026]]), unter freier Lizenz.
+
+      KEIN PLUGIN NOETIG ZUM BLOSSEN HOEREN: die Box kennt `type: 'rss'`
+      (Verwaltung → Medien → Podcast). mixpi-kindernachrichten gibt es wegen
+      der FRISCHE: eine Nachrichtenfolge von vor drei Wochen ist fuer ein Kind
+      schlimmer als keine. Regeln im Plugin (plugins/mixpi-kindernachrichten):
+        * frisch = hoechstens `frischeTage` KALENDERTAGE alt (Vorgabe 3),
+          gezaehlt in Europe/Berlin — die Freitags-Maus gilt den ganzen Montag
+          und keine Minute des Dienstags; 72 Stunden haetten sie Montag 9 Uhr
+          verloren. Eine Folge aus der Zukunft gilt als frisch (Pi ohne Uhr
+          vor dem Zeitabgleich).
+        * bei Nachrichten fallen Trailer/Vorschau und alles unter 90 s heraus.
+        * `heute` = je Nachrichtenquelle die neueste frische Folge (Maus, dann
+          logo!), Kennung mit Quelle davor.
+        * Fehler draussen gibt `http()` als `status: 502` MIT `fehler`
+          zurueck. Beim Bau warf es noch, weil der Wirt ein zurueckgegebenes
+          502 durch „Status 502 ist nicht erlaubt" ersetzte — behoben am
+          28.09.2026 im Wirt, nicht in den Plugins:
+          [[plugin-502-verlor-seinen-grund-beim-wirt]].
+
+      `&amp;` IM MUSTERPLUGIN: mupibox-podcast `tonAus()` dekodiert Attribute
+      nicht; beim GEOlino-Feed steht woertlich `&amp;` in der Adresse. Die
+      Adresse antwortet trotzdem (302/200) — der Fehler ist also nicht zu
+      hoeren, nur zu sehen. Als eigene Aufgabe vorgeschlagen (28.09.2026).
+  - kind: falle
+    id: plugin-502-verlor-seinen-grund-beim-wirt
+    title: 'Ein 502 aus einem Plugin verlor beim Wirt seinen Grund — sieben Plugins, alle Zeugen gruen, und in der Verwaltung stand nie, WARUM'
+    tags: [plugins, vertrag, e77, http, naht, zeugen, fehlermeldung, falle, 2026]
+    source: '28.09.2026, beim Bau von plugins/mixpi-kindernachrichten gefunden; behoben in derselben Woche. Gelesen in plugin-wirt.ts/plugin-laufwerk.ts, belegt mit plugin-flaechen.integration.spec.ts und tools/plugin-gegenprobe.sh Nr. 10-12. Am Geraet NICHT gemessen.'
+    body: |
+      ══ DER BEFUND ═════════════════════════════════════════════════════════
+      `pluginHttp()` (plugin-wirt.ts) liess von der freien Route eines Plugins
+      nur Status 2xx und 4xx durch (E77, [[plugins-melden-sich-an-statt-gekannt-zu-werden]]).
+      Gleichzeitig gaben 14 Stellen in SIEBEN Plugins bei Fehlern draussen
+      `{ status: 502, inhalt: { fehler: <Grund> } }` zurueck: mixpi-archive,
+      -ardsounds, -jellyfin, -mediathek, -mediathekview, -similar, -mitschnitt
+          grep -rn "status: 502" plugins/*/index.mjs
+      Der Wirt ersetzte jede davon durch SEINEN Satz „Status 502 ist nicht
+      erlaubt (200-499)". Der Status stimmte also (502), nur der Grund
+      („Das Archiv antwortete mit HTTP 503") kam nie an.
+
+      FOLGEN, DIE NIEMAND SAH:
+        * die Verwaltung zeigte bei jedem Aussetzer draussen denselben
+          nichtssagenden Satz;
+        * die Kernsuche (server.ts, Jellyfin-Zweig) sucht im Grund nach
+          /kein Jellyfin-Zugang/ und sagt dann „Server eintragen und per
+          Quick Connect anmelden" — dieser Hinweis kam NIE, stattdessen
+          „Jellyfin: Status 502 ist nicht erlaubt (200-499)";
+        * /api/video/start reicht `inhalt.grund ?? inhalt.fehler` weiter und
+          reichte den Ersatzsatz weiter;
+        * mixpi-similar legt `quellenFehler` neben `fehler` — fiel mit weg.
+
+      ══ WARUM ALLES GRUEN WAR ══════════════════════════════════════════════
+      Die Zeugen der Plugins rufen `plugin.http()` DIREKT. mixpi-mediathek
+      hatte sogar den Zeugen „http meldet 502 statt zu werfen" — richtig fuer
+      das Plugin, und ohne jede Aussage darueber, was die Verwaltung sieht.
+      Der Integrationszeuge des Wirts pruefte nur 500 und 302 mit LEEREM
+      Inhalt; die Form, die die echten Plugins zurueckgaben, kam in ihm nicht
+      vor. Und der Pruefstand (tools/mixpi-plugin-pruefstand.mjs) hatte eine
+      EIGENE Kopie der Regel („200-499"): er hiess eine 302 gut, die die Box
+      abweist, und nannte ein 502 schlecht, ohne zu sagen, was ankommt —
+      [[dieselbe-regel-an-zwei-orten-braucht-eine-wache-quer-dazu]].
+
+      ══ DIE ENTSCHEIDUNG: DER WIRT NIMMT 502 MIT GRUND AN ══════════════════
+      Zur Wahl standen (a) die sieben Plugins werfen lassen, wie es
+      mixpi-kindernachrichten beim Bau tat, oder (b) den Vertrag weiten.
+      Genommen: (b), eng.
+        * 502 IST der Status, den die Route fuer „hinter mir ging es schief"
+          ohnehin vergibt. Meldet das Plugin ihn selbst, aendert sich am
+          Status nichts — nichts sieht danach eher nach Kern aus als vorher.
+          Das war die Sorge des alten Kommentars, und sie trifft 502 nicht.
+        * WERFEN SCHREIBT DEN STAPEL INS JOURNAL (plugin-wirt.ts, Fall
+          'fehler': `melden(spur)`), bei JEDEM Aufruf. Ein Jellyfin-Server,
+          der im Regal aus ist, ist kein Fehler des Plugins; mit (a) haette
+          jede Suche solange einen Stapel ins Journal gelegt.
+        * Sieben Autoren schrieben unabhaengig voneinander 502. Ein Vertrag,
+          den jeder gleich falsch liest, liegt quer zur Erwartung — man
+          aendert ihn, nicht sieben Leser, und laesst die Falle fuer den
+          achten nicht offen.
+      Eng heisst: NUR 502, und nur mit nichtleerem `fehler` (Text). Ein 502
+      ohne Grund wird zu „Status 502 ohne Grund"; 500/503/504 und 3xx bleiben
+      „Status … ist nicht erlaubt". 500 heisst „ich bin kaputt" — dafuer ist
+      der Wurf da; 503/504 tragen Zusagen (Retry-After, Frist am Tor), die
+      hier niemand einloest. Der ganze `inhalt` reist mit (Deckel 256 KB).
+
+      WO DIE REGEL WOHNT: `httpAntwortPruefen` in plugin-vertrag.ts, samt
+      `HTTP_ANTWORT_HOECHSTENS`. `pluginHttp` UND der Pruefstand rufen sie —
+      eine Stelle, keine Kopie. mixpi-kindernachrichten gibt seitdem auch
+      502 mit Grund zurueck ([[kindernachrichten-quellen-2026]]).
+
+      ══ DIE ZEUGEN ═════════════════════════════════════════════════════════
+      src/backend-api/src/plugin-flaechen.integration.spec.ts, vom HTTP-Ende
+      durch den Worker: `draussen` (502 mit Grund und Beiwerk kommt WOERTLICH
+      an), `draussen-stumm` (502 ohne Grund wird ersetzt), `draussen-503`
+      (503 MIT Grund bleibt draussen), `wurf` (Meldung kommt als 502 an).
+      Gegenprobe: `bash tools/plugin-gegenprobe.sh`, Nr. 10-12 — die erste
+      stellt genau die alte Fassung wieder her.
+
+      ══ DAS MUSTER ═════════════════════════════════════════════════════════
+      EIN PLUGIN-ZEUGE, DER plugin.http() DIREKT RUFT, SAGT NICHTS DARUEBER,
+      WAS DIE VERWALTUNG SIEHT. Wer eine Antwortform fuer die Naht festlegt,
+      braucht einen Zeugen AN der Naht, und dessen Probe-Plugin muss die Form
+      der ECHTEN Plugins zurueckgeben — nicht nur die Grenzfaelle, die der
+      Wirt abweisen soll. Dieselbe Naht wie in
+      [[attrappe-am-falschen-ende-nock-erreicht-keinen-worker]]: das Plugin
+      allein und der Wirt allein waren gruen, der Weg dazwischen nicht.
+
+      STAND 28.09.2026: nicht ausgeliefert, am Geraet nicht gemessen. Wer es
+      dort sehen will: ein Jellyfin ohne Zugang, dann in der Verwaltung
+      suchen — der Hinweis „kein Zugang bekannt" muss erscheinen.
+  - id: ausliefern-baut-den-arbeitsbaum-fremde-arbeit-faehrt-mit
+    kind: falle
+    title: 'ausliefern.py baut aus dem ARBEITSBAUM — die halbfertige Arbeit einer Nachbarsitzung faehrt mit auf die Kinderbox; aus einem sauberen Baum auf HEAD ausliefern'
+    tags: [ausliefern, box, arbeitsbaum, worktree, parallele-sitzungen, 2026]
+    source: >
+      28.09.2026, Auslieferung der Box-Sperre auf Box .62. Im Arbeitsbaum lagen
+      zugleich uncommittete Hunks einer Nachbarsitzung in server.ts
+      (Sprechstrom) und neue Plugins. tools/ausliefern.py gelesen: kein
+      worktree, kein git stash, kein Blick auf den Index — es baut, was im
+      Baum liegt.
+    related: [mupi-fork-ausliefern-ablauf, ausrollweg-ausliefern-py]
+    body: |
+      DIE FALLE: `tools/ausliefern.py` ruft `npm run build` im Baum, aus dem es
+      gestartet wird. Liegt dort uncommittete Arbeit — eigene oder die einer
+      parallelen Sitzung —, landet sie auf der Box, und zwar NEBEN dem, was man
+      eigentlich ausliefern wollte. Die Zeile „Herkunft: … @ <hash> (HEAD)"
+      in Schritt 2 sagt dabei den Commit, nicht den Baum: sie sieht sauber
+      aus, auch wenn der Bau fremde Hunks enthaelt.
+
+      DER WEG, am 28.09.2026 gefahren (rc 0, alle fuenf Teile md5-gleich):
+          W=<scratch>/box-<hash>
+          git worktree add --detach $W <hash>
+          for d in node_modules src/backend-api/node_modules \
+                   src/backend-player/node_modules src/frontend-admin/node_modules \
+                   src/frontend-box/node_modules; do
+            ln -s "$PWD/$d" "$W/$d"
+          done
+          (cd $W && python3 tools/ausliefern.py --box dietpi@<ip> --probe)
+          (cd $W && python3 tools/ausliefern.py --box dietpi@<ip>)
+          git worktree remove --force $W      # loescht die Verweise, nicht die Ziele
+      Die node_modules als Verweis statt `npm ci`: gleiche Fassungen wie im
+      Haupt-Baum, kein Download. Nebenbei faellt die Falle mit root-eigenen
+      Resten im Haupt-Baum weg (esbuild meldet dort Permission denied und endet
+      trotzdem mit 0) — ein frischer Baum hat keine.
+
+      WAS ES NICHT LOEST: den Wartungsschirm. ausliefern.py schaltet ihn
+      nicht; davor `bash tools/mixpi-wartung.sh an <ip>`, danach `aus`.
+  - id: installer-tests-in-keinem-laeufer-und-die-wache-las-nur-tools
+    title: "30 Installer-Tests liefen in keinem Laeufer, drei davon einen Monat rot — und die Wache ueber den Wachen las nur tools/ flach"
+    kind: falle
+    tags: [wachen, tests, laeufer, installer, pruefen, ratsche, gegenprobe, 2026]
+    stand: "28.09.2026, am Baum gemessen (30 Dateien je einzeln gefahren); kein Geraet noetig."
+    source: 'Auftrag 28.09.2026 nach `git grep -n _test.py -- tools/*.sh .github` (nur readme-behauptungen-pruefen.sh:310, und das ZAEHLT). AUDIT-2026-08-30 Rang 4, AUDIT-2026-09-23 R3b, AUDIT-2026-09-25 Rang 5. Gebaut: tools/installer-tests.py, tools/pruefen-einzelschritt.py, Umbau tools/ungerufene-wachen.py.'
+    body: >
+      DER BEFUND: Unter `remote-step-installer/tests/` liegen 30 Testdateien
+      (27 `*_test.py`, 3 `*_smoke.py`), jede endet mit
+      `sys.exit(1 if … else 0)` — und KEIN Laeufer rief sie: weder
+      `tools/pruefen.sh` noch `tools/doku-luecken-probe.sh` noch die CI. Einzeln
+      gefahren am 28.09.2026: 24 gruen, 3 rot, 3 brauchen `textual` (fehlt auf
+      dem Entwicklungsrechner; die Tests fangen den Importfehler selbst ab und
+      drucken nur „No module named 'textual'"). Keine braucht Geraet, root oder
+      Netz. Die drei roten (bootwache, pythonpaket, touchbridge) sind DIESELBEN,
+      die AUDIT-2026-08-30 Rang 4 nach dem Zwillings-Angleich 276e42ea meldete —
+      einen Monat spaeter unveraendert, weil niemand sie fuhr. In allen dreien
+      ist der TEST veraltet, nicht der Code: `bw.FRIST_S` gibt es nicht mehr;
+      pythonpaket_test verlangt noch „kopieren VOR dem Vergleich", was
+      sdprep.vorstart_skript am 08.08. absichtlich umgedreht hat (dahinter
+      verglich es sich mit sich selbst); die Attrappe `_Ctl` in touchbridge_test
+      kennt kein `lesen()`. Es ist [[testmenge-in-keinem-laeufer]] ein zweites
+      Mal, an einem Ort, an den bei den Plugin-Tests niemand gedacht hat.
+
+      WARUM DIE WACHE ES NICHT SAH: `tools/ungerufene-wachen.py` las
+      `WERKZEUGE.iterdir()` und schluesselte nach dem BASISNAMEN. Unsichtbar
+      waren `tools/box/`, `tools/e2e/`, `remote-step-installer/tools/` und die
+      ganze Testmenge. Drei Audits meldeten je EINEN dieser Orte (08-30 R4,
+      09-23 R3b, 09-25 R5) — ein wiederkehrender Befund, also an der Naht
+      behoben ([[wiederkehrender-befund-ist-ablauffehler]]): `BAEUME` rekursiv,
+      Schluessel = Pfad ab der Wurzel, Rufe je Rufer aufgeloest (`tools/x.py`
+      aus dem Installer meint zuerst SEIN tools/). Nachgerechnet: die alte und
+      die neue Fassung geben fuer jedes `tools/*` denselben Zustand; neu
+      sichtbar 85 urteilende Dateien, 33 gedeckt, 52 offen (27 tools/box,
+      25 remote-step-installer/tools), eingefroren.
+
+      DER SAMMELRUF: `tools/installer-tests.py` faehrt `WURZEL.glob(SAMMELRUF)`
+      — ein Ruf, der seinen Pfad erst baut, fuer ein Textmuster unsichtbar. Statt
+      einer zweiten Namensliste liest die Wache die BINDUNG
+      `SAMMELRUF = "remote-step-installer/tests/*.py"` im erreichten Werkzeug
+      und legt dasselbe Muster an. Das Werkzeug benutzt die Konstante selbst,
+      also kann sie nicht auseinanderlaufen. Folge fuer den Entwurf: der
+      Sammellaeufer darf NICHTS still ueberspringen, sonst zaehlt die Wache eine
+      nie gefahrene Datei als gerufen. Deshalb werden die drei BEKANNT-roten
+      mitgefahren (0,1 s), ihr Rot bricht nichts, ihr GRUEN bricht mit
+      „austragen". Ein Test, der Geraet/root/Netz braucht, bekommt den Riegel
+      IN sich, nicht auf eine Ueberspring-Liste. „Nicht gemessen" (textual
+      fehlt) steht mit Zahl in der Bilanz und ist nicht gruen
+      ([[sonde-ohne-erreichbarkeitsriegel-urteilt-ueber-nichts]]).
+
+      GEGENGEPRUEFT ([[gegenprobe-statt-gruen-glauben]]), jede Sabotage gezielt
+      zurueckgenommen: eine Zeile in anim_test.py (committet) umgebogen ->
+      „1 Schritt(e) gebrochen: Tests des Installers", Datei benannt; das
+      Muster auf `*.pyX` -> Ratsche 30 schlechter UND installer-tests.py meldet
+      „KEINE Testdatei" (Selbstpruefung gegen ein Muster, das ins Leere greift);
+      den Schritt aus pruefen.sh genommen -> 31 schlechter. NEUES WERKZEUG DAFUER:
+      `tools/pruefen-einzelschritt.py "<Name>"` faehrt einen Schritt im ECHTEN
+      Text von pruefen.sh (alle anderen `schritt`-Zeilen werden `:`). Noetig,
+      weil ein Arbeitsbaum unter .claude/worktrees/ keine node_modules hat: der
+      volle Lauf waere dort in Dutzenden npm-Schritten rot und `npx tsx` wollte
+      Pakete nachladen. Neue Werkzeuge sieht die Wache erst, wenn git sie kennt
+      — vor dem Commit `git add -N`.
+
+      NEBENBEFUNDE, beim Einfrieren sichtbar und NICHT behoben: (1) Die Ratsche
+      war auf HEAD schon ROT — 11 Werkzeuge seit dem 20.09. ohne Laeufer und ohne
+      Grund dazugekommen (abbild-pfade-pruefen.py, ansage-kommt-an.py,
+      box-finden.py, kissen-einfahren-messen.mjs, mediathekview-probe.mjs,
+      mitschnitt-fehler-befreien.py, mitschnitt-quelle-anlegen.py,
+      nachrichten-sonde.py, nas-sonde.py, pruef-zeitformate.js,
+      videoquellen-probe.mjs). Sie stehen jetzt als `offen` in der Baseline —
+      eingefroren heisst nicht erledigt; jede gehoert eingehaengt oder mit Grund
+      nach BEKANNT ([[dauerrote-wache-ist-keine]]: eine rote Ratsche, die
+      niemand liest, hat sie durchgelassen). (2) Die Schrittzahl in
+      mixpibox.md 7.1 stand auf 138, gemessen 144 — ebenfalls schon auf HEAD.
+      (3) „BEKANNT, ABER GERUFEN: admin-vorschau.mjs" ist die offene
+      Pfadlisten-Achse aus AUDIT-2026-09-25 Rang 5 (readme-behauptungen-pruefen.sh:94
+      zaehlt als Kommandostellung) — stand vorher schon da. (4) Die drei roten
+      Tests selbst sind nicht repariert; ihr Grund steht in der BEKANNT-Liste.
+      Wer `pruefen.sh` dafuer editiert: vorher `pgrep -af pruefen.sh`
+      ([[edit-am-laufenden-bash-skript-verschiebt-den-lesezeiger]]).
+    related: ["testmenge-in-keinem-laeufer", "wache-stirbt-still-wenn-sie-nirgends-haengt", "ungerufene-wache-driftet-in-den-fehlalarm", "wiederkehrender-befund-ist-ablauffehler", "gegenprobe-statt-gruen-glauben", "sonde-ohne-erreichbarkeitsriegel-urteilt-ueber-nichts", "dauerrote-wache-ist-keine", "edit-am-laufenden-bash-skript-verschiebt-den-lesezeiger"]
+  - id: elf-ungerufene-wachen-einzeln-abgetragen
+    title: 'Elf ungerufene Wachen einzeln abgetragen: zwei eingehaengt, neun mit Grund draussen - und zwei davon fielen, weil ein Review-Merge die Texte ohne die Loeschungen nahm'
+    kind: falle
+    tags: [wachen, laeufer, ratsche, pruefen, gegenprobe, review, merge, dockerfile, 2026]
+    stand: "28.09.2026, am Baum gemessen; jedes der elf Werkzeuge einzeln gefahren, die Box-Sonden lesend gegen .62."
+    source: 'Auftrag 28.09.2026 zu den NEBENBEFUNDEN von [[installer-tests-in-keinem-laeufer-und-die-wache-las-nur-tools]]. Geaendert: tools/pruefen.sh, tools/ungerufene-wachen.py (+Baseline), tools/kissen-einfahren-messen.mjs, tools/doku-luecken-probe.sh, tools/box-finden.py, dokumentation/mixpibox.md 7.1.'
+    body: |
+      AUSGANGSLAGE: 49b627a7 hat die Ratsche neu eingefroren, und elf
+      Werkzeuge, die seit dem 20.09. ohne Laeufer und ohne Grund dazugekommen
+      waren, standen danach als `offen` in der Baseline — geduldet, nicht
+      erledigt. Jedes ist gelesen und einzeln gefahren (28.09.2026).
+
+      EINGEHAENGT IN tools/pruefen.sh (zwei):
+        * abbild-pfade-pruefen.py -> Schritt „Quellen der Dockerfile", unter
+          1 s. Gegenprobe: `COPY ./scripts` in der Dockerfile auf `./skripte`
+          -> „1 LUECKE(N)", Schritt rot.
+        * kissen-einfahren-messen.mjs -> Schritt „Kissen steht beim
+          Einfahren", 9 s. Es verlangte eine URL, an der jemand von Hand
+          `platzBeimBlaettern` eingeschaltet hatte; ohne URL startet es jetzt
+          `neu-vorschau.mjs` auf einem freien Port (Muster von
+          gestalter-schau.mjs), schaltet per PUT /api/darstellung ein, misst,
+          beendet die Attrappe. Dreimal hintereinander gleich gruen (Spanne
+          0 px, 27-28 Werte). Gegenprobe: `body.platz-machen .mp
+          { justify-content: flex-end; }` geleert -> einfahren Spanne 263 px,
+          rot — dieselbe Zahl, die der Fix 06c1b713 als Vorher nennt.
+        Beide Gegenproben auf committeten Dateien, per Edit zurueck,
+        `git diff` danach leer.
+
+      MIT GRUND IN BEKANNT (neun), nach Grund:
+        * Internet: mediathekview-probe.mjs, videoquellen-probe.mjs — beide
+          am 28.09. von Hand gruen (videoquellen: SRF und ORF nur HLS, sechs
+          Sender MP4).
+        * Box: ansage-kommt-an.py (laesst die Box hoerbar sprechen),
+          nachrichten-sonde.py (lesend gefahren, gruen), box-finden.py,
+          mitschnitt-fehler-befreien.py, mitschnitt-quelle-anlegen.py (beide
+          Eingriffe, beide nur lokal: github-ausschluss.txt `tools/mitschnitt-*`;
+          `--pruefen` blockt nicht an BEKANNT-Eintraegen, die auf GitHub ins
+          Leere zeigen).
+        * NAS: nas-sonde.py (`--zustand` hier gruen; davfs2 fehlt auf dem
+          Entwicklungsrechner).
+        * Ohne Gegenstand: pruef-zeitformate.js (siehe unten).
+      box-finden.py nannte `--pruefen` im Kopf „fuer tools/pruefen.sh" —
+      dort hing es nie, und es gehoert nicht hin: unter `--pruefen` gibt es
+      IMMER 0. Kopfzeile korrigiert.
+
+      DIE URSACHE HINTER ZWEI DER ELF — die eigentliche Falle: Das
+      Cloud-Review vom 27.09.2026 (GitHub-Stand 41df5e05) loeschte die
+      Wurzel-Dockerfile samt docker/, bin/librespot/0.6.0 und
+      abbild-pfade-pruefen.py, dazu die Zeit-Kette zeit-auszug.py ->
+      zeitfns-auszug.js -> pruef-zeitformate.js, jeweils MIT ihrem
+      Laeufer-Schritt. ca94f361 hat das lokal „ohne ihre Loeschungen"
+      uebernommen (Betreiber: „hier kann alles so bleiben, nur eben github")
+      — aber MIT den Texten. Die Laeufer-Zeilen fielen, der Kommentar in
+      doku-luecken-probe.sh sagte „geloescht", der Eintrag
+      [[projekt-review-2026-09-27-fehler-und-aufraeumen]] ebenso; die Dateien
+      blieben liegen. Damit fiel eine lebende, gruene Wache still aus ihrem
+      Laeufer, und niemand sah es, weil die Ratsche an dem Tag schon rot war
+      ([[dauerrote-wache-ist-keine]]).
+      DIE REGEL DARAUS: Wer einen fremden Stand OHNE seine Loeschungen
+      uebernimmt, uebernimmt die Texte, die diese Loeschungen beschreiben oder
+      vollziehen, trotzdem mit — und die sind lokal dann falsch. Nach so einem
+      Merge je nicht uebernommener Loeschung `git grep <dateiname>` ueber den
+      uebernommenen Diff: jede Zeile, die die Datei als weg beschreibt oder
+      ihren Aufruf entfernt, ist ein Fehler.
+
+      WAS LOKAL NOCH LIEGT, obwohl der Review-Eintrag es aufgeraeumt nennt
+      (28.09.2026 nachgesehen): Dockerfile, docker/entrypoint.sh,
+      bin/librespot/0.6.0, die Zeit-Kette, die Einmal-Proben kachel-ecken*.py,
+      favicon-umriss-probe.py, favicon-randkontrast-gegenprobe.py,
+      profil-kaputt-probe.ts. Die docker:*-Skripte in package.json sind
+      dagegen weg (dieser Text kam an) — die Dockerfile steht also da, ohne
+      dass ein npm-Skript sie baut. Der Review-Eintrag beschreibt GitHub, nicht
+      diesen Baum.
+
+      WARUM pruef-zeitformate.js NICHT EINGEHAENGT WURDE, obwohl es
+      umgebungsfrei und gruen ist: Es prueft einen am 27.07.2026 eingefrorenen
+      Auszug aus zeitanzeige.component.ts; die Quelle fiel mit E118/1e
+      (6281ac5c), kurzZeit/kurzDauer gibt es sonst nirgends im Baum. Es kann
+      nicht mehr rot werden — eingehaengt waere es eine Attrappe von Wache.
+      „Umgebungsfrei und gruen -> einhaengen" hat eine stille dritte
+      Bedingung: es gibt noch etwas, das sich aendern kann.
+
+      OFFEN, Betreiber-Entscheidungen (nicht getroffen):
+        (1) Die Zeit-Kette (drei Dateien) loeschen — lokal steht sie auf
+            Betreiberwunsch.
+        (2) `python3 tools/github-veroeffentlichen.py --liste` fuehrt am
+            28.09.2026 Dockerfile, docker/entrypoint.sh,
+            bin/librespot/0.6.0/librespot-64bit, abbild-pfade-pruefen.py und
+            die Zeit-Kette — die naechste Veroeffentlichung aus dem lokalen
+            Stand bringt also zurueck, was das Review auf GitHub geloescht hat.
+            github-ausschluss.txt sagt dazu in einem Kommentar,
+            bin/librespot/0.6.0 sei „ganz geloescht" — lokal falsch.
+        (3) ansage-kommt-an.py hat 192.168.178.62 als Vorgabe-Adresse, statt
+            box-finden.py zu fragen wie nachrichten-sonde.py.
+
+      BILANZ der Wache danach: 236 von 607 im Laeufer (vorher 234), 72 mit
+      Grund draussen (63), 300 offen (311). pruefen.sh: 147 unbedingte
+      Schritte (145).
+    related: ["installer-tests-in-keinem-laeufer-und-die-wache-las-nur-tools", "projekt-review-2026-09-27-fehler-und-aufraeumen", "dauerrote-wache-ist-keine", "wache-stirbt-still-wenn-sie-nirgends-haengt", "gegenprobe-statt-gruen-glauben", "wiederkehrender-befund-ist-ablauffehler", "testmenge-in-keinem-laeufer"]
+  - id: review-merge-ohne-loeschungen-bringt-sie-auf-github-zurueck
+    title: 'Ein Review-Merge „ohne die Loeschungen" hat sie 23 Minuten spaeter auf GitHub zurueckgebracht - samt einem Fehler, den das Review behoben hatte'
+    kind: falle
+    tags: [review, merge, github, veroeffentlichen, aufraeumen, dockerfile, figuren, wachen, 2026]
+    stand: "28.09.2026, gegen github/main (0bcb75aa) und den lokalen Baum gemessen; Loeschung lokal auf Betreiber-Entscheidung."
+    source: 'Auftrag 28.09.2026, OFFEN Punkt 2 aus [[elf-ungerufene-wachen-einzeln-abgetragen]]. Betreiber auf die Frage (a) lokal loeschen oder (b) nur GitHub-Ausschluss: „(a) Lokal loeschen", und die doppelten Figuren ebenfalls loeschen. Geaendert: 30 Dateien geloescht, tools/pruefen.sh, tools/ungerufene-wachen.py (+Baseline), tools/shellcheck-baseline.txt, tools/doku-pfade-pruefen.py, tools/doku-luecken-probe.sh, tools/github-ausschluss.txt, dokumentation/mixpibox.md 7.1 und 7.4, MODERNIZATION.md §5, BACKLOG.md „Aufraeumen".'
+    body: |
+      DIE ANNAHME IM AUFTRAG WAR SCHON UEBERHOLT. Er lautete: `--liste`
+      fuehrt die vom Review geloeschten Dateien wieder, die NAECHSTE
+      Veroeffentlichung bringe sie also auf GitHub zurueck. Gemessen
+      (git fetch github, dann `git cat-file -e github/main:<pfad>`): alle 31
+      waren schon zurueck. Zeitfolge am 27.09.2026:
+        16:47 UTC  41df5e05  Cloud-Review veroeffentlicht, 31 Dateien weg
+        19:03      ca94f361  lokal: Texte uebernommen, Loeschungen nicht
+        19:26      5bf4ba15  Veroeffentlichung aus dem lokalen Stand —
+                             alle 31 wieder auf GitHub
+      Danach noch eaf625bb und 0bcb75aa. Die Frage „soll GitHub beim
+      geloeschten Stand BLEIBEN" hatte also keinen Gegenstand mehr; beide
+      Wege brauchen eine neue Veroeffentlichung, damit GitHub die Dateien
+      wieder verliert.
+
+      WARUM DAS NIEMAND SAH: `github-veroeffentlichen.py` berichtet, was
+      HINAUSGEHT und was ZURUECKGEHALTEN wird — nicht, was es gegenueber
+      der Gegenstelle WIEDERBELEBT. Eine Datei, die dort jemand bewusst
+      geloescht hat, erscheint im Trockenlauf als eine von 1800
+      „veroeffentlicht"-Zeilen, ununterscheidbar von jeder anderen.
+
+      UNTER DEN 31 WAR EIN FEHLER, KEIN AUFRAEUMEN. Elf Bilder in
+      NewDesign/bilder/figuren (`mixpi-tractor-1.png`, `-2.png` usw.) sind
+      byte-gleiche Kopien ihres Originals (md5, alle elf nachgemessen).
+      `figurenLesen()` liest den Ordner, die Kinder sahen dieselbe Figur
+      bis zu dreimal. Das Review hatte sie deshalb geloescht; „ohne die
+      Loeschungen" hat den Fehler lokal behalten und auf GitHub
+      zurueckgebracht. Der Satz „hier kann alles so bleiben" war ueber
+      Aufraeumen gesprochen — dass eine der Loeschungen eine Fehlerbehebung
+      war, stand nicht dabei. REGEL: Wer einen fremden Stand ohne seine
+      Loeschungen uebernimmt, sortiert die Loeschungen vorher in
+      „Aufraeumen" und „Behebung" und fragt die zweite Sorte einzeln.
+
+      ENTSCHIEDEN UND GEMACHT (28.09.2026), Weg (a), lokal geloescht:
+        * Wurzel-Dockerfile, docker/entrypoint.sh, librespot 0.6.0 (18 MB),
+          abbild-pfade-pruefen.py samt pruefen.sh-Schritt „Quellen der
+          Dockerfile" (am selben Tag erst eingehaengt) und
+          shellcheck-Baseline-Zeile.
+        * Zeit-Kette zeit-auszug.py -> zeitfns-auszug.js ->
+          pruef-zeitformate.js samt BEKANNT-Eintrag („Ohne Gegenstand").
+        * zwoelf Einmal-Proben ohne Verweis: akku-griff-schau.mjs,
+          akkuverlauf-abriss-pruefen.mjs, auswahl-verschwinden-probe.ts,
+          favicon-randkontrast-gegenprobe.py, favicon-stift-ort.py,
+          favicon-umriss-probe.py, favicon-weiss-nachmessen.py,
+          grenzruf-nur-lesend-messen.mjs, kachel-ecken-messen.py,
+          kachel-ecken-nachmessen.py, kartenseite-takt-probe.py,
+          profil-kaputt-probe.ts. VORSICHT beim Muster: `kachel-ecken.py`
+          OHNE Anhang hat das Review stehen lassen — ein `kachel-ecken*`
+          haette eine Datei zu viel geloescht.
+        * die elf Figuren-Kopien.
+        * neu-regelnfns-auszug.js nur aus dem Index (`git rm --cached`):
+          er stand seit dem Review in .gitignore, blieb aber verfolgt.
+          pruef-neu-regeln.js erzeugt ihn frisch — in einem Wegwerf-Baum
+          ohne die Datei gefahren: „alle Regeln stimmen", Datei wieder da.
+
+      NACHGEZOGEN, weil es sonst lokal falsch waere: der librespot-Kommentar
+      in github-ausschluss.txt (sagte „seit 27.09.2026 ganz geloescht"),
+      doku-luecken-probe.sh, mixpibox.md 7.1 und 7.4, MODERNIZATION.md §5,
+      BACKLOG „Aufraeumen" — jeweils mit „GitHub 27.09., lokal 28.09.".
+      doku-pfade-pruefen.py meldete danach fuenf neue TOTE Pfade, alle in
+      Texten, die genau diese Loeschung erzaehlen; sie stehen jetzt je
+      Quelle in AUSNAHMEN_JE_QUELLE, mit Grund. Die Meldung nennt je Pfad
+      nur die ersten DREI Quellen — zwei weitere Wiki-Eintraege fand erst
+      die Suche im Paket, nicht die Ausgabe.
+
+      NEBENFUND, der die Pruefung blockierte: Der Trockenlauf brach mit
+      „ABBRUCH" ab, weil ein BEKANNT-Grund in ungerufene-wachen.py (aus
+      1563d22f) die Test-Erweiterung woertlich an einen Dienstnamen band —
+      genau, was tools/github-lokal-muster.txt verbietet. Umformuliert,
+      die Wache nicht angefasst. Und: der Trockenlauf liest den INDEX
+      (`git ls-files -s`), nicht den Arbeitsbaum. Die `git rm` waren schon
+      gestaged und zaehlten, der Edit am Text noch nicht — also meldete er
+      das Leck weiter. Wer ungestaged misst, misst den alten Stand.
+
+      ZAHLEN danach: ungerufene-wachen 235 von 605 im Laeufer (vorher 236
+      von 607), 71 mit Grund (72), 300 offen. pruefen.sh 146 unbedingte
+      Schritte (147), 153 gesamt. doku-luecken-probe 20 statt 21 Luecken
+      (die Differenz ist `docker/br-/veth/tun/wg`: galt als Pfad, solange
+      es den Ordner docker/ gab).
+
+      OFFEN:
+        (1) Veroeffentlichen — nur auf ausdrueckliches Ja des Betreibers.
+            Erst dann verliert GitHub die 31 Dateien wieder.
+        (2) bin/nodejs/deploy.zip traegt die Figuren-Kopien noch; er wird
+            beim naechsten Bau neu gepackt.
+        (3) Eine Wache in github-veroeffentlichen.py, die meldet, was
+            gegenueber github/main ZURUECKKAEME (Dateien, die die
+            Gegenstelle seit der letzten Veroeffentlichung von hier
+            geloescht hat). Nicht gebaut.
+    related: ["elf-ungerufene-wachen-einzeln-abgetragen", "projekt-review-2026-09-27-fehler-und-aufraeumen", "dauerrote-wache-ist-keine", "aufraeumen-nachmessen"]

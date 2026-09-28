@@ -9,7 +9,10 @@ import 'package:mixpibox_fernbedienung/modell.dart';
 import 'package:mixpibox_fernbedienung/netzsuche.dart';
 import 'package:mixpibox_fernbedienung/seiten/box_bearbeiten.dart';
 import 'package:mixpibox_fernbedienung/seiten/box_seite.dart';
+import 'package:mixpibox_fernbedienung/seiten/kinderzeit_seite.dart';
 import 'package:mixpibox_fernbedienung/seiten/medien_seite.dart';
+import 'package:mixpibox_fernbedienung/seiten/sicherung_seite.dart';
+import 'package:mixpibox_fernbedienung/seiten/sperren.dart';
 import 'package:mixpibox_fernbedienung/seiten/uebersicht.dart';
 import 'package:mixpibox_fernbedienung/zustand.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -189,6 +192,8 @@ void main() {
     stand.taktAnhalten();
   });
 
+  group('Eltern: sperren, Kinderzeit, Sicherung', elternTests);
+
   group('Medien verwalten', () {
     late AttrappenBox box;
     late BoxenStand stand;
@@ -305,6 +310,195 @@ void main() {
 }
 
 /// Legt „in den Download-Ordner", ohne Android: merkt sich Inhalt und Namen.
+/// Sperren, Kinderzeit, Sicherung — die Eltern-Seiten (28.09.2026).
+void elternTests() {
+  late AttrappenBox box;
+  late BoxenStand stand;
+  late BoxEintrag eintrag;
+
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    box = AttrappenBox();
+    stand = BoxenStand(clientBauen: (b) => BoxClient(b, client: box.client()));
+    eintrag = BoxEintrag(id: 'x', name: 'Testbox', adresse: 'x.local');
+    stand.boxen.add(eintrag);
+  });
+  tearDown(() => stand.taktAnhalten());
+
+  /// Echte Asynchronitaet (Dateien) laufen lassen, bis [bis] wahr ist.
+  Future<void> warten(WidgetTester tester, bool Function() bis) => tester.runAsync(() async {
+    for (var i = 0; i < 150 && !bis(); i++) {
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      await tester.pump();
+    }
+  });
+
+  test('„bis 7 Uhr" um 1 Uhr nachts heisst heute frueh, um 20 Uhr morgen frueh', () {
+    expect(naechsteUhrzeit(DateTime(2026, 9, 28, 1), 7, 0), DateTime(2026, 9, 28, 7));
+    expect(naechsteUhrzeit(DateTime(2026, 9, 28, 20), 7, 0), DateTime(2026, 9, 29, 7));
+    expect(naechsteUhrzeit(DateTime(2026, 9, 28, 7), 7, 0), DateTime(2026, 9, 29, 7), reason: 'genau jetzt ist vorbei');
+  });
+
+  testWidgets('Sperren: Schloss oben, 30 Minuten, Streifen auf „Jetzt" — und wieder aufheben', (tester) async {
+    await tester.runAsync(() => stand.eineAktualisieren(eintrag));
+    await tester.pumpWidget(MaterialApp(home: BoxSeite(stand: stand, box: eintrag)));
+    await tester.pump();
+    expect(find.byType(SperrStreifen), findsNothing);
+    await tester.tap(find.byTooltip('Box sperren'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('30 Minuten'));
+    await tester.pumpAndSettle();
+    expect(box.schreibwege, ['SPERRE 30']);
+    expect(find.byType(SperrStreifen), findsOneWidget, reason: 'die Seite fragt nach dem Sperren sofort neu');
+    // Kein fester Pixelwert (die Testschrift ist breiter als jede echte):
+    // der Streifen darf nur nicht den Schirm fuellen.
+    expect(tester.getSize(find.byType(SperrStreifen)).height, lessThan(tester.view.physicalSize.height / tester.view.devicePixelRatio / 3));
+    expect(find.byTooltip('Gesperrt — ändern'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Gesperrt — ändern'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Sperre aufheben'));
+    await tester.pumpAndSettle();
+    expect(box.schreibwege, ['SPERRE 30', 'ENTSPERRT']);
+    expect(find.byType(SperrStreifen), findsNothing);
+    expect(find.byTooltip('Box sperren'), findsOneWidget);
+  });
+
+  testWidgets('Kinderzeit: sieben Tage, Mittwoch zur Hoerpause, erst Speichern schreibt', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.75;
+    addTearDown(tester.view.reset);
+    final montagAbend = DateTime(2026, 9, 28, 18); // ein Montag
+    await tester.pumpWidget(MaterialApp(home: KinderzeitSeite(stand: stand, box: eintrag, jetzt: () => montagAbend)));
+    await tester.pumpAndSettle();
+    expect(tester.takeException(), isNull);
+    for (final t in ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']) {
+      expect(find.text(t), findsOneWidget);
+    }
+    expect(find.text('Pause'), findsOneWidget, reason: 'Sonntag ist gesperrt');
+    expect(find.text('∞'), findsOneWidget, reason: 'Samstag ohne Minutengrenze');
+    expect(find.text('1 h'), findsNWidgets(5));
+    expect(find.text('darf hören (bis 19:30)'), findsOneWidget, reason: 'der Stand von heute');
+
+    await tester.tap(find.byKey(const ValueKey('kz-tag-mi')));
+    await tester.pumpAndSettle();
+    expect(find.text('Mittwoch'), findsOneWidget);
+    await tester.tap(find.widgetWithText(SwitchListTile, 'Darf hören'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Übernehmen'));
+    await tester.pumpAndSettle();
+    expect(find.text('Pause'), findsNWidgets(2));
+    expect(box.schreibwege, isEmpty, reason: 'nichts geht zur Box, bevor gespeichert wird');
+
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    expect(box.schreibwege, ['KZ haus']);
+    expect(box.kzStandard['tage']['mi']['frei'], false);
+    expect(box.kzStandard['tage']['mo']['minuten'], 60, reason: 'die anderen Tage bleiben');
+  });
+
+  testWidgets('Kinderzeit: ein Tag fuer Mo–Fr uebernommen', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.75;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(home: KinderzeitSeite(stand: stand, box: eintrag)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('kz-tag-mo')));
+    await tester.pumpAndSettle();
+    // Grenze „bis" entfernen: dann gilt der Tag bis Mitternacht.
+    await tester.tap(find.byTooltip('Grenze entfernen').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Für Mo–Fr'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    for (final t in ['mo', 'di', 'mi', 'do', 'fr']) {
+      expect(box.kzStandard['tage'][t]['bis'], '', reason: t);
+    }
+    expect(box.kzStandard['tage']['sa']['bis'], '19:30', reason: 'das Wochenende bleibt');
+  });
+
+  testWidgets('Kinderzeit: ein Kind ohne eigene Regeln folgt der Hausregel — eigene erst auf Wunsch', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.75;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(home: KinderzeitSeite(stand: stand, box: eintrag)));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ChoiceChip, 'Lena'));
+    await tester.pumpAndSettle();
+    expect(find.text('Lena folgt der Hausregel'), findsOneWidget);
+    // Vor dem Umbau war die Karte 1072 px hoch — hoeher als der ganze Schirm.
+    expect(
+      tester.getSize(find.byType(Card).first).height,
+      lessThan(tester.view.physicalSize.height / tester.view.devicePixelRatio / 3),
+      reason: 'der Hinweis darf die Woche nicht aus dem Bild schieben',
+    );
+    await tester.tap(find.byKey(const ValueKey('kz-tag-mo')));
+    await tester.pumpAndSettle();
+    expect(find.text('Montag'), findsNothing, reason: 'die Hausregel wird hier nicht still kopiert');
+    await tester.tap(find.text('Eigene Regeln'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Speichern'));
+    await tester.pumpAndSettle();
+    expect(box.kzJe.keys, ['lena']);
+    expect(box.schreibwege, ['KZ lena'], reason: 'die Hausregel wurde nicht angefasst');
+  });
+
+  testWidgets('Kinderzeit an einer Box ohne /satz: nur die Hausregel, keine Kinder zur Wahl', (tester) async {
+    box.ohneSatz = true;
+    await tester.pumpWidget(MaterialApp(home: KinderzeitSeite(stand: stand, box: eintrag)));
+    await tester.pumpAndSettle();
+    expect(find.text('Nur die Hausregel'), findsOneWidget);
+    expect(find.byType(ChoiceChip), findsNothing);
+    expect(find.text('Pause'), findsOneWidget, reason: 'die echte Woche der Box, Sonntag gesperrt');
+  });
+
+  testWidgets('Sicherung: anlegen legt eine .tar.gz ab; zurueckspielen erst nach der Vorschau, dann Neustart', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.75;
+    addTearDown(tester.view.reset);
+    final ablage = _TestAblage();
+    await tester.pumpWidget(MaterialApp(home: SicherungSeite(stand: stand, box: eintrag, ablage: ablage)));
+    await tester.pumpAndSettle();
+    expect(find.text('Jetzt sichern'), findsOneWidget);
+
+    // FERTIG HEISST: abgelegt UND kein Kreisel mehr — die Zwischendatei wird
+    // echt geloescht, und das laeuft nur in `warten` (runAsync).
+    bool ruhig() => find.byType(CircularProgressIndicator).evaluate().isEmpty;
+    await tester.tap(find.text('Jetzt sichern'));
+    await warten(tester, () => ablage.abgelegt.isNotEmpty && ruhig());
+    await tester.pumpAndSettle();
+    expect(ablage.abgelegt.single.$2, 'mupibox-sicherung-kinderzimmer-20260928200000.tar.gz');
+    expect(ablage.arten.single, 'application/gzip', reason: 'eine Sicherung ist kein ZIP');
+
+    ablage.zuWaehlen = File('${Directory.systemTemp.createTempSync('mixpi-wahl-').path}/w.tar.gz')
+      ..writeAsBytesSync([0x1f, 0x8b, 1, 2]);
+    await tester.tap(find.text('Datei wählen …'));
+    await warten(tester, () => find.widgetWithText(FilledButton, 'Zurückspielen').evaluate().isNotEmpty);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('anderen Box'), findsOneWidget, reason: 'die Warnung der Box steht in der Vorschau');
+    expect(box.eingespielt, isEmpty, reason: 'bis hier ist nichts eingespielt');
+    expect(ablage.zuWaehlen!.existsSync(), false, reason: 'die Kopie auf dem Handy ist aufgeraeumt');
+
+    await tester.tap(find.widgetWithText(FilledButton, 'Zurückspielen'));
+    await warten(tester, () => find.text('Zurückgespielt').evaluate().isNotEmpty);
+    await tester.pumpAndSettle();
+    expect(box.eingespielt.single, {'kennung': 'b' * 64, 'mitZugangsdaten': false});
+    expect(find.text('• WLAN-Passwort'), findsOneWidget);
+    await tester.tap(find.text('Jetzt neu starten'));
+    await warten(tester, () => box.schreibwege.contains('NEUSTART'));
+    expect(box.schreibwege, contains('NEUSTART'));
+    await tester.pumpAndSettle();
+
+    // Unten: die Staende, die schon auf der Box liegen — mit Grund in Worten.
+    await tester.scrollUntilVisible(find.textContaining('automatisch'), 200);
+    expect(find.text('Stände auf der Box (1)'), findsOneWidget);
+    await tester.tap(find.byTooltip('Aufs Handy holen'));
+    await warten(tester, () => ablage.abgelegt.length == 2 && ruhig());
+    expect(ablage.abgelegt.last.$2, box.staende.single['name']);
+  });
+}
+
 class _TestAblage extends Ablage {
   final List<(List<int>, String)> abgelegt = [];
   final _ordner = Directory.systemTemp.createTempSync('mixpi-ablage-');
@@ -312,8 +506,20 @@ class _TestAblage extends Ablage {
   @override
   Future<File> zwischenDatei() async => File('${_ordner.path}/z-${abgelegt.length}.part');
 
+  final List<String> arten = [];
+
+  /// Was `waehlen` zurueckgibt — null heisst: abgebrochen.
+  File? zuWaehlen;
+
   @override
-  Future<String> inDownloads(File datei, String name) async {
+  Future<({File datei, String name})?> waehlen() async {
+    final f = zuWaehlen;
+    return f == null ? null : (datei: f, name: 'sicherung.tar.gz');
+  }
+
+  @override
+  Future<String> inDownloads(File datei, String name, {String mime = 'application/zip'}) async {
+    arten.add(mime);
     abgelegt.add((datei.readAsBytesSync(), name));
     await datei.delete();
     return 'Download/MixPiBox/$name';

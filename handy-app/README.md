@@ -21,6 +21,9 @@ Box mit Verwaltungspasswort.
 | **Box → Jetzt** | Cover, Titel, Zurück/−30 s/Play-Pause/+30 s/Weiter, Stopp, Lautstärke (0–100, dieselbe Skala wie `setvolume:`). |
 | **Box → Profile** | Die Kinder der Box, das aktive markiert. Antippen wechselt; ein geschütztes Profil fragt nach seinem Passwort. |
 | **Box → Mediathek** | Was das **aktive** Kind sehen darf (`/api/werke`), mit Suche. Antippen spielt über `POST /api/spielen` — also mit Kinderzeit-Prüfung auf der Box. |
+| **Box → Schloss** (seit 28.09.2026) | Die Box **sperren**: 15 min, 30 min, 1 h, 2 h, bis morgen 7:00 oder bis zu einer Uhrzeit — oder die Sperre aufheben. Solange sie gilt, steht auf „Jetzt" ein roter Streifen und in der Übersicht „Gesperrt bis …". Im Menü der Übersicht: **alle sperren / alle entsperren**. Durchgesetzt wird an der Box (`boxsperre.ts`), nicht in der App. |
+| **Box → ⋮ → Kinderzeit** (seit 28.09.2026) | Die Woche als **kleiner Kalender**: sieben Balken (0–24 Uhr, oben Mitternacht), farbig das erlaubte Fenster, darunter die Hördauer, heute markiert mit einem Strich bei „jetzt". Ein Tipp öffnet den Tag: darf hören, ab, bis, Hördauer; übernehmen für den Tag, Mo–Fr, Sa–So oder alle. Oben die Wahl **Alle Kinder** (Hausregel) oder ein Kind — ein Kind ohne eigene Regeln zeigt, was es von der Hausregel erbt, und bekommt eigene erst nach „Eigene Regeln". Unten „Heute": Stand, +15/+30 min, zurücksetzen. Erst **Speichern** schreibt. |
+| **Box → ⋮ → Sicherung** (seit 28.09.2026) | **Jetzt sichern** legt einen Stand an und speichert ihn unter `Download/MixPiBox` (auf Wunsch mit Zugangsdaten, verschlüsselt mit einem Passwort, das die App nicht merkt). Die Stände auf der Box lassen sich aufs Handy holen. **Datei wählen …** spielt zurück — erst die Vorschau der Box (was sich ändert, Warnungen, z. B. „andere Box"), dann erst nach dem roten Knopf; danach auf Wunsch Neustart. |
 | **Box hinzufügen** | Sucht im WLAN (alle Adressen des eigenen /24-Heimnetzes, Port 8200, `/api/box`; Mobilfunk und VPN werden übersprungen) und zeigt „x von y". Ein Tipp auf einen Fund fügt die Box hinzu. Oder Name/IP von Hand. |
 
 „Profil auf allen Boxen" ordnet über den **Namen** zu, nicht über die Kennung:
@@ -33,13 +36,22 @@ dasselbe Kind kann auf zwei Boxen verschiedene Kennungen haben.
 * **Das Verwaltungspasswort speichern.** Gemerkt wird nur die Sitzung
   (Cookie `mupi_admin`, 12 h, stirbt mit jedem Neustart des Backends). Danach
   fragt die App einmal neu.
-* **Verwalten** (Medien anlegen, WLAN, Updates …). Dafür bleibt die
-  Verwaltung im Browser (`http://<box>:8200/admin`).
+* **Verwalten** jenseits von Medien, Kinderzeit, Sperre und Sicherung (WLAN,
+  Updates, Ton …). Dafür bleibt die Verwaltung im Browser
+  (`http://<box>:8200/admin`).
+* **Eine Sperre ohne Ende.** Jede Sperre endet nach höchstens 24 Stunden von
+  selbst — eine vergessene Sperre soll die Box nicht für das Kind stumm lassen,
+  während das Handy im Büro liegt.
 
 ## Wie sie mit der Box redet
 
-Nur über Schnittstellen, die es schon gibt — die Box braucht **keine
-Änderung**:
+Über die Schnittstellen der Box. Bis auf die **Sperre** (`/api/boxsperre`,
+seit 28.09.2026) gibt es sie alle auch ohne die App; eine Box ohne diesen Weg
+zeigt in der App schlicht kein Schloss-Zeichen in der Übersicht, das Sperren
+meldet dann „braucht ein Update". Eine Box von **vor dem 25.09.2026** kennt
+`/api/kinderzeit/satz` nicht: dann zeigt die Kinderzeit-Seite nur die
+Hausregel (aus `GET /api/kinderzeit`) und keine Kinder — nie eine leere Woche,
+die beim Speichern die echte Regel überschriebe:
 
 | Zweck | Weg |
 |---|---|
@@ -49,6 +61,9 @@ Nur über Schnittstellen, die es schon gibt — die Box braucht **keine
 | Befehle | `GET /player/current/<befehl>`: `play pause stop next previous seek+30 seek-30 +5 -5 setvolume:<n>` |
 | Profile | `GET /api/profile`, `POST /api/profil/aktiv` `{kennung, passwort?}` |
 | Mediathek | `GET /api/werke`, `POST /api/spielen` `{schluessel}` |
+| Sperre | `GET /api/boxsperre` (frei, auch für den Kiosk), `POST /api/boxsperre` `{minuten}` oder `{bis}` (ms), `DELETE /api/boxsperre` |
+| Kinderzeit | `GET /api/kinderzeit/satz`, `PUT`/`DELETE /api/kinderzeit[?profil=]`, `GET /api/kinderzeit/stand[?profil=]`, `POST …/bonus`, `POST …/zuruecksetzen` |
+| Sicherung | `GET /api/sicherung`, `POST …/anlegen` (Antwort: die Bytes), `GET …/stand/<name>`, `POST …/pruefen` (Datei als Rumpf), `POST …/zurueckspielen` `{kennung, mitZugangsdaten, passwort?}` |
 
 **Warum eine native App und keine Web-Seite:** Der Herkunftsriegel der Box
 (`src/backend-api/src/herkunft.ts`) weist Browser-Anfragen einer *fremden*
@@ -113,7 +128,9 @@ lib/
   zustand.dart         alle Boxen, ein Takt (4 s) für alle, Befehle an alle
   speicher.dart        Liste der Boxen (shared_preferences), ohne Passwort
   netzsuche.dart       /24-Suche nach /api/box
-  seiten/              Übersicht, Box (Jetzt/Profile/Mediathek), Box bearbeiten
+  seiten/              Übersicht, Box (Jetzt/Profile/Mediathek), Box bearbeiten,
+                       sperren.dart, kinderzeit_seite.dart (Wochen-Kalender),
+                       sicherung_seite.dart
 test/
   box_client_test.dart gegen eine Attrappe, die Pfade und Fehlerformen von backend-api nachbildet
   zustand_test.dart    Befehl an alle, Profile über alle, Speichern

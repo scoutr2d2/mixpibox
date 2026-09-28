@@ -1860,6 +1860,8 @@
         // „Heute Pause" und nicht „Schluss": An einem gesperrten Wochentag
         // war nie etwas offen, das jetzt zuginge. Das Wort trennt den Tag,
         // an dem nichts vorgesehen ist, von dem, an dem die Zeit um ist.
+        // Die Sperre der Eltern ist auch eine Pause, aber eine mit Ende heute.
+        if (s.grund === 'gesperrt') return { text: s.gesperrtBis ? 'Pause bis ' + s.gesperrtBis : 'Pause', warnen: true }
         return { text: s.grund === 'tagGesperrt' ? 'Heute Pause' : 'Schluss', warnen: true }
       }
       // „noch 0 min" waere die falsche Auskunft: Es ist NICHT null Minuten
@@ -8732,6 +8734,10 @@
     if (g === 'zuFrueh') return u.fensterAb ? `Noch zu früh — ab ${u.fensterAb} geht es los.` : 'Noch zu früh.'
     if (g === 'zuSpaet') return u.fensterBis ? `Feierabend! Heute war bis ${u.fensterBis} Hörzeit.` : 'Feierabend!'
     if (g === 'aufgebraucht') return 'Die Hörzeit für heute ist aufgebraucht.'
+    // DIE SPERRE DER ELTERN (28.09.2026, Handy-App „Box sperren") — kein
+    // „Feierabend": es ist eine Pause, die wieder aufgeht, und die Uhrzeit
+    // sagt, wann.
+    if (g === 'gesperrt') return u.gesperrtBis ? `Die Box macht Pause bis ${u.gesperrtBis}.` : 'Die Box macht gerade Pause.'
     return 'Gerade ist keine Hörzeit.'
   }
 
@@ -35717,6 +35723,93 @@
       if (!a.ok) return
       const d = await a.json()
       wartungsSchirm(d && d.aktiv === true)
+    } catch {
+      /* Zustand halten, siehe oben. */
+    }
+  })
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // BOX-SPERRE DER ELTERN (28.09.2026, Handy-App „Box sperren"): solange sie
+  // gilt, liegt ein Pausen-Schirm ueber allem. DURCHGESETZT wird sie am
+  // Server (boxsperre.ts haengt an `kzStand`, jeder Startweg fragt dort);
+  // dieser Schirm sagt dem Kind nur, WARUM nichts geht und bis wann.
+  //
+  // ANDERS ALS DER WARTUNGSSCHIRM hat er einen Ausgang fuer Eltern AN DER
+  // BOX: den Mond WAPPEN_HALTEN_MS halten -> das Tor des Eltern-Bereichs ->
+  // Sperre aufgehoben. Der Wartungsschirm braucht das nicht (ein Neustart
+  // beendet ihn); diese Sperre uebersteht einen Neustart, und ohne diesen
+  // Weg hinge sie an einem Handy, das vielleicht im Buero liegt. Es ist
+  // DASSELBE Tor wie ueberall (`eltern.auf` mit Tat) — kein zweites, das
+  // beim naechsten Anfassen anders waere. Kein Satz verraet die Geste, aus
+  // demselben Grund wie beim Wappen.
+  //
+  // Solange das Tor offen ist, tritt der Schirm zur Seite (app.css,
+  // `body.eltern-offen`) — sonst laege er ueber der PIN-Eingabe. Starten kann
+  // das Kind in dieser Zeit trotzdem nichts: das entscheidet der Server.
+  //
+  // BEI FEHLERN WIRD DER ZUSTAND GEHALTEN, wie beim Wartungsschirm.
+  const TAKT_BOXSPERRE = 5000
+  const boxSperrSchirm = (() => {
+    let div = null
+    let halt = 0
+    const aufheben = async () => {
+      try {
+        const a = await fetch(API + '/boxsperre', { method: 'DELETE', signal: AbortSignal.timeout(8000) })
+        if (!a.ok) throw new Error(String(a.status))
+        zeigen({ aktiv: false })
+        meldung('Die Sperre ist aufgehoben.')
+      } catch {
+        meldung('Die Box hat die Sperre nicht aufgehoben.')
+      }
+    }
+    const zeigen = (st) => {
+      const an = !!(st && st.aktiv === true)
+      if (!an) {
+        if (div) div.remove()
+        div = null
+        return
+      }
+      if (!div) {
+        div = document.createElement('div')
+        div.id = 'mixpi-boxsperre'
+        div.innerHTML =
+          '<button type="button" class="boxsperre-mond" aria-label="Pause">' +
+          '<svg viewBox="0 0 24 24" width="112" height="112" aria-hidden="true">' +
+          '<path d="M20.5 14.6A8.6 8.6 0 0 1 9.4 3.5a8.6 8.6 0 1 0 11.1 11.1Z" fill="currentColor"/>' +
+          '</svg></button>' +
+          '<p>Die Box macht Pause.</p>' +
+          '<p class="boxsperre-klein"></p>'
+        document.body.appendChild(div)
+        const mond = div.querySelector('.boxsperre-mond')
+        const loslassen = () => {
+          clearTimeout(halt)
+          halt = 0
+          mond.classList.remove('haelt')
+        }
+        mond.addEventListener('pointerdown', () => {
+          loslassen()
+          mond.classList.add('haelt')
+          halt = setTimeout(() => {
+            loslassen()
+            void eltern.auf('', '', () => void aufheben())
+          }, WAPPEN_HALTEN_MS)
+        })
+        for (const e of ['pointerup', 'pointercancel', 'pointerleave']) mond.addEventListener(e, loslassen)
+      }
+      const zeit = String(st.bisZeit || '')
+      div.querySelector('.boxsperre-klein').textContent = zeit
+        ? st.morgen
+          ? `Bis morgen, ${zeit} Uhr.`
+          : `Bis ${zeit} Uhr.`
+        : ''
+    }
+    return zeigen
+  })()
+  sichtbarerTakt(TAKT_BOXSPERRE, async () => {
+    try {
+      const a = await fetch(API + '/boxsperre', { cache: 'no-store', signal: AbortSignal.timeout(4000) })
+      if (!a.ok) return
+      boxSperrSchirm(await a.json())
     } catch {
       /* Zustand halten, siehe oben. */
     }

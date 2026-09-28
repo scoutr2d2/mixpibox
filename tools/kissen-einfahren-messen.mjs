@@ -11,21 +11,67 @@
  * drosselt Chromium Zeitgeber und requestAnimationFrame, solange das Pane
  * verdeckt ist — dort kamen 1 bis 3 Werte statt 30.
  *
- * Voraussetzung: an der Adresse steht `platzBeimBlaettern` an (sonst faehrt
- * nichts ein) — gegen die Vorschau z. B. per PUT /api/darstellung.
+ * OHNE ADRESSE STARTET ES SEINE EIGENE ATTRAPPE (28.09.2026) — so haengt es
+ * in `tools/pruefen.sh`. Bis dahin verlangte es eine URL, an der jemand von
+ * Hand `platzBeimBlaettern` eingeschaltet hatte, und lief darum in keinem
+ * Laeufer: der Wunsch des Betreibers war einmal gemessen und danach
+ * unbewacht. Jetzt: `tools/neu-vorschau.mjs` auf einem freien Port (dasselbe
+ * Muster wie `gestalter-schau.mjs`), `platzBeimBlaettern` per
+ * PUT /api/darstellung an, messen, Attrappe beenden.
+ *
+ * MIT ADRESSE misst es dort — an der Box oder einer fremden Vorschau. Dann
+ * muss `platzBeimBlaettern` dort anstehen (sonst faehrt nichts ein, und das
+ * Werkzeug meldet genau das).
  *
  * AUFRUF
+ *     node tools/kissen-einfahren-messen.mjs                            # eigene Attrappe
  *     node tools/kissen-einfahren-messen.mjs http://127.0.0.1:8392/neu/
  * Ausgabe: je Richtung die Spanne der x-Lage der Pause-Taste; 0 = steht still.
- * Rueckgabe 1, wenn eine Richtung mehr als 2 px wandert.
+ * Rueckgabe 1, wenn eine Richtung mehr als 2 px wandert oder nichts einfaehrt;
+ * ohne Browser auf dem Rechner 0 („uebersprungen"), wie die anderen
+ * Browser-Schritte in pruefen.sh.
  */
+import { spawn } from 'node:child_process'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import WebSocket from 'ws'
-import { eigenerBrowser } from './leihgabe.mjs'
+import { eigenerBrowser, freierPort } from './leihgabe.mjs'
 
-const url = process.argv.find((a) => /^https?:\/\//.test(a))
+const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+
+let url = process.argv.find((a) => /^https?:\/\//.test(a))
+let attrappe = null
+// Ein Kind, das den Elternprozess ueberlebt, hielte den Port — und in
+// pruefen.sh laeuft das naechste Werkzeug schon.
+process.on('exit', () => attrappe?.kill())
 if (!url) {
-  console.error('Aufruf: node tools/kissen-einfahren-messen.mjs URL')
-  process.exit(2)
+  const port = await freierPort()
+  let meldung = ''
+  attrappe = spawn(process.execPath, [path.join(WURZEL, 'tools/neu-vorschau.mjs'), '--port', String(port)], {
+    stdio: ['ignore', 'pipe', 'pipe'],
+  })
+  attrappe.stderr.on('data', (d) => (meldung += d))
+  await new Promise((gut, schlecht) => {
+    const t = setTimeout(() => schlecht(new Error(`Attrappe startet nicht\n${meldung}`)), 15000)
+    attrappe.stdout.on('data', (d) => {
+      if (String(d).includes('Vorschau:')) {
+        clearTimeout(t)
+        gut()
+      }
+    })
+  })
+  const basis = `http://127.0.0.1:${port}`
+  const darstellung = await (await fetch(`${basis}/api/darstellung`)).json()
+  const antwort = await fetch(`${basis}/api/darstellung`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ aktuell: { ...darstellung.aktuell, platzBeimBlaettern: true } }),
+  })
+  if (!antwort.ok) {
+    console.log(`  Attrappe nimmt platzBeimBlaettern nicht an (${antwort.status})`)
+    process.exit(1)
+  }
+  url = `${basis}/neu/`
 }
 const browser = await eigenerBrowser({ fenster: '800,700' })
 if (!browser) {

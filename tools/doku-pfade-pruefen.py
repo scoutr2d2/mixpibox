@@ -520,6 +520,39 @@ AUSNAHMEN_JE_QUELLE = {
         # Punkt, faellt die Ausnahme mit.
         "tools/werkzeug-inventur.py",
         "tools/archiv",
+        # „Aufräumen — das Docker-Abbild …": der ERLEDIGT-Kopf nennt die Wache
+        # als geloescht, der Text darunter ist ausdruecklich der Stand vom
+        # 26.08.2026. Geloescht lokal am 28.09.2026 (Betreiber).
+        "tools/abbild-pfade-pruefen.py",
+    },
+    # 28.09.2026: Der Betreiber hat lokal nachgezogen, was das Cloud-Review vom
+    # 27.09.2026 auf GitHub geloescht hatte (Dockerfile samt Wache, librespot
+    # 0.6.0, die Zeit-Kette). Diese sechs Eintraege ERZAEHLEN diese Dateien —
+    # das Review, die Suche nach den elf ungerufenen Wachen, das Audit, das
+    # die Wache lobte, die Lehre aus dem eingefrorenen Zeit-Auszug und die
+    # zwei, die die Dockerfile-Wache bauten bzw. von ihr abgrenzten. Ihr
+    # Fehlen im Baum ist seit dem Tag der Stand, den die Eintraege meinen.
+    # Die Ausgabe nennt je totem Pfad nur die ersten DREI Quellen — wer hier
+    # nachtraegt, sucht die uebrigen im Paket, nicht in der Meldung.
+    "llmwiki:bauanleitung-ist-eine-vierte-sorte-datei": {
+        "tools/abbild-pfade-pruefen.py",
+    },
+    "llmwiki:entwicklerabbild-ist-die-siebte-sorte-datei": {
+        "tools/abbild-pfade-pruefen.py",
+    },
+    "llmwiki:projekt-review-2026-09-27-fehler-und-aufraeumen": {
+        "bin/librespot/0.6.0",
+        "tools/zeitfns-auszug.js",
+    },
+    "llmwiki:elf-ungerufene-wachen-einzeln-abgetragen": {
+        "bin/librespot/0.6.0",
+        "bin/librespot/0.6.0/librespot-64bit",
+    },
+    "llmwiki:audit-2026-08-28-kritiker": {
+        "tools/abbild-pfade-pruefen.py",
+    },
+    "llmwiki:klammerzaehler-liest-kommentare-mit": {
+        "tools/zeit-auszug.py",
     },
 }
 

@@ -23,7 +23,7 @@
 > | `AdminInterface/` als lebende PHP-Komponente (Z. 49) | **null** versionierte Dateien darunter, **null** `.php` im ganzen Baum — abgelöst durch `src/frontend-admin` |
 > | `backend-player` „Plain JS, CommonJS, no types, no tests" (Z. 48) | 20 `.ts`, **null** `.js`, Testdatei neben jedem Modul |
 > | „~61 shell + ~22 python" (Z. 50) | 69 Shell + 35 Python in `scripts/` + `autosetup/` |
-> | „`Dockerfile`/`.devcontainer` already assemble a working box container" (§5) | die Wurzel-`Dockerfile` **baut seit 22 Monaten nicht** — zwei `cp`-Quellen wurden am 23.10.2024 verschoben (`tools/abbild-pfade-pruefen.py`) |
+> | „`Dockerfile`/`.devcontainer` already assemble a working box container" (§5) | die Wurzel-`Dockerfile` **baut seit 22 Monaten nicht** — zwei `cp`-Quellen wurden am 23.10.2024 verschoben; seit dem 28.09.2026 gibt es sie gar nicht mehr, der Container-Weg ist `harness/` |
 >
 > Die letzte Zeile ist die teure: §5 ist das Kapitel, das einem Leser sagt,
 > Tier A laufe „einfach über den Dockerfile" — und genau das ist der eine Weg,
@@ -245,9 +245,10 @@ x86-64. The bundled `librespot-64bit`/`fbv_64` binaries and the existing
 `Dockerfile`/`.devcontainer` already assemble a working box container.
 **Stimmt seit dem 23.10.2024 nicht** (gemessen 26.08.2026): die Wurzel-`Dockerfile`
 bricht ab, weil zwei `RUN cp`-Quellen beim Arbeitsbereichs-Umbau `5f5ea724`
-umgezogen sind — `tools/abbild-pfade-pruefen.py` weist beide nach. Tier A läuft
-heute nativ per npm-Skripten; wer den Container-Weg will, repariert zuerst die
-zwei Pfade. `.devcontainer/` provisioniert weiterhin PHP 8.3 + Composer + die
+umgezogen sind — die damalige Wache `abbild-pfade-pruefen.py` wies beide nach.
+Repariert wurde sie nie: seit dem 28.09.2026 sind Wurzel-`Dockerfile`, `docker/`
+und diese Wache gelöscht. Tier A läuft nativ per npm-Skripten oder über
+`harness/`. `.devcontainer/` provisioniert weiterhin PHP 8.3 + Composer + die
 PHP-Erweiterung für einen Baum mit **null** `.php`-Dateien — seit dem 27.08.2026
 nachgemessen von `tools/entwicklerabbild-pruefen.py` (BACKLOG A4b), das dort auch
 jede `COPY`-Quelle gegen den Bau-Kontext hält. Dass er **baut**, stand hier einen
@@ -268,7 +269,8 @@ real credentials. The HAT is a tiny fake process writing a varying
 siehe [`harness/README.md`](harness/README.md)) oder direkt `npm run
 serve:backend-api` / `serve:backend-player` / `serve:frontend-box` — die drei
 gibt es in der Wurzel-`package.json`. **Nicht** über die Wurzel-`Dockerfile`:
-sie baut seit dem 23.10.2024 nicht (zwölf Zeilen weiter oben belegt). Und
+sie baute seit dem 23.10.2024 nicht und ist seit dem 28.09.2026 gelöscht
+(zwölf Zeilen weiter oben). Und
 `php -S for admin` führt ins Leere — der PHP-Admin ist mit E47 ausgebaut, das
 `admin`-Profil des harness mountet ein `../AdminInterface/www`, das es nicht
 mehr gibt (`AUDIT-2026-08-25.md` §10).

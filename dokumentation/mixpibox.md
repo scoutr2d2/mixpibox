@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1136 Einträge,
-Fassung 638). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1152 Einträge,
+Fassung 654). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -1211,7 +1211,9 @@ jemand `/tmp` aufräumt.
 | `GET/PUT /api/kinderzeit` | die Regeln. **Mit `?profil=<kennung>` je Kind** (`RegelSatz.je`, seit 02.08.2026), ohne den Anhang der `standard`-Satz (die Hausregel); `regelnFuer` nimmt beim Stand den eigenen Satz, sonst `standard`. Die Antwort mit `?profil=` sagt **nicht**, ob die Regel eigen oder geerbt ist — dafür gibt es `/satz` |
 | `GET /api/kinderzeit/satz` | der **ganze** Regelsatz `{standard, je}` (seit 25.09.2026). Daraus liest die Profilseite der Verwaltung, ob das gewählte Kind eigene Regeln hat, und bearbeitet genau das, was für es gilt |
 | `DELETE /api/kinderzeit?profil=<kennung>` | eigene Regeln eines Kindes verwerfen — danach gilt die Hausregel (seit 25.09.2026; vorher verschwand ein `je`-Eintrag nur mit dem Kind). Ohne `?profil=` ein 400 `hausregelBleibt` |
-| `GET /api/kinderzeit/stand`, `POST /api/kinderzeit/bonus`, `POST /api/kinderzeit/zuruecksetzen` | Konto, geschenkte Minuten und Tages-Reset — **immer je Kind** (`?profil=`, ohne Anhang das aktive Profil) |
+| `GET /api/kinderzeit/stand`, `POST /api/kinderzeit/bonus`, `POST /api/kinderzeit/zuruecksetzen` | Konto, geschenkte Minuten und Tages-Reset — **immer je Kind** (`?profil=`, ohne Anhang das aktive Profil). Unter einer Box-Sperre: `grund: 'gesperrt'` und `gesperrtBis` („HH:MM"), auch wenn die Kinderzeit selbst aus ist |
+| `GET /api/boxsperre` | die **Sperre der Eltern** (seit 28.09.2026, `boxsperre.ts`): `{aktiv, bis, bisZeit, morgen, restMin, seit}`. Steht **vor** dem Anmelde-Tor wie `GET /api/wartung` — der Kiosk fragt im 5-s-Takt und zeigt dann den Pausen-Schirm |
+| `POST /api/boxsperre`, `DELETE /api/boxsperre` | sperren (`{minuten}` oder `{bis}` in ms, **höchstens 24 h** — eine Sperre ohne Ende gibt es nicht) und aufheben; hinter dem Tor. Die Sperre hängt an `kzStand`, also an **jedem** Startweg (Proxy, `/api/spielen`, Plugins), dazu an `/api/video/start`; laufende Wiedergabe hält sofort an, Anhalten und Lautstärke gehen weiter. An der Box hebt sie der Mond auf dem Pausen-Schirm auf (1,2 s halten, dann die Eltern-Sperre) |
 
 **Belohnungs-Videos aus der Mediathek** (`videofreigabe.ts` + `plugins/mixpi-mediathek`, seit 20.09.2026)
 
@@ -1535,6 +1537,7 @@ gegen die Liste.
 | `hintergruende/` | Hintergrundbilder der Themen (Gestalter, E144), Name = Inhalts-Hash. Fehlt eines, zeigt die Box den Farbsatz |
 | `darstellung.json` | die **Themen** (Farbsätze — die gehören der Box, ein Kind das eines baut teilt es) und `aktuell` als **Rückfall** für Profile ohne eigene Wahl. Steht **auch** je Kind (siehe unten), und zwar als einzige Ablage in beiden Tabellen zugleich: sie ist die einzige, die beim Start **nicht** umzieht (`OHNE_UMZUG` in `server.ts`, begründet in `profile.ts`). Wer diese Datei für überflüssig hält, weil „alles je Kind liegt", nimmt allen Kindern die Paletten |
 | `kinderzeit.json` | der **Regelsatz**, `{standard, je}` — die Hausregel und, unter `je.<kennung>`, die Ausnahme eines einzelnen Kindes (seit 02.08.2026, `regelnFuer()`). **Nicht** die Zeitkonten: die liegen je Kind in `kinderzeit-verbrauch.json`. Box-weit mit Absicht — je Bereich abgelegt fände `regelnFuer()` die Hausregel nicht mehr (`profile.ts`, `BEREICH_ABLAGEN`) |
+| `mixpi-boxsperre.json` | die **Box-Sperre** der Eltern, `{bis, seit}` in ms (seit 28.09.2026). Übersteht einen Neustart — anders als der Wartungsmodus in `/tmp`. Eine abgelaufene oder kaputte Datei heißt „nicht gesperrt" (`sperreNormalisieren`), sie darf kein Kind aussperren |
 | `plugin-einstellungen.json` | Adresse, Benutzer und Passwort je Plugin (geheime Felder streicht `GEHEIM`) |
 | `plugin-daten/<kennung>/` | der Zustand eines Plugins. Der Wirt legt den Ordner an (`plugin-wirt.ts`, `datenWurzel`) und reicht ihn als `kontext.datenOrdner` — wer sich einen eigenen Pfad ausdenkt, ist nicht gesichert |
 | `klang.json` | Equalizer, Versatz je Bluetooth-Box, Überall-Auswahl, Deckel je Ausgabe |
@@ -2064,11 +2067,16 @@ tools/pruefen.sh             # + Typen + alle Baue      ← vor jedem Ausliefern
 tools/pruefen.sh --box       # + mupi-check auf dem Gerät
 ```
 
-138 Schritte laufen immer, 7 weitere nur mit `--box` bzw. am echten Gerät
+146 Schritte laufen immer, 7 weitere nur mit `--box` bzw. am echten Gerät
 (Umzug am echten Bestand, Vorlesen, die drei E2E-Läufe, `mupi-check` und seit
-09.09.2026 die Cover-gegen-Rückfallbild-Probe) — 145
-insgesamt (Stand 19.09.2026, nachgezählt gegen `tools/pruefen.sh` bei
-b6fe1f5b; seit 31.08.2026 zusätzlich die Wache „Fassungsvergleich-Deckung"
+09.09.2026 die Cover-gegen-Rückfallbild-Probe) — 153
+insgesamt (Stand 28.09.2026, nachgezählt mit `tools/leitplanken-zahl-pruefen.py`;
+am 28.09.2026 kam der Schritt „Tests des Installers" dazu, siehe 7.3, und
+zwei Wachen, die in keinem Läufer hingen: „Kissen steht beim Einfahren" und
+„Quellen der Dockerfile" (llmwiki
+`elf-ungerufene-wachen-einzeln-abgetragen`) — die zweite ging am selben Tag
+wieder, mit der Dockerfile, die sie bewachte (siehe 7.4);
+seit 31.08.2026 zusätzlich die Wache „Fassungsvergleich-Deckung"
 (`tools/mixpi-fassungsvergleich-deckung.py`, llmwiki
 `dieselbe-regel-an-zwei-orten-braucht-eine-wache-quer-dazu`), die Probe „Zieher im Sandkasten"
 (`tools/mixpi-zieher-probe.py`, siehe 7.7.7), die Wache „Fremdbezug" und die Wache
@@ -2140,11 +2148,26 @@ src/frontend-admin   27 Testdateien
 src/backend-player   15 Testdateien
 NewDesign/           33 Verhaltenstests (tools/e2e/neu-oberflaeche.test.mjs)
 remote-step-installer  27 Testdateien für die Einrichtung (tests/*_test.py)
+                       + 3 Rauchtests (tests/*_smoke.py) — alle 30 fährt
+                       tools/installer-tests.py, jede Datei einzeln
 ```
 
 `src/frontend-box` fiel von 40 auf 1, weil die Angular/Ionic-Oberfläche mit
 E118/1e (05.09.2026) **gelöscht** wurde — übrig ist ein Modul samt Spec, das
 zum Zeitpunkt der Löschung in einer Parallelsitzung in Arbeit war.
+
+**Die Tests des Installers liefen bis zum 28.09.2026 in keinem Läufer.**
+Weder `tools/pruefen.sh` noch `tools/doku-luecken-probe.sh` noch die CI riefen
+sie; `tools/ungerufene-wachen.py` las nur `tools/` und sah sie nicht. So blieben
+drei davon (bootwache, pythonpaket, touchbridge) nach dem Zwillings-Angleich
+vom 29.08. einen Monat lang rot. Seitdem fährt `tools/installer-tests.py` jede
+Datei einzeln (Schritt „Tests des Installers" in `pruefen.sh`, rund 90 s). Die
+Menge steht dort als Muster `SAMMELRUF`, nicht als Namensliste — eine neue
+Testdatei läuft von selbst mit, und die Wache über den Wachen liest dasselbe
+Muster. Die drei roten stehen mit Grund in der BEKANNT-Liste des Werkzeugs und
+werden trotzdem gefahren: wird einer grün, bricht der Schritt mit „austragen".
+Drei TUI-Tests brauchen `textual`; fehlt es, meldet das Werkzeug sie als
+„nicht gemessen" statt als rot und nennt `remote-step-installer/setup-controller.sh --venv`.
 
 Diese Zahlen stehen **nicht** zum Nachpflegen von Hand da:
 `tools/readme-behauptungen-pruefen.sh` misst sie (Abschnitt 3b) und meldet,
@@ -2261,8 +2284,8 @@ werden als Muster aufgelöst, ein Muster ohne Treffer zählt als Loch.
 Abhängigkeiten streichen — ist eine Änderung am Bau, nicht an der Doku, und
 steht im `BACKLOG.md`.
 
-**Das Docker-Abbild aus dem Ursprungsprojekt gibt es nicht mehr** (gelöscht
-27.09.2026). `npm run docker:build` brach seit dem Arbeitsbereichs-Umbau vom
+**Das Docker-Abbild aus dem Ursprungsprojekt gibt es nicht mehr** (auf GitHub
+gelöscht 27.09.2026, lokal 28.09.2026). `npm run docker:build` brach seit dem Arbeitsbereichs-Umbau vom
 23.10.2024 am ersten `cp` ab — die Wurzel-`Dockerfile` kopierte zwei Dateien,
 die dieser Umbau verschoben hatte, und `src/` legte sie gar nicht ins Abbild.
 Statt sie zu reparieren sind `Dockerfile`, `docker/`, die beiden
@@ -2463,6 +2486,7 @@ Dazu das eine **Geheimnis**:
 | `MUPIBOX_SICHERUNG_STAENDE` | `/home/dietpi/.mupibox/sicherungen` |
 | `MUPIBOX_SICHERUNG_VORSPANN` | leer — Wörter, die dem Sicherungsaufruf vorangestellt werden (z. B. ein `sudo`) |
 | `MUPIBOX_VORLESE_CACHE` | `/home/dietpi/.mupibox/vorlesen-cache` |
+| `MUPIBOX_SPRECH_SPEICHER` | `/home/dietpi/.mupibox/sprech-speicher` — was Plugins mit dem Recht `sprechen` vorlesen lassen: die Aufträge (`.json`) und die fertig gesprochenen Texte (`.wav`, Deckel 200 MB). Getrennt vom Vorlese-Speicher, weil ein Artikel 5–10 MB wiegt und dort die Kachelansagen verdrängte (`src/backend-api/src/sprechstrom.ts`) |
 | `MIXPI_WARTUNG_DATEI` | `/tmp/.mixpi-wartung` — der Zustand des Wartungsmodus. Liegt **absichtlich unter `/tmp`**: ein Neustart beendet die Wartung, ein vergessener Modus kann die Box nicht dauerhaft sperren. Wer die Variable auf einen dauerhaften Ort zeigen lässt, kippt genau diese Sicherung um |
 | `BOXNUTZER` | `dietpi` — **wem die Sitzungsdienste gehören** (`chromium-autostart.sh`). Gelesen wird daraus die uid, und daraus der Weg zum Ton: `PULSE_SERVER=unix:/run/user/<uid>/pulse/native`. Ohne diesen Export hat der Kiosk-Browser **gar keine Tonausgabe** — er läuft als root, PipeWire gehört `dietpi`, und unter `/run/user/0/` steht nichts (llmwiki `kiosk-browser-hatte-nie-ton`, 20.09.2026). Ohne `MUPIBOX_`-Präfix, weil die Datei aus der DietPi-Kette stammt und deren Schreibweise behält |
 
@@ -3229,18 +3253,12 @@ gegen den Baum; was davon wie abgetragen wird, steht in `BACKLOG.md`, E143.
   (Netz da → DietPi macht weiter; kein Netz → eigenes WLAN „MixPi Start",
   Agent und Schirm), die Seite fürs Handy übergibt das WLAN, und der Selbstlauf
   fährt das Rezept. Am Pi 5 durchgespielt, am Pi 4 nicht. **Offen ist, was
-  danach bleibt** (E143/8–10): der Zweig „kein Netz" im Vorstart fragt die
+  danach bleibt** (E143/8 und /10; /9, hostapd und dnsmasq, ist seit dem
+  28.09.2026 aus Rezept und `einrichtung-ap.py` entfernt): der Zweig „kein Netz" im Vorstart fragt die
   `fertig`-Marke nicht — eine fertige Box, die ohne Router startet, öffnet nach
   45 s wieder das Einrichtungs-WLAN —, und `step-agent.service` lauscht nach
   dem Selbstlauf weiter als root auf 0.0.0.0 (der Pair-Deckel aus 5.2 hält,
   gewollt ist es trotzdem nicht).
-* **`hostapd` und `dnsmasq` braucht der AP nicht mehr** — er läuft über
-  `wpa_supplicant` im Modus 2 und `kleiner-dhcp.py` (llmwiki
-  `ap-ohne-hostapd-wpa-mode2`); das Hühnerei-Problem, das hier bis zum
-  25.09.2026 stand, ist damit seit dem 08.08. gelöst. Die Kehrseite: das Rezept
-  installiert beide trotzdem (und maskiert sie), und `weg_waehlen()` bevorzugt
-  hostapd, sobald es da ist — mit dem Übergang, den `wechsel_aus_ap()` über
-  `wpa_cli` macht, passt das nicht zusammen (E143/9).
 * **Die neue Verwaltung** hat Zeugen für 8 ihrer 28 Seiten direkt, für 6
   weitere über Dienst oder Helfer; 14 sind ungetestet (gezählt 25.09.2026). In
   der CI laufen die Karma-Tests nicht.

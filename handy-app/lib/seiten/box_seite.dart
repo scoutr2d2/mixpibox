@@ -10,8 +10,11 @@ import '../zustand.dart';
 import 'box_bearbeiten.dart';
 import 'dialoge.dart';
 import 'figur.dart';
+import 'kinderzeit_seite.dart';
 import 'koppeln.dart';
 import 'medien_seite.dart';
+import 'sicherung_seite.dart';
+import 'sperren.dart';
 
 /// Eine Box im Einzelnen: Jetzt · Profile · Mediathek.
 class BoxSeite extends StatefulWidget {
@@ -84,6 +87,20 @@ class _BoxSeiteState extends State<BoxSeite> {
         appBar: AppBar(
           title: Text(widget.box.name),
           actions: [
+            // DAS SCHLOSS STEHT OBEN, nicht im Menue: „jetzt ist Pause" ist
+            // der eine Griff, der schnell gehen muss (28.09.2026).
+            ListenableBuilder(
+              listenable: widget.stand,
+              builder: (context, _) {
+                final zu = widget.stand.lage(widget.box.id).gesperrt;
+                return IconButton(
+                  icon: Icon(zu ? Icons.lock : Icons.lock_outline),
+                  color: zu ? Theme.of(context).colorScheme.error : null,
+                  tooltip: zu ? 'Gesperrt — ändern' : 'Box sperren',
+                  onPressed: () => sperrenAblauf(context, widget.stand, widget.box),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.library_add),
               tooltip: 'Medien verwalten',
@@ -92,13 +109,32 @@ class _BoxSeiteState extends State<BoxSeite> {
                 MaterialPageRoute(builder: (_) => MedienSeite(stand: widget.stand, box: widget.box)),
               ),
             ),
-            IconButton(
-              icon: const Icon(Icons.settings),
-              tooltip: 'Box bearbeiten',
-              onPressed: () => Navigator.push(
+            PopupMenuButton<String>(
+              tooltip: 'Mehr',
+              onSelected: (w) => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => BoxBearbeitenSeite(stand: widget.stand, box: widget.box)),
+                MaterialPageRoute(
+                  builder: (_) => switch (w) {
+                    'kinderzeit' => KinderzeitSeite(stand: widget.stand, box: widget.box),
+                    'sicherung' => SicherungSeite(stand: widget.stand, box: widget.box, ablage: widget.ablage),
+                    _ => BoxBearbeitenSeite(stand: widget.stand, box: widget.box),
+                  },
+                ),
               ),
+              itemBuilder: (_) => const [
+                PopupMenuItem(
+                  value: 'kinderzeit',
+                  child: ListTile(leading: Icon(Icons.hourglass_bottom), title: Text('Kinderzeit')),
+                ),
+                PopupMenuItem(
+                  value: 'sicherung',
+                  child: ListTile(leading: Icon(Icons.backup_outlined), title: Text('Sicherung')),
+                ),
+                PopupMenuItem(
+                  value: 'bearbeiten',
+                  child: ListTile(leading: Icon(Icons.settings), title: Text('Box bearbeiten')),
+                ),
+              ],
             ),
           ],
           bottom: const TabBar(
@@ -178,7 +214,13 @@ class _JetztTabState extends State<_JetztTab> {
                 : const _CoverLeer(),
           ),
         );
+        final sperre = lage.sperre;
         final steuerung = <Widget>[
+            if (sperre != null && sperre.aktiv)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: SperrStreifen(sperre: sperre, aendern: () => sperrenAblauf(context, s.widget.stand, s.widget.box)),
+              ),
             Text(
               w.spielt ? (w.titel.isEmpty ? '—' : w.titel) : 'Es spielt gerade nichts.',
               style: Theme.of(context).textTheme.titleLarge,

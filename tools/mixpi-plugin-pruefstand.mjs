@@ -32,7 +32,7 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { einstellungenNormalisieren, manifestPruefen } from '../src/backend-api/src/plugin-vertrag'
+import { einstellungenNormalisieren, httpAntwortPruefen, manifestPruefen } from '../src/backend-api/src/plugin-vertrag'
 
 const HIER = path.dirname(fileURLToPath(import.meta.url))
 const argv = process.argv.slice(2)
@@ -141,10 +141,14 @@ if (manifest) {
       // Pfad, und das Plugin meldete voellig zu Recht 404.
       const [reinerPfad, query] = httpPfad.split('?', 2)
       const abfrage = Object.fromEntries(new URLSearchParams(query ?? ''))
-      const antwort = await plugin.http({ methode: 'GET', pfad: reinerPfad, abfrage, rumpf: null }, kontext)
-      const status = antwort?.status ?? 200
-      sagen(status >= 200 && status < 500 && antwort && 'inhalt' in antwort, `http(${httpPfad})`,
-        `Status ${status}, ${JSON.stringify(antwort?.inhalt).slice(0, 160)}`)
+      // DIE REGEL DES WIRTS, nicht eine eigene: hier stand „200-499", und
+      // damit hiess der Pruefstand eine 302 gut, die die Box abweist. Gezeigt
+      // wird, was die VERWALTUNG bekaeme — bei einem 502 also der Grund, den
+      // das Plugin nannte, oder der Satz, durch den der Wirt ihn ersetzt.
+      const roh = await plugin.http({ methode: 'GET', pfad: reinerPfad, abfrage, rumpf: null }, kontext)
+      const antwort = httpAntwortPruefen(JSON.parse(JSON.stringify(roh ?? null)))
+      sagen(Boolean(roh && 'inhalt' in roh) && antwort.status < 500, `http(${httpPfad})`,
+        `Status ${antwort.status}, ${JSON.stringify(antwort.inhalt).slice(0, 160)}`)
     }
     const rest = wert('--aufloesen')
     if (rest && kann.includes('aufloesen')) {

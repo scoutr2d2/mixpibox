@@ -309,3 +309,355 @@ class ProfilAuswahl {
     werke: {for (final w in (j['werke'] as List? ?? const [])) '$w'},
   );
 }
+
+// ── Box-Sperre (28.09.2026) ─────────────────────────────────────────────
+
+/// Die Sperre der Eltern (`GET /api/boxsperre`, boxsperre.ts): solange sie
+/// gilt, startet die Box nichts, und der Kinderschirm zeigt „Die Box macht
+/// Pause". Sie hat IMMER ein Ende (hoechstens 24 h).
+class SperrStand {
+  const SperrStand({this.aktiv = false, this.bis, this.bisZeit = '', this.morgen = false, this.restMin = 0});
+
+  final bool aktiv;
+  final DateTime? bis;
+
+  /// „HH:MM" in der Ortszeit der Box.
+  final String bisZeit;
+
+  /// Endet sie erst morgen?
+  final bool morgen;
+  final int restMin;
+
+  /// „bis 19:30" / „bis morgen 07:00".
+  String get bisText => bisZeit.isEmpty ? '' : (morgen ? 'bis morgen $bisZeit' : 'bis $bisZeit');
+
+  /// `null`: die Antwort ist keine Sperr-Auskunft — eine aeltere Box ohne den
+  /// Weg leitet auf ihre Startseite um und liefert HTML.
+  static SperrStand? ausJson(Object? j) {
+    if (j is! Map || j['aktiv'] is! bool) return null;
+    final bis = j['bis'];
+    return SperrStand(
+      aktiv: j['aktiv'] == true,
+      bis: bis is num ? DateTime.fromMillisecondsSinceEpoch(bis.toInt()) : null,
+      bisZeit: _text(j['bisZeit']),
+      morgen: j['morgen'] == true,
+      restMin: _zahl(j['restMin']),
+    );
+  }
+}
+
+// ── Kinderzeit (28.09.2026) ─────────────────────────────────────────────
+//
+// DIESELBEN FORMEN WIE src/backend-api/src/kinderzeit.ts — die Box biegt
+// alles Unlesbare ohnehin auf die freundliche Seite (`regelnNormalisieren`),
+// die App schickt trotzdem nur, was sie selbst gelesen hat.
+
+/// Die Wochentage in der Reihenfolge des Kalenders (Montag zuerst) — die Box
+/// fuehrt sie als `so`…`sa` (Date.getDay()).
+const kzTage = ['mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'];
+const kzTagNamen = {'mo': 'Mo', 'di': 'Di', 'mi': 'Mi', 'do': 'Do', 'fr': 'Fr', 'sa': 'Sa', 'so': 'So'};
+const kzTagNamenLang = {
+  'mo': 'Montag',
+  'di': 'Dienstag',
+  'mi': 'Mittwoch',
+  'do': 'Donnerstag',
+  'fr': 'Freitag',
+  'sa': 'Samstag',
+  'so': 'Sonntag',
+};
+
+/// Der Schluessel des Wochentags von [d] (`DateTime.weekday`: 1 = Montag).
+String kzTagVon(DateTime d) => kzTage[d.weekday - 1];
+
+/// „HH:MM" → Minuten seit Mitternacht; null bei leer oder Unsinn.
+int? kzMinuten(String hhmm) {
+  final m = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(hhmm.trim());
+  if (m == null) return null;
+  final h = int.parse(m.group(1)!);
+  final min = int.parse(m.group(2)!);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+String kzZeit(int minuten) => '${(minuten ~/ 60).toString().padLeft(2, '0')}:${(minuten % 60).toString().padLeft(2, '0')}';
+
+class TagesRegel {
+  const TagesRegel({this.frei = true, this.ab = '', this.bis = '', this.minuten = 0});
+
+  /// Darf an diesem Tag ueberhaupt gehoert werden?
+  final bool frei;
+
+  /// „HH:MM" oder leer (keine Grenze).
+  final String ab;
+  final String bis;
+
+  /// Hoerdauer; 0 = unbegrenzt (das Fenster gilt trotzdem).
+  final int minuten;
+
+  TagesRegel mit({bool? frei, String? ab, String? bis, int? minuten}) =>
+      TagesRegel(frei: frei ?? this.frei, ab: ab ?? this.ab, bis: bis ?? this.bis, minuten: minuten ?? this.minuten);
+
+  Map<String, dynamic> alsJson() => {'frei': frei, 'ab': ab, 'bis': bis, 'minuten': minuten};
+
+  factory TagesRegel.ausJson(Object? j) {
+    if (j is! Map) return const TagesRegel();
+    return TagesRegel(
+      frei: j['frei'] != false,
+      ab: kzMinuten(_text(j['ab'])) == null ? '' : _text(j['ab']).trim(),
+      bis: kzMinuten(_text(j['bis'])) == null ? '' : _text(j['bis']).trim(),
+      minuten: _zahl(j['minuten']).clamp(0, 24 * 60),
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is TagesRegel && other.frei == frei && other.ab == ab && other.bis == bis && other.minuten == minuten;
+
+  @override
+  int get hashCode => Object.hash(frei, ab, bis, minuten);
+}
+
+class KzRegeln {
+  const KzRegeln({this.aktiv = false, this.nachsichtMin = 5, this.tage = const {}});
+
+  final bool aktiv;
+  final int nachsichtMin;
+  final Map<String, TagesRegel> tage;
+
+  TagesRegel tag(String t) => tage[t] ?? const TagesRegel();
+
+  KzRegeln mit({bool? aktiv, int? nachsichtMin, Map<String, TagesRegel>? tage}) =>
+      KzRegeln(aktiv: aktiv ?? this.aktiv, nachsichtMin: nachsichtMin ?? this.nachsichtMin, tage: tage ?? this.tage);
+
+  KzRegeln tagSetzen(String t, TagesRegel r) => mit(tage: {...tage, t: r});
+
+  Map<String, dynamic> alsJson() => {
+    'aktiv': aktiv,
+    'nachsichtMin': nachsichtMin,
+    'tage': {for (final t in kzTage) t: tag(t).alsJson()},
+  };
+
+  factory KzRegeln.ausJson(Object? j) {
+    if (j is! Map) return const KzRegeln();
+    final tage = j['tage'] is Map ? j['tage'] as Map : const {};
+    final n = _zahl(j['nachsichtMin']);
+    return KzRegeln(
+      aktiv: j['aktiv'] == true,
+      nachsichtMin: j['nachsichtMin'] == null ? 5 : n.clamp(0, 60),
+      tage: {for (final t in kzTage) t: TagesRegel.ausJson(tage[t])},
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is KzRegeln &&
+      other.aktiv == aktiv &&
+      other.nachsichtMin == nachsichtMin &&
+      kzTage.every((t) => other.tag(t) == tag(t));
+
+  @override
+  int get hashCode => Object.hash(aktiv, nachsichtMin, Object.hashAll(kzTage.map(tag)));
+}
+
+/// Hausregel und Ausnahmen je Kind (`GET /api/kinderzeit/satz`).
+class KzSatz {
+  const KzSatz({required this.standard, required this.je, this.vollstaendig = true});
+  final KzRegeln standard;
+  final Map<String, KzRegeln> je;
+
+  /// false: eine Box von vor dem 25.09.2026 ohne `/satz` — dann ist nur die
+  /// Hausregel bekannt, und ob ein Kind eigene Regeln hat, weiss die App
+  /// NICHT. Sie bietet die Kinder dann gar nicht erst an.
+  final bool vollstaendig;
+
+  factory KzSatz.ausJson(Object? j) {
+    final m = j is Map ? j : const {};
+    final je = m['je'] is Map ? m['je'] as Map : const {};
+    return KzSatz(
+      standard: KzRegeln.ausJson(m['standard']),
+      je: {for (final e in je.entries) '${e.key}': KzRegeln.ausJson(e.value)},
+    );
+  }
+}
+
+/// Was die Box JETZT sagt (`GET /api/kinderzeit/stand`).
+class KzStand {
+  const KzStand({
+    this.erlaubt = true,
+    this.grund = 'aus',
+    this.restMin,
+    this.fensterAb = '',
+    this.fensterBis = '',
+    this.aktiv = false,
+    this.verbrauchtMin = 0,
+    this.bonusMin = 0,
+    this.gesperrtBis = '',
+  });
+
+  final bool erlaubt;
+
+  /// aus | frei | tagGesperrt | zuFrueh | zuSpaet | aufgebraucht | gesperrt
+  final String grund;
+
+  /// null = unbegrenzt.
+  final int? restMin;
+  final String fensterAb;
+  final String fensterBis;
+  final bool aktiv;
+  final int verbrauchtMin;
+  final int bonusMin;
+  final String gesperrtBis;
+
+  /// Derselbe Sachverhalt in Worten — nah an dem, was Verwaltung und
+  /// Kinderschirm sagen (kinderzeit.ts `standText`, app.js `kinderzeitText`).
+  String get text => switch (grund) {
+    'aus' => 'Kinderzeit aus',
+    'frei' => fensterBis.isEmpty ? 'darf hören' : 'darf hören (bis $fensterBis)',
+    'tagGesperrt' => 'heute Hörpause',
+    'zuFrueh' => fensterAb.isEmpty ? 'noch zu früh' : 'noch zu früh (ab $fensterAb)',
+    'zuSpaet' => fensterBis.isEmpty ? 'Feierabend' : 'Feierabend (war bis $fensterBis)',
+    'aufgebraucht' => 'Zeit für heute aufgebraucht',
+    'gesperrt' => gesperrtBis.isEmpty ? 'Box gesperrt' : 'Box gesperrt (bis $gesperrtBis)',
+    _ => grund,
+  };
+
+  factory KzStand.ausJson(Object? j) {
+    if (j is! Map) return const KzStand();
+    return KzStand(
+      erlaubt: j['erlaubt'] != false,
+      grund: _text(j['grund']).isEmpty ? 'aus' : _text(j['grund']),
+      restMin: j['restMin'] is num ? (j['restMin'] as num).toInt() : null,
+      fensterAb: _text(j['fensterAb']),
+      fensterBis: _text(j['fensterBis']),
+      aktiv: j['aktiv'] == true,
+      verbrauchtMin: _zahl(j['verbrauchtMin']),
+      bonusMin: _zahl(j['bonusMin']),
+      gesperrtBis: _text(j['gesperrtBis']),
+    );
+  }
+}
+
+// ── Sicherung (28.09.2026) ──────────────────────────────────────────────
+
+/// Ein Stand, der auf der Box liegt (`GET /api/sicherung`, `staende`).
+class SicherungsStand {
+  const SicherungsStand({
+    required this.name,
+    this.erzeugt,
+    this.grund = '',
+    this.dateien = 0,
+    this.zugangsdaten = 0,
+    this.bytes = 0,
+    this.fehler = '',
+  });
+
+  /// Dateiname auf der Box — der Schluessel fuer `/api/sicherung/stand/<name>`.
+  final String name;
+  final DateTime? erzeugt;
+
+  /// Wer ihn anlegte: verwaltung, zeitgeber, vor-auslieferung, vorher …
+  final String grund;
+  final int dateien;
+
+  /// Wie viele Zugangsdaten verschluesselt darin liegen.
+  final int zugangsdaten;
+  final int bytes;
+
+  /// Nicht leer: der Stand laesst sich nicht oeffnen.
+  final String fehler;
+
+  static List<SicherungsStand> listeAusJson(Object? liste) => (liste as List? ?? const [])
+      .whereType<Map>()
+      .map(
+        (s) => SicherungsStand(
+          name: _text(s['name']),
+          erzeugt: DateTime.tryParse(_text(s['erzeugt']))?.toLocal(),
+          grund: _text(s['grund']),
+          dateien: _zahl(s['dateien']),
+          zugangsdaten: _zahl(s['zugangsdaten']),
+          bytes: _zahl(s['bytes']),
+          fehler: _text(s['fehler']),
+        ),
+      )
+      .where((s) => s.name.isNotEmpty)
+      .toList();
+}
+
+/// Die Lage der Sicherung auf einer Box (`GET /api/sicherung`).
+class SicherungsLage {
+  const SicherungsLage({
+    this.werkzeugDa = true,
+    this.anmeldungOffen = false,
+    this.host = '',
+    this.hinweise = const [],
+    this.passwortMin = 8,
+    this.staende = const [],
+    this.meldung = '',
+  });
+
+  final bool werkzeugDa;
+
+  /// Die Verwaltung ist ohne Passwort offen — dann kann jeder im WLAN
+  /// sichern und zurueckspielen (die Box sagt es, statt es zu verbieten).
+  final bool anmeldungOffen;
+  final String host;
+
+  /// Wovor die Datei NICHT schuetzt — wortgleich von der Box.
+  final List<String> hinweise;
+  final int passwortMin;
+  final List<SicherungsStand> staende;
+  final String meldung;
+
+  factory SicherungsLage.ausJson(Object? j) {
+    if (j is! Map) return const SicherungsLage();
+    return SicherungsLage(
+      werkzeugDa: j['werkzeugDa'] != false,
+      anmeldungOffen: j['anmeldungOffen'] == true,
+      host: _text(j['host']),
+      hinweise: [for (final h in (j['ablageHinweise'] as List? ?? const [])) '$h'],
+      passwortMin: j['passwortMin'] == null ? 8 : _zahl(j['passwortMin']),
+      staende: SicherungsStand.listeAusJson(j['staende']),
+      meldung: _text(j['meldung']),
+    );
+  }
+}
+
+/// Was beim Zurueckspielen passieren WUERDE (`POST /api/sicherung/pruefen`).
+class ZurueckVorschau {
+  const ZurueckVorschau({
+    required this.kennung,
+    this.satz = '',
+    this.warnungen = const [],
+    this.erzeugt,
+    this.host = '',
+    this.dateien = 0,
+    this.zugangsdaten = 0,
+    this.vonHand = const [],
+  });
+
+  /// sha256 der hochgeladenen Bytes — ohne sie spielt die Box nichts ein.
+  final String kennung;
+  final String satz;
+  final List<String> warnungen;
+  final DateTime? erzeugt;
+  final String host;
+  final int dateien;
+  final int zugangsdaten;
+  final List<String> vonHand;
+
+  factory ZurueckVorschau.ausJson(Object? j) {
+    final m = j is Map ? j : const {};
+    final stand = m['stand'] is Map ? m['stand'] as Map : const {};
+    final plan = m['plan'] is Map ? m['plan'] as Map : const {};
+    return ZurueckVorschau(
+      kennung: _text(m['kennung']),
+      satz: _text(m['satz']),
+      warnungen: [for (final w in (m['warnungen'] as List? ?? const [])) '$w'],
+      erzeugt: DateTime.tryParse(_text(stand['erzeugt']))?.toLocal(),
+      host: _text(stand['host']),
+      dateien: _zahl(stand['dateien']),
+      zugangsdaten: (stand['zugangsdaten'] as List? ?? const []).length,
+      vonHand: [for (final v in (plan['vonHand'] as List? ?? const [])) '$v'],
+    );
+  }
+}

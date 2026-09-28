@@ -30,6 +30,7 @@ import type { Ereignisname, Fund, Inhalt, Manifest, Titel } from './plugin-vertr
 // Typ-Importe ueberleben (werden gestrichen), der erste WERT-Import brach.
 // esbuild buendelt die Datei fuer den Betrieb ohnehin mit ein.
 import { geraetBauen, type Geraet } from './plugin-geraet.ts'
+import { type SprechAnschluss, sprechAblegen } from './sprechstrom.ts'
 
 /** Was ein Fremdentwickler schreibt. Alles freiwillig — ein Plugin darf wenig koennen. */
 export interface Plugin {
@@ -94,7 +95,8 @@ export interface Plugin {
    *
    * NUR JSON HINEIN UND HINAUS: die Antwort laeuft durch den Briefweg des
    * Workers (structuredClone/JSON), Streams und Buffer gibt es auf diesem Weg
-   * nicht. Der Wirt prueft Status (200-499) und deckelt die Groesse — was
+   * nicht. Der Wirt prueft den Status (2xx, 4xx, 502 mit `fehler` —
+   * `httpAntwortPruefen` in plugin-vertrag.ts) und deckelt die Groesse — was
    * darueber liegt, ist ein Fehler des Plugins, kein Transportfall.
    *
    * DIE ROUTEN LIEGEN HINTER DEM TOR der Verwaltung, wie `befinden` und die
@@ -152,10 +154,22 @@ export interface Kontext {
    * sollte das sagen, statt sich einen Pfad auszudenken.
    */
   datenOrdner?: string
+  /**
+   * Die Box liest einen Text vor — NUR mit Recht `sprechen` (28.09.2026), und
+   * nur auf einer Box, die Piper hat. Fehlt eins davon, fehlt das Feld (nicht:
+   * wirft); das Plugin fragt `if (!kontext.sprechen)` und sagt, warum.
+   *
+   * BILLIG: der Aufruf legt nur den Text ab und gibt sofort eine Quelle
+   * zurueck, die in eine Folge gehoert. Gesprochen wird, wenn der Abspieler
+   * sie abruft (sprechstrom.ts) — also passt auch ein langer Artikel in die
+   * 8-s-Frist. `tempo` ist Pipers `length_scale` (1 normal, groesser
+   * langsamer), gebogen auf 0,7 bis 2.
+   */
+  sprechen?(text: string, gaben?: { tempo?: number }): Promise<{ art: 'strom'; adresse: string }>
 }
 
 const brief = parentPort
-const { manifest, ordner, datenOrdner, kernKonfig, einstellungen, fristMs, eigeneAdressen } = (workerData ??
+const { manifest, ordner, datenOrdner, kernKonfig, einstellungen, fristMs, eigeneAdressen, sprechen } = (workerData ??
   {}) as {
   manifest: Manifest
   ordner: string
@@ -164,6 +178,8 @@ const { manifest, ordner, datenOrdner, kernKonfig, einstellungen, fristMs, eigen
   einstellungen: Record<string, unknown>
   fristMs: number
   eigeneAdressen: string[]
+  /** Nur wenn die Box Piper hat — sonst fehlt er. Ob das Plugin ihn benutzen darf, entscheidet das Recht. */
+  sprechen?: SprechAnschluss
 }
 
 /**
@@ -225,6 +241,14 @@ function kontextBauen(): Kontext {
   // gibt es das Feld gar nicht, und ein Plugin fragt `if (!kontext.geraet)`.
   if (manifest.rechte.includes('geraetestand')) {
     k.geraet = geraetBauen()
+  }
+
+  // NUR MIT `sprechen` UND ANSCHLUSS — dasselbe Muster wie `holen`. Der Wirt
+  // reicht den Anschluss an jeden Worker, aber nur, wenn
+  // die Box Piper hat; DAS RECHT WIRD NUR HIER GEFRAGT.
+  if (manifest.rechte.includes('sprechen') && sprechen?.ordner && sprechen?.basis) {
+    const anschluss = sprechen
+    k.sprechen = (text, gaben) => sprechAblegen(text, gaben, anschluss, manifest.kennung)
   }
 
   if (manifest.rechte.includes('netz')) {

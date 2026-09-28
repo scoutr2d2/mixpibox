@@ -10,12 +10,16 @@ DIE REIHENFOLGE IST KABEL ZUERST, und das aus einem Grund: solange die Box am
 Kabel haengt, ist sie im richtigen Netz, und das Handy muss sein WLAN nicht
 wechseln. Der AP ist der Rueckfall, nicht der Normalfall.
 
-── DAS HUEHNEREI-PROBLEM, EHRLICH BENANNT ──────────────────────────────────
+── EIN WEG, OHNE ZUSATZPAKETE ──────────────────────────────────────────────
 `hostapd` und `dnsmasq` sind WEDER auf dem DietPi-Image NOCH nachinstallierbar,
-solange es kein Netz gibt. Ein AP „aus dem Nichts" ist damit unmoeglich. Die
-Pakete muessen vorher da sein — entweder beim Vorbereiten der SD-Karte
-mitgegeben oder beim ersten Start ueber Kabel geholt.
-`bereit()` sagt deshalb klar, was fehlt, statt es zu versuchen und zu scheitern.
+solange es kein Netz gibt. Deshalb macht `wpa_supplicant` (da, sobald die Box
+WLAN kann) das Netz selbst auf (`mode=2`), und `kleiner-dhcp.py` spricht DHCP
+und DNS in reiner Standardbibliothek (llmwiki `ap-ohne-hostapd-wpa-mode2`).
+Bis zum 28.09.2026 gab es daneben einen hostapd-Weg mit VORRANG, sobald die
+Pakete da waren — aber die Uebergabe ins Heimnetz (`wechsel_aus_ap()` im
+Agenten) redet ueber `wpa_cli` mit dem AP-wpa_supplicant, den es auf dem
+hostapd-Weg gar nicht gibt. Er ist entfernt (BACKLOG E143/9); das Rezept
+installiert die Pakete auch nicht mehr.
 
 ── EIN FUNKBAUSTEIN, EINE ROLLE ────────────────────────────────────────────
 Der Pi hat EINEN Funkbaustein fuer WLAN (und Bluetooth, siehe llmwiki
@@ -47,9 +51,6 @@ import sys
 import time
 
 ADRESSE = "192.168.4.1"
-NETZ = "192.168.4"
-DHCP_VON = f"{NETZ}.10"
-DHCP_BIS = f"{NETZ}.50"
 KANAL = 6  # 2,4 GHz: von jedem Handy erreichbar, anders als 5 GHz
 # NEUER NAME MIT ABSICHT (08.08.2026): Handys, die die fruehere WPA2-Fassung
 # dieses Netzes gespeichert hatten, fragten beim nun OFFENEN Netz weiter nach
@@ -90,42 +91,16 @@ def wifi_qr(ssid, psk):
     return f"WIFI:S:{maskieren(ssid)};T:nopass;;"
 
 
-def hostapd_conf(iface, ssid, psk, kanal=KANAL):
-    """Die Konfiguration fuer hostapd.
-
-    WPA2 (wpa=2, CCMP) und sonst nichts: WPA1 und TKIP sind kaputt, und ein
-    offenes Netz waere hier zwar bequem, aber jeder in Funkreichweite stuende
-    dann vor der Tuer des Agenten — und der laeuft als root.
-    """
-    zeilen = [
-        f"interface={iface}",
-        "driver=nl80211",
-        f"ssid={ssid}",
-        "hw_mode=g",
-        f"channel={kanal}",
-        "ieee80211n=1",
-        "wmm_enabled=1",
-        "auth_algs=1",
-        "ignore_broadcast_ssid=0",
-    ]
-    if psk:
-        zeilen += ["wpa=2", f"wpa_passphrase={psk}",
-                   "wpa_key_mgmt=WPA-PSK", "rsn_pairwise=CCMP"]
-    zeilen += [""]
-    return "\n".join(zeilen)
-
-
 def wpa_ap_conf(ssid, psk, kanal=KANAL, land="DE"):
-    """Dieselbe Rolle wie hostapd_conf — aber fuer wpa_supplicant.
+    """Die Konfiguration fuer den AP — wpa_supplicant im Modus 2.
 
-    WARUM ES DIESEN ZWEITEN WEG GIBT: `hostapd` ist auf dem DietPi-Image nicht
-    drauf, und ohne Netz auch nicht nachzuinstallieren. Genau dann soll der
-    Rueckfall aber greifen. `wpa_supplicant` IST da, sobald die Box ueberhaupt
-    WLAN kann — der Agent redet ohnehin ueber `wpa_cli` mit ihm — und es kann
-    seit jeher selbst ein Netz aufspannen (`mode=2`). Damit faellt die
-    Voraussetzung weg, an der der ganze Rueckfall haengengeblieben ist.
+    WARUM wpa_supplicant: `hostapd` ist auf dem DietPi-Image nicht drauf, und
+    ohne Netz auch nicht nachzuinstallieren. Genau dann soll der Rueckfall
+    aber greifen. `wpa_supplicant` IST da, sobald die Box ueberhaupt WLAN
+    kann — der Agent redet ohnehin ueber `wpa_cli` mit ihm — und es kann seit
+    jeher selbst ein Netz aufspannen (`mode=2`).
 
-    DIESELBE HAERTE WIE OBEN: WPA2 mit CCMP, nichts sonst. `proto=RSN` und
+    MIT PASSWORT: WPA2 mit CCMP, nichts sonst. `proto=RSN` und
     `pairwise=CCMP` schliessen WPA1 und TKIP aus. Ein offenes Netz waere
     bequem — und stellte jeden in Funkreichweite vor die Tuer eines Programms,
     das als root laeuft.
@@ -163,62 +138,22 @@ def wpa_ap_conf(ssid, psk, kanal=KANAL, land="DE"):
     return "\n".join(zeilen)
 
 
-def dnsmasq_conf(iface, adresse=ADRESSE, von=DHCP_VON, bis=DHCP_BIS):
-    """Die Konfiguration fuer unsere EIGENE dnsmasq-Instanz.
-
-    `bind-interfaces` und `except-interface=lo` sind wichtig: eine dnsmasq, die
-    auf allem lauscht, streitet mit einer schon laufenden — und auf einer Box
-    mit fertiger Installation laeuft womoeglich eine.
-
-    `address=/#/<adresse>` beantwortet JEDEN Namen mit der Box. Das ist
-    Absicht: das Handy prueft nach dem Verbinden, ob es ins Internet kommt,
-    bekommt die Box zu sehen und bietet von selbst „Anmelden" an — man landet
-    also ohne Adresseingabe beim Assistenten.
-    """
-    return "\n".join([
-        f"interface={iface}",
-        "bind-interfaces",
-        "except-interface=lo",
-        f"dhcp-range={von},{bis},255.255.255.0,12h",
-        f"dhcp-option=3,{adresse}",   # Gateway: wir selbst
-        f"dhcp-option=6,{adresse}",   # DNS: wir selbst
-        f"address=/#/{adresse}",
-        "no-resolv",
-        "no-hosts",
-        "log-facility=-",
-        "",
-    ])
-
-
-def fehlende_pakete(vorhanden=None):
-    """Welche Programme fehlen? Reine Auskunft, nichts wird versucht."""
-    pruefen = vorhanden or (lambda p: shutil.which(p) is not None)
-    return [p for p in ("hostapd", "dnsmasq") if not pruefen(p)]
-
-
 def weg_waehlen(vorhanden=None):
-    """Womit machen wir das Netz auf? -> "hostapd" | "wpa" | None
+    """Womit machen wir das Netz auf? -> "wpa" | None
 
-    ZWEI WEGE, EINE VORFAHRT. `hostapd` ist die ausgereiftere Wahl und wird
-    genommen, wenn sie da ist — auf einer fertig installierten Box ist sie das
-    (das Rezept bringt sie mit). Auf einer FRISCHEN Karte ist sie es nicht, und
-    genau da traegt `wpa_supplicant`: es ist vorhanden, sobald die Box WLAN
-    kann, und macht seit jeher auch Netze auf.
-
-    DAS WAR DIE GANZE LUECKE. Der Rueckfall ohne Kabel lag ein halbes Jahr
-    fertig herum und funktionierte auf einer frischen Karte trotzdem nie, weil
-    er an einem Paket hing, das erst das Netz gebracht haette, das er ersetzen
-    sollte.
+    EIN WEG SEIT DEM 28.09.2026 (BACKLOG E143/9). Vorher gab es zwei, und
+    hostapd hatte Vorfahrt, sobald er da war — auf einer mit dem Rezept
+    fertig installierten Box also IMMER. Die Uebergabe ins Heimnetz
+    (`wechsel_aus_ap()` im Agenten) spricht aber ueber `wpa_cli` mit genau
+    dem wpa_supplicant, der den AP macht; auf dem hostapd-Weg gibt es den
+    nicht, und der Wechsel scheitert. Deshalb zaehlt hostapd hier auch dann
+    nicht, wenn er von frueher noch installiert ist.
 
     Fuer DHCP und DNS gibt es kein Wenn: `kleiner-dhcp.py` liegt daneben und
     braucht nichts ausser Python.
     """
     pruefen = vorhanden or (lambda p: shutil.which(p) is not None)
-    if pruefen("hostapd") and pruefen("dnsmasq"):
-        return "hostapd"
-    if pruefen("wpa_supplicant"):
-        return "wpa"
-    return None
+    return "wpa" if pruefen("wpa_supplicant") else None
 
 
 # ── Captive Portal: die Seite oeffnet sich von selbst ───────────────────────
@@ -235,9 +170,9 @@ def weg_waehlen(vorhanden=None):
 # Deshalb genuegt hier EINE Antwort fuer alles: eine Umleitung. Der Trick ist
 # nicht die Umleitung selbst, sondern dass die Erwartung NICHT erfuellt wird.
 #
-# Dass die Namen ueberhaupt bei uns landen, besorgt `address=/#/…` in der
-# dnsmasq-Konfiguration weiter oben. Beides zusammen ergibt das Portal; eines
-# allein tut nichts.
+# Dass die Namen ueberhaupt bei uns landen, besorgt der DNS-Teil von
+# `kleiner-dhcp.py`: er beantwortet JEDEN Namen mit der Box. Beides zusammen
+# ergibt das Portal; eines allein tut nichts.
 PORTAL_PORT = 80
 
 
@@ -416,9 +351,8 @@ def _lauf(argv, frist=20):
 
 
 def starten(ssid=SSID_VORGABE):
-    weg = weg_waehlen()
-    if weg is None:
-        print("Weder hostapd noch wpa_supplicant vorhanden — kein eigenes WLAN moeglich.")
+    if weg_waehlen() is None:
+        print("Kein wpa_supplicant vorhanden — kein eigenes WLAN moeglich.")
         print("Ohne wpa_supplicant kann die Box ueberhaupt kein WLAN; hier hilft nur Kabel.")
         return 2
     # ERST FREISCHALTEN, DANN SUCHEN: ohne das gibt es auf einer Karte ohne
@@ -455,19 +389,10 @@ def starten(ssid=SSID_VORGABE):
     with open(os.path.join(ARBEIT, "ssid"), "w", encoding="utf-8") as f:
         f.write(ssid + "\n")
 
-    hpfad = os.path.join(ARBEIT, "hostapd.conf")
-    dpfad = os.path.join(ARBEIT, "dnsmasq.conf")
     wpfad = os.path.join(ARBEIT, "wpa-ap.conf")
-    if weg == "hostapd":
-        with open(hpfad, "w", encoding="utf-8") as f:
-            f.write(hostapd_conf(iface, ssid, psk))
-        os.chmod(hpfad, 0o600)   # enthaelt das Passwort
-        with open(dpfad, "w", encoding="utf-8") as f:
-            f.write(dnsmasq_conf(iface))
-    else:
-        with open(wpfad, "w", encoding="utf-8") as f:
-            f.write(wpa_ap_conf(ssid, psk))
-        os.chmod(wpfad, 0o600)   # enthaelt das Passwort
+    with open(wpfad, "w", encoding="utf-8") as f:
+        f.write(wpa_ap_conf(ssid, psk))
+    os.chmod(wpfad, 0o600)   # enthaelt das Passwort
 
     # DEN FUNK ENTSPERREN, BEVOR IRGENDETWAS ANDERES PASSIERT.
     # DietPi laesst `rfkill` gesetzt, solange kein WLAN eingetragen ist
@@ -482,9 +407,9 @@ def starten(ssid=SSID_VORGABE):
         _lauf(["rfkill", "unblock", "all"])
 
     # EIN FUNKBAUSTEIN, EINE ROLLE: der laufende wpa_supplicant muss die
-    # Schnittstelle loslassen, sonst streiten zwei um dieselbe Karte. Das gilt
-    # AUCH fuer den wpa-Weg: dort starten wir gleich einen EIGENEN mit eigener
-    # Konfiguration, nicht den Systemdienst um.
+    # Schnittstelle loslassen, sonst streiten zwei um dieselbe Karte. Wir
+    # starten gleich einen EIGENEN mit eigener Konfiguration, nicht den
+    # Systemdienst um.
     _lauf(["systemctl", "stop", "wpa_supplicant"])
     # Die Schnittstelle muss OBEN sein, sonst nimmt wpa_supplicant sie nicht.
     _lauf(["ip", "link", "set", iface, "up"])
@@ -492,51 +417,40 @@ def starten(ssid=SSID_VORGABE):
     _lauf(["ip", "addr", "add", f"{ADRESSE}/24", "dev", iface])
     _lauf(["ip", "link", "set", iface, "up"])
 
-    if weg == "hostapd":
-        h = _lauf(["hostapd", "-B", hpfad], frist=30)
-        if h.returncode != 0:
-            print(f"hostapd startete nicht: {(h.stdout or h.stderr)[:300]}")
-            return 1
-        d = _lauf(["dnsmasq", "-C", dpfad], frist=20)
-        if d.returncode != 0:
-            print(f"dnsmasq startete nicht: {(d.stdout or d.stderr)[:300]}")
-            _lauf(["pkill", "-f", f"hostapd -B {hpfad}"])
-            return 1
-    else:
-        # -B geht in den Hintergrund, -i die Schnittstelle, -c unsere Datei.
-        w = _lauf(["wpa_supplicant", "-B", "-i", iface, "-c", wpfad,
-                   "-D", "nl80211"], frist=30)
-        if w.returncode != 0:
-            # DEN ZUSTAND MITGEBEN, nicht nur den Fehlschlag: ohne rfkill-Lage
-            # und Schnittstellenliste raet man beim naechsten Mal wieder.
-            rf = _lauf(["rfkill", "list"]).stdout if shutil.which("rfkill") else "(kein rfkill)"
-            netze = _lauf(["ls", "/sys/class/net"]).stdout.replace("\n", " ")
-            print(f"wpa_supplicant (AP) startete nicht: {(w.stdout or w.stderr)[:300]}")
-            print(f"  Schnittstelle: {iface} · vorhanden: {netze.strip()}")
-            print(f"  rfkill:\n{rf[:400]}")
-            _lauf(["systemctl", "start", "wpa_supplicant"])
-            return 1
-        # Die Adresse ueberlebt den Start des Funks nicht immer — nochmal
-        # setzen, statt zu hoffen. Kostet nichts und spart die Fehlersuche
-        # "Netz da, Box nicht erreichbar".
-        _lauf(["ip", "addr", "add", f"{ADRESSE}/24", "dev", iface])
-        # DHCP und DNS: unsere eigenen, in reiner Standardbibliothek. Ohne sie
-        # bekaeme das Handy keine Adresse — ein WLAN, in das man sich nicht
-        # einbuchen kann, ist kein WLAN.
-        dienst = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                              "kleiner-dhcp.py")
-        try:
-            subprocess.Popen(
-                [sys.executable, dienst, "--schnittstelle", iface,
-                 "--adresse", ADRESSE],
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-                start_new_session=True,
-            )
-        except OSError as e:
-            print(f"DHCP/DNS startete nicht: {e}")
-            _lauf(["pkill", "-f", f"wpa_supplicant -B -i {iface} -c {wpfad}"])
-            _lauf(["systemctl", "start", "wpa_supplicant"])
-            return 1
+    # -B geht in den Hintergrund, -i die Schnittstelle, -c unsere Datei.
+    w = _lauf(["wpa_supplicant", "-B", "-i", iface, "-c", wpfad,
+               "-D", "nl80211"], frist=30)
+    if w.returncode != 0:
+        # DEN ZUSTAND MITGEBEN, nicht nur den Fehlschlag: ohne rfkill-Lage
+        # und Schnittstellenliste raet man beim naechsten Mal wieder.
+        rf = _lauf(["rfkill", "list"]).stdout if shutil.which("rfkill") else "(kein rfkill)"
+        netze = _lauf(["ls", "/sys/class/net"]).stdout.replace("\n", " ")
+        print(f"wpa_supplicant (AP) startete nicht: {(w.stdout or w.stderr)[:300]}")
+        print(f"  Schnittstelle: {iface} · vorhanden: {netze.strip()}")
+        print(f"  rfkill:\n{rf[:400]}")
+        _lauf(["systemctl", "start", "wpa_supplicant"])
+        return 1
+    # Die Adresse ueberlebt den Start des Funks nicht immer — nochmal
+    # setzen, statt zu hoffen. Kostet nichts und spart die Fehlersuche
+    # "Netz da, Box nicht erreichbar".
+    _lauf(["ip", "addr", "add", f"{ADRESSE}/24", "dev", iface])
+    # DHCP und DNS: unsere eigenen, in reiner Standardbibliothek. Ohne sie
+    # bekaeme das Handy keine Adresse — ein WLAN, in das man sich nicht
+    # einbuchen kann, ist kein WLAN.
+    dienst = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                          "kleiner-dhcp.py")
+    try:
+        subprocess.Popen(
+            [sys.executable, dienst, "--schnittstelle", iface,
+             "--adresse", ADRESSE],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+            start_new_session=True,
+        )
+    except OSError as e:
+        print(f"DHCP/DNS startete nicht: {e}")
+        _lauf(["pkill", "-f", f"wpa_supplicant -B -i {iface} -c {wpfad}"])
+        _lauf(["systemctl", "start", "wpa_supplicant"])
+        return 1
 
     # Das Portal als EIGENER Prozess: `starten` endet gleich, der Umleiter muss
     # aber bleiben. Scheitert er (Port 80 belegt — auf einer fertigen Box laeuft
@@ -553,8 +467,7 @@ def starten(ssid=SSID_VORGABE):
 
     print(f"WLAN '{ssid}' ist OFFEN (ohne Passwort) — Zugang nur mit dem Code auf dem Schirm")
     print(f"Die Box ist unter http://{ADRESSE}:8099 erreichbar. {portal}")
-    print("Weg: " + ("hostapd + dnsmasq" if weg == "hostapd"
-                     else "wpa_supplicant + eigenes DHCP/DNS (ohne Zusatzpakete)"))
+    print("Weg: wpa_supplicant + eigenes DHCP/DNS (ohne Zusatzpakete)")
     return 0
 
 
@@ -607,20 +520,18 @@ def stoppen():
     # Moment des Erfolgs das Netz zu nehmen. Die Marke setzt der Agent beim
     # gelungenen Wechsel; DHCP/DNS/Portal sind dann schon abgeraeumt.
     uebergeben = os.path.isfile(os.path.join(ARBEIT, "uebergeben"))
-    _lauf(["pkill", "-f", f"hostapd -B {ARBEIT}"])
-    _lauf(["pkill", "-f", f"dnsmasq -C {ARBEIT}"])
     _lauf(["pkill", "-f", "kleiner-dhcp.py"])
     _lauf(["pkill", "-f", f"{os.path.abspath(__file__)} portal"])
     if not uebergeben:
-        # Der zweite Weg hinterlaesst zwei andere Prozesse. NUR DIE EIGENEN
-        # treffen: `-f wpa_supplicant` allein erschluege den Systemdienst mit.
+        # Der AP-wpa_supplicant: NUR DEN EIGENEN treffen — `-f wpa_supplicant`
+        # allein erschluege den Systemdienst mit.
         _lauf(["pkill", "-f", f"wpa_supplicant -B -i .* -c {ARBEIT}"])
         if iface:
             _lauf(["ip", "addr", "flush", "dev", iface])
         _lauf(["systemctl", "start", "wpa_supplicant"])
     # Nichts soll die Einrichtung ueberleben — auch nicht das Passwort.
-    for name in ("hostapd.conf", "dnsmasq.conf", "wpa-ap.conf",
-                 "wlan-passwort", "ssid", "netze.json", "hinweis", "uebergeben"):
+    for name in ("wpa-ap.conf", "wlan-passwort", "ssid", "netze.json",
+                 "hinweis", "uebergeben"):
         try:
             os.remove(os.path.join(ARBEIT, name))
         except OSError:
@@ -632,21 +543,10 @@ def stoppen():
 def main():
     was = sys.argv[1] if len(sys.argv) > 1 else "bereit"
     if was == "bereit":
-        weg = weg_waehlen()
-        if weg == "hostapd":
-            print("bereit (hostapd + dnsmasq)")
-            return 0
-        if weg == "wpa":
-            # KEIN Mangel mehr, sondern der zweite Weg. Frueher stand hier
-            # "es fehlt: hostapd, dnsmasq" — und wer das las, hielt den
-            # Rueckfall fuer unmoeglich, obwohl alles Noetige da war.
-            fehlt = fehlende_pakete()
+        if weg_waehlen() == "wpa":
             print("bereit (wpa_supplicant + eigenes DHCP/DNS)")
-            if fehlt:
-                print(f"  hostapd/dnsmasq fehlen ({', '.join(fehlt)}) — "
-                      f"werden nicht gebraucht.")
             return 0
-        print("NICHT bereit: weder hostapd noch wpa_supplicant vorhanden.")
+        print("NICHT bereit: kein wpa_supplicant vorhanden.")
         return 1
     if was == "starten":
         return starten()

@@ -1,0 +1,212 @@
+{
+  "_quelle": "https://klexikon.zum.de/api.php — Texte aus dem Klexikon (CC BY-SA), GEKUERZT auf den ersten Satz je Absatz",
+  "_abgerufen": "2026-09-28T19:07:32.861Z",
+  "_erneuern": "node tools/klexikon-probe.mjs --vorlage-erneuern",
+  "deutschland": {
+    "batchcomplete": true,
+    "query": {
+      "pages": [
+        {
+          "pageid": 852,
+          "ns": 0,
+          "title": "Deutschland",
+          "extract": "Deutschland ist ein Land in der Mitte von Europa.\nDeutschland nennt sich Bundesrepublik.\n⇒ Hier gibt es eine Übersicht mit allen Klexikon-Artikeln zu Deutschland.\n\n\n== Wie sieht das Land aus? ==\n\nIm Norden von Deutschland liegt die Norddeutsche Tiefebene.\nDie Mitte Deutschlands ist flach oder hat eher mittelgroße Gebirge.\nDer Süden von Deutschland liegt meistens recht hoch über dem Meeresspiegel.\nDie großen Flüsse Deutschlands beginnen meist im Süden und fließen nach Norden.\n\n\n== Was ist früher in Deutschland passiert? ==\n\nEine frühe Form des Menschen heißt „homo heidelbergensis“.\nDie ersten Menschen in Deutschland, von denen man heute etwas mehr weiß, waren die Germanen.\nLetztlich war die römische Kultur aber für alle Germanen wichtig, selbst im Mittelalter.\nIn Frankreich gelang es dem König, ein mächtiger Herrscher zu werden.\n\nEin gemeinsames Land, einen modernen Staat hatten die Deutschen seit dem Jahr 1871. Das Deutsche Reich hatte erst Kaiser und war seit dem Jahr 1919 eine Republik.\nDanach war Deutschland geteilt: Im Westen entstand die Bundesrepublik Deutschland, ein freier, demokratischer Staat.\n\n\n== Was muss man über die Menschen in Deutschland wissen? ==\nKein Land in Europa hat mehr Einwohner als Deutschland, mit Ausnahme von Russland.\n\nDie Sorben und Dänen sind deutsche Bürger, aber ihre Muttersprache ist nicht Deutsch.\nSeit dem frühen Mittelalter waren die Menschen in Deutschland Christen.\n\n\n== Wer hat in Deutschland das Sagen? ==\n\nBis zum Jahr 1918 konnte in Deutschland der Adel noch viel bestimmen.\nDas heutige Parlament ist der Bundestag.\nIn Deutschland gibt es Bundesländer.\nStaatsoberhaupt von Deutschland ist der Bundespräsident.\n\n\n== Wofür ist Deutschland bekannt? ==\n\nWeil Deutschland ein recht großes Land ist, kommen aus ihm viele bekannte Leute.\nViele Menschen denken bei Deutschland an Wurst, Bier und Lederhosen.\nDeutschland ist bekannt für seine Wertarbeit.\nDeutschland hat viele Universitäten.\n\n\n== Womit verdienen die Menschen in Deutschland ihr Geld? ==\n\nDeutschland hat eine besonders starke Wirtschaft.\nFrüher lebten die meisten Deutschen von der Landwirtschaft."
+        }
+      ]
+    }
+  },
+  "hund": {
+    "batchcomplete": true,
+    "query": {
+      "redirects": [
+        {
+          "from": "Hund",
+          "to": "Hunde"
+        }
+      ],
+      "pages": [
+        {
+          "pageid": 2566,
+          "ns": 0,
+          "title": "Hunde",
+          "extract": "Hunde sind Säugetiere.\nDie Haushunde begannen mit dem Wolf: Schon vor vielen tausend Jahren haben Menschen Wölfe an sich gewöhnt.\nFrüher waren Hunde sehr nützlich bei der Jagd, sie wärmten die Menschen und sie kämpften gegen Feinde mit.\nHunde sehen zwar nicht besonders gut, sie haben Mühe, Farben gut zu unterscheiden.\n\n\n== Wozu hält sich der Mensch Hunde? ==\n\nDie meisten Hunde halten sich die Menschen als Freund oder wie ein zusätzliches Mitglied der Familie.\nBei den Herdenhunden ist es sehr ähnlich.\nPolizeihunde gehorchen ihrem Meister bedingungslos.\n\nAuch Drogenhunde sind eine Art von Polizeihunden.\nAuch der Lawinenhund ist ein besonderer Spürhund.\nDer Blindenhund hilft einem blinden Menschen, den Weg zu finden.\nEine besondere Aufgabe haben die Schlittenhunde.\n\n\n== Wie vermehren sich Hunde? ==\n\nHunde müssen ungefähr ein Jahr alt sein, damit sie Junge bekommen können.\nNur wenn im Bauch einer Hündin Eizellen reif sind, ist sie bereit zur Paarung.\n\nDie Anzahl der Jungtiere hängt jedoch sehr stark von der Rasse ab.\nWelpen müssen bei ihrer Mutter und den Geschwistern bleiben.\nImmer wieder werden Hunde zu früh von der Mutter und den Geschwistern weggenommen und verkauft.\nGroße Hunderassen werden meist etwas weniger als zehn Jahre alt.",
+          "thumbnail": {
+            "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/73/Sch%C3%A4ferh%C3%BCnding-12Jahre.jpg/500px-Sch%C3%A4ferh%C3%BCnding-12Jahre.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+            "width": 400,
+            "height": 300
+          }
+        }
+      ]
+    }
+  },
+  "sucheMond": {
+    "batchcomplete": true,
+    "continue": {
+      "sroffset": 8,
+      "gsroffset": 8,
+      "continue": "gsroffset||"
+    },
+    "query": {
+      "pages": [
+        {
+          "pageid": 821,
+          "ns": 0,
+          "title": "Satellit",
+          "index": 7,
+          "categories": [
+            {
+              "ns": 14,
+              "title": "Kategorie:Klexikon-Artikel"
+            }
+          ]
+        },
+        {
+          "pageid": 1332,
+          "ns": 0,
+          "title": "Mond",
+          "index": 1,
+          "thumbnail": {
+            "source": "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dd/Full_Moon_Luc_Viatour.jpg/500px-Full_Moon_Luc_Viatour.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+            "width": 400,
+            "height": 404
+          },
+          "categories": [
+            {
+              "ns": 14,
+              "title": "Kategorie:Klexikon-Artikel"
+            }
+          ]
+        },
+        {
+          "pageid": 2526,
+          "ns": 0,
+          "title": "Erde",
+          "index": 2,
+          "categories": [
+            {
+              "ns": 14,
+              "title": "Kategorie:Klexikon-Artikel"
+            }
+          ]
+        },
+        {
+          "pageid": 3386,
+          "ns": 0,
+          "title": "Zeitrechnung",
+          "index": 6,
+          "categories": [
+            {
+              "ns": 14,
+              "title": "Kategorie:Klexikon-Artikel"
+            }
+          ]
+        },
+        {
+          "pageid": 3613,
+          "ns": 0,
+          "title": "Sonne",
+          "index": 4,
+          "categories": [
+            {
+              "ns": 14,
+              "title": "Kategorie:Klexikon-Artikel"
+            }
+          ]
+        },
+        {
+          "pageid": 4284,
+          "ns": 0,
+          "title": "Zeit",
+          "index": 5,
+          "categories": [
+            {
+              "ns": 14,
+              "title": "Kategorie:Klexikon-Artikel"
+            }
+          ]
+        },
+        {
+          "pageid": 11365,
+          "ns": 0,
+          "title": "Himmel",
+          "index": 8,
+          "categories": [
+            {
+              "ns": 14,
+              "title": "Kategorie:Klexikon-Artikel"
+            }
+          ]
+        },
+        {
+          "pageid": 12740,
+          "ns": 0,
+          "title": "Monat",
+          "index": 3,
+          "categories": [
+            {
+              "ns": 14,
+              "title": "Kategorie:Klexikon-Artikel"
+            }
+          ]
+        }
+      ],
+      "searchinfo": {
+        "totalhits": 96
+      },
+      "search": [
+        {
+          "ns": 0,
+          "title": "Mond",
+          "pageid": 1332,
+          "snippet": "Ein <span class=\"searchmatch\">Mond</span> ist ein natürlicher Satellit. Ein solcher Begleiter kreist um einen Planeten. Wenn man vom <span class=\"searchmatch\">Mond</span> spricht, meint man normalerweise den <span class=\"searchmatch\">Mond</span> der"
+        },
+        {
+          "ns": 0,
+          "title": "Erde",
+          "pageid": 2526,
+          "snippet": "wurden später zu unserem <span class=\"searchmatch\">Mond</span>. Die Masse oder das Volumen der Erde ist etwa einhundert Mal so groß wie die Masse des <span class=\"searchmatch\">Mondes</span>. Unser <span class=\"searchmatch\">Mond</span> ist damit, verglichen"
+        },
+        {
+          "ns": 0,
+          "title": "Monat",
+          "pageid": 12740,
+          "snippet": "Monate ergeben zusammen ein Jahr. Das Wort Monat kommt ursprünglich vom <span class=\"searchmatch\">Mond</span>. Der <span class=\"searchmatch\">Mond</span> umkreist die Erde, und das hat er nach einen Monat vollbracht. Das ist"
+        },
+        {
+          "ns": 0,
+          "title": "Sonne",
+          "pageid": 3613,
+          "snippet": "am Tag hell. Unser <span class=\"searchmatch\">Mond</span> und auch die Planeten leuchten, weil sie von der Sonne angestrahlt werden. Manchmal befindet sich der <span class=\"searchmatch\">Mond</span> genau zwischen Erde"
+        },
+        {
+          "ns": 0,
+          "title": "Zeit",
+          "pageid": 4284,
+          "snippet": "Beobachtung des <span class=\"searchmatch\">Mondes</span> und seiner wechselnden Form: Ein Monat ist etwa die Zeit von einem Vollmond zum nächsten. Vollmond, abnehmender <span class=\"searchmatch\">Mond</span>, Neumond und zunehmender"
+        },
+        {
+          "ns": 0,
+          "title": "Zeitrechnung",
+          "pageid": 3386,
+          "snippet": "bis 1989 zählt. Viele alte Völker hatten einen Kalender, der dem <span class=\"searchmatch\">Mond</span> folgte. Wenn der <span class=\"searchmatch\">Mond</span> einmal zugenommen und wieder abgenommen hatte, also von Neumond"
+        },
+        {
+          "ns": 0,
+          "title": "Satellit",
+          "pageid": 821,
+          "snippet": "haben hingegen gar keinen <span class=\"searchmatch\">Mond</span>. Auch Zwergplaneten können <span class=\"searchmatch\">Monde</span> haben. Pluto hat zum Beispiel fünf <span class=\"searchmatch\">Monde</span>. Man hat auch schon <span class=\"searchmatch\">Monde</span> entdeckt, die sich um Asteroiden"
+        },
+        {
+          "ns": 0,
+          "title": "Himmel",
+          "pageid": 11365,
+          "snippet": "einen meint es die Luft, die Atmosphäre oder das Weltall mit der Sonne, dem <span class=\"searchmatch\">Mond</span> und den Sternen, die wir über uns sehen. Der Himmel ist also von uns aus"
+        }
+      ]
+    },
+    "limits": {
+      "pageimages": 50,
+      "categories": 500
+    }
+  }
+}

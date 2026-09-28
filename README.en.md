@@ -18,6 +18,11 @@ Jellyfin, from the disk, from a media library or from a radio stream.
 
 ![Der Kinderschirm](screenshots/01-kinderschirm.png)
 
+> **New (28.09.2026): the phone app for parents.** **Lock** the box with one
+> tap — the child sees "Die Box macht Pause", the lock ends by itself —, set
+> **kids' time as a week calendar** and **back up** the box to the phone. With
+> pictures in [section 3.7](#37-the-phone-app), everything new in section 2.
+
 ---
 
 ## 1. This is a fork — and what that means
@@ -48,13 +53,20 @@ whose people have never seen this code.
 ---
 ## 2. What was added most recently
 
-From the commit log, not from memory. Which of this is half-done is in 3.9.
+From the commit log, not from memory. Which of this is half-done is in 3.10.
 
 * **27.09.** **Theme designer** (Theme-Gestalter): build themes by drag and
   drop — dock the mini player, title band, mascot, clock and indicators, choose
   a background (colour, gradient, picture) and your own colours; the preview is
   the real interface. In the browser at the box's `/neu/gestalter/`, from the
   admin, or as a desktop app (`desktop/gestalter/`). More in 3.1.
+* **28.09.** **Phone app for parents:** **lock the box** ("The box is taking a
+  break" on its screen, running music stops; ends by itself after the chosen
+  time, at most 24 hours, or from the app — on the box the moon, held for
+  1.2 s, lifts it behind the parents' lock), **kids' time as a week** (seven
+  bars from 0 to 24 h, tap and set, per child or for all) and **backup** to the
+  phone including restore with a preview. The lock needs the box update. More
+  in 3.5 and 3.7.
 * **27.09.** **Phone app** (Android, Flutter) in `handy-app/`, tried on a real
   phone against the box: all boxes at a glance with album art and volume,
   **pause all** and one slider for all; switch profiles, manage the box's
@@ -99,7 +111,7 @@ From the commit log, not from memory. Which of this is half-done is in 3.9.
 ## 3. What the box can do
 
 Everything here is read off the codebase or measured on the device, not promised.
-What is only half there is in 3.9 — and only there.
+What is only half there is in 3.10 — and only there.
 
 ### 3.1 For the child — the screen
 
@@ -127,7 +139,10 @@ What is only half there is in 3.9 — and only there.
 * **Read aloud.** A tap on a tile reads the name aloud, in **learning mode**
   syllable by syllable. Computed on the box (Piper), without network. All three
   rollout paths set Piper up; if the download fails there (around 244 MB), the
-  box falls back to the browser voice (espeak-ng).
+  box falls back to the browser voice (espeak-ng). A **freshly set up** box
+  reads aloud out of the box (mode *tap*), once Piper speaks; an update does
+  **not** switch it on for a running box — whatever was set stays (since
+  28.09.2026).
 * **Profiles.** Up to twelve children, each with name, character, birthday and
   their own stores (history, resume, lists, media selection, appearance,
   video approvals, time used). Sign-in works without a keyboard: a
@@ -259,6 +274,13 @@ Sound runs through PipeWire along a chain of two skippable stations:
   for up to five more minutes, then the box stops on its own. Parents can gift
   minutes for today or reset the day. A broken configuration does **not** lock
   out, it is bent toward the friendly side.
+* **Lock the box** (since 28.09.2026, from the phone app): "break now" —
+  independent of kids' time, even when that is off. The box starts nothing
+  (no videos either), running music stops at once, pause and volume keep
+  working. The screen shows a moon with "Die Box macht Pause" and until when.
+  The lock **always ends** (at most 24 hours) and survives a reboot. On the box
+  the moon lifts it: **hold 1.2 s**, then the parents' lock appears. Check:
+  `mupi-check kinderzeit`.
 * **Reward videos.** Parents approve individual Mediathek videos, with a
   count; the child sees only what has been approved — no search, no browsing.
   A video is used up only at around 90 % watched; aborting costs nothing. A
@@ -281,27 +303,81 @@ Sound runs through PipeWire along a chain of two skippable stations:
 A recording feature with its own source is planned — a paired Bluetooth
 microphone is intended.
 
-### 3.7 Operating without touch — phone app, remote control and controller
+### 3.7 The phone app
 
-**The phone app** (`handy-app/`, Android, Flutter) is the remote for parents —
-for one box or several. Since 27.09.2026 it runs on a real phone against a real
-box.
+**The remote for parents** (`handy-app/`, Android, Flutter) — for one box or
+several on the home network. Since 27.09.2026 it runs on a real phone against a
+real box, since 28.09.2026 with **locking, kids' time and backup**. It is only a
+guest: everything is enforced on the box — a second phone, the button and the
+admin in the browser all see the same rules.
 
-* **Overview of all boxes:** per box the playing album with a small cover, the
-  active child with its figure, pause/play and its own volume slider. With two
-  or more boxes, **"Pause all"** and **one slider for all** sit on top — it
-  starts at the loudest box and, on release, sets all boxes to its value. In the
-  menu: stop all, louder/quieter, and sign one child in on all boxes at once.
+![Die Handy-App an der echten Box: Übersicht, Spieler, Profile, Mediathek, Hinzufügen (Kindernamen ersetzt)](screenshots/41-handy-app.png)
+
+*From the left: the overview of all boxes with cover, child and volume · the
+player of one box · the profiles — tapping switches the child on the box · the
+box's media library with search; the arrow downloads what lies on the box as a
+file · adding from the search, choosing right away which children see it.*
+
+**Operating**
+
+* **All boxes at a glance:** per box the playing album, the active child with
+  its figure, pause/play and its own volume slider. With two or more boxes,
+  **"Pause all"** and **one slider for all** sit on top — it starts at the
+  loudest box and, on release, sets all boxes to its value. In the menu: stop
+  all, louder/quieter, sign one child in on all boxes at once, lock and unlock
+  all.
 * **Per box:** the big player (cover, title, skips, volume, also in
   landscape), the **profiles** with pictures — a switch from the app shows on
-  the box in under a second — and the box's **media library** with search;
-  what lies on the box as a file can be downloaded to the phone.
+  the box in under a second — and the box's **media library** with search.
 * **Managing media** (only with the admin password, if one is set): rename,
   category, delete, rescan, search Spotify, Jellyfin and the ARD and add — and
   **choose right there which children see it**.
 * **Share from Spotify:** in the Spotify app *Share → MixPiBox*. The box turns
   the link into hits to add — an album directly, a single track becomes its
   album, an artist brings their albums to choose from.
+
+**For parents** (since 28.09.2026)
+
+![Die Eltern-Seiten der Handy-App an der echten Box: gesperrt, Sperr-Auswahl, Kinderzeit-Woche, ein Tag, Sicherung (Kindernamen ersetzt)](screenshots/43-handy-eltern.png)
+
+*From the left: the box is locked — the red strip says until when, "Ändern"
+lifts it · the choice behind the lock · kids' time as a week: Mon–Fri from 7 to
+19 h one hour, Saturday open, Sunday a listening break (example, not saved) ·
+one day to set, copied to the school days with "Für Mo–Fr" · backup: create,
+restore, the backups on the box.*
+
+* **Lock the box** — the lock at the top of a box's page: 15 minutes to
+  2 hours, "tomorrow morning (7:00)" or until a time of day. The box starts
+  nothing (no videos either); running music stops at once; pause and volume
+  keep working. The lock also applies when kids' time is off, and it survives
+  a reboot. **It always ends by itself**, after 24 hours at the latest — a
+  forgotten lock should not leave the box silent while the phone lies in the
+  office.
+* **What the child sees:** a moon and "Die Box macht Pause." with the time
+  when it goes on. On the box itself the lock is lifted by **holding the moon
+  for 1.2 seconds** — then the same settings lock as at the crest appears (PIN,
+  arithmetic task or gesture).
+
+  ![Der Pausen-Schirm der Box während einer Sperre (aus der Vorschau)](screenshots/44-box-pause.png)
+
+* **Kids' time as a week** (*⋮ → Kinderzeit*): seven bars from 0 to 24 h
+  (midnight at the top). Coloured is when listening is allowed, the daily
+  duration is below, a locked day is hatched, today is marked — with a line at
+  "now". A tap on a day: may listen, from, until, duration; apply to the day,
+  Mon–Fri, Sat–Sun or all. At the top *Alle Kinder* (the house rule) or a
+  child — a child without its own rules shows what it inherits from the house
+  rule and gets its own only via *Eigene Regeln*. At the bottom *Heute*: how
+  much was listened, gift minutes, reset the day. Only *Speichern* writes to
+  the box.
+* **Backup** (*⋮ → Sicherung*): *Jetzt sichern* creates a backup and stores it
+  on the phone under `Download/MixPiBox` — so it does not only live on the
+  box's card. Optionally with the credentials, encrypted with a password the
+  app does not remember. The backups on the box can be fetched to the phone.
+  *Datei wählen …* restores: the box first shows what would change, only then
+  does it write — and makes a backup of its own before that.
+
+**Connecting**
+
 * **Pairing instead of open:** the box only obeys a paired app. Tapping
   *Pair* in the app makes the box show a **QR code and a numeric code** — after
   the parent PIN, if one is set. Each phone gets its own key; the parents' area
@@ -309,12 +385,17 @@ box.
   an app is connected, the box's bar shows a **phone icon**. For development the
   requirement can be switched off there — only on the box's screen, never from
   the network.
-* **Limit:** Android only; CI builds the APK, there is no store listing.
+* **Finding the box:** *Box hinzufügen* searches the Wi-Fi, or you enter name or
+  IP by hand; with HTTPS the app remembers the box's certificate on first
+  contact.
+* **Limit:** Android only; CI builds the APK, there is no store listing. The
+  lock needs a box from 28.09.2026 on; with an older one the app says it
+  "needs an update". Building, debugging on the phone and the paths to the box:
+  `handy-app/README.md`.
 
-![Die Handy-App an der echten Box: Übersicht, Spieler, Profile, Mediathek, Hinzufügen (Kindernamen ersetzt)](screenshots/41-handy-app.png)
 ![Die echte Box mit Handy-Zeichen oben rechts in der Leiste](screenshots/40-box-handy-zeichen.png)
 
-**Remote control and controller**
+### 3.8 Remote control and controller
 
 The box can be operated via paired **Bluetooth input devices** without
 touching the screen. A
@@ -325,7 +406,7 @@ dedicated service reads `/dev/input/event*` with the Python standard library,
 * Four device profiles: **Fire TV** (Alexa remote and Basic), **Google TV
   /Chromecast** and the **Xbox Wireless Controller** — the latter measured on
   the actual device (06.09.2026). The bundled mapping covers Fire TV and the
-  controller; Google TV is mapped by hand (3.9).
+  controller; Google TV is mapped by hand (3.10).
 * 16 box actions with a stable identifier (play/pause, track change, stop,
   louder/quieter, up/down/left/right, select, home, back, shut down, advance
   the stage, open the game corner).
@@ -336,8 +417,9 @@ dedicated service reads `/dev/input/event*` with the Python standard library,
   different after every reconnect. Debouncing is separate: buttons 250 ms, axes
   50 ms.
 * **Limit:** only *one* device controls at a time, and a new device is
-  assigned by hand today (see 3.9).
-### 3.8 Under the hood
+  assigned by hand today (see 3.10).
+
+### 3.9 Under the hood
 
 * **Two backends in TypeScript:** `src/backend-api` (media, configuration,
   admin (Verwaltung), serves the user interface, port 8200, 142 test files) and
@@ -345,7 +427,7 @@ dedicated service reads `/dev/input/event*` with the Python standard library,
   15 test files).
 * **42 systemd units** in `config/services` (35 `.service`, 6 `.timer`,
   1 `.path`) — instead of pm2. The app is ready 20 s earlier as a result.
-* **14 plugins** in the tree, in their own worker threads with memory and
+* **16 plugins** in the tree, in their own worker threads with memory and
   time limits (section 7).
 * **Backup** with a way back that needs no SSH: a text file on the FAT
   partition of the card is enough.
@@ -355,7 +437,7 @@ dedicated service reads `/dev/input/event*` with the Python standard library,
   and a few more pages — far from every page. The box UI has behaviour tests
   for the playback path and states, **not** for the appearance.
 
-### 3.9 What is half finished
+### 3.10 What is half finished
 
 So that nobody builds on it — the long version is in
 `dokumentation/mixpibox.md`, section 9. The plan by which this section goes
@@ -392,14 +474,14 @@ counting them in (then the list lies).
 | **ONE box interface.** The trial switch went with E118/1d, the old Angular/Ionic interface was **deleted** with E118/1e on 05.09.2026; the kiosk loads `/neu/` fixed. Only one straggler module plus `LIESMICH.md` remains in `src/frontend-box/`. | `scripts/chromium-autostart.sh`, catch-all in `src/backend-api/src/server.ts` | done |
 | **New admin (Verwaltung)** in Angular, 27 pages + sign-in, under `/admin`, with search across all settings. | `src/frontend-admin/` | replaces the PHP admin (removed 19.08.2026); witnesses for the sign-in path, screen time, search and a few more pages |
 | **Backends in TypeScript** instead of grown JS/PHP. | `src/backend-api/` (142 test files), `src/backend-player/` (15) | in use |
-| **Profiles for several children** — up to twelve, with character, birthday, lock in five input modes and own storage per child. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | done; sign-in only takes effect with guest switched off (3.9) |
+| **Profiles for several children** — up to twelve, with character, birthday, lock in five input modes and own storage per child. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | done; sign-in only takes effect with guest switched off (3.10) |
 | **Kinderzeit** — how long, when and on which days; counted server-side, not in the browser. | `src/backend-api/src/kinderzeit.ts` | done; per-child rules in the admin too since 25.09.2026 |
 | **Reward videos** — parents release individual Mediathek videos, in pieces, with a counter. | `NewDesign/video.js`, admin page „Videos" | done |
 | **Games and learning** — six apps in the drawer, four games in the game corner, each individually switchable off. | `NewDesign/apps.js`, `NewDesign/app.js`, `src/backend-api/src/spiele.ts` | done |
-| **Control via remote/controller** — four device profiles, 16 actions, without X. | `scripts/box/fernbedienung.py`, `config/fernbedienungen/` | done; the mapping page is missing (3.9) |
+| **Control via remote/controller** — four device profiles, 16 actions, without X. | `scripts/box/fernbedienung.py`, `config/fernbedienungen/` | done; the mapping page is missing (3.10) |
 | **Merging of several sources** — the same album from Spotify *and* Jellyfin becomes ONE tile, the default since 06.09.2026. | `src/backend-api/src/verschmelzung.ts` | done, measured on the device (44 → 35 tiles) |
 | **Artist pages** and **Continue listening** — all albums of an artist; „where did I leave off?". | `src/backend-api/src/interpretenseite.ts`, `weiterhoeren.ts` | done, tested |
-| **An audio chain you can adjust** — several Bluetooth sinks at once, five-band equalizer, stereo width, compressor/limiter, volume per source. | `config/templates/61-entzerrer.conf`, plugin `mixpi-klang`, admin page „Ton" | done; no auto-EQ, loudness between the services still open with Soloist (3.9) |
+| **An audio chain you can adjust** — several Bluetooth sinks at once, five-band equalizer, stereo width, compressor/limiter, volume per source. | `config/templates/61-entzerrer.conf`, plugin `mixpi-klang`, admin page „Ton" | done; no auto-EQ, loudness between the services still open with Soloist (3.10) |
 | **Covers live on the box.** Measured: 1.69 s cold → 0.03 s afterwards. | `src/backend-api/src/server.ts` (`coverspeicher`) | done (Classic has this too since 5.0.0) |
 | **systemd instead of pm2** — ready 20 s earlier; on **all** paths since 14.08.2026. | `config/services/` | switched over |
 | **A plugin system** — everything beyond the core is a plugin, no build step, in its own worker thread. | `plugins/` (14 of them) | in use; a dedicated area in the child screen is deliberately missing (section 7) |
@@ -423,7 +505,7 @@ lines) and against today's recipes:
 | Kiosk | Chromium | Chromium, **Cog/WPE** as an option |
 | Installation | one monolith script | **Recipes**, step by step; self-run from the card |
 | Speech output | — | **Piper** on the box |
-| Extensions | — | **Plugin system**, 14 plugins |
+| Extensions | — | **Plugin system**, 16 plugins |
 
 ### Measured — what the rebuild delivered
 
@@ -445,7 +527,7 @@ one second. The measurements are in the knowledge pack
 What did **not** get better is stated honestly alongside: the roughly 9 s that
 Chromium needs from process start to the finished picture are real work and
 remain; and the volume jump between the services is not evened out with
-Soloist (3.9).
+Soloist (3.10).
 
 ---
 ## 5. Installation from scratch
@@ -599,7 +681,7 @@ src/frontend-admin/    die Verwaltung (Angular)                             → 
 src/backend-api/       Medien, Konfiguration, Verwaltung; liefert aus       (:8200)
 src/backend-player/    Abspieldienst: mpv für lokal/Jellyfin, Spotify       (:5005)
 src/frontend-box/      Rest der gelöschten Angular-Oberfläche — siehe LIESMICH.md
-plugins/               14 Erweiterungen, Musterplugins, Prüfstand, Anleitung
+plugins/               16 Erweiterungen, Musterplugins, Prüfstand, Anleitung
 handy-app/             die Handy-App (Flutter, Android) — Abschnitt 3.7
 desktop/               der Theme-Gestalter als Desktop-App (Electron) — Abschnitt 3.1
 remote-step-installer/ Karten schreiben und Boxen aufsetzen (Abschnitt 5)
@@ -649,9 +731,12 @@ paths).
 * **Four fields are mandatory** (`kennung`, `name`, `fassung`, `haupt`); everything
   else is optional: `rechte`, `felder`, `sektion`, `icon`, `aktionen`,
   `konfig`.
-* **Six rights**, and whatever is not in the manifest is simply
+* **Seven rights**, and whatever is not in the manifest is simply
   `undefined` in the context: `medienquelle`, `ereignisse`, `netz`, `klang`,
-  `geraetestand`, `songtext`.
+  `geraetestand`, `songtext`, `sprechen` (the box reads a text aloud).
+* **An offer to add, without touching the core:** a plugin that answers
+  `http/angebot` gets its own list with “add” (and optionally a search field)
+  on the media page.
 * **Nine contract methods, all optional:** `aufloesen`, `suchen`, `inhalt`,
   `befinden`, `ereignis`, `klangkette`, `aktion`, `http`, `songtext`.
 * **Settings are declarative:** the admin (Verwaltung) builds the inputs from
@@ -682,12 +767,14 @@ npx tsx tools/plugin-pruefen.mjs plugins/<kennung>   # das maßgebliche Urteil
 The last command is the authoritative one: it loads the plugin in a **real**
 worker with the real locks. The full guide — including the rejection rules
 verbatim and a section "For LLMs" — is in
-**[`plugins/README.md`](plugins/README.md)**. The 14 plugins in the tree are
-tested along with it: 16 test files, 404 tests (`npm run test:plugins`).
+**[`plugins/README.md`](plugins/README.md)**. The 16 plugins in the tree are
+tested along with it: 18 test files, 491 tests (`npm run test:plugins`).
 
 | Plugin | What it does |
 |---|---|
 | `mixpi-archive` | public-domain radio plays and readings from the Internet Archive |
+| `mixpi-kindernachrichten` | logo!, MausNachrichten, Kakadu, GEOlino Spezial — news only while it is fresh |
+| `mixpi-klexikon` | articles from the Klexikon (children's encyclopedia, CC BY-SA), read aloud by the box; “knowledge of the day” |
 | `mixpi-ardsounds` | ARD Audiothek: shelves, collections, programmes, radio stations |
 | `mixpi-mediathek` · `mixpi-mediathekview` | videos: ARD or ZDF/KiKA/3sat/arte/funk |
 | `mixpi-jellyfin` | Jellyfin as a media source (address and key stay in the core) |
@@ -772,7 +859,7 @@ Without this command the hooks sit in the tree but **never** run —
 **Where the knowledge is.** The dearly bought details — which measurement
 refuted which assumption, which workaround was necessary and why — are
 neither in the code nor in this file but in the knowledge pack
-**`llmwiki/pack.yaml`** (1136 entries, version 638). It is deliberately data,
+**`llmwiki/pack.yaml`** (1152 entries, version 654). It is deliberately data,
 not code, and is never executed. It is not read by hand:
 
 ```bash

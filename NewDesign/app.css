@@ -9933,6 +9933,38 @@ body.zwei-finger .meldung { pointer-events: none; }
 #mixpi-wartung p { font-size: 2rem; margin: 0; font-weight: 700; }
 #mixpi-wartung .wartung-klein { font-size: 1.1rem; font-weight: 400; color: var(--muted, #9aa4b5); }
 
+/* ── Box-Sperre der Eltern (28.09.2026): der Pausen-Schirm ───
+   Knapp UNTER dem Wartungsschirm (der gewinnt, wenn beides gilt). Solange
+   das Tor des Eltern-Bereichs offen ist, tritt er zur Seite — er laege sonst
+   ueber der PIN-Eingabe, und der Weg hinaus waere zu. */
+#mixpi-boxsperre {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--bg, #10131a);
+  color: var(--fg, #e8ecf4);
+  pointer-events: auto;
+  text-align: center;
+}
+body.eltern-offen #mixpi-boxsperre { display: none; }
+#mixpi-boxsperre p { font-size: 2rem; margin: 0; font-weight: 700; }
+#mixpi-boxsperre .boxsperre-klein { font-size: 1.2rem; font-weight: 400; color: var(--muted, #9aa4b5); }
+#mixpi-boxsperre .boxsperre-mond {
+  border: 0;
+  background: none;
+  padding: 8px;
+  color: var(--accent, #7aa2ff);
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* Rueckmeldung WAEHREND des Haltens, wie der Ring am Wappen — kein Hinweis davor. */
+#mixpi-boxsperre .boxsperre-mond.haelt { transform: scale(0.92); transition: transform 1.2s linear; }
+
 
 /* ── DIE AUSWAHL DER FERNBEDIENUNG (06.09.2026) ───
  *

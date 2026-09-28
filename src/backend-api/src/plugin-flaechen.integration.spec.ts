@@ -50,6 +50,10 @@ before(async () => {
         if (anfrage.pfad === 'echo') return { inhalt: { pfad: anfrage.pfad, abfrage: anfrage.abfrage, rumpf: anfrage.rumpf } }
         if (anfrage.pfad === 'kaputt') return { status: 500, inhalt: {} }
         if (anfrage.pfad === 'umleitung') return { status: 302, inhalt: {} }
+        if (anfrage.pfad === 'draussen') return { status: 502, inhalt: { fehler: 'Das Archiv antwortete mit HTTP 503', quelle: 'archiv' } }
+        if (anfrage.pfad === 'draussen-stumm') return { status: 502, inhalt: {} }
+        if (anfrage.pfad === 'draussen-503') return { status: 503, inhalt: { fehler: 'gleich wieder da' } }
+        if (anfrage.pfad === 'wurf') throw new Error('Plugin kaputt: x ist undefined')
         return { status: 404, inhalt: { fehler: 'kenn ich nicht' } }
       },
     }\n`,
@@ -206,10 +210,34 @@ describe('die freie Route — Pfad, Abfrage und Rumpf kommen an', () => {
   })
 
   it('5xx UND UMLEITUNGEN des Plugins werden zum 502 — nichts sieht aus wie der Kern', async () => {
-    for (const pfad of ['kaputt', 'umleitung']) {
+    for (const pfad of ['kaputt', 'umleitung', 'draussen-503']) {
       const antwort = await request(app).get(`/api/plugins/mixpi-probe/http/${pfad}`)
       assert.equal(antwort.status, 502, pfad)
+      // DER ERSATZSATZ DES WIRTS, nicht der des Plugins: ein 503 mit Grund
+      // bleibt draussen, auch wenn es aussieht wie das erlaubte 502.
+      assert.match(antwort.body.fehler, /ist nicht erlaubt/, pfad)
     }
+  })
+
+  it('ein 502 MIT GRUND reist durch — samt Grund und Beiwerk', async () => {
+    // Gefunden am 28.09.2026: sieben Plugins meldeten Fehler draussen so, und
+    // der Wirt ersetzte den Grund durch „Status 502 ist nicht erlaubt". In der
+    // Verwaltung stand nie, WARUM etwas nicht ging.
+    const antwort = await request(app).get('/api/plugins/mixpi-probe/http/draussen')
+    assert.equal(antwort.status, 502)
+    assert.deepEqual(antwort.body, { fehler: 'Das Archiv antwortete mit HTTP 503', quelle: 'archiv' })
+  })
+
+  it('ein 502 OHNE Grund wird nicht durchgewinkt — jede 502 der Route traegt `fehler`', async () => {
+    const antwort = await request(app).get('/api/plugins/mixpi-probe/http/draussen-stumm')
+    assert.equal(antwort.status, 502)
+    assert.match(antwort.body.fehler, /ohne Grund/)
+  })
+
+  it('ein WURF des Plugins wird zum 502 mit seiner Meldung', async () => {
+    const antwort = await request(app).get('/api/plugins/mixpi-probe/http/wurf')
+    assert.equal(antwort.status, 502)
+    assert.equal(antwort.body.fehler, 'Plugin kaputt: x ist undefined')
   })
 
   it('DELETE ist keine Verwaltungsflaeche — 405', async () => {

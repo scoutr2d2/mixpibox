@@ -53,8 +53,12 @@ bin/librespot/dev_0.6_20250628/  # alter Binaerstand, von keinem Weg mehr gerufe
 bin/librespot/dev_0.6_20250806/  # alter Binaerstand; autosetup nennt ihn nur im Kommentar („spielt KEINEN TON", A/B-Beleg 28.07.2026)
 src/deploy.ps1                   # toter Windows-Ausrollweg: kein Aufrufer, flacht ein Verzeichnis ab, das es seit E118/1e nicht mehr gibt
 tools/bilder-dunkel/             # Ausgabe von tools/kinder-dunkel-schau.mjs, jederzeit neu erzeugbar
-# bin/librespot/0.6.0/ ist seit 27.09.2026 ganz geloescht: einziger Nutzer war die
-# Wurzel-Dockerfile, die seit 23.10.2024 nicht baute und mit ihm ging.
+# bin/librespot/0.6.0/ steht hier nicht, weil es ihn nicht mehr gibt — lokal
+# erst seit 28.09.2026. Das Cloud-Review loeschte ihn am 27.09.2026 nur auf
+# GitHub (41df5e05); lokal blieb er liegen (ca94f361 nahm die Texte, nicht die
+# Loeschungen), und die Veroeffentlichung 5bf4ba15 am selben Abend brachte ihn
+# samt Dockerfile zurueck. Einziger Nutzer war die Wurzel-Dockerfile, die seit
+# 23.10.2024 nicht baute; beide sind jetzt auch lokal weg.
 
 # `screenshots/` STAND HIER — und steht es nicht mehr. Bis zum 23.09.2026 lagen
 # dort die Schirmbilder des URSPRUNGS (Angular-Oberflaeche, Themes,

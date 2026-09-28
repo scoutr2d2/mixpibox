@@ -29,6 +29,8 @@ import {
 const WURZEL = fs.mkdtempSync(path.join(os.tmpdir(), 'mupi-plugins-'))
 const DATEN = fs.mkdtempSync(path.join(os.tmpdir(), 'mupi-plugindaten-'))
 const MEDIEN = '/home/dietpi/MuPiBox/media'
+const SPRECH = fs.mkdtempSync(path.join(os.tmpdir(), 'mupi-sprech-'))
+const ANSCHLUSS = { ordner: SPRECH, basis: 'http://127.0.0.1:8200/api/sprechen' }
 
 function pluginSchreiben(kennung: string, rechte: string[], quelltext: string, felder: unknown[] = []): void {
   const ordner = path.join(WURZEL, kennung)
@@ -161,7 +163,30 @@ before(async () => {
      }`,
   )
 
-  pluginsLaden(WURZEL, {}, [], DATEN)
+  // Recht `sprechen` (28.09.2026): legt einen Text ab und nennt die Quelle.
+  pluginSchreiben(
+    'spricht',
+    ['medienquelle', 'sprechen'],
+    `export default {
+       async aufloesen(rest, kontext) {
+         if (!kontext.sprechen) return { titel: { name: 'KEIN SPRECHEN' }, quelle: { art: 'strom', adresse: 'https://example.org/x.mp3' } }
+         const q = await kontext.sprechen('Der Mond. ' + rest, { tempo: 5 })
+         return { titel: { name: 'gesprochen' }, quelle: q }
+       },
+     }`,
+  )
+  // Dasselbe OHNE das Recht — bekommt kein `sprechen`, auch wenn der Wirt einen Anschluss hat.
+  pluginSchreiben(
+    'stumm',
+    ['medienquelle'],
+    `export default {
+       async aufloesen(rest, kontext) {
+         return { titel: { name: typeof kontext.sprechen }, quelle: { art: 'strom', adresse: 'https://example.org/x.mp3' } }
+       },
+     }`,
+  )
+
+  pluginsLaden(WURZEL, {}, [], DATEN, {}, ANSCHLUSS)
   await bereitAbwarten()
 })
 
@@ -169,6 +194,7 @@ after(async () => {
   await allesBeenden()
   fs.rmSync(WURZEL, { recursive: true, force: true })
   fs.rmSync(DATEN, { recursive: true, force: true })
+  fs.rmSync(SPRECH, { recursive: true, force: true })
 })
 
 describe('Laden', () => {
@@ -344,6 +370,29 @@ describe('Einstellungen', () => {
 
   it('meldet sich fuer ein Plugin, das es nicht gibt', async () => {
     await assert.rejects(() => einstellungenSetzen('gibtsnicht', {}), /kein Plugin/)
+  })
+})
+
+describe('Das Recht sprechen', () => {
+  it('ein Plugin MIT dem Recht legt den Text ab und bekommt eine Quelle unter der Route', async () => {
+    const f = await aufloesen('spricht', 'Hallo', MEDIEN)
+    assert.equal(f.titel.name, 'gesprochen')
+    assert.equal(f.quelle.art, 'strom')
+    assert.match(f.quelle.adresse, /^http:\/\/127\.0\.0\.1:8200\/api\/sprechen\/[0-9a-f]{32}\.wav$/)
+    const name = path.basename(f.quelle.adresse, '.wav')
+    const auftrag = JSON.parse(fs.readFileSync(path.join(SPRECH, `${name}.json`), 'utf8'))
+    assert.deepEqual(auftrag, { text: 'Der Mond. Hallo', tempo: 2, plugin: 'spricht' }, 'Tempo 5 auf 2 gebogen, Kennung vom Wirt')
+  })
+
+  it('ein Plugin OHNE das Recht sieht das Feld gar nicht — auch wenn der Wirt einen Anschluss hat', async () => {
+    assert.equal((await aufloesen('stumm', 'x', MEDIEN)).titel.name, 'undefined')
+  })
+
+  it('ohne Anschluss (die Box hat kein Piper) fehlt das Feld auch MIT dem Recht', async () => {
+    await allesBeenden()
+    pluginsLaden(WURZEL, {}, [], DATEN)
+    await bereitAbwarten()
+    assert.equal((await aufloesen('spricht', 'x', MEDIEN)).titel.name, 'KEIN SPRECHEN')
   })
 })
 

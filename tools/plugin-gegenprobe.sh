@@ -131,6 +131,35 @@ probe "Abschalten haelt gegen den Neustart-Behandler" \
   "s/if (code === 0 || e.zustand === 'gescheitert' || e.zustand === 'aus') return/if (code === 0 || e.zustand === 'gescheitert') return/" \
   src/plugin-wirt.spec.ts
 
+# 9. Das Recht `sprechen` (28.09.2026). Der Wirt reicht den Anschluss an
+#    jeden Worker; faellt die Frage nach dem Recht im Laufwerk, laesst jedes
+#    Plugin die Box sprechen, das es nur versucht.
+probe "sprechen nur mit dem Recht" \
+  "$API/src/plugin-laufwerk.ts" \
+  "s/if (manifest.rechte.includes('sprechen') \&\& sprechen?.ordner/if (sprechen?.ordner/" \
+  src/plugin-wirt.spec.ts
+
+# 10.-12. Die Statusregel der freien Route (28.09.2026). Bis dahin ersetzte der
+#    Wirt ein zurueckgegebenes 502 durch „Status 502 ist nicht erlaubt", und
+#    der Grund erreichte die Verwaltung nie — sieben Plugins, alle Zeugen
+#    gruen, weil jeder nur sein Plugin allein pruefte. Der erste Schnitt macht
+#    genau diese alte Fassung wieder; die beiden anderen weiten die Regel so,
+#    wie es naheliegt (jedes 502, jedes 5xx mit Grund).
+probe "ein 502 MIT Grund reist bis in die Verwaltung" \
+  "$API/src/plugin-vertrag.ts" \
+  's/|| (s === 502 \&\& mitGrund)))/))/' \
+  src/plugin-flaechen.integration.spec.ts
+
+probe "ein 502 OHNE Grund wird ersetzt" \
+  "$API/src/plugin-vertrag.ts" \
+  's/(s === 502 \&\& mitGrund)/(s === 502)/' \
+  src/plugin-flaechen.integration.spec.ts
+
+probe "nur 502, kein anderes 5xx mit Grund" \
+  "$API/src/plugin-vertrag.ts" \
+  's/(s === 502 \&\& mitGrund)/(s >= 500 \&\& s < 600 \&\& mitGrund)/' \
+  src/plugin-flaechen.integration.spec.ts
+
 echo
 if [ "$FEHLER" -eq 0 ]; then
   echo "Alle Vorrichtungen sind wirklich geprueft."

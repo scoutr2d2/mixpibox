@@ -798,9 +798,14 @@ Was zu tun ist: das vollstaendige Paket verwenden, oder librespot 0.8.0 selbst b
 	# NACHHOLBAR, ohne die Karte neu zu bespielen:
 	#   sudo /usr/local/bin/mupibox/piper-einrichten.sh
 	#   sudo /usr/local/bin/mupibox/piper-einrichten.sh --pruefen
+	#
+	# `--ab-werk-an`: diese Box wird gerade NEU aufgesetzt, also schaltet der
+	# Schritt Vorlesen ein (BACKLOG E12/X12) — nur wenn Piper danach wirklich
+	# spricht und noch keine vorlesen.json da ist. Der Update-Weg uebergibt den
+	# Schalter absichtlich NICHT; warum, steht im Kopf von piper-einrichten.sh.
 	echo -e "XXX\n${STEP}\nInstall Piper (text-to-speech)... \nXXX"
 	before=$(date +%s)
-	timeout -k 30 1200 /usr/local/bin/mupibox/piper-einrichten.sh >&3 2>&3 \
+	timeout -k 30 1200 /usr/local/bin/mupibox/piper-einrichten.sh --ab-werk-an >&3 2>&3 \
 		|| echo "## Piper setup failed/timed out - box will not read aloud ##" >&3 2>&3
 	after=$(date +%s)
 	echo -e "## Install Piper ## finished after $((after - before)) seconds" >&3 2>&3

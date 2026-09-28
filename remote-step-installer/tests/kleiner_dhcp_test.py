@@ -193,7 +193,7 @@ spec2.loader.exec_module(ap)
 conf = ap.wpa_ap_conf("MixPiBox-Einrichtung", "quax7fam")
 pruefe("mode=2" in conf, "mode=2 — wpa_supplicant macht selbst ein Netz auf")
 pruefe("ap_scan=2" in conf, "ap_scan=2 — sonst sucht es erst nach fremden Netzen")
-# DIESELBE HAERTE WIE BEI HOSTAPD. Fehlt proto=RSN, ist WPA1 erlaubt; fehlt
+# MIT PASSWORT NUR WPA2. Fehlt proto=RSN, ist WPA1 erlaubt; fehlt
 # pairwise=CCMP, auch TKIP. Beides ist gebrochen — vor der Tuer eines Programms,
 # das als root laeuft.
 pruefe("proto=RSN" in conf, "WPA2 erzwungen (proto=RSN)")
@@ -203,14 +203,15 @@ pruefe('psk="quax7fam"' in conf, "das Passwort steht drin")
 # Kanal 6 -> 2437 MHz. Eine falsche Frequenz heisst: das Netz erscheint nicht.
 pruefe("frequency=2437" in conf, "Kanal 6 wird zur richtigen Frequenz (2437 MHz)")
 
-pruefe(ap.weg_waehlen(lambda p: p in ("hostapd", "dnsmasq")) == "hostapd",
-       "sind beide da, gewinnt hostapd")
+# EIN WEG SEIT DEM 28.09.2026 (BACKLOG E143/9): hostapd hatte bis dahin
+# Vorfahrt, sobald er da war — und auf genau diesem Weg scheiterte die
+# Uebergabe ins Heimnetz (sie redet per wpa_cli mit dem AP-wpa_supplicant).
+pruefe(ap.weg_waehlen(lambda p: p in ("hostapd", "dnsmasq", "wpa_supplicant")) == "wpa",
+       "liegen hostapd und dnsmasq von frueher da, gewinnt trotzdem wpa_supplicant")
 pruefe(ap.weg_waehlen(lambda p: p == "wpa_supplicant") == "wpa",
-       "fehlen sie, traegt wpa_supplicant — DAS war die ganze Luecke")
-pruefe(ap.weg_waehlen(lambda p: p in ("hostapd", "wpa_supplicant")) == "wpa",
-       "hostapd OHNE dnsmasq reicht nicht — dann lieber ganz den zweiten Weg")
-pruefe(ap.weg_waehlen(lambda p: p == "hostapd") is None,
-       "hostapd allein, ohne wpa_supplicant: gar kein Weg (dann kann die Box kein WLAN)")
+       "ohne sie traegt wpa_supplicant — DAS war die ganze Luecke")
+pruefe(ap.weg_waehlen(lambda p: p in ("hostapd", "dnsmasq")) is None,
+       "hostapd und dnsmasq OHNE wpa_supplicant: kein Weg (dann kann die Box kein WLAN)")
 pruefe(ap.weg_waehlen(lambda p: False) is None,
        "ohne alles: ehrlich nichts versprechen")
 

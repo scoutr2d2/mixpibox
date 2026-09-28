@@ -16,6 +16,7 @@ class BoxLage {
     this.profilName,
     this.profilFigur = '',
     this.coverPfad,
+    this.sperre,
   });
 
   final Wiedergabe? wiedergabe;
@@ -33,6 +34,12 @@ class BoxLage {
 
   /// Feste Bildadresse des laufenden Albums (siehe `BoxClient.coverZiel`).
   final String? coverPfad;
+
+  /// Die Sperre der Eltern (`/api/boxsperre`). `null`: unbekannt — eine
+  /// aeltere Box ohne den Weg, oder noch nicht gefragt.
+  final SperrStand? sperre;
+
+  bool get gesperrt => sperre?.aktiv == true;
 
   bool get erreichbar => wiedergabe != null;
 }
@@ -131,7 +138,21 @@ class BoxenStand extends ChangeNotifier {
       }
       // Das Cover nur fragen, wenn etwas laeuft — sonst gibt es keins.
       final coverPfad = w.spielt ? await c.coverZiel() : null;
-      neu = BoxLage(wiedergabe: w, profilName: profilName, profilFigur: profilFigur, coverPfad: coverPfad);
+      // DIE SPERRE IM SELBEN TAKT: sie steht in der Uebersicht, und wer sie
+      // vom zweiten Handy setzt, soll sie hier nach 4 s sehen.
+      SperrStand? sperre = _lage[b.id]?.sperre;
+      try {
+        sperre = await c.sperre();
+      } on BoxFehler {
+        // Beiwerk wie die Profile — der letzte bekannte Stand bleibt.
+      }
+      neu = BoxLage(
+        wiedergabe: w,
+        profilName: profilName,
+        profilFigur: profilFigur,
+        coverPfad: coverPfad,
+        sperre: sperre,
+      );
     } on KopplungNoetig catch (e) {
       neu = BoxLage(kopplungNoetig: true, fehler: e.satz);
     } on AnmeldungNoetig {

@@ -4,7 +4,6 @@
 0 autosetup/autostart.sh
 2 dev/compile_scripts/fbv.sh
 2 dev/compile_scripts/spotifyd.sh
-0 docker/entrypoint.sh
 0 harness/admin-entrypoint.sh
 0 remote-step-installer/agent/install-agent.sh
 2 remote-step-installer/setup-controller.sh

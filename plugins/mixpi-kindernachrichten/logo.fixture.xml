@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ZEUGE fuer logo! (ZDF), Form wie am 28.09.2026 gemessen: sieben Folgen,
+     hier vier. Die Freitagsfolge vom 25.09. fehlte im echten Feed, deshalb
+     fehlt sie hier auch. Titel ohne Sendungsnamen und mit Leerzeichen am
+     Ende, Dauer in Sekunden, Kanalbild ueber http, kein Bild an der Folge,
+     guid ist eine Adresse. Die Zusammenfassungen sind ausgedacht. -->
+<rss xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+<channel>
+    <title>logo!-Nachrichten (AUDIO)</title>
+    <link>https://www.zdf.de/rss/podcast/audio/zdf/kinder/logo</link>
+	<language>de-de</language>
+	<copyright>Copyright Zweites Deutsches Fernsehen, ZDF</copyright>
+	<itunes:subtitle></itunes:subtitle>
+	<itunes:author>ZDFde</itunes:author>
+	<itunes:summary>Hier gibt&apos;s Nachrichten f&#252;r Kinder (ausgedacht).</itunes:summary>
+	<itunes:explicit>no</itunes:explicit>
+	<itunes:image href="http://module.zdf.de/podcasts/logo_podcast_1400.jpg" />
+	<itunes:category text="TV &amp; Film"/>
+		<item>
+        <title>Montag, 28. September </title>
+		<itunes:author>ZDFde</itunes:author>
+		<itunes:subtitle></itunes:subtitle>
+		<itunes:summary>Thema eins / Thema zwei erkl&#228;rt / Thema drei (ausgedacht)</itunes:summary>
+		<link>https://www.logo.de/logo-vom-montag-28-september-2026-100.html</link>
+		<enclosure url="https://podfileszdf-a.akamaihd.net/podcast/zdf_podcasts/26/09/260928_1950_sendung_log/1/260928_1950_sendung_log_224k_p41v17.mp3" length="17713965" type="audio/mpeg"/>
+		<guid>https://www.zdf.de/uri/00000000-0000-4000-8000-000000000928</guid>
+		<pubDate>Mon, 28 Sep 2026 19:50:00 +0200</pubDate>
+		<itunes:duration>632</itunes:duration>
+    </item>
+		<item>
+        <title>Sonntag, 27. September </title>
+		<itunes:author>ZDFde</itunes:author>
+		<itunes:subtitle></itunes:subtitle>
+		<itunes:summary>Thema vier / Thema f&#252;nf (ausgedacht)</itunes:summary>
+		<link>https://www.logo.de/logo-vom-sonntag-27-september-2026-102.html</link>
+		<enclosure url="https://podfileszdf-a.akamaihd.net/podcast/zdf_podcasts/26/09/260927_1950_sendung_log/1/260927_1950_sendung_log_224k_p41v17.mp3" length="17138061" type="audio/mpeg"/>
+		<guid>https://www.zdf.de/uri/00000000-0000-4000-8000-000000000927</guid>
+		<pubDate>Sun, 27 Sep 2026 19:50:00 +0200</pubDate>
+		<itunes:duration>612</itunes:duration>
+    </item>
+		<item>
+        <title>Samstag, 26. September </title>
+		<itunes:author>ZDFde</itunes:author>
+		<itunes:subtitle></itunes:subtitle>
+		<itunes:summary>Thema sechs (ausgedacht)</itunes:summary>
+		<link>https://www.logo.de/logo-vom-samstag-26-september-2026-102.html</link>
+		<enclosure url="https://podfileszdf-a.akamaihd.net/podcast/zdf_podcasts/26/09/260926_1950_sendung_log/1/260926_1950_sendung_log_224k_p41v17.mp3" length="17912205" type="audio/mpeg"/>
+		<guid>https://www.zdf.de/uri/00000000-0000-4000-8000-000000000926</guid>
+		<pubDate>Sat, 26 Sep 2026 19:50:00 +0200</pubDate>
+		<itunes:duration>639</itunes:duration>
+    </item>
+		<item>
+        <title>Donnerstag, 24. September </title>
+		<itunes:author>ZDFde</itunes:author>
+		<itunes:subtitle></itunes:subtitle>
+		<itunes:summary>Thema sieben (ausgedacht)</itunes:summary>
+		<link>https://www.logo.de/logo-vom-donnerstag-24-september-2026-102.html</link>
+		<enclosure url="https://podfileszdf-a.akamaihd.net/podcast/zdf_podcasts/26/09/260924_1950_sendung_log/1/260924_1950_sendung_log_224k_p41v17.mp3" length="17017101" type="audio/mpeg"/>
+		<guid>https://www.zdf.de/uri/00000000-0000-4000-8000-000000000924</guid>
+		<pubDate>Thu, 24 Sep 2026 19:50:00 +0200</pubDate>
+		<itunes:duration>607</itunes:duration>
+    </item>
+	</channel>
+</rss>

@@ -17,6 +17,12 @@ Jellyfin, von der Platte, aus einer Mediathek oder aus einem Radiostream.
 
 ![Der Kinderschirm](screenshots/01-kinderschirm.png)
 
+> **Neu (28.09.2026): die Handy-App für Eltern.** Die Box mit einem Tipp
+> **sperren** — das Kind sieht „Die Box macht Pause", die Sperre endet von
+> selbst —, die **Kinderzeit als Wochen-Kalender** einstellen und die Box aufs
+> Handy **sichern**. Mit Bildern in [Abschnitt 3.7](#37-die-handy-app), alles
+> Neue in Abschnitt 2.
+
 ---
 
 ## 1. Dies ist ein Fork — und was das heißt
@@ -47,8 +53,15 @@ dessen Leute diesen Code nie gesehen haben.
 
 ## 2. Was zuletzt dazugekommen ist
 
-Aus dem Commit-Log, nicht aus dem Gedächtnis. Was davon halb ist, steht in 3.9.
+Aus dem Commit-Log, nicht aus dem Gedächtnis. Was davon halb ist, steht in 3.10.
 
+* **28.09.** **Handy-App für Eltern:** die **Box sperren** („Die Box macht
+  Pause" am Schirm, laufende Musik hält an; endet von selbst nach der gewählten
+  Zeit, höchstens 24 Stunden, oder per App — an der Box hebt sie der Mond,
+  1,2 s gehalten, hinter der Eltern-Sperre auf), die **Kinderzeit als Woche**
+  (sieben Balken von 0 bis 24 Uhr, antippen und einstellen, je Kind oder für
+  alle) und die **Sicherung** aufs Handy samt Zurückspielen mit Vorschau. Die
+  Sperre braucht das Update der Box. Mehr in 3.5 und 3.7.
 * **27.09.** **Theme-Gestalter**: Themen per Ziehen und Ablegen bauen —
   Mini-Player, Titelband, Maskottchen, Uhr und Anzeigen andocken,
   Hintergrund (Farbe, Verlauf, Bild) und eigene Farben wählen, die Vorschau
@@ -100,7 +113,7 @@ Aus dem Commit-Log, nicht aus dem Gedächtnis. Was davon halb ist, steht in 3.9.
 ## 3. Was die Box kann
 
 Alles hier ist am Bestand abgelesen oder am Gerät gemessen, nicht versprochen.
-Was erst halb da ist, steht in 3.9 — und nur dort.
+Was erst halb da ist, steht in 3.10 — und nur dort.
 
 ### 3.1 Für das Kind — der Schirm
 
@@ -128,7 +141,10 @@ Was erst halb da ist, steht in 3.9 — und nur dort.
 * **Vorlesen.** Ein Tipp auf eine Kachel liest den Namen vor, im **Lernmodus**
   Silbe für Silbe. Gerechnet wird auf der Box (Piper), ohne Netz. Eingerichtet
   wird Piper auf allen drei Ausrollwegen; scheitert dabei der Download (rund
-  244 MB), fällt die Box auf die Browser-Stimme (espeak-ng) zurück.
+  244 MB), fällt die Box auf die Browser-Stimme (espeak-ng) zurück. Eine
+  **frisch eingerichtete** Box liest ab Werk vor (Modus *antippen*), sobald
+  Piper spricht; eine laufende Box schaltet ein Update **nicht** um — dort
+  bleibt, was eingestellt war (seit 28.09.2026).
 * **Profile.** Bis zu zwölf Kinder, jedes mit Name, Figur, Geburtstag und
   eigenen Ablagen (Verlauf, Weiterhören, Listen, Medienauswahl, Aussehen,
   Videofreigaben, Zeitverbrauch). Angemeldet wird ohne Tastatur: ein Fenster
@@ -263,6 +279,13 @@ Stationen: **Quellen → Klangwerk → Entzerrer → Ziel**.
   für heute Minuten schenken oder den Tag zurücksetzen. Eine kaputte
   Konfiguration sperrt **nicht** aus, sie wird auf die freundliche Seite
   gebogen.
+* **Box sperren** (seit 28.09.2026, aus der Handy-App): „jetzt ist Pause" —
+  unabhängig von der Kinderzeit, auch wenn sie aus ist. Die Box startet nichts
+  mehr (auch keine Videos), laufende Musik hält sofort an, anhalten und leiser
+  drehen gehen weiter. Der Schirm zeigt einen Mond mit „Die Box macht Pause"
+  und bis wann. Die Sperre hat **immer ein Ende** (höchstens 24 Stunden) und
+  übersteht einen Neustart. An der Box hebt sie der Mond auf: **1,2 s halten**,
+  dann kommt die Eltern-Sperre. Prüfen: `mupi-check kinderzeit`.
 * **Belohnungs-Videos.** Eltern geben einzelne Mediathek-Videos frei, mit
   Anzahl; das Kind sieht nur das Freigegebene — keine Suche, kein Stöbern.
   Verbraucht wird erst bei rund 90 % Gesehenem, ein Abbruch kostet nichts. Ein
@@ -285,22 +308,32 @@ Stationen: **Quellen → Klangwerk → Entzerrer → Ziel**.
 Eine Aufnahmefunktion mit eigener Quelle ist geplant — vorgesehen ist ein
 gekoppeltes Bluetooth-Mikrofon.
 
-### 3.7 Bedienen ohne Touch — Handy-App, Fernbedienung und Controller
+### 3.7 Die Handy-App
 
-**Die Handy-App** (`handy-app/`, Android, Flutter) ist die Fernbedienung für
-Eltern — für eine Box oder mehrere. Seit dem 27.09.2026 läuft sie an einem
-echten Handy gegen eine echte Box.
+**Die Fernbedienung für Eltern** (`handy-app/`, Android, Flutter) — für eine
+Box oder mehrere im Heimnetz. Seit dem 27.09.2026 läuft sie an einem echten
+Handy gegen eine echte Box, seit dem 28.09.2026 mit **Sperren, Kinderzeit und
+Sicherung**. Sie ist reiner Gast: Durchgesetzt wird alles auf der Box — ein
+zweites Handy, der Taster und die Verwaltung im Browser sehen dieselben Regeln.
 
-* **Übersicht über alle Boxen:** je Box das laufende Album mit kleinem Bild,
-  das aktive Kind mit seiner Figur, Pause/Weiter und ein eigener
-  Lautstärke-Regler. Ab zwei Boxen oben **„Alle pausieren"** und ein **Regler
-  für alle** — er steht auf der lautesten Box und stellt beim Loslassen alle
-  auf seinen Wert. Im Menü: alle stoppen, lauter/leiser, und ein Kind auf
-  allen Boxen zugleich anmelden.
+![Die Handy-App an der echten Box: Übersicht, Spieler, Profile, Mediathek, Hinzufügen (Kindernamen ersetzt)](screenshots/41-handy-app.png)
+
+*Von links: die Übersicht aller Boxen mit Albumbild, Kind und Lautstärke · der
+Spieler einer Box · die Profile — Antippen wechselt das Kind an der Box · die
+Mediathek der Box mit Suche; der Pfeil holt, was als Datei auf der Box liegt ·
+Aufnehmen aus der Suche, gleich mit der Wahl, welche Kinder es sehen.*
+
+**Bedienen**
+
+* **Alle Boxen auf einen Blick:** je Box das laufende Album, das aktive Kind
+  mit seiner Figur, Pause/Weiter und ein eigener Lautstärke-Regler. Ab zwei
+  Boxen oben **„Alle pausieren"** und ein **Regler für alle** — er steht auf
+  der lautesten Box und stellt beim Loslassen alle auf seinen Wert. Im Menü:
+  alle stoppen, lauter/leiser, ein Kind auf allen Boxen zugleich anmelden,
+  alle sperren und entsperren.
 * **Je Box:** der große Spieler (Cover, Titel, Sprünge, Lautstärke, auch
   quer), die **Profile** mit Bildern — ein Wechsel aus der App erscheint auf
-  der Box in unter einer Sekunde — und die **Mediathek** der Box mit Suche;
-  was als Datei auf der Box liegt, lässt sich aufs Handy laden.
+  der Box in unter einer Sekunde — und die **Mediathek** der Box mit Suche.
 * **Medien verwalten** (nur mit dem Verwaltungspasswort, falls eines gesetzt
   ist): umbenennen, Kategorie, löschen, neu einlesen, bei Spotify, Jellyfin
   und der ARD suchen und aufnehmen — und dabei **gleich festlegen, welche
@@ -308,6 +341,50 @@ echten Handy gegen eine echte Box.
 * **Aus Spotify teilen:** in der Spotify-App *Teilen → MixPiBox*. Die Box
   macht aus dem Link Treffer zum Aufnehmen — ein Album direkt, ein einzelner
   Titel wird sein Album, ein Interpret bringt seine Alben zur Auswahl.
+
+**Für Eltern** (seit 28.09.2026)
+
+![Die Eltern-Seiten der Handy-App an der echten Box: gesperrt, Sperr-Auswahl, Kinderzeit-Woche, ein Tag, Sicherung (Kindernamen ersetzt)](screenshots/43-handy-eltern.png)
+
+*Von links: die Box ist gesperrt — der rote Streifen sagt bis wann, „Ändern"
+hebt auf · die Auswahl hinter dem Schloss · die Kinderzeit als Woche: Mo–Fr
+von 7 bis 19 Uhr eine Stunde, Samstag offen, Sonntag Hörpause (Beispiel, nicht
+gespeichert) · ein Tag zum Einstellen, mit „Für Mo–Fr" auf die Schultage
+übertragen · die Sicherung: anlegen, zurückspielen, die Stände der Box.*
+
+* **Box sperren** — das Schloss oben auf der Seite einer Box: 15 Minuten bis
+  2 Stunden, „bis morgen früh (7:00)" oder bis zu einer Uhrzeit. Die Box
+  startet nichts mehr, auch keine Videos; laufende Musik hält sofort an;
+  anhalten und leiser drehen gehen weiter. Die Sperre gilt auch, wenn die
+  Kinderzeit aus ist, und übersteht einen Neustart. **Sie endet immer von
+  selbst**, spätestens nach 24 Stunden — eine vergessene Sperre soll die Box
+  nicht stumm lassen, während das Handy im Büro liegt.
+* **Was das Kind sieht:** einen Mond und „Die Box macht Pause." mit der
+  Uhrzeit, ab der es weitergeht. An der Box selbst hebt man die Sperre auf,
+  indem man den **Mond 1,2 Sekunden hält** — danach kommt dieselbe
+  Einstellungssperre wie beim Wappen (PIN, Rechenaufgabe oder Geste).
+
+  ![Der Pausen-Schirm der Box während einer Sperre (aus der Vorschau)](screenshots/44-box-pause.png)
+
+* **Kinderzeit als Woche** (*⋮ → Kinderzeit*): sieben Balken von 0 bis 24 Uhr
+  (oben Mitternacht). Farbig ist, wann gehört werden darf, darunter steht die
+  Hördauer, ein gesperrter Tag ist schraffiert, heute ist markiert — mit
+  einem Strich bei „jetzt". Ein Tipp auf einen Tag: darf hören, ab, bis,
+  Dauer; übernehmen für den Tag, Mo–Fr, Sa–So oder alle. Oben *Alle Kinder*
+  (die Hausregel) oder ein Kind — ein Kind ohne eigene Regeln zeigt, was es
+  von der Hausregel erbt, und bekommt eigene erst auf *Eigene Regeln*. Unten
+  *Heute*: wie viel gehört wurde, Minuten schenken, den Tag zurücksetzen.
+  Erst *Speichern* schreibt auf die Box.
+* **Sicherung** (*⋮ → Sicherung*): *Jetzt sichern* legt einen Stand an und
+  speichert ihn auf dem Handy unter `Download/MixPiBox` — so liegt er nicht
+  nur auf der Karte der Box. Auf Wunsch mit den Zugangsdaten, verschlüsselt
+  mit einem Passwort, das die App sich nicht merkt. Die Stände auf der Box
+  lassen sich aufs Handy holen. *Datei wählen …* spielt zurück: erst zeigt die
+  Box, was sich ändern würde, erst danach spielt sie ein — und legt vorher
+  selbst einen Stand an.
+
+**Verbinden**
+
 * **Koppeln statt offen:** eine App wird nur bedient, wenn sie gekoppelt ist.
   Tippt man in der App auf *Koppeln*, zeigt die Box **QR-Code und Zahlencode**
   — ist eine Eltern-PIN gesetzt, erst nach der PIN. Jedes Handy bekommt einen
@@ -315,13 +392,17 @@ echten Handy gegen eine echte Box.
   gekoppelten und kann sie wieder entfernen. Solange eine App verbunden ist,
   zeigt die Leiste der Box ein **Handy-Zeichen**. Zum Entwickeln lässt sich
   die Pflicht dort abschalten — nur am Schirm der Box, nie aus dem Netz.
+* **Box finden:** *Box hinzufügen* sucht im WLAN, oder man gibt Name bzw. IP
+  von Hand ein; mit HTTPS merkt sich die App das Zeugnis der Box beim ersten
+  Kontakt.
 * **Grenze:** nur Android; das APK baut die CI, einen Store-Eintrag gibt es
-  nicht.
+  nicht. Die Sperre braucht eine Box ab dem 28.09.2026; an einer älteren
+  zeigt die App dafür „braucht ein Update". Bauen, Debuggen am Handy und die
+  Wege zur Box: `handy-app/README.md`.
 
-![Die Handy-App an der echten Box: Übersicht, Spieler, Profile, Mediathek, Hinzufügen (Kindernamen ersetzt)](screenshots/41-handy-app.png)
 ![Die echte Box mit Handy-Zeichen oben rechts in der Leiste](screenshots/40-box-handy-zeichen.png)
 
-**Fernbedienung und Controller**
+### 3.8 Fernbedienung und Controller
 
 Die Box lässt sich über gekoppelte **Bluetooth-Eingabegeräte** bedienen, ohne
 den Schirm zu berühren. Ein eigener Dienst liest `/dev/input/event*` mit der
@@ -331,7 +412,7 @@ Gerät exklusiv (sonst schluckt Chromium die Tasten).
 * Vier Geräteprofile: **Fire TV** (Alexa-Fernbedienung und Basic), **Google TV
   /Chromecast** und der **Xbox Wireless Controller** — letzterer am Gerät
   ausgemessen (06.09.2026). Die mitgelieferte Zuordnung deckt Fire TV und den
-  Controller ab; Google TV wird von Hand zugeordnet (3.9).
+  Controller ab; Google TV wird von Hand zugeordnet (3.10).
 * 16 Box-Aktionen mit stabiler Kennung (Abspielen/Pause, Titelwechsel, Stoppen,
   lauter/leiser, hoch/runter/links/rechts, auswählen, Startseite, zurück,
   ausschalten, Bühne weiterschalten, Spielecke öffnen).
@@ -342,9 +423,9 @@ Gerät exklusiv (sonst schluckt Chromium die Tasten).
   Wiederverbinden eine andere. Entprellt wird getrennt: Tasten 250 ms, Achsen
   50 ms.
 * **Grenze:** es steuert immer nur *ein* Gerät gleichzeitig, und ein neues
-  Gerät wird heute von Hand zugeordnet (siehe 3.9).
+  Gerät wird heute von Hand zugeordnet (siehe 3.10).
 
-### 3.8 Unter der Haube
+### 3.9 Unter der Haube
 
 * **Zwei Backends in TypeScript:** `src/backend-api` (Medien, Konfiguration,
   Verwaltung, liefert die Oberfläche aus, Port 8200, 142 Testdateien) und
@@ -352,7 +433,7 @@ Gerät exklusiv (sonst schluckt Chromium die Tasten).
   15 Testdateien).
 * **42 systemd-Einheiten** in `config/services` (35 `.service`, 6 `.timer`,
   1 `.path`) — statt pm2. Die App ist damit 20 s früher bereit.
-* **14 Plugins** im Baum, in eigenen Worker-Fäden mit Speicher- und
+* **16 Plugins** im Baum, in eigenen Worker-Fäden mit Speicher- und
   Zeitgrenzen (Abschnitt 7).
 * **Sicherung** mit einem Rückweg, der ohne SSH auskommt: eine Textdatei auf
   der FAT-Partition der Karte genügt.
@@ -362,7 +443,7 @@ Gerät exklusiv (sonst schluckt Chromium die Tasten).
   und einige weitere Seiten — längst nicht für jede. Die Box-Oberfläche hat
   Verhaltenstests für Abspielweg und Zustände, **nicht** fürs Aussehen.
 
-### 3.9 Was halb fertig ist
+### 3.10 Was halb fertig ist
 
 Damit niemand darauf baut — die lange Fassung steht in
 `dokumentation/mixpibox.md`, Abschnitt 9. Der Plan, nach dem dieser Abschnitt
@@ -401,14 +482,14 @@ halbfertig zu benennen, statt es wegzulassen (dann fehlt es) oder mitzuzählen
 | **EINE Box-Oberfläche.** Der Erprobungs-Umschalter fiel mit E118/1d, die alte Angular/Ionic-Oberfläche wurde mit E118/1e am 05.09.2026 **gelöscht**; der Kiosk lädt fest `/neu/`. In `src/frontend-box/` liegt nur noch ein Nachzügler-Modul samt `LIESMICH.md`. | `scripts/chromium-autostart.sh`, Catch-all in `src/backend-api/src/server.ts` | fertig |
 | **Neue Verwaltung** in Angular, 27 Seiten + Anmeldung, unter `/admin`, mit Suche über alle Einstellungen. | `src/frontend-admin/` | löst den PHP-Admin ab (ausgebaut 19.08.2026); Zeugen für Anmeldeweg, Kinderzeit, Suche und einige weitere Seiten |
 | **Backends in TypeScript** statt gewachsenem JS/PHP. | `src/backend-api/` (142 Testdateien), `src/backend-player/` (15) | in Benutzung |
-| **Profile für mehrere Kinder** — bis zwölf, mit Figur, Geburtstag, Schloss in fünf Eingabearten und eigenen Ablagen je Kind. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | fertig; die Anmeldung greift nur bei abgeschaltetem Gast (3.9) |
+| **Profile für mehrere Kinder** — bis zwölf, mit Figur, Geburtstag, Schloss in fünf Eingabearten und eigenen Ablagen je Kind. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | fertig; die Anmeldung greift nur bei abgeschaltetem Gast (3.10) |
 | **Kinderzeit** — wie lange, wann und an welchen Tagen; serverseitig gezählt, nicht im Browser. | `src/backend-api/src/kinderzeit.ts` | fertig; Regeln je Kind seit 25.09.2026 auch in der Verwaltung |
 | **Belohnungs-Videos** — Eltern geben einzelne Mediathek-Videos frei, in Stücken, mit Zähler. | `NewDesign/video.js`, Verwaltungsseite „Videos" | fertig |
 | **Spiele und Lernen** — sechs Apps in der Schublade, vier Spiele in der Spielecke, jedes einzeln abschaltbar. | `NewDesign/apps.js`, `NewDesign/app.js`, `src/backend-api/src/spiele.ts` | fertig |
-| **Bedienung per Fernbedienung/Controller** — vier Geräteprofile, 16 Aktionen, ohne X. | `scripts/box/fernbedienung.py`, `config/fernbedienungen/` | fertig; die Zuordnungsseite fehlt (3.9) |
+| **Bedienung per Fernbedienung/Controller** — vier Geräteprofile, 16 Aktionen, ohne X. | `scripts/box/fernbedienung.py`, `config/fernbedienungen/` | fertig; die Zuordnungsseite fehlt (3.10) |
 | **Verschmelzung mehrerer Quellen** — dasselbe Album aus Spotify *und* Jellyfin wird EINE Kachel, seit 06.09.2026 als Vorgabe. | `src/backend-api/src/verschmelzung.ts` | fertig, am Gerät gemessen (44 → 35 Kacheln) |
 | **Interpretenseiten** und **Weiterhören** — alle Alben eines Interpreten; „wo war ich stehengeblieben?". | `src/backend-api/src/interpretenseite.ts`, `weiterhoeren.ts` | fertig, getestet |
-| **Eine Tonkette, die man stellen kann** — mehrere Bluetooth-Senken zugleich, Fünfband-Entzerrer, Stereobasis, Kompressor/Begrenzer, Lautstärke je Quelle. | `config/templates/61-entzerrer.conf`, Plugin `mixpi-klang`, Verwaltungsseite „Ton" | fertig; kein Auto-EQ, Lautheit zwischen den Diensten mit Soloist offen (3.9) |
+| **Eine Tonkette, die man stellen kann** — mehrere Bluetooth-Senken zugleich, Fünfband-Entzerrer, Stereobasis, Kompressor/Begrenzer, Lautstärke je Quelle. | `config/templates/61-entzerrer.conf`, Plugin `mixpi-klang`, Verwaltungsseite „Ton" | fertig; kein Auto-EQ, Lautheit zwischen den Diensten mit Soloist offen (3.10) |
 | **Cover liegen auf der Box.** Gemessen: 1,69 s kalt → 0,03 s danach. | `src/backend-api/src/server.ts` (`coverspeicher`) | fertig (Classic hat das seit 5.0.0 ebenfalls) |
 | **systemd statt pm2** — 20 s früher bereit; seit 14.08.2026 auf **allen** Wegen. | `config/services/` | umgestellt |
 | **Ein Plugin-System** — alles jenseits des Kerns ist ein Plugin, ohne Bau-Schritt, in einem eigenen Worker-Faden. | `plugins/` (14 Stück) | in Benutzung; eine eigene Fläche im Kinderschirm fehlt bewusst (Abschnitt 7) |
@@ -432,7 +513,7 @@ Zeilen) und an den heutigen Rezepten:
 | Kiosk | Chromium | Chromium, **Cog/WPE** als Option |
 | Installation | ein Monolith-Skript | **Rezepte**, Schritt für Schritt; Selbstlauf von der Karte |
 | Sprachausgabe | — | **Piper** auf der Box |
-| Erweiterungen | — | **Plugin-System**, 14 Plugins |
+| Erweiterungen | — | **Plugin-System**, 16 Plugins |
 
 ### Gemessen — was der Umbau gebracht hat
 
@@ -454,7 +535,7 @@ eine Sekunde. Die Messungen stehen im Wissenspaket
 Was daran **nicht** besser wurde, steht ehrlich dabei: die rund 9 s, die
 Chromium vom Prozessstart bis zum fertigen Bild braucht, sind echte Arbeit und
 bleiben; und der Lautstärkesprung zwischen den Diensten ist mit Soloist nicht
-ausgeglichen (3.9).
+ausgeglichen (3.10).
 
 ---
 
@@ -614,7 +695,7 @@ src/frontend-admin/    die Verwaltung (Angular)                             → 
 src/backend-api/       Medien, Konfiguration, Verwaltung; liefert aus       (:8200)
 src/backend-player/    Abspieldienst: mpv für lokal/Jellyfin, Spotify       (:5005)
 src/frontend-box/      Rest der gelöschten Angular-Oberfläche — siehe LIESMICH.md
-plugins/               14 Erweiterungen, Musterplugins, Prüfstand, Anleitung
+plugins/               16 Erweiterungen, Musterplugins, Prüfstand, Anleitung
 handy-app/             die Handy-App (Flutter, Android) — Abschnitt 3.7
 desktop/               der Theme-Gestalter als Desktop-App (Electron) — Abschnitt 3.1
 remote-step-installer/ Karten schreiben und Boxen aufsetzen (Abschnitt 5)
@@ -664,9 +745,12 @@ Pfaden).
 * **Pflicht sind vier Felder** (`kennung`, `name`, `fassung`, `haupt`), alles
   andere ist freiwillig: `rechte`, `felder`, `sektion`, `icon`, `aktionen`,
   `konfig`.
-* **Sechs Rechte**, und was nicht im Manifest steht, ist im Kontext schlicht
+* **Sieben Rechte**, und was nicht im Manifest steht, ist im Kontext schlicht
   `undefined`: `medienquelle`, `ereignisse`, `netz`, `klang`,
-  `geraetestand`, `songtext`.
+  `geraetestand`, `songtext`, `sprechen` (die Box liest einen Text vor).
+* **Ein Angebot zum Aufnehmen ohne Kernänderung:** wer `http/angebot`
+  beantwortet, bekommt auf der Medien-Seite seine eigene Liste mit
+  „aufnehmen" (und auf Wunsch ein Suchfeld).
 * **Neun Vertragsmethoden, alle freiwillig:** `aufloesen`, `suchen`, `inhalt`,
   `befinden`, `ereignis`, `klangkette`, `aktion`, `http`, `songtext`.
 * **Einstellungen sind deklarativ:** die Verwaltung baut die Eingaben aus
@@ -697,12 +781,14 @@ npx tsx tools/plugin-pruefen.mjs plugins/<kennung>   # das maßgebliche Urteil
 Der letzte Befehl ist der maßgebliche: er lädt das Plugin in einem **echten**
 Worker mit den echten Riegeln. Die volle Anleitung — samt Abweisungsregeln im
 Wortlaut und einem Abschnitt „Für LLMs" — steht in
-**[`plugins/README.md`](plugins/README.md)**. Die 14 Plugins im Baum sind
-mitgetestet: 16 Testdateien, 404 Tests (`npm run test:plugins`).
+**[`plugins/README.md`](plugins/README.md)**. Die 16 Plugins im Baum sind
+mitgetestet: 18 Testdateien, 491 Tests (`npm run test:plugins`).
 
 | Plugin | Was es tut |
 |---|---|
 | `mixpi-archive` | gemeinfreie Hörspiele und Lesungen aus dem Internet Archive |
+| `mixpi-kindernachrichten` | logo!, MausNachrichten, Kakadu, GEOlino Spezial — Nachrichten nur, solange sie frisch sind |
+| `mixpi-klexikon` | Artikel aus dem Klexikon (Kinderlexikon, CC BY-SA), von der Box vorgelesen; „Wissen des Tages“ |
 | `mixpi-ardsounds` | ARD Audiothek: Regale, Sammlungen, Sendungen, Radiosender |
 | `mixpi-mediathek` · `mixpi-mediathekview` | Videos: ARD bzw. ZDF/KiKA/3sat/arte/funk |
 | `mixpi-jellyfin` | Jellyfin als Medienquelle (Adresse und Schlüssel bleiben im Kern) |
@@ -787,7 +873,7 @@ Ohne diesen Befehl liegen die Haken zwar im Baum, laufen aber **nie** —
 **Wo das Wissen steht.** Die teuer erkauften Einzelheiten — welche Messung
 welche Vermutung widerlegt hat, welcher Workaround warum nötig war — stehen
 nicht im Code und nicht in dieser Datei, sondern im Wissenspaket
-**`llmwiki/pack.yaml`** (1136 Einträge, Fassung 638). Es ist bewusst Daten,
+**`llmwiki/pack.yaml`** (1152 Einträge, Fassung 654). Es ist bewusst Daten,
 kein Code, und wird nie ausgeführt. Gelesen wird es nicht von Hand:
 
 ```bash

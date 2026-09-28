@@ -1,0 +1,32 @@
+{
+  "kennung": "mixpi-klexikon",
+  "name": "Klexikon",
+  "fassung": "0.1.0",
+  "haupt": "index.mjs",
+  "rechte": ["medienquelle", "netz", "sprechen"],
+  "sektion": "medien",
+  "icon": "icon.svg",
+  "felder": [
+    {
+      "schluessel": "tempo",
+      "art": "zahl",
+      "name": "Sprechtempo",
+      "hinweis": "1 = normal, groesser = langsamer (0,7 bis 2). 1,1 laesst Kindern etwas mehr Zeit zum Mitdenken.",
+      "vorgabe": 1.1
+    },
+    {
+      "schluessel": "themen",
+      "art": "text",
+      "name": "Themen fuer „Wissen des Tages“",
+      "hinweis": "Kategorien des Klexikons, mit Komma getrennt — z. B. Tiere und Natur, Wissenschaft und Technik, Erdkunde, Geschichte, Sport und Spaß, Essen und Trinken, Körper und Gesundheit, Bekannte Leute. Leer laesst das ganze Klexikon zu.",
+      "vorgabe": "Tiere und Natur, Wissenschaft und Technik"
+    }
+  ],
+  "aktionen": [
+    {
+      "kennung": "pruefen",
+      "name": "Erreichbarkeit messen",
+      "hinweis": "Fragt das Klexikon je einmal nach Suche, Artikel und Kategorie und nennt die Antwortzeiten — und ob die Box vorlesen kann."
+    }
+  ]
+}

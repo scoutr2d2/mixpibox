@@ -54,6 +54,50 @@ class AttrappenBox {
   static const sitzung = 'abc123';
   String aktiv = 'gast';
 
+  // ── Box-Sperre (boxsperre.ts, 28.09.2026) ──
+  /// Ende der Sperre; null = nicht gesperrt.
+  DateTime? sperreBis;
+
+  /// Eine aeltere Box ohne /api/boxsperre: sie antwortet mit ihrer Startseite.
+  bool ohneSperre = false;
+
+  /// Eine Box von vor dem 25.09.2026: kein /api/kinderzeit/satz (Startseite).
+  bool ohneSatz = false;
+
+  // ── Kinderzeit (kinderzeit.ts) ──
+  Map<String, dynamic> kzStandard = {
+    'aktiv': true,
+    'nachsichtMin': 5,
+    'tage': {
+      for (final t in ['so', 'mo', 'di', 'mi', 'do', 'fr', 'sa'])
+        t: {'frei': t != 'so', 'ab': '07:00', 'bis': '19:30', 'minuten': t == 'sa' ? 0 : 60},
+    },
+  };
+  final Map<String, Map<String, dynamic>> kzJe = {};
+  final Map<String, int> kzBonus = {};
+
+  // ── Sicherung (sicherung.ts) ──
+  final List<Map<String, dynamic>> staende = [
+    {'name': 'mupibox-sicherung-20260927-0300-selbsttaetig.tar.gz', 'erzeugt': '2026-09-27T03:00:00Z', 'grund': 'selbsttaetig', 'dateien': 12, 'ausgelassen': 0, 'zugangsdaten': 0, 'bytes': 4096},
+  ];
+  final List<String> geprueft = [];
+  final List<Map<String, dynamic>> eingespielt = [];
+
+  Map<String, dynamic> _sperrStand() {
+    final bis = sperreBis;
+    if (bis == null || !bis.isAfter(DateTime.now())) {
+      return {'aktiv': false, 'bis': null, 'bisZeit': '', 'morgen': false, 'restMin': 0, 'seit': null};
+    }
+    return {
+      'aktiv': true,
+      'bis': bis.millisecondsSinceEpoch,
+      'bisZeit': '${bis.hour.toString().padLeft(2, '0')}:${bis.minute.toString().padLeft(2, '0')}',
+      'morgen': bis.day != DateTime.now().day,
+      'restMin': bis.difference(DateTime.now()).inMinutes + 1,
+      'seit': DateTime.now().millisecondsSinceEpoch,
+    };
+  }
+
   http.Response _json(Object o, [int status = 200]) =>
       http.Response(jsonEncode(o), status, headers: {'content-type': 'application/json'});
 
@@ -165,6 +209,11 @@ class AttrappenBox {
       final code = (jsonDecode(req.body) as Map)['code'];
       if (code != kopplungsCode) return _json({'error': 'kopplung_falsch', 'hinweis': 'Der Code stimmt nicht.'}, 403);
       return _json({'schluessel': schluessel, 'id': 'hdy_1'});
+    }
+    // WIE DIE BOX: das LESEN der Sperre steht VOR dem Tor (server.ts).
+    if (pfad == '/api/boxsperre' && req.method == 'GET') {
+      if (ohneSperre) return http.Response('<!doctype html><title>MixPiBox</title>', 200, headers: {'content-type': 'text/html'});
+      return _json(_sperrStand());
     }
     final angemeldet = passwort == null || (req.headers['cookie'] ?? '').contains('mupi_admin=$sitzung');
     if (pfad == '/api/auth/login') {
@@ -283,7 +332,135 @@ class AttrappenBox {
     }
     if (pfad == '/api/spielen') {
       rumpfe.add(jsonDecode(req.body) as Map<String, dynamic>);
+      if (_sperrStand()['aktiv'] == true) {
+        return _json({'kinderzeit': true, 'erlaubt': false, 'grund': 'gesperrt', 'gesperrtBis': _sperrStand()['bisZeit'], 'restMin': null, 'fensterAb': '', 'fensterBis': ''}, 403);
+      }
       return _json({'fehler': 'Kinderzeit ist um'}, 403);
+    }
+    // ── Box-Sperre: setzen und aufheben (hinter dem Tor) ──
+    if (pfad == '/api/boxsperre' && req.method == 'POST') {
+      final b = (jsonDecode(req.body) as Map).cast<String, dynamic>();
+      if (b['minuten'] != null) {
+        final m = (b['minuten'] as num).toInt();
+        if (m < 1 || m > 1440) return _json({'error': 'ungueltig', 'satz': 'Länger als 24 Stunden sperrt die Box nicht.'}, 400);
+        sperreBis = DateTime.now().add(Duration(minutes: m));
+      } else if (b['bis'] is num) {
+        sperreBis = DateTime.fromMillisecondsSinceEpoch((b['bis'] as num).toInt());
+      } else {
+        return _json({'error': 'ungueltig', 'satz': 'Es fehlt, wie lange die Box gesperrt sein soll.'}, 400);
+      }
+      schreibwege.add('SPERRE ${b['minuten'] ?? 'bis'}');
+      return _json(_sperrStand());
+    }
+    if (pfad == '/api/boxsperre' && req.method == 'DELETE') {
+      sperreBis = null;
+      schreibwege.add('ENTSPERRT');
+      return _json(_sperrStand());
+    }
+    // ── Kinderzeit ──
+    final kzProfil = req.url.queryParameters['profil'];
+    if (pfad == '/api/kinderzeit/satz') {
+      if (ohneSatz) return http.Response('<!doctype html><title>MixPiBox</title>', 200, headers: {'content-type': 'text/html'});
+      return _json({'standard': kzStandard, 'je': kzJe});
+    }
+    if (pfad == '/api/kinderzeit' && req.method == 'GET') return _json(kzStandard);
+    if (pfad == '/api/kinderzeit' && req.method == 'PUT') {
+      final b = (jsonDecode(req.body) as Map).cast<String, dynamic>();
+      if (kzProfil == null) {
+        kzStandard = b;
+      } else {
+        kzJe[kzProfil] = b;
+      }
+      schreibwege.add('KZ ${kzProfil ?? 'haus'}');
+      return _json(b);
+    }
+    if (pfad == '/api/kinderzeit' && req.method == 'DELETE') {
+      if (kzProfil == null) return _json({'error': 'hausregelBleibt'}, 400);
+      kzJe.remove(kzProfil);
+      schreibwege.add('KZ ablegen $kzProfil');
+      return _json(kzStandard);
+    }
+    if (pfad == '/api/kinderzeit/stand') {
+      final wer = kzProfil ?? aktiv;
+      final r = kzJe[wer] ?? kzStandard;
+      if (_sperrStand()['aktiv'] == true) {
+        return _json({'erlaubt': false, 'grund': 'gesperrt', 'gesperrtBis': _sperrStand()['bisZeit'], 'restMin': 40, 'fensterAb': '07:00', 'fensterBis': '19:30', 'profil': wer, 'aktiv': r['aktiv'], 'verbrauchtMin': 20, 'bonusMin': kzBonus[wer] ?? 0});
+      }
+      return _json({'erlaubt': true, 'grund': r['aktiv'] == true ? 'frei' : 'aus', 'restMin': 40 + (kzBonus[wer] ?? 0), 'fensterAb': '07:00', 'fensterBis': '19:30', 'profil': wer, 'aktiv': r['aktiv'], 'verbrauchtMin': 20, 'bonusMin': kzBonus[wer] ?? 0});
+    }
+    if (pfad == '/api/kinderzeit/bonus') {
+      final wer = kzProfil ?? aktiv;
+      kzBonus[wer] = (kzBonus[wer] ?? 0) + ((jsonDecode(req.body) as Map)['minuten'] as num).toInt();
+      schreibwege.add('BONUS $wer ${kzBonus[wer]}');
+      return _json({'bonusMin': kzBonus[wer]});
+    }
+    if (pfad == '/api/kinderzeit/zuruecksetzen') {
+      final wer = kzProfil ?? aktiv;
+      kzBonus.remove(wer);
+      schreibwege.add('ZURUECK $wer');
+      return _json({'erlaubt': true, 'grund': 'frei'});
+    }
+    // ── Sicherung ──
+    if (pfad == '/api/sicherung') {
+      return _json({
+        'ok': true,
+        'werkzeugDa': true,
+        'host': 'kinderzimmer',
+        'anmeldungOffen': passwort == null,
+        'ablageHinweise': ['Die Datei liegt danach in Ihrem Download-Ordner.'],
+        'passwortMin': 8,
+        'maxBytes': 8388608,
+        'staende': staende,
+        'meldung': '',
+      });
+    }
+    if (pfad == '/api/sicherung/anlegen') {
+      final b = (jsonDecode(req.body) as Map).cast<String, dynamic>();
+      rumpfe.add(b);
+      if (b['mitZugangsdaten'] == true && '${b['passwort']}'.length < 8) {
+        return _json({'ok': false, 'fehler': 'Das Passwort braucht mindestens 8 Zeichen.'}, 400);
+      }
+      final zug = b['mitZugangsdaten'] == true ? '-mit-zugangsdaten' : '';
+      return http.Response.bytes(
+        [0x1f, 0x8b, ...utf8.encode('stand')],
+        200,
+        headers: {
+          'content-type': 'application/gzip',
+          'content-disposition': 'attachment; filename="mupibox-sicherung-kinderzimmer-20260928200000$zug.tar.gz"',
+        },
+      );
+    }
+    final standWeg = RegExp(r'^/api/sicherung/stand/(.+)$').firstMatch(pfad);
+    if (standWeg != null) {
+      final name = Uri.decodeComponent(standWeg.group(1)!);
+      if (!staende.any((st) => st['name'] == name)) return _json({'ok': false, 'fehler': 'Diesen Stand gibt es auf der Box nicht (mehr).'}, 404);
+      herunterGeladen.add(name);
+      return http.Response.bytes([0x1f, 0x8b, ...utf8.encode(name)], 200, headers: {'content-disposition': 'attachment; filename="$name"'});
+    }
+    if (pfad == '/api/sicherung/pruefen') {
+      if (req.bodyBytes.length < 2 || req.bodyBytes[0] != 0x1f || req.bodyBytes[1] != 0x8b) {
+        return _json({'ok': false, 'fehler': 'Das ist keine Sicherung dieser Box (kein gzip).'}, 400);
+      }
+      final kennung = 'b' * 64;
+      geprueft.add(kennung);
+      return _json({
+        'ok': true,
+        'kennung': kennung,
+        'stand': {'erzeugt': '2026-09-27T03:00:00Z', 'host': 'kinderzimmer', 'dateien': 12, 'zugangsdaten': [{'feld': 'spotify'}]},
+        'warnungen': ['Der Stand stammt von einer anderen Box („wohnzimmer").'],
+        'plan': {'vonHand': []},
+        'satz': '3 Dateien werden ueberschrieben, 9 stehen schon genau so da',
+      });
+    }
+    if (pfad == '/api/sicherung/zurueckspielen') {
+      final b = (jsonDecode(req.body) as Map).cast<String, dynamic>();
+      if (!geprueft.contains(b['kennung'])) return _json({'ok': false, 'fehler': 'Ohne die Kennung aus der Vorschau wird nichts eingespielt.'}, 400);
+      eingespielt.add(b);
+      return _json({'ok': true, 'satz': '3 Dateien werden ueberschrieben', 'vorherStand': 'mupibox-sicherung-vorher.tar.gz', 'vonHand': ['WLAN-Passwort'], 'neustartNoetig': true});
+    }
+    if (pfad == '/api/reboot') {
+      schreibwege.add('NEUSTART');
+      return _json({'ok': true});
     }
     return _json({'error': 'unbekannt'}, 404);
   });
@@ -508,6 +685,180 @@ void main() {
     test('Absage der Box (Kinderzeit) kommt mit ihrem Satz an', () async {
       await expectLater(c.spielen('w1'), throwsA(isA<BoxFehler>().having((e) => e.satz, 'satz', 'Kinderzeit ist um')));
       expect(box.rumpfe.last, {'schluessel': 'w1'});
+    });
+  });
+
+  group('Box-Sperre (28.09.2026)', () {
+    test('lesen, sperren, aufheben — und das Ende kommt als Uhrzeit', () async {
+      final box = AttrappenBox();
+      final c = BoxClient(eintrag(), client: box.client());
+      expect((await c.sperre())?.aktiv, false);
+      final st = await c.sperren(minuten: 30);
+      expect(st.aktiv, true);
+      expect(st.bisZeit, matches(RegExp(r'^\d\d:\d\d$')));
+      expect(st.bisText, startsWith('bis '));
+      expect((await c.sperre())?.aktiv, true);
+      await c.entsperren();
+      expect((await c.sperre())?.aktiv, false);
+      expect(box.schreibwege, ['SPERRE 30', 'ENTSPERRT']);
+    });
+
+    test('bis zu einer Uhrzeit: geht als Millisekunden hinaus, nicht als Minuten', () async {
+      final box = AttrappenBox();
+      final c = BoxClient(eintrag(), client: box.client());
+      final bis = DateTime.now().add(const Duration(hours: 3));
+      await c.sperren(bis: bis);
+      expect(box.sperreBis?.millisecondsSinceEpoch, bis.millisecondsSinceEpoch);
+      expect(box.schreibwege, ['SPERRE bis']);
+    });
+
+    test('eine alte Box ohne den Weg: null statt Fehler — der Takt soll nicht rot werden', () async {
+      final c = BoxClient(eintrag(), client: (AttrappenBox()..ohneSperre = true).client());
+      expect(await c.sperre(), isNull);
+    });
+
+    test('mit Verwaltungspasswort: LESEN geht ohne Sitzung, SETZEN nicht', () async {
+      final c = BoxClient(eintrag(), client: AttrappenBox(passwort: 'geheim').client());
+      expect((await c.sperre())?.aktiv, false);
+      await expectLater(c.sperren(minuten: 15), throwsA(isA<AnmeldungNoetig>()));
+    });
+
+    test('gesperrt spielen: der Grund kommt als Satz, nicht als „abgelehnt"', () async {
+      final box = AttrappenBox()..sperreBis = DateTime.now().add(const Duration(minutes: 30));
+      final c = BoxClient(eintrag(), client: box.client());
+      await expectLater(
+        c.spielen('w1'),
+        throwsA(isA<BoxFehler>().having((e) => e.satz, 'satz', startsWith('Nicht gestartet: Box gesperrt (bis '))),
+      );
+    });
+  });
+
+  group('Kinderzeit (28.09.2026)', () {
+    test('der Satz: Hausregel mit allen sieben Tagen, keine Ausnahmen', () async {
+      final c = BoxClient(eintrag(), client: AttrappenBox().client());
+      final satz = await c.kinderzeitSatz();
+      expect(satz.standard.aktiv, true);
+      expect(satz.standard.tag('so').frei, false);
+      expect(satz.standard.tag('mo'), const TagesRegel(ab: '07:00', bis: '19:30', minuten: 60));
+      expect(satz.je, isEmpty);
+    });
+
+    test('speichern: ohne Profil die Hausregel, mit Profil nur fuer dieses Kind — alle sieben Tage gehen mit', () async {
+      final box = AttrappenBox();
+      final c = BoxClient(eintrag(), client: box.client());
+      final r = (await c.kinderzeitSatz()).standard.tagSetzen('mi', const TagesRegel(frei: false));
+      await c.kinderzeitSetzen(r, profil: 'lena');
+      expect(box.kzJe.keys, ['lena']);
+      expect((box.kzJe['lena']!['tage'] as Map).keys.toSet(), {'mo', 'di', 'mi', 'do', 'fr', 'sa', 'so'});
+      expect(box.kzJe['lena']!['tage']['mi']['frei'], false);
+      expect(box.kzStandard['tage']['mi']['frei'], true, reason: 'die Hausregel bleibt, wie sie war');
+      await c.kinderzeitEigeneAblegen('lena');
+      expect(box.kzJe, isEmpty);
+      expect(box.schreibwege, ['KZ lena', 'KZ ablegen lena']);
+    });
+
+    test('Stand, Bonus und Zuruecksetzen fuer ein bestimmtes Kind', () async {
+      final box = AttrappenBox();
+      final c = BoxClient(eintrag(), client: box.client());
+      await c.kinderzeitBonus(15, profil: 'tom');
+      expect((await c.kinderzeitStand(profil: 'tom')).bonusMin, 15);
+      expect((await c.kinderzeitStand(profil: 'lena')).bonusMin, 0, reason: 'geschenkt wurde nur Tom');
+      await c.kinderzeitZuruecksetzen(profil: 'tom');
+      expect(box.schreibwege, ['BONUS tom 15', 'ZURUECK tom']);
+    });
+
+    test('Stand unter einer Sperre: Grund und Ende in Worten', () async {
+      final box = AttrappenBox()..sperreBis = DateTime.now().add(const Duration(minutes: 30));
+      final st = await BoxClient(eintrag(), client: box.client()).kinderzeitStand();
+      expect(st.erlaubt, false);
+      expect(st.text, startsWith('Box gesperrt (bis '));
+    });
+
+    test('eine Box ohne /satz: die ECHTE Hausregel, nicht ein leerer Satz — sonst ueberschriebe das erste Speichern sie', () async {
+      final satz = await BoxClient(eintrag(), client: (AttrappenBox()..ohneSatz = true).client()).kinderzeitSatz();
+      expect(satz.vollstaendig, false);
+      expect(satz.standard.aktiv, true);
+      expect(satz.standard.tag('so').frei, false, reason: 'die Regel der Box, nicht die Vorgabe');
+    });
+
+    test('Regeln lesen biegt Unsinn um, statt zu werfen — wie die Box', () {
+      final r = KzRegeln.ausJson({
+        'aktiv': true,
+        'tage': {
+          'mo': {'frei': true, 'ab': '25:00', 'bis': 'abends', 'minuten': -5},
+        },
+      });
+      expect(r.tag('mo'), const TagesRegel());
+      expect(r.nachsichtMin, 5);
+      expect(r.alsJson()['tage'], hasLength(7));
+    });
+  });
+
+  group('Sicherung (28.09.2026)', () {
+    late Directory ordner;
+    setUp(() => ordner = Directory.systemTemp.createTempSync('mixpi-sicherung-'));
+    tearDown(() => ordner.deleteSync(recursive: true));
+
+    test('Lage: Staende, Hinweise der Box, offene Verwaltung', () async {
+      final l = await BoxClient(eintrag(), client: AttrappenBox().client()).sicherungLage();
+      expect(l.staende.single.grund, 'selbsttaetig');
+      expect(l.staende.single.erzeugt, isNotNull);
+      expect(l.hinweise, isNotEmpty);
+      expect(l.anmeldungOffen, true);
+    });
+
+    test('anlegen: Bytes in die Datei, Name von der Box — das Passwort nur im Koerper', () async {
+      final box = AttrappenBox();
+      final c = BoxClient(eintrag(), client: box.client());
+      final ziel = File('${ordner.path}/s.part');
+      final name = await c.sicherungAnlegen(ziel, passwort: 'lang-genug');
+      expect(name, endsWith('-mit-zugangsdaten.tar.gz'));
+      expect(ziel.readAsBytesSync().take(2), [0x1f, 0x8b]);
+      expect(box.rumpfe.single, {'mitZugangsdaten': true, 'passwort': 'lang-genug'});
+    });
+
+    test('anlegen ohne Zugangsdaten schickt kein Passwort mit', () async {
+      final box = AttrappenBox();
+      await BoxClient(eintrag(), client: box.client()).sicherungAnlegen(File('${ordner.path}/s.part'));
+      expect(box.rumpfe.single, {'mitZugangsdaten': false});
+    });
+
+    test('ein Fehler der Box kommt als ihr Satz, und es entsteht keine halbe Datei, die wie eine Sicherung aussieht', () async {
+      final c = BoxClient(eintrag(), client: AttrappenBox().client());
+      final ziel = File('${ordner.path}/s.part');
+      await expectLater(
+        c.sicherungAnlegen(ziel, passwort: 'kurz'),
+        throwsA(isA<BoxFehler>().having((e) => e.satz, 'satz', 'Das Passwort braucht mindestens 8 Zeichen.')),
+      );
+      expect(ziel.existsSync(), false);
+    });
+
+    test('einen Stand von der Box holen', () async {
+      final box = AttrappenBox();
+      final c = BoxClient(eintrag(), client: box.client());
+      final name = box.staende.single['name'] as String;
+      expect(await c.sicherungHolen(name, File('${ordner.path}/h.part')), name);
+      expect(box.herunterGeladen, [name]);
+    });
+
+    test('zurueckspielen in zwei Schritten: erst die Vorschau, dann nur mit ihrer Kennung', () async {
+      final box = AttrappenBox();
+      final c = BoxClient(eintrag(), client: box.client());
+      final datei = File('${ordner.path}/w.tar.gz')..writeAsBytesSync([0x1f, 0x8b, 1, 2, 3]);
+      final v = await c.sicherungPruefen(datei);
+      expect(v.kennung, hasLength(64));
+      expect(v.zugangsdaten, 1);
+      expect(v.warnungen.single, contains('anderen Box'));
+      expect(box.eingespielt, isEmpty, reason: 'pruefen spielt nichts ein');
+      final e = await c.sicherungZurueckspielen(v.kennung, passwort: 'lang-genug');
+      expect(e['neustartNoetig'], true);
+      expect(box.eingespielt.single, {'kennung': v.kennung, 'mitZugangsdaten': true, 'passwort': 'lang-genug'});
+    });
+
+    test('keine Sicherung: die Box sagt es, bevor etwas geschieht', () async {
+      final c = BoxClient(eintrag(), client: AttrappenBox().client());
+      final datei = File('${ordner.path}/falsch.txt')..writeAsStringSync('hallo');
+      await expectLater(c.sicherungPruefen(datei), throwsA(isA<BoxFehler>().having((e) => e.satz, 'satz', contains('kein gzip'))));
     });
   });
 

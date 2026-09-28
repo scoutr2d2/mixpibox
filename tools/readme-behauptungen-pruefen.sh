@@ -223,9 +223,10 @@ zahl "Schritte in recipes/mupibox.yaml" "30" "$n" 10
 n=$(grep -cE '^  - id:' "$WURZEL/remote-step-installer/recipes/mupibox-app.yaml" 2>/dev/null)
 zahl "Schritte in recipes/mupibox-app.yaml" "24" "$n" 10
 
-# DIE PLUGINZAHL: die README nennt „14 Plugins im Baum" an drei Stellen.
+# DIE PLUGINZAHL: die README nennt „17 Plugins im Baum" an drei Stellen
+# (nachgezogen am 28.09.2026 mit mixpi-kindernachrichten und mixpi-klexikon).
 n=$(find "$WURZEL/plugins" -mindepth 1 -maxdepth 1 -type d | wc -l)
-zahl "Plugins in plugins/" "14" "$n" 10
+zahl "Plugins in plugins/" "17" "$n" 10
 
 # GEZAEHLT WIRD DIE ROUTE, NICHT DIE DATEI (umgestellt 23.08.2026). Zuvor lief
 # hier `find seiten/ -name '*.ts' -not -name '*.spec.ts'` und kam auf 28,

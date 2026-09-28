@@ -62,6 +62,12 @@ const RECHT_WORT: Record<string, string> = {
   medienquelle: 'darf Medien liefern',
   ereignisse: 'reagiert auf die Box',
   netz: 'darf ins Internet',
+  klang: 'rechnet am Ton mit',
+  geraetestand: 'sieht den Gerätezustand',
+  songtext: 'liefert Songtexte',
+  // Der Vertrag (plugin-vertrag.ts) will es LESBAR: was das Plugin sagt,
+  // bestimmt das Plugin — mit der Stimme der Box.
+  sprechen: 'lässt die Box vorlesen',
 }
 
 const ZUSTAND_WORT: Record<string, string> = {
@@ -124,7 +130,11 @@ const ZUSTAND_WORT: Record<string, string> = {
                 <input type="checkbox" [checked]="!!wert(f.schluessel)"
                        (change)="setze(f.schluessel, $any($event.target).checked)" />
               } @else {
+                <!-- step any: ohne ihn gilt einem Zahlfeld nur jede GANZE Zahl als
+                     gueltig — 1,1 (Klexikon-Tempo), 0,7 (Gruppen) und 1,5
+                     (Similar) waeren im Browser als Fehler markiert. -->
                 <input [type]="f.art === 'geheim' ? 'password' : f.art === 'zahl' ? 'number' : 'text'"
+                       [attr.step]="f.art === 'zahl' ? 'any' : null"
                        [value]="wert(f.schluessel)"
                        [placeholder]="f.art === 'geheim' ? 'unverändert — leer lassen behält den bisherigen' : ''"
                        (input)="setze(f.schluessel, $any($event.target).value)" />

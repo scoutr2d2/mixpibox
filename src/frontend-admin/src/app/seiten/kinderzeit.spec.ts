@@ -257,7 +257,7 @@ describe('KinderzeitSeite', () => {
   })
 
   /**
-   * REGELN JE KIND (25.09.2026, README 3.9).
+   * REGELN JE KIND (25.09.2026, README 3.10).
    *
    * Der Server kennt seit dem 02.08.2026 eine Hausregel und eigene Regeln je
    * Kind; die Seite schrieb bis heute nur die Hausregel. Geprueft werden die

@@ -1,7 +1,7 @@
 /**
  * EIGENE KINDERZEIT-REGELN JE KIND — der Weg, den die Verwaltung braucht.
  *
- * ══ DIE LUECKE (README 3.9 bis zum 25.09.2026) ═══════════════════════════════
+ * ══ DIE LUECKE (README 3.10 bis zum 25.09.2026) ═══════════════════════════════
  *
  * Der Server fuehrt seit dem 02.08.2026 eine Hausregel (`standard`) und
  * Ausnahmen je Kind (`je.<kennung>`). Die Verwaltung schrieb trotzdem nur die

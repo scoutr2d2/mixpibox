@@ -131,7 +131,15 @@ const lager = fs.mkdtempSync(path.join(os.tmpdir(), 'plugin-pruefen-'))
 fs.cpSync(ordner, path.join(lager, kennung), { recursive: true })
 
 const wirt = await import(path.join(WURZEL, 'src/backend-api/src/plugin-wirt.ts'))
-const lage = wirt.pluginsLaden(lager, { [kennung]: einstellungen })
+// DAS RECHT `sprechen` (28.09.2026) braucht einen Anschluss, sonst fehlt
+// `kontext.sprechen` und ein Vorlese-Plugin scheitert hier an etwas, das es
+// auf der Box nicht gibt. Die Texte landen in einem Wegwerfordner; gesprochen
+// wird im Pruefstand nichts — die Adresse zeigt auf die Route einer Box.
+const sprechLager = fs.mkdtempSync(path.join(os.tmpdir(), 'plugin-pruefen-sprechen-'))
+const lage = wirt.pluginsLaden(lager, { [kennung]: einstellungen }, [], '', {}, {
+  ordner: sprechLager,
+  basis: 'http://127.0.0.1:8200/api/sprechen',
+})
 
 if (lage.abgewiesen.length > 0) {
   sagen('vom Wirt angenommen?', lage.abgewiesen.map((a) => a.maengel.join(' ')).join('\n'), false)

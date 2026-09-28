@@ -124,10 +124,10 @@ class BoxClient {
     return b.replace(path: pfad, queryParameters: abfrage);
   }
 
-  Future<http.Response> _senden(Future<http.Response> anfrage) async {
+  Future<http.Response> _senden(Future<http.Response> anfrage, [Duration? eigeneFrist]) async {
     final vorher = box.fingerabdruck;
     try {
-      final r = await anfrage.timeout(frist);
+      final r = await anfrage.timeout(eigeneFrist ?? frist);
       if (vorher != box.fingerabdruck) geaendert?.call(box);
       return r;
     } on TimeoutException {
@@ -152,6 +152,12 @@ class BoxClient {
       final j = _jsonOderNull(r.body);
       if (j is Map && j['error'] == 'nichtGekoppelt') throw KopplungNoetig(j['hinweis'] as String?);
       if (j is Map && j['error'] == 'passwortFalsch') throw ProfilPasswortNoetig(j['art'] as String?, falsch: true);
+      // KINDERZEIT UND BOX-SPERRE schicken keinen Satz, sondern den Grund
+      // (`{kinderzeit: true, grund, …}`) — die App baut ihn, wie der
+      // Kinderschirm es tut, statt „abgelehnt" ohne Warum zu zeigen.
+      if (j is Map && j['kinderzeit'] == true) {
+        throw BoxFehler('Nicht gestartet: ${KzStand.ausJson(j).text}.', status: 403, roh: j);
+      }
       // Kinderzeit, Anbieter-Schalter oder der Herkunftsriegel: die Box legt
       // ihren Satz in `satz`/`error`/`fehler` — den zeigen, statt zu raten.
       throw BoxFehler(_satzAus(j) ?? 'Die Box hat das abgelehnt.', status: 403);
@@ -194,11 +200,24 @@ class BoxClient {
   Future<dynamic> _get(String pfad, [Map<String, String>? abfrage]) async =>
       _auswerten(await _senden(_client.get(_uri(pfad, abfrage), headers: _kopf)));
 
-  Future<dynamic> _post(String pfad, Object rumpf) async => _auswerten(
+  Future<dynamic> _post(String pfad, Object rumpf, [Map<String, String>? abfrage]) async => _auswerten(
     await _senden(
-      _client.post(_uri(pfad), headers: {..._kopf, 'content-type': 'application/json'}, body: jsonEncode(rumpf)),
+      _client.post(
+        _uri(pfad, abfrage),
+        headers: {..._kopf, 'content-type': 'application/json'},
+        body: jsonEncode(rumpf),
+      ),
     ),
   );
+
+  Future<dynamic> _put(String pfad, Object rumpf, [Map<String, String>? abfrage]) async => _auswerten(
+    await _senden(
+      _client.put(_uri(pfad, abfrage), headers: {..._kopf, 'content-type': 'application/json'}, body: jsonEncode(rumpf)),
+    ),
+  );
+
+  Future<dynamic> _delete(String pfad, [Map<String, String>? abfrage]) async =>
+      _auswerten(await _senden(_client.delete(_uri(pfad, abfrage), headers: _kopf)));
 
   // ── Wer bist du? ──────────────────────────────────────────────────────
 
@@ -525,27 +544,177 @@ class BoxClient {
     geaendert?.call(box);
   }
 
-  // ── Herunterladen ─────────────────────────────────────────────────────
+  // ── Box sperren (28.09.2026) ──────────────────────────────────────────
+  //
+  // `/api/boxsperre` (boxsperre.ts): LESEN ist frei (der Kiosk braucht es auch
+  // ohne Anmeldung), SETZEN und AUFHEBEN liegen hinter dem Anmeldetor. Die
+  // Box haelt die Sperre in einer Datei — sie uebersteht einen Neustart — und
+  // hebt sie nach hoechstens 24 h von selbst auf.
 
-  /// Ein LOKALES Werk als ZIP holen (`GET /api/werke/<s>/download`, E126)
-  /// und Stueck fuer Stueck nach [ziel] schreiben. Zurueck kommt der
-  /// Dateiname, den die Box vorschlaegt.
-  ///
-  /// UEBER DIESEN CLIENT, nicht ueber einen Download-Dienst des Handys:
-  /// nur hier gehen Sitzungs-Cookie und das gemerkte Zeugnis einer
-  /// HTTPS-Box mit. [fortschritt] bekommt die bisher geschriebenen Bytes —
-  /// eine Gesamtgroesse schickt die Box nicht (sie packt beim Senden).
-  ///
-  /// Die FRIST gilt nur bis zur ersten Antwort. Ein Album von einigen hundert
-  /// MB braucht laenger als sechs Sekunden, und das ist kein Fehler.
-  Future<String> herunterladen(String schluessel, File ziel, {void Function(int bytes)? fortschritt}) async {
-    final b = box.basis();
-    final uri = b.replace(pathSegments: ['api', 'werke', schluessel, 'download']);
-    final anfrage = http.Request('GET', uri)..headers.addAll(_kopf);
+  /// `null`: eine aeltere Box ohne den Weg (sie antwortet mit ihrer
+  /// Startseite statt mit JSON).
+  Future<SperrStand?> sperre() async {
+    try {
+      return SperrStand.ausJson(await _get('/api/boxsperre'));
+    } on BoxFehler catch (e) {
+      if (e.status == 404) return null;
+      rethrow;
+    }
+  }
+
+  /// Sperren fuer [minuten] ODER bis [bis]. Laufende Musik haelt die Box
+  /// selbst an.
+  Future<SperrStand> sperren({int? minuten, DateTime? bis}) async {
+    final j = await _post('/api/boxsperre', {
+      'minuten': ?minuten,
+      if (minuten == null && bis != null) 'bis': bis.millisecondsSinceEpoch,
+    });
+    final st = SperrStand.ausJson(j);
+    if (st == null) throw BoxFehler('Diese Box kennt das Sperren noch nicht — sie braucht ein Update.');
+    return st;
+  }
+
+  Future<void> entsperren() async {
+    await _delete('/api/boxsperre');
+  }
+
+  // ── Kinderzeit (28.09.2026) ───────────────────────────────────────────
+  //
+  // DIESELBEN WEGE WIE DIE SEITE „KINDERZEIT" DER VERWALTUNG. Ohne `profil`
+  // ist die HAUSREGEL gemeint (sie gilt fuer jedes Kind ohne eigene Regeln),
+  // mit `profil` die eigene Regel dieses Kindes.
+
+  Map<String, String>? _profilAbfrage(String? profil) => profil == null ? null : {'profil': profil};
+
+  /// EINE BOX VON VOR DEM 25.09.2026 KENNT `/satz` NICHT und antwortet mit
+  /// ihrer Startseite (HTML). Das darf NICHT als leerer Satz gelten — die App
+  /// zeigte sonst eine Woche ohne Regeln, und das erste Speichern schriebe sie
+  /// ueber die echte Hausregel. Dann gilt `GET /api/kinderzeit` (die
+  /// Hausregel, seit 28.07.2026), ohne Wissen ueber die Kinder.
+  Future<KzSatz> kinderzeitSatz() async {
+    final j = await _get('/api/kinderzeit/satz');
+    if (j is Map && j['standard'] is Map) return KzSatz.ausJson(j);
+    final haus = await _get('/api/kinderzeit');
+    if (haus is Map && haus['tage'] is Map) {
+      return KzSatz(standard: KzRegeln.ausJson(haus), je: const {}, vollstaendig: false);
+    }
+    throw BoxFehler('Diese Box kennt die Kinderzeit noch nicht — sie braucht ein Update.');
+  }
+
+  /// Speichert [regeln] als Hausregel oder — mit [profil] — als eigene Regel
+  /// dieses Kindes. Zurueck kommt, was die Box daraus gemacht hat.
+  Future<KzRegeln> kinderzeitSetzen(KzRegeln regeln, {String? profil}) async =>
+      KzRegeln.ausJson(await _put('/api/kinderzeit', regeln.alsJson(), _profilAbfrage(profil)));
+
+  /// Die eigenen Regeln eines Kindes verwerfen — danach gilt die Hausregel.
+  Future<void> kinderzeitEigeneAblegen(String profil) async {
+    await _delete('/api/kinderzeit', {'profil': profil});
+  }
+
+  /// Das Urteil JETZT — ohne [profil] fuer das Kind, das gerade an der Box ist.
+  Future<KzStand> kinderzeitStand({String? profil}) async =>
+      KzStand.ausJson(await _get('/api/kinderzeit/stand', _profilAbfrage(profil)));
+
+  /// Minuten fuer HEUTE schenken (negativ: zuruecknehmen).
+  Future<void> kinderzeitBonus(int minuten, {String? profil}) async {
+    await _post('/api/kinderzeit/bonus', {'minuten': minuten}, _profilAbfrage(profil));
+  }
+
+  /// Den heutigen Zaehler auf null — einschliesslich geschenkter Minuten.
+  Future<void> kinderzeitZuruecksetzen({String? profil}) async {
+    await _post('/api/kinderzeit/zuruecksetzen', const <String, dynamic>{}, _profilAbfrage(profil));
+  }
+
+  // ── Sicherung (28.09.2026) ────────────────────────────────────────────
+  //
+  // DIESELBEN WEGE WIE DIE SEITE „SICHERUNG" DER VERWALTUNG (sicherung.ts).
+  // Die Box erfindet dabei nichts: jede Pruefung, jede Reihenfolge und das
+  // atomare Schreiben bleiben in scripts/mupibox/mupibox-sicherung.py.
+  //
+  // DAS PASSWORT FUER DIE ZUGANGSDATEN geht nur im Koerper eines POST hinaus
+  // — nie in der Adresse — und wird nirgends gemerkt.
+  //
+  // DIE FRIST IST LAENGER: die Box laesst fuer jeden Schritt ein Python
+  // laufen, das auf einem Pi einige Sekunden braucht.
+
+  static const _fristSicherung = Duration(minutes: 3);
+
+  Future<SicherungsLage> sicherungLage() async =>
+      SicherungsLage.ausJson(_auswerten(await _senden(_client.get(_uri('/api/sicherung'), headers: _kopf), _fristSicherung)));
+
+  /// Einen frischen Stand anlegen und nach [ziel] schreiben. Mit [passwort]
+  /// kommen die Zugangsdaten verschluesselt mit. Zurueck: der Dateiname, den
+  /// die Box vorschlaegt.
+  Future<String> sicherungAnlegen(File ziel, {String? passwort}) async {
+    final anfrage = http.Request('POST', _uri('/api/sicherung/anlegen'))
+      ..headers.addAll({..._kopf, 'content-type': 'application/json', 'accept': 'application/gzip, application/json'})
+      ..body = jsonEncode({'mitZugangsdaten': passwort != null, 'passwort': ?passwort});
+    return await _inDatei(anfrage, ziel, frist: _fristSicherung) ?? 'mixpibox-sicherung.tar.gz';
+  }
+
+  /// Einen Stand, der schon auf der Box liegt, nach [ziel] holen.
+  Future<String> sicherungHolen(String name, File ziel) async {
+    final uri = box.basis().replace(pathSegments: ['api', 'sicherung', 'stand', name]);
+    final anfrage = http.Request('GET', uri)..headers.addAll({..._kopf, 'accept': 'application/gzip, application/json'});
+    return await _inDatei(anfrage, ziel, frist: _fristSicherung) ?? name;
+  }
+
+  /// Schritt 1 des Zurueckspielens: die Datei hochladen, die Box laesst das
+  /// Python TROCKEN laufen und sagt, was geschehen WUERDE. Es wird nichts
+  /// angefasst.
+  Future<ZurueckVorschau> sicherungPruefen(File datei) async {
+    final bytes = await datei.readAsBytes();
+    final j = _auswerten(
+      await _senden(
+        _client.post(
+          _uri('/api/sicherung/pruefen'),
+          headers: {..._kopf, 'content-type': 'application/gzip'},
+          body: bytes,
+        ),
+        _fristSicherung,
+      ),
+    );
+    final v = ZurueckVorschau.ausJson(j);
+    if (v.kennung.isEmpty) throw BoxFehler('Die Box hat keine Vorschau geschickt.');
+    return v;
+  }
+
+  /// Schritt 2: wirklich zurueckspielen — nur mit der [kennung] aus Schritt 1.
+  /// Zurueck kommt die Antwort der Box (`satz`, `vorherStand`, `vonHand`,
+  /// `neustartNoetig`).
+  Future<Map<String, dynamic>> sicherungZurueckspielen(String kennung, {String? passwort}) async {
+    final j = _auswerten(
+      await _senden(
+        _client.post(
+          _uri('/api/sicherung/zurueckspielen'),
+          headers: {..._kopf, 'content-type': 'application/json'},
+          body: jsonEncode({'kennung': kennung, 'mitZugangsdaten': passwort != null, 'passwort': ?passwort}),
+        ),
+        _fristSicherung,
+      ),
+    );
+    return j is Map ? j.cast<String, dynamic>() : const {};
+  }
+
+  /// Die Box neu starten (nach dem Zurueckspielen noetig, damit alle Dienste
+  /// die eingespielten Dateien lesen).
+  Future<void> neustarten() async {
+    await _post('/api/reboot', const <String, dynamic>{});
+  }
+
+  /// Eine Antwort Stueck fuer Stueck nach [ziel] schreiben; Fehler kommen als
+  /// JSON und gehen durch `_auswerten`. Zurueck: der Dateiname aus
+  /// `Content-Disposition`, falls die Box einen schickt.
+  Future<String?> _inDatei(
+    http.BaseRequest anfrage,
+    File ziel, {
+    Duration? frist,
+    void Function(int bytes)? fortschritt,
+  }) async {
     final vorher = box.fingerabdruck;
     late http.StreamedResponse antwort;
     try {
-      antwort = await _client.send(anfrage).timeout(frist);
+      antwort = await _client.send(anfrage).timeout(frist ?? this.frist);
     } on TimeoutException {
       throw BoxFehler('${box.name} antwortet nicht.');
     } on SocketException catch (e) {
@@ -555,7 +724,6 @@ class BoxClient {
     }
     if (vorher != box.fingerabdruck) geaendert?.call(box);
     if (antwort.statusCode >= 400) {
-      // Fehler kommen als JSON — dieselbe Auswertung wie ueberall sonst.
       _auswerten(http.Response(await antwort.stream.bytesToString(), antwort.statusCode));
     }
     final senke = ziel.openWrite();
@@ -571,7 +739,26 @@ class BoxClient {
     } finally {
       await senke.close();
     }
-    return dateinameAus(antwort.headers['content-disposition']) ?? '$schluessel.zip';
+    return dateinameAus(antwort.headers['content-disposition']);
+  }
+
+  // ── Herunterladen ─────────────────────────────────────────────────────
+
+  /// Ein LOKALES Werk als ZIP holen (`GET /api/werke/<s>/download`, E126)
+  /// und Stueck fuer Stueck nach [ziel] schreiben. Zurueck kommt der
+  /// Dateiname, den die Box vorschlaegt.
+  ///
+  /// UEBER DIESEN CLIENT, nicht ueber einen Download-Dienst des Handys:
+  /// nur hier gehen Sitzungs-Cookie und das gemerkte Zeugnis einer
+  /// HTTPS-Box mit. [fortschritt] bekommt die bisher geschriebenen Bytes —
+  /// eine Gesamtgroesse schickt die Box nicht (sie packt beim Senden).
+  ///
+  /// Die FRIST gilt nur bis zur ersten Antwort. Ein Album von einigen hundert
+  /// MB braucht laenger als sechs Sekunden, und das ist kein Fehler.
+  Future<String> herunterladen(String schluessel, File ziel, {void Function(int bytes)? fortschritt}) async {
+    final uri = box.basis().replace(pathSegments: ['api', 'werke', schluessel, 'download']);
+    final anfrage = http.Request('GET', uri)..headers.addAll(_kopf);
+    return await _inDatei(anfrage, ziel, fortschritt: fortschritt) ?? '$schluessel.zip';
   }
 
   /// Der Dateiname aus `Content-Disposition` — die Box setzt ihn mit

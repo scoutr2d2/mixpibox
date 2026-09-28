@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- ZEUGE fuer die MausNachrichten (WDR), Form wie am 28.09.2026 gemessen:
+     200 Folgen und rund 400 KB, hier vier. Dauer als hh:mm:ss, pubDate in
+     GMT, guid ohne Adresse (isPermaLink false), Bild an Kanal UND Folge.
+     Die Folge vom 15.09. schreibt sich im echten Feed klein
+     (Mausnachrichten), die aelteste ist eine Themenfolge ohne Sendungsnamen
+     im Titel. Beschreibungen, guids und Tonadressen sind ausgedacht. -->
+<rss xmlns:ard="http://www.ard.de/ardNamespace" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:googleplay="http://www.google.com/schemas/play-podcasts/1.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" version="2.0">
+  <channel>
+    <atom:link href="https://kinder.wdr.de/radio/diemaus/audio/maus-zoom/maus-zoom-106.podcast" rel="self" type="application/rss+xml" />
+    <title>MausNachrichten</title>
+    <link>https://kinder.wdr.de/radio/diemaus/audio/maus-zoom/maus-zoom-106.html</link>
+    <description>Nachrichten fuer Kinder (ausgedacht).</description>
+    <language>de</language>
+    <copyright>Copyright 2026, WDR</copyright>
+    <pubDate>Mon, 28 Sep 2026 06:30:02 GMT</pubDate>
+    <lastBuildDate>Mon, 28 Sep 2026 06:39:23 GMT</lastBuildDate>
+    <itunes:category text="Kids &amp; Family">
+      <itunes:category text="Education for Kids" />
+    </itunes:category>
+    <itunes:type>episodic</itunes:type>
+    <itunes:author>Westdeutscher Rundfunk</itunes:author>
+    <itunes:explicit>no</itunes:explicit>
+    <itunes:image href="https://www1.wdr.de/mediathek/audio/sendereihen-bilder/maus-nachrichten-neu-100~_v-Podcast.jpg" />
+    <image>
+      <title>MausNachrichten</title>
+      <url>https://www1.wdr.de/mediathek/audio/sendereihen-bilder/maus-nachrichten-neu-100~_v-Podcast.jpg</url>
+      <link>https://kinder.wdr.de/radio/diemaus/audio/maus-zoom/maus-zoom-106.html</link>
+      <width>1400</width>
+      <height>1400</height>
+    </image>
+    <item>
+      <title>MausNachrichten vom 28. September 2026</title>
+      <link>https://kinder.wdr.de/radio/diemaus/audio/maus-zoom/audio-mausnachrichten-vom-september-136.html</link>
+      <description>Vier Themen vom Montag (ausgedacht).</description>
+      <content:encoded>
+      Vier Themen vom Montag (ausgedacht).
+      </content:encoded>
+      <enclosure url="https://wdrmedien-a.akamaihd.net/media/p/public/weltweit/2026/09/28/00000000-0000-4000-8000-00000000a928/00000000-0000-4000-8000-00000000a928_MP3-128.mp3" length="5930949" type="audio/mpeg" />
+      <pubDate>Mon, 28 Sep 2026 06:30:02 GMT</pubDate>
+      <guid isPermaLink="false">/00000000000000000000000000000928</guid>
+      <itunes:duration>00:05:29</itunes:duration>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Eine Autorin</itunes:author>
+      <itunes:explicit>no</itunes:explicit>
+      <itunes:image href="https://www1.wdr.de/mediathek/audio/sendereihen-bilder/maus-nachrichten-neu-100~_v-Podcast.jpg" />
+    </item>
+    <item>
+      <title>MausNachrichten vom 25. September 2026</title>
+      <link>https://kinder.wdr.de/radio/diemaus/audio/maus-zoom/audio-mausnachrichten-vom-september-134.html</link>
+      <description>Drei Themen vom Freitag (ausgedacht).</description>
+      <enclosure url="https://wdrmedien-a.akamaihd.net/media/p/public/weltweit/2026/09/25/00000000-0000-4000-8000-00000000a925/00000000-0000-4000-8000-00000000a925_MP3-128.mp3" length="5302211" type="audio/mpeg" />
+      <pubDate>Fri, 25 Sep 2026 07:00:29 GMT</pubDate>
+      <guid isPermaLink="false">/00000000000000000000000000000925</guid>
+      <itunes:duration>00:04:36</itunes:duration>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Ein Autor</itunes:author>
+      <itunes:explicit>no</itunes:explicit>
+      <itunes:image href="https://www1.wdr.de/mediathek/audio/sendereihen-bilder/maus-nachrichten-neu-100~_v-Podcast.jpg" />
+    </item>
+    <item>
+      <title>Mausnachrichten vom 15. September 2026</title>
+      <link>https://kinder.wdr.de/radio/diemaus/audio/maus-zoom/audio-mausnachrichten-vom-september-120.html</link>
+      <description>Zwei Themen vom Dienstag (ausgedacht).</description>
+      <enclosure url="https://wdrmedien-a.akamaihd.net/media/p/public/weltweit/2026/09/15/00000000-0000-4000-8000-00000000a915/00000000-0000-4000-8000-00000000a915_MP3-128.mp3" length="4988101" type="audio/mpeg" />
+      <pubDate>Tue, 15 Sep 2026 06:29:21 GMT</pubDate>
+      <guid isPermaLink="false">/00000000000000000000000000000915</guid>
+      <itunes:duration>00:04:22</itunes:duration>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Eine Autorin</itunes:author>
+      <itunes:explicit>no</itunes:explicit>
+      <itunes:image href="https://www1.wdr.de/mediathek/audio/sendereihen-bilder/maus-nachrichten-neu-100~_v-Podcast.jpg" />
+    </item>
+    <item>
+      <title>Warum Biber D&#228;mme bauen</title>
+      <link>https://kinder.wdr.de/radio/diemaus/audio/maus-zoom/audio-biber-100.html</link>
+      <description>Eine Themenfolge aus dem Dezember (ausgedacht).</description>
+      <enclosure url="https://wdrmedien-a.akamaihd.net/media/p/public/weltweit/2025/12/09/00000000-0000-4000-8000-00000000b209/00000000-0000-4000-8000-00000000b209_MP3-128.mp3" length="4412345" type="audio/mpeg" />
+      <pubDate>Tue, 09 Dec 2025 17:36:08 GMT</pubDate>
+      <guid isPermaLink="false">/00000000000000000000000000001209</guid>
+      <itunes:duration>00:04:14</itunes:duration>
+      <itunes:episodeType>full</itunes:episodeType>
+      <itunes:author>Ein Autor</itunes:author>
+      <itunes:explicit>no</itunes:explicit>
+      <itunes:image href="https://www1.wdr.de/mediathek/audio/sendereihen-bilder/maus-nachrichten-neu-100~_v-Podcast.jpg" />
+    </item>
+  </channel>
+</rss>

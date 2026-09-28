@@ -762,6 +762,19 @@ def pruefeKinderzeit():
         melde("Kinderzeit", "Schnittstelle", INFO, f"HTTP {st}",
               "Diese Fassung kennt die Kinderzeit noch nicht.")
         return
+    # DIE BOX-SPERRE DER ELTERN (28.09.2026) gilt auch bei ausgeschalteter
+    # Kinderzeit - sie steht deshalb VOR dem Ausstieg unten, sonst saehe
+    # diese Pruefung eine gesperrte Box nie.
+    sst, sroh, _, _ = hole("/api/boxsperre", frist=8)
+    sd = jsonAus(sroh) or {}
+    if sst == 200:
+        if sd.get("aktiv"):
+            bis = ("morgen " if sd.get("morgen") else "") + str(sd.get("bisZeit") or "?")
+            melde("Kinderzeit", "Box-Sperre", INFO, f"gesperrt bis {bis}",
+                  "KEIN Fehler - die Eltern haben die Box gesperrt (Handy-App). "
+                  "Aufheben: App, oder an der Box den Mond 1,2 s halten.")
+        else:
+            melde("Kinderzeit", "Box-Sperre", OK, "nicht gesperrt")
     aktiv = bool(d.get("aktiv"))
     melde("Kinderzeit", "eingeschaltet", INFO, "ja" if aktiv else "nein",
           "" if aktiv else "Die Box spielt ohne Zeitgrenze - so ist sie ausgeliefert.")
@@ -774,6 +787,7 @@ def pruefeKinderzeit():
         "zuFrueh": f"noch zu frueh (ab {d.get('fensterAb') or '?'})",
         "zuSpaet": f"Feierabend (war bis {d.get('fensterBis') or '?'})",
         "aufgebraucht": "Zeit fuer heute aufgebraucht",
+        "gesperrt": f"Box gesperrt (bis {d.get('gesperrtBis') or '?'})",
     }
     melde("Kinderzeit", "Stand jetzt", OK if erlaubt else INFO,
           texte.get(str(d.get("grund")), str(d.get("grund"))),

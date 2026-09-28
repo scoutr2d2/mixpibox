@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" role="img" aria-label="Klexikon">
+  <!-- Ein aufgeschlagenes Buch mit zwei Schallboegen darueber: ein Lexikon,
+       das vorliest. Keine zwei Bindestriche in diesem Kommentar, die machen
+       die Datei zum Parserfehler. -->
+  <style>
+    /* DAS ZEICHEN BRINGT SEINE TINTE SELBST MIT. Die Verwaltung laedt es
+       ueber ein img-Element, und ein SVG dort ist ein EIGENES Dokument: es
+       sieht die color der Seite nicht, currentColor fiele auf Schwarz
+       zurueck, unsichtbar auf dem Untergrund der Verwaltung. Der Wert ist
+       die Schriftfarbe der Verwaltung (styles.css, schrift). Bewacht von
+       tools/plugin-icon-kontrast.py. */
+    svg { color: #f2f2f7; }
+  </style>
+  <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 10c3-1.2 6-1 9 1 3-2 6-2.2 9-1v10c-3-1.2-6-1-9 1-3-2-6-2.2-9-1z" />
+    <path d="M12 11v10" />
+    <path d="M9.5 6.2a3.5 3.5 0 0 1 5 0" />
+    <path d="M7.2 3.8a6.8 6.8 0 0 1 9.6 0" />
+  </g>
+</svg>

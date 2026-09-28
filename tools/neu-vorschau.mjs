@@ -423,6 +423,24 @@ let VORSCHAU_HANDYS = 0
 /** Die Kopplung der Vorschau: gekoppelte Handys, offenes Fenster, Debug-Schalter. */
 const VORSCHAU_KOPPLUNG = { geraete: [], fenster: null, ohne: false, anfrage: null }
 
+/** Die Box-Sperre der Attrappe — `bis` in ms, 0 heisst keine. */
+const VORSCHAU_BOXSPERRE = { bis: 0 }
+function vorschauSperrStand() {
+  const jetzt = Date.now()
+  const bis = VORSCHAU_BOXSPERRE.bis
+  if (!bis || bis <= jetzt) return { aktiv: false, bis: null, bisZeit: '', morgen: false, restMin: 0, seit: null }
+  const e = new Date(bis)
+  const h = new Date(jetzt)
+  return {
+    aktiv: true,
+    bis,
+    bisZeit: `${String(e.getHours()).padStart(2, '0')}:${String(e.getMinutes()).padStart(2, '0')}`,
+    morgen: e.toDateString() !== h.toDateString(),
+    restMin: Math.ceil((bis - jetzt) / 60_000),
+    seit: jetzt,
+  }
+}
+
 const lage = {
   /**
    * DIE HALTEDAUER DES AUSSCHALT-KNOPFS, als Zeichenkette wie auf der Box.
@@ -3035,6 +3053,18 @@ const server = createServer(async (req, res) => {
     // DAS BEFEHLSPROTOKOLL — lesen und leeren. Es steht GANZ VORN, weil der
     // Auffangzweig unten alles Uebrige als Spielzustand nimmt.
     if (was === 'befehle') return jsonAus(res, { befehle: BEFEHLSPROTOKOLL })
+    // DIE BOX-SPERRE (28.09.2026) — vor dem Auffangzweig, aus demselben Grund.
+    if (was.startsWith('boxsperre-')) {
+      const fall = was.slice('boxsperre-'.length)
+      if (fall === 'an') VORSCHAU_BOXSPERRE.bis = Date.now() + 30 * 60_000
+      else if (fall === 'morgen') {
+        const m = new Date()
+        m.setDate(m.getDate() + 1)
+        m.setHours(7, 0, 0, 0)
+        VORSCHAU_BOXSPERRE.bis = m.getTime()
+      } else VORSCHAU_BOXSPERRE.bis = 0
+      return jsonAus(res, vorschauSperrStand())
+    }
     // WER DIE BUEHNE BEWOHNT (E129) — vor dem Auffangzweig, sonst nimmt der
     // ihn als Spielzustand. Die Seite muss danach neu geladen werden: die
     // Darstellung wird beim Start EINMAL gelesen.
@@ -3666,6 +3696,20 @@ const server = createServer(async (req, res) => {
 
   if (p === '/api/wartung') {
     return jsonAus(res, { aktiv: false })
+  }
+
+  // ── Box-Sperre der Eltern (28.09.2026) ────────────────────────────────
+  //
+  // Dieselbe Form wie `sperrStand` in boxsperre.ts. Vorgabe: keine Sperre.
+  // Faelle ueber Umschalter: /vorschau/boxsperre-an (heute, 30 min),
+  // /vorschau/boxsperre-morgen (bis morgen 07:00), /vorschau/boxsperre-aus —
+  // die stehen VOR dem Auffangzweig bei `/vorschau/`, sonst naehme der sie
+  // als Spielzustand.
+  // DELETE hebt sie auf wie der Server — damit sich der Ausgang ueber das
+  // Tor des Eltern-Bereichs hier ansehen laesst.
+  if (p === '/api/boxsperre') {
+    if (req.method === 'DELETE') VORSCHAU_BOXSPERRE.bis = 0
+    return jsonAus(res, vorschauSperrStand())
   }
 
   // ── Nachrichten AN die Box (21.09.2026) ───────────────────────────────

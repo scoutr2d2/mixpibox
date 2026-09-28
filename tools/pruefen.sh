@@ -228,6 +228,16 @@ schritt "Farbkanal-Verdrahtung" python3 tools/farbkanal-verdrahtung.py
 # ueberspringt er sich selbst. Rund 60 s.
 schritt "Gesten der Box" node tools/wischrand-schau.mjs
 
+# Beim Blaettern faehrt das Kissen ein und wieder aus. Betreiber 27.09.2026:
+# „beim einfahren rutscht der player nach rechts aber beim ausfahren bleiben
+# die tasten stehen ich haette es gerne wie beim ausfahren" — gebaut am selben
+# Tag, gemessen mit einem Werkzeug, das bis zum 28.09.2026 eine URL von Hand
+# verlangte und darum in keinem Laeufer hing. Jetzt startet es seine eigene
+# Attrappe und misst die Pause-Taste alle 16 ms in beide Richtungen; wandert
+# sie mehr als 2 px, ist der Wunsch wieder gebrochen. Ohne Browser
+# ueberspringt es sich selbst. Rund 9 s.
+schritt "Kissen steht beim Einfahren" node tools/kissen-einfahren-messen.mjs
+
 # ── Blendet die Verwaltung das Richtige aus? ────────────────────────────────
 #
 # Die Darstellungsseite zeigt nur, was auf der GERADE LAUFENDEN Oberflaeche
@@ -417,6 +427,11 @@ schritt "Kein Verlust beim Konfig-Umzug" python3 tools/konfig-umzug-probe.py --p
 # installiert". Geprueft wird deshalb nicht der Inhalt, sondern die Deckung:
 # vier Stellen, ein Pfad.
 schritt "Piper kommt auf die Box" python3 tools/piper-installationsweg-abgleich.py --pruefen
+# Seit dem 28.09.2026 prueft sie auch, dass nur die Erstwege Vorlesen ab Werk
+# einschalten (E12/X12) — ihr Selbsttest haelt die Zaehlregel fest (Kommentar
+# und --pruefen sind keine Aufrufe), der Attrappentest das Skript selbst.
+schritt "Piper ab Werk (Selbsttest)" python3 tools/piper-installationsweg-abgleich.py --selbsttest
+schritt "Piper ab Werk (Attrappen)" bash tools/piper-ab-werk.test.sh
 
 # DIE TEUERSTE RICHTUNG DERSELBEN FRAGE: beide Ausrollwege holten librespot in
 # der Fassung dev_0.6 — die spielt KEINEN Ton (A/B belegt 2026-07-28). Auf den
@@ -532,6 +547,17 @@ schritt "Zwillingsdateien box/installer" python3 tools/zwillingsdateien-abgleich
 # umbenannte Paare ueber den Inhalt, der andere die, die durch die Schwelle
 # fallen.
 schritt "Zwillinge nach Ziel" python3 tools/zwillinge-nach-ziel.py --pruefen
+
+# ── Die Tests des Installers (28.09.2026) ─────────────────────────────────
+#
+# Die zwei Schritte darueber halten die KOPIEN gleich — niemand hielt die
+# PRUEFER der Kopien. Der Zwillings-Angleich vom 29.08. (276e42ea) machte drei
+# der 30 Dateien unter remote-step-installer/tests/ rot, AUDIT-2026-08-30
+# Rang 4 meldete es, und einen Monat spaeter waren es dieselben drei: kein
+# Laeufer fuhr diese Tests. Das Werkzeug faehrt jede Datei einzeln (das Muster
+# steht dort als SAMMELRUF, damit eine neue Testdatei von selbst mitlaeuft),
+# die drei roten stehen mit Grund in seiner BEKANNT-Liste. Rund 90 s.
+schritt "Tests des Installers (je Datei)" python3 tools/installer-tests.py --pruefen
 
 # ── fetch ohne Frist: die Ratsche ─────────────────────────────────────────
 #
@@ -1406,6 +1432,12 @@ schritt "Bau Verwaltung" bau_admin
 # (bau_box fiel mit der alten App, E118/1e — die Box-Oberflaeche wird nicht
 # mehr GEBAUT, sondern von tools/newdesign-kopieren.py kopiert; deren Wache
 # ist newdesign-mitlieferung-deckung.py weiter oben.)
+
+# (Der Schritt „Quellen der Dockerfile" fiel am 28.09.2026 mit der
+# Wurzel-`Dockerfile`, die seit dem 23.10.2024 nicht baute: Betreiber-
+# Entscheidung, lokal nachzuziehen, was das Cloud-Review vom 27.09.2026 auf
+# GitHub geloescht hatte. Ohne Pi faehrt der Stapel in `harness/`, gewacht
+# von simulationsrezept-pruefen.py in doku-luecken-probe.sh.)
 
 # ── Der DRITTE Ausrollweg: das Installer-Rezept ───────────────────────────
 #
