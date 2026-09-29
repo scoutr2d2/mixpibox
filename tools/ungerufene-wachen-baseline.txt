@@ -6,7 +6,7 @@
 #
 # Die Ratsche blockt, wenn ein Rang SINKT. Ein Werkzeug, das hier fehlt,
 # gilt als Rang 1: neue Wachen muessen eingehaengt oder begruendet sein.
-# Eingefroren am 2026-09-28. Neu einfrieren: python3 tools/ungerufene-wachen.py --einfrieren
+# Eingefroren am 2026-09-29. Neu einfrieren: python3 tools/ungerufene-wachen.py --einfrieren
 laeufer remote-step-installer/tests/anim_test.py
 laeufer remote-step-installer/tests/bootsplash_zeichen_test.py
 laeufer remote-step-installer/tests/bootwache_test.py
@@ -127,6 +127,7 @@ offen tools/bilder-wirklich-da.py
 offen tools/bildwahl-gruppen-schau.mjs
 bekannt tools/blaettern-schau.mjs
 offen tools/bootkette-schau.py
+laeufer tools/bootsplash-vorschau.py
 laeufer tools/box-adresse-deckung.py
 offen tools/box-dienst-inventur.py
 bekannt tools/box-finden.py
@@ -253,6 +254,7 @@ laeufer tools/groessen-regler-schau.mjs
 offen tools/grundmessung.py
 laeufer tools/handbuch-ort-deckung.py
 bekannt tools/handy-app-debug.sh
+laeufer tools/handy-app-icon.py
 laeufer tools/helligkeit-untergrenze-vergleich.py
 laeufer tools/herkunft-annahme-probe.py
 offen tools/herkunftsriegel-nachmessen.mjs

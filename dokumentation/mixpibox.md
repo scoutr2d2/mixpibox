@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1152 Einträge,
-Fassung 654). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1154 Einträge,
+Fassung 658). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -236,7 +236,7 @@ Ausgerollt wird sie über `scripts/systemd/einrichten.sh` (mit Gegenprobe
 
 | Unit | Was sie tut |
 |---|---|
-| `mupibox-boot-splash` | die Boot-Animation im Framebuffer, mit **echtem** Fortschritt |
+| `mupibox-boot-splash` | die Boot-Animation im Framebuffer, mit **echtem** Fortschritt. Seit dem 29.09.2026 ein Sternenhimmel: funkelnde Sterne, ab und zu eine Sternschnuppe, in der Mitte schwebt das MixPi vor einem weichen Schein, darunter der Name der Box aus `mupibox.host`. Der Fortschritt sind sechs Pillen in den Farben der sechs Stifte im MixPi-Haar — eine je erreichtem Meilenstein. Das Bild ist das vorhandene `NewDesign/bilder/mixpi-hoert.png`, vorab verkleinert zu `scripts/mupibox/mixpi-startbild.png`; neu bauen, gegen die Quelle prüfen und ohne Box ansehen mit `tools/bootsplash-vorschau.py` (`--startbild`, `--pruefen`, `--ziel <ordner>`) |
 | `mupibox-fehlerbild@.service` | **Vorlage**, keine gewöhnliche Unit: `%i` trägt den Namen der Unit, die gescheitert ist. Angehängt wird sie nicht in `config/services/`, sondern von `scripts/mupibox/fehlerbild-anhaengen.sh` als Zusatzstück — weil `mupibox-server` und `mupibox-player` gar nicht aus diesem Repo kommen, sondern vom remote-step-installer. Läuft Chromium, malt sie **nicht** |
 | `mupibox-wiederherstellung` | holt beim Start eine Sicherung von der Karte zurück (E29/B3) |
 | `mupibox-alsa-init` | legt den softvol-Regler an, den der Player beim Start braucht |

@@ -1,5 +1,5 @@
 id: mupibox
-version: "654"
+version: "658"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -66241,9 +66241,16 @@ entries:
       (die Differenz ist `docker/br-/veth/tun/wg`: galt als Pfad, solange
       es den Ordner docker/ gab).
 
+      VEROEFFENTLICHT 28.09.2026, 22:04, auf Betreiber-Ja („checkin und
+      push", dann ausdruecklich „Ja, veroeffentlichen"): main 704628a8 nach
+      origin, dann `github-veroeffentlichen.py --bauen --push` -> GitHub
+      c4099845 auf 0bcb75aa. Nachgemessen per `git cat-file -e
+      github/main:<pfad>`: 0 von 31 noch da, kachel-ecken.py und die
+      Original-Figuren da. „push" heisst hier origin; GitHub ist eine
+      eigene Frage (siehe [[github-veroeffentlichung-kuratiert-elternlos-und-die-wache-in-beide-richtungen]]).
+
       OFFEN:
-        (1) Veroeffentlichen — nur auf ausdrueckliches Ja des Betreibers.
-            Erst dann verliert GitHub die 31 Dateien wieder.
+        (1) erledigt, siehe oben.
         (2) bin/nodejs/deploy.zip traegt die Figuren-Kopien noch; er wird
             beim naechsten Bau neu gepackt.
         (3) Eine Wache in github-veroeffentlichen.py, die meldet, was
@@ -66251,3 +66258,176 @@ entries:
             Gegenstelle seit der letzten Veroeffentlichung von hier
             geloescht hat). Nicht gebaut.
     related: ["elf-ungerufene-wachen-einzeln-abgetragen", "projekt-review-2026-09-27-fehler-und-aufraeumen", "dauerrote-wache-ist-keine", "aufraeumen-nachmessen"]
+  - id: boot-animation-sternenhimmel-mit-schwebendem-mixpi
+    title: 'Boot-Animation als Sternenhimmel: das MixPi schwebt, der Fortschritt sind die sechs Stifte - und was es kostet, eine Figur im reinen Python schweben zu lassen'
+    kind: howto
+    tags: [boot, splash, framebuffer, mixpi, maskottchen, animation, pi4, gegenprobe, 2026]
+    stand: "29.09.2026, am Entwicklungsrechner mit dem ECHTEN Zeichencode gerendert (tools/bootsplash-vorschau.py, 32 und 16 bpp). Am Geraet NICHT gesehen: keine Box im Netz erreichbar (tools/box-finden.py fand keine)."
+    source: 'Betreiber 29.09.2026: „erstelle mir einen neue boot animation mit sternen und mupibox mit dem maskottchen. bitte verwende ein vorhandenes bild". Geaendert: scripts/mupibox/mupibox-boot-splash.py (+ Zwilling remote-step-installer/tools/), neu scripts/mupibox/mixpi-startbild.png und tools/bootsplash-vorschau.py, remote-step-installer/tests/splash_test.py, tools/pruefen.sh, dokumentation/mixpibox.md 4.1 (Unit-Tabelle).'
+    body: |
+      WIE ES AUSSIEHT: Nachthimmel als Verlauf (oben fast schwarz, unten ein
+      tief abgedunkeltes Kopfhoerer-Violett), rund 128 Sterne in drei Arten
+      (Punkt, kleines Kreuz, Funkelstern mit wachsenden Armen, jeder zweite
+      Funkelstern in einer Stiftfarbe), alle 5 s eine Sternschnuppe links oder
+      rechts der Figur. In der Mitte schwebt das MixPi (+-3 px, 3,6 s) vor
+      einem weichen Schein, darunter der Boxname aus `mupibox.host` mit
+      Schatten. Die aufsteigenden Noten sind heraus.
+
+      DER FORTSCHRITT BLEIBT ECHT (siehe [[boot-animation-mit-echtem-fortschritt]])
+      — nur sind es jetzt SECHS PILLEN in den Farben der sechs Stifte im
+      MixPi-Haar (#00ACFD, #11DE47, #43719A, #FEEE04, #FD34A2, #FF7001, aus
+      favicon.svg, dort aus der Figur gezaehlt). Sechs Stifte, sechs
+      Meilensteine: jeder erreichte laesst einen aufleuchten. Die als naechste
+      erwartete Pille GLIMMT — das ist Lebenszeichen, kein Fortschritt; der
+      Stand rueckt weiter nur mit einem Meilenstein vor.
+
+      DAS BILD IST KEIN NEUES: `NewDesign/bilder/mixpi-hoert.png` (das
+      Standardbild laut [[mixpi-maskottchen-familie]]), auf die Figur
+      zugeschnitten und VORMULTIPLIZIERT (RGBa) mit Lanczos auf 200 px Hoehe
+      gebracht -> `scripts/mupibox/mixpi-startbild.png`, 172x200, 42 kB. Es
+      steht VORN in LOGOS. Warum vorab: die Animation kann nur jeden n-ten
+      Punkt nehmen, und 256 -> 128 sah an den dicken Umrissen treppig aus.
+      Warum scripts/mupibox/: von dort kopieren autosetup, Update UND der
+      Skriptschritt des Installers (`for d in mupibox ...; cp -a`) nach
+      /usr/local/bin/mupibox/ — kein eigener Ausrollweg noetig.
+      Die Ableitung kann der Quelle davonlaufen; `tools/bootsplash-vorschau.py
+      --pruefen` baut sie im Speicher nach, vergleicht (Toleranz 2 Stufen) und
+      prueft, dass der PNG-Leser der Animation sie lesen kann. Haengt in
+      tools/pruefen.sh. Ein anderes vorhandenes Bild: `--startbild --quelle
+      NewDesign/bilder/mixpi-spielt.png` (dann aber --pruefen mit derselben
+      --quelle, oder QUELLE im Werkzeug umstellen).
+
+      WAS DAS SCHWEBEN KOSTET, UND WIE ES BILLIG WURDE. Das MixPi hat rund 2500
+      halbdurchsichtige Kantenpunkte. Je Bild ueber den Himmel gemischt, waere
+      das auf dem Pi 4 teurer als alles andere zusammen. Ein EINMAL gemischter
+      Streifen, der nur verschoben wird, geht auch nicht: er truege den Schein
+      mit, und um 3 px verschoben passen dessen Ringe am Streifenrand nicht mehr
+      — eine Kante im Himmel. Loesung (Klasse `Figur`): je Schwebehoehe (sieben)
+      EINMAL gegen die fertige Basis gemischt, erst wenn sie gebraucht wird,
+      danach nur noch zeilenweise kopiert. Gemessen am Entwicklungsrechner:
+      je Bild Median 1,5 ms neu gegen 2,2 ms mit den alten Noten, erstes Bild
+      56 gegen 51 ms. Auf dem Pi grob zehnfach — die Zahlen taugen zum
+      Vergleichen, nicht als Messung am Geraet.
+
+      16 BPP (Pi 4, [[mupi-splash-16bpp]]): ein Verlauf von 0x05 nach 0x1C
+      zerfiele in RGB565 in vier harte Streifen. Flaechen werden deshalb als
+      Vier-Punkte-Muster mit Bayer-4x4-Raster geschrieben (`muster()`,
+      `Schirm.spanne()`), an der ABSOLUTEN Spalte ausgerichtet, damit zwei
+      Flaechen ohne Naht aneinanderstossen. Kostet dasselbe wie eine
+      einfarbige Flaeche; auf 32 bpp verschiebt das Raster um weniger als eine
+      Stufe. Der Schein sind 24 konzentrische Scheiben, JE ZEILE aus Himmel
+      plus Anteil berechnet — eine feste Farbe je Scheibe haette oben und
+      unten einen sichtbaren Rand.
+
+      REGELN, DIE DIE TESTS HALTEN (splash_test.py, 68 Pruefungen): kein Stern
+      in Figur, Name, Fortschritt oder Kiosk-Hinweis (Rand 6 px deckt die
+      Arme); Sternschnuppen bleiben eine Minute lang ueber der Oberkante des
+      Namens; Figur deckend/halb/durchsichtig richtig, jede Hoehe einmal
+      gebaut; Pillen; Aufteilung bei 800x480, 480x320, 1280x720. Fester
+      Samen: der Himmel ist bei jedem Start derselbe.
+
+      GEGENPROBE — UND DIE BYTECODE-FALLE IN EINER DRITTEN RICHTUNG. Vier
+      Sabotagen nacheinander im Zwilling (Rand weg, halb als deckend, Schnuppe
+      ohne Grenze, Pille zu frueh). Die dritte meldete den FALSCHEN Test
+      („halb: gemischt" statt „keine zieht unter ..."): `- wy` -> `+ 60` ist so
+      lang wie die Sabotage davor, alles in derselben Sekunde — Python nahm die
+      .pyc der VORIGEN Sabotage. [[gegenprobe-scheitert-am-bytecode-zwischenspeicher]]
+      kennt „bleibt rot" und „taeuscht Gruen vor"; hier war es ROT AM FALSCHEN
+      TEST, und das sieht aus wie eine gelungene Gegenprobe. Und der dortige
+      Rat „oder python3 -B" genuegt ALLEIN NICHT: -B schreibt keinen Cache,
+      LIEST einen vorhandenen aber weiter. Erst `__pycache__` loeschen UND -B
+      — dann trafen alle vier ihren Test. Merkmal fuer die Zukunft: bei
+      mehreren Sabotagen je FAIL-Zeile pruefen, ob es DIE erwartete ist.
+
+      OFFEN:
+        (1) Am Geraet ansehen. Ausliefern mit `tools/ausliefern.py`: das
+            Startbild ist auf der Box NEU und braucht `--auch-neue`; das Skript
+            laeuft dort (Unit) aus /usr/local/bin/mupibox-boot-splash.py.
+            Danach einmal neu starten und hinsehen — Farbe auf dem DSI-Panel
+            und die Lesbarkeit der dunklen Stahlblau-Pille sagt nur das Panel.
+        (2) `Schirm.note()` ist seitdem ungenutzt (splash_test prueft es
+            weiter). Stehen gelassen, weil das Fehlerbild und der
+            Einrichtungsschirm dieses Modul als Zeichenbibliothek laden.
+    related: ["boot-animation-mit-echtem-fortschritt", "mupi-splash-16bpp", "mixpi-maskottchen-familie", "bilder-aufbereiten-drei-fallen", "gegenprobe-scheitert-am-bytecode-zwischenspeicher", "neue-oberflaeche-ohne-box-ansehen"]
+  - id: handy-app-icon-ist-das-maskottchen
+    title: 'App-Icon der Handy-App: die ganze MixPi-Figur statt des gezeichneten Favicon-Kopfs - eingepasst in den kleinsten Kreis, nicht in einen Kasten'
+    kind: howto
+    tags: [app, android, icon, mixpi, maskottchen, bilder, gegenprobe, 2026]
+    stand: "29.09.2026, am Entwicklungsrechner gebaut, in drei Launcher-Formen und bei 48/72/96 px angesehen, alle 12 Ressourcen mit aapt2 36.1.0 kompiliert. Am selben Abend am Honor-Handy installiert und angesehen (Startbild der App)."
+    source: 'Betreiber 29.09.2026: „app icon durch mixpi maskottchen ersetzten jetzt ist ein gemalter kopf". Geaendert: tools/handy-app-icon.py (neu geschrieben), handy-app/android/app/src/main/res/mipmap-*/ic_launcher*.png, tools/pruefen.sh, tools/ungerufene-wachen-baseline.txt, handy-app/README.md (Abschnitt Bauen).'
+    body: |
+      WAS VORHER DA WAR: seit 378f2aec (27.09.) trug die App den Kopf aus
+      NewDesign/bilder/favicon.svg — von Hand gezeichnet und eigens fuer 16 px
+      vereinfacht (Herzaugen, keine Arme). Auf dem Startbildschirm eines
+      Telefons (48-192 px) war das der „gemalte Kopf", nicht die Figur, die
+      die Box selbst ueberall zeigt.
+
+      JETZT: die ganze Figur aus der Standard-Vorlage — dieselbe wie
+      mixpi-hoert.png und das Startbild der Boot-Animation
+      ([[boot-animation-sternenhimmel-mit-schwebendem-mixpi]]). WELCHE Vorlage
+      das ist, liest das Werkzeug aus NewDesign/maskottchen.json,
+      `zustaende.hoert.quelle` ([[mixpi-maskottchen-familie]]) — es entscheidet
+      das nicht ein zweites Mal. Genommen wird die Vorlage in 1254 px, nicht
+      das fertige 256-px-Bild: der Vordergrund braucht bei xxxhdpi 432 px.
+      Die Vorlage hat ein eingebranntes Schachbrett statt Transparenz; sie
+      geht durch dasselbe `freistellen()` aus tools/bilder-freistellen.py wie
+      alle Maskottchen ([[bilder-aufbereiten-drei-fallen]]). Hintergrund blieb
+      #FFE3DC (Saatfarbe der App aufgehellt) — nicht Violett wie
+      mixpi-kachel.png: auf Violett verschwaenden die Kopfhoerer der Figur.
+
+      WIE GROSS — GERECHNET, NICHT GESCHAETZT. Ein Adaptive Icon ist eine
+      108-dp-Ebene; der Launcher zeigt davon hoechstens 72 dp und schneidet
+      rund, eckig oder als Tropfen zu. Heil bleibt nur der Kreis von 66 dp.
+      Die Figur ist nicht quadratisch (Ohrmuscheln, Arme, ein Fuss stehen ab);
+      ein Kasten um sie haette sie viel kleiner gemacht als noetig. Das
+      Werkzeug sucht deshalb den KLEINSTEN KREIS um alle sichtbaren Punkte
+      (Badoiu-Clarkson ueber die Zeilenenden, 10000 Schritte: hoechstens 1 %
+      zu gross, nie zu klein, weil r der echte Abstand zum fernsten Punkt
+      ist) und bringt ihn auf r = 31 dp — zwei dp Luft zum sicheren Kreis.
+      Das runde Icon fuer Android 7 (ic_launcher.png) ist KEIN eigenes Bild,
+      sondern genau der 72-dp-Ausschnitt, den ein runder Launcher vom
+      Adaptive Icon zeigen wuerde — sonst waeren es zwei Figuren in zwei
+      Groessen.
+
+      DIE WACHE: `python3 tools/handy-app-icon.py --pruefen` baut alles im
+      Speicher nach (Toleranz 2 Stufen), vergleicht die beiden XML-Dateien
+      woertlich und misst an den GESCHRIEBENEN Vordergruenden, dass kein
+      Punkt mit Alpha > 8 aus dem 66-dp-Kreis ragt. Haengt in tools/pruefen.sh
+      („App-Icon der Handy-App"), Ratsche als `laeufer` eingefroren.
+      GEGENPROBE auf einer Wegwerfkopie der Ressourcen (nicht im Baum): ein
+      verfaelschter Punkt im hdpi-Vordergrund -> FAIL „weicht um bis zu 254
+      Stufen ab"; Hintergrundfarbe in der XML -> FAIL „fehlt oder weicht ab";
+      RADIUS_DP 35 statt 31 -> 16035 Punkte ausserhalb des Kreises, bei 31
+      null. Die unveraenderte Kopie blieb gruen.
+
+      NEU BAUEN, wenn sich die Vorlage aendert: `python3 tools/handy-app-icon.py`
+      aus dem Wurzelverzeichnis (braucht Pillow und numpy, nicht mehr
+      rsvg-convert). Dauert rund 2 s.
+
+      AM HANDY GESEHEN (29.09.2026, 22:38, Honor PGT-N19, Android 16): das
+      Startbild beim Oeffnen der App zeigt das MixPi im abgerundeten Quadrat
+      des Honor-Launchers, ganz, nichts abgeschnitten, Kanten sauber. Die
+      App lief danach, die gemerkte Box blieb erhalten.
+      WIE, OHNE DIE NACHBARSITZUNG MITZUNEHMEN: nicht aus dem Arbeitsbaum
+      gebaut (dort lagen halbfertige Aenderungen unter handy-app/lib, die
+      `tools/handy-app-debug.sh start` mit aufs Handy gebracht haette),
+      sondern `git archive <commit> handy-app | tar -x` in einen Wegwerf-
+      ordner, dort `flutter build apk --debug` (38 s). Vor dem Ersetzen die
+      Signatur verglichen (`apksigner verify --print-certs` am gebauten und
+      am per `adb pull` geholten installierten APK): gleich, also
+      `adb install -r` mit Erhalt der App-Daten. Bei ANDERER Signatur
+      deinstalliert handy-app-debug.sh von selbst — dann sind die gekoppelten
+      Boxen weg; das vorher fragen.
+      ANSEHEN, OHNE DURCH DIE STARTSEITEN ZU BLAETTERN: die Startseiten
+      des Handys tragen private Widgets (Termine). Das Icon zeigt Android
+      auch auf dem Startbild der App (Android 12+): App per
+      `adb shell monkey -p <paket> -c android.intent.category.LAUNCHER 1`
+      starten und sofort mehrmals `screencap` — ein Debug-Bau startet
+      langsam genug, dass drei von vier Bildern das Startbild treffen.
+      USB-DEBUGGING WAR AUS, obwohl das Handy am Kabel hing: `lsusb -v` zeigte
+      nur die Schnittstellen MTP und Massenspeicher, keine fuer ADB — das ist
+      am Handy einzuschalten, nicht von hier.
+
+      Nicht gebaut: eine Monochrom-Ebene fuer eingefaerbte Symbole
+      (Android 13+).
+    related: ["handy-app-flutter-fernbedienung", "mixpi-maskottchen-familie", "bilder-aufbereiten-drei-fallen", "boot-animation-sternenhimmel-mit-schwebendem-mixpi", "icons-grundformen-statt-freihand", "gegenprobe-bleibt-gruen-ist-der-fund"]

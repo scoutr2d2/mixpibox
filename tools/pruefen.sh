@@ -548,6 +548,26 @@ schritt "Zwillingsdateien box/installer" python3 tools/zwillingsdateien-abgleich
 # fallen.
 schritt "Zwillinge nach Ziel" python3 tools/zwillinge-nach-ziel.py --pruefen
 
+# ── Das Startbild der Boot-Animation folgt seiner Quelle (29.09.2026) ─────
+#
+# scripts/mupibox/mixpi-startbild.png ist KEIN eigenes Bild, sondern das
+# Standard-MixPi (NewDesign/bilder/mixpi-hoert.png), vorab verkleinert. Aendert
+# jemand die Quelle, zeigt die Box beim Hochfahren still weiter die alte Figur
+# — gesehen wird das nur beim Neustart, wo niemand danebensitzt. Der Schritt
+# baut die Ableitung im Speicher nach und vergleicht; er prueft ausserdem, dass
+# der PNG-Leser der Animation die Datei lesen kann. Braucht Pillow.
+schritt "Startbild der Boot-Animation" python3 tools/bootsplash-vorschau.py --pruefen
+
+# ── Das App-Icon der Handy-App folgt dem Maskottchen (29.09.2026) ─────────
+#
+# Die Launcher-Bilder unter handy-app/android/.../res/mipmap-* sind aus der
+# Standard-Vorlage des MixPi abgeleitet (maskottchen.json, Zustand hoert).
+# Wechselt dort die Vorlage, truege die App still weiter die alte Figur. Der
+# Schritt baut alles im Speicher nach, vergleicht, und misst, dass keine
+# sichtbare Stelle der Figur aus dem sicheren 66-dp-Kreis ragt — dort schneidet
+# ein runder Launcher ab. Braucht Pillow und numpy.
+schritt "App-Icon der Handy-App" python3 tools/handy-app-icon.py --pruefen
+
 # ── Die Tests des Installers (28.09.2026) ─────────────────────────────────
 #
 # Die zwei Schritte darueber halten die KOPIEN gleich — niemand hielt die

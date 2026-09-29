@@ -42,11 +42,23 @@ auf. Bleibt ein Meilenstein aus, steht der Balken ehrlich still; nach 120 s
 endet es. Wer wissen will, ob der Start SCHIEFGEGANGEN ist, braucht das
 Fehlerbild (mupibox-fehlerbild.py) und die Kioskwache (mupibox-kioskwache.py)
 daneben — dieses Skript hier ist nur die Anzeige.
+
+WIE ES AUSSIEHT (Betreiber, 29.09.2026: „erstelle mir einen neue boot animation
+mit sternen und mupibox mit dem maskottchen. bitte verwende ein vorhandenes
+bild"): ein Nachthimmel mit funkelnden Sternen und ab und zu einer
+Sternschnuppe; in der Mitte schwebt das MixPi vor einem weichen Schein, darunter
+steht der Name der Box. Die aufsteigenden Noten von vorher sind heraus. Das
+Bild ist KEIN neues, sondern das Standard-MixPi (NewDesign/bilder/
+mixpi-hoert.png), vorab auf Schirmgroesse gebracht: mixpi-startbild.png, gebaut
+und nachgeprueft mit tools/bootsplash-vorschau.py. Der Fortschritt ist
+derselbe echte wie vorher — nur sind es jetzt sechs Pillen in den Farben der
+sechs Stifte im MixPi-Haar statt eines Balkens.
 """
 import gzip
 import math
 import mmap
 import os
+import random
 import signal
 import socket
 import struct
@@ -69,7 +81,14 @@ SCHRIFT_KLEIN = "/usr/share/consolefonts/Lat15-TerminusBold24x12.psf.gz"
 # nirgends mehr existieren kann, kostet bei jedem Start einen Dateizugriff und
 # suggeriert beim Lesen, es gebe dort noch etwas. Am Geraet nachgesehen: von
 # den verbliebenen Pfaden greift der favicon-Eintrag.
-LOGOS = ["/usr/local/bin/mupibox/mixpi-hoert.png",
+# DAS STARTBILD STEHT VORN (29.09.2026): mixpi-startbild.png liegt in
+# scripts/mupibox/ und kommt deshalb auf BEIDEN Einrichtungswegen neben dieses
+# Skript (autosetup/Update und der Skriptschritt des Installers kopieren
+# scripts/mupibox/* nach /usr/local/bin/mupibox/). Es ist schon 200 px hoch
+# und glatt verkleinert; die anderen Eintraege sind 256 px und werden hier
+# grob auf die Haelfte gebracht — sie bleiben als Rueckfall.
+LOGOS = ["/usr/local/bin/mupibox/mixpi-startbild.png",
+         "/usr/local/bin/mupibox/mixpi-hoert.png",
          "/opt/mixpibox-einrichtung/mixpi-hoert.png",
          "/boot/firmware/einrichtung/mixpi-hoert.png",
          "/home/dietpi/.mupibox/Sonos-Kids-Controller-master/www/assets/icon/favicon.png",
@@ -77,22 +96,54 @@ LOGOS = ["/usr/local/bin/mupibox/mixpi-hoert.png",
 MAX_LAUFZEIT = 120          # Notbremse: nie laenger als 2 min stehenbleiben
 # 10 STATT 20 (14.08.2026, Audit-Merkposten 4.4): dieses Skript rechnet in
 # reinem Python und laeuft genau in der Minute, in der Backend, X und
-# Chromium um dieselben vier Kerne ringen. Zehn Bilder je Sekunde sehen bei
-# sechs treibenden Noten gleich fluessig aus (der Notenlauf ist
-# zeitkompensiert, siehe NOTEN_TEMPO) — und kosten die halbe Rechenzeit.
-# Dazu malt jedes Bild seit demselben Datum nur noch die BEWEGTEN Zonen:
-# Hintergrund, Logo und Schriftzug stehen fertig in einem Basis-Puffer
-# (siehe malen()), statt je Bild pixelweise neu zu entstehen.
+# Chromium um dieselben vier Kerne ringen. Zehn Bilder je Sekunde sehen fuer
+# funkelnde Sterne und ein langsam schwebendes MixPi gleich fluessig aus —
+# und kosten die halbe Rechenzeit. Alles, was sich bewegt, rechnet in
+# SEKUNDEN (takt / BILD_PRO_S): wer die Bildrate aendert, aendert nur, wie
+# oft gemalt wird, nicht wie schnell es funkelt.
+# Dazu malt jedes Bild nur die BEWEGTEN Zonen: Himmel, Schein und Schriftzug
+# stehen fertig in einem Basis-Puffer (siehe malen()), statt je Bild
+# pixelweise neu zu entstehen.
 BILD_PRO_S = 10
-# Der Notenstrom in Umlaeufen je TAKT: frueher stand hier ein nacktes 0.021
-# bei 20 Bildern je Sekunde. An die Bildrate gekoppelt bleibt die SICHTBARE
-# Geschwindigkeit gleich, egal was oben steht.
-NOTEN_TEMPO = 0.42 / BILD_PRO_S
 
+# Diese vier werden auch vom Einrichtungsschirm (einrichtung-schirm.py im
+# Installer) und vom Fehlerbild gelesen — sie bleiben, auch wenn der
+# Sternenhimmel sie selbst nicht mehr braucht.
 HINTERGRUND = (0x12, 0x12, 0x12)
 AKZENT = (0x44, 0xAF, 0xE2)     # Themenfarbe des Forks
 TEXT = (0xEA, 0xF1, 0xF8)
 GEDIMMT = (0x76, 0x8E, 0x9F)
+
+# ══ DER STERNENHIMMEL (29.09.2026) ══════════════════════════════════════════
+# Oben fast schwarz, zum Boden hin ein tiefes Violett — die Farbe der
+# Kopfhoerer (#8B57FD), nur sehr weit abgedunkelt. HOF ist das, was der Schein
+# hinter dem MixPi in seiner Mitte ZUSAETZLICH zum Himmel an Licht bekommt.
+HIMMEL_OBEN = (0x05, 0x07, 0x1A)
+HIMMEL_UNTEN = (0x1C, 0x10, 0x3A)
+HOF = (0x34, 0x26, 0x70)
+SCHATTEN = (0x02, 0x03, 0x10)
+LEISTE = (0x24, 0x1E, 0x4C)      # noch nicht erreichte Pille, Kiosk-Unterlegung
+# Die sechs Stifte im MixPi-Haar, in ihrer Reihenfolge — aus der Figur
+# GEZAEHLT, nicht ausgedacht (NewDesign/bilder/favicon.svg: blau, gruen,
+# stahlblau, gelb, pink, orange). Sechs Stifte, sechs Meilensteine: jeder
+# erreichte laesst einen aufleuchten.
+ANTENNEN = ((0x00, 0xAC, 0xFD), (0x11, 0xDE, 0x47), (0x43, 0x71, 0x9A),
+            (0xFE, 0xEE, 0x04), (0xFD, 0x34, 0xA2), (0xFF, 0x70, 0x01))
+STERNFARBEN = ((0xF6, 0xF7, 0xFF), (0xC8, 0xDA, 0xFF), (0xFF, 0xF1, 0xCC))
+SCHNUPPE = (0xFF, 0xF8, 0xE8)
+SCHWEBEN = 3             # so viele Punkte hebt und senkt sich das MixPi
+SCHWEBE_DAUER = 3.6      # Sekunden fuer einmal auf und ab
+SCHNUPPE_ALLE = 5.0      # alle so viele Sekunden eine Sternschnuppe ...
+SCHNUPPE_DAUER = 1.1     # ... die so lange unterwegs ist
+PILLE_H = 14
+PILLE_LUECKE = 12
+
+# Geordnetes Raster (Bayer 4x4) fuer 16 bpp. Der Pi 4 hat nur 5 Bit Rot und
+# Blau: ein Verlauf ueber 480 Zeilen von 0x05 nach 0x1C zerfiele dort in vier
+# harte Streifen. Gerastert werden daraus feine Punktmuster, die das Auge
+# wieder zum Verlauf mischt. Auf 32 bpp verschiebt dasselbe Raster um
+# weniger als eine Stufe und ist unsichtbar.
+BAYER4 = ((0, 8, 2, 10), (12, 4, 14, 6), (3, 11, 1, 9), (15, 7, 13, 5))
 
 
 def punkt565(r, g, bl):
@@ -138,6 +189,32 @@ def hintergrund(roh, bpp):
     return (roh[2], roh[1], roh[0]) if bpp == 32 else von565(roh)
 
 
+def mischfarbe(a, b, t):
+    """Zwischen zwei Farben: t=0 ist a, t=1 ist b. Bleibt Kommazahl — gerundet
+    wird erst in muster(), damit das Raster den Rest verteilen kann."""
+    return tuple(a[i] + (b[i] - a[i]) * t for i in range(3))
+
+
+def muster(farbe, y, bpp):
+    """Vier Punkte dieser Farbe fuer Zeile y, auf 16 bpp GERASTERT.
+
+    Eine Flaeche wird damit als Wiederholung von vier Punkten geschrieben —
+    genauso billig wie eine einfarbige, aber ohne Streifen auf dem Pi 4. Das
+    Muster haengt an der Zeile (y % 4) und, beim Schreiben, an der ABSOLUTEN
+    Spalte (x % 4, siehe Schirm.spanne); nur so setzen sich zwei Flaechen
+    nebeneinander ohne Naht fort.
+    """
+    stufe = (8, 4, 8) if bpp == 16 else (1, 1, 1)
+    r, g, bl = farbe
+    raus = b""
+    for s in BAYER4[y & 3]:
+        t = (s + 0.5) / 16
+        raus += punkt(min(255, max(0, int(r + t * stufe[0]))),
+                      min(255, max(0, int(g + t * stufe[1]))),
+                      min(255, max(0, int(bl + t * stufe[2]))), bpp)
+    return raus
+
+
 # ── Framebuffer ────────────────────────────────────────────────────────────
 class Schirm:
     def __init__(self):
@@ -177,6 +254,47 @@ class Schirm:
                 continue
             o = (zy * self.b + von) * self.bp
             self.puffer[o:o + (bis - von) * self.bp] = px * (bis - von)
+
+    def spanne(self, y, von, bis, vier):
+        """Zeile y von `von` bis `bis` (ausschliesslich) mit einem Muster aus
+        muster() fuellen — an der absoluten Spalte ausgerichtet."""
+        if not (0 <= y < self.h):
+            return
+        von, bis = max(0, von), min(self.b, bis)
+        if bis <= von:
+            return
+        ph, n = von & 3, bis - von
+        reihe = vier * ((ph + n) // 4 + 1)
+        o = (y * self.b + von) * self.bp
+        self.puffer[o:o + n * self.bp] = reihe[ph * self.bp:(ph + n) * self.bp]
+
+    def verlauf(self, oben, unten):
+        """Den ganzen Schirm senkrecht von `oben` nach `unten` verlaufen lassen."""
+        for y in range(self.h):
+            t = y / max(1, self.h - 1)
+            self.spanne(y, 0, self.b, muster(mischfarbe(oben, unten, t), y, self.bpp))
+
+    def hof(self, cx, cy, radius, oben, unten, zusatz, stufen=24):
+        """Weicher Schein um (cx, cy), ueber einen Verlauf oben->unten gelegt.
+
+        Konzentrische Scheiben, von aussen nach innen, jede ein wenig heller.
+        Die Farbe einer Scheibe ist JE ZEILE der Himmel an dieser Zeile plus ein
+        Anteil von `zusatz` — eine feste Farbe je Scheibe stuende oben heller
+        und unten dunkler als der Himmel daneben, und der Rand waere zu sehen.
+        Als Spannen geschrieben statt Punkt fuer Punkt: rund 24 Scheiben mal
+        300 Zeilen Slices statt 90000 Wurzeln in reinem Python.
+        """
+        for y in range(max(0, cy - radius), min(self.h, cy + radius + 1)):
+            grund = mischfarbe(oben, unten, y / max(1, self.h - 1))
+            dy = y - cy
+            for k in range(stufen):
+                rk = radius * (stufen - k) / stufen
+                if abs(dy) >= rk:
+                    continue
+                w = int((rk * rk - dy * dy) ** 0.5)
+                s = ((k + 1) / stufen) ** 1.5
+                farbe = tuple(grund[i] + zusatz[i] * s for i in range(3))
+                self.spanne(y, cx - w, cx + w + 1, muster(farbe, y, self.bpp))
 
     def bild(self, bd, x, y, skala=1, teiler=1):
         """PNG zeichnen, Transparenz gegen den Hintergrund verrechnet.
@@ -223,6 +341,11 @@ class Schirm:
         self.puffer[o:o + self.bp] = punkt((r * a + hr * (255 - a)) // 255,
                                            (g * a + hg * (255 - a)) // 255,
                                            (bl * a + hb * (255 - a)) // 255, self.bpp)
+
+    def tupfen(self, x, y, farbe, a):
+        """Einen Punkt mit Deckkraft a setzen — ausserhalb des Schirms: nichts."""
+        if a > 0 and 0 <= x < self.b and 0 <= y < self.h:
+            self._mischen((y * self.b + x) * self.bp, farbe[0], farbe[1], farbe[2], min(255, a))
 
     def note(self, x, y, groesse, farbe, deckkraft=255, gespiegelt=False):
         """Eine Achtelnote zeichnen: Kopf (geneigte Ellipse), Hals, Fahne.
@@ -355,6 +478,95 @@ class Bild:
         if self.k == 2:
             return p[o], p[o], p[o], p[o + 1]
         return p[o], p[o], p[o], 255
+
+
+# ── Das MixPi, das schwebt ─────────────────────────────────────────────────
+class Figur:
+    """Ein Bild, das sich um wenige Punkte hebt und senkt — ohne je Bild neu
+    gemischt zu werden.
+
+    WARUM NICHT EINFACH `Schirm.bild()` JE BILD: das MixPi hat rund 2500
+    halbdurchsichtige Kantenpunkte. Die je Bild ueber den Himmel zu mischen,
+    kostet auf dem Pi 4 in reinem Python mehr als alles andere zusammen — in
+    genau der Minute, in der die Box ihre Kerne fuer den Start braucht.
+
+    WARUM NICHT EIN FERTIGER STREIFEN, DER NUR VERSCHOBEN WIRD: unter dem
+    Bild liegt der Schein (Schirm.hof). Ein einmal gemischter Streifen
+    truege ihn mit, und um drei Punkte verschoben passten seine Ringe am
+    Rand des Streifens nicht mehr zu denen daneben — eine Kante mitten im
+    Himmel.
+
+    DESHALB: je Hoehe (-SCHWEBEN .. +SCHWEBEN, also sieben) EINMAL gegen die
+    fertige Basis gemischt und aufgehoben, danach nur noch zeilenweise
+    kopiert. Erst gebaut, wenn die Hoehe zum ersten Mal gebraucht wird; die
+    Kosten verteilen sich damit auf die ersten zwei Sekunden.
+    """
+
+    def __init__(self, bd, x, y, skala=1, teiler=1, bpp=32):
+        self.x, self.y = x, y
+        self.b = max(1, (bd.b * skala) // teiler)
+        self.h = max(1, (bd.h * skala) // teiler)
+        # Je Zeile: deckende Laeufe als fertige Bytes, Kantenpunkte einzeln.
+        self.voll, self.halb = [], []
+        for zy in range(self.h):
+            qy = (zy * teiler) // skala
+            laeufe, kanten = [], []
+            anfang, lauf = None, bytearray()
+            for zx in range(self.b):
+                r, g, bl, a = bd.punkt((zx * teiler) // skala, qy)
+                if a == 255:
+                    if anfang is None:
+                        anfang, lauf = zx, bytearray()
+                    lauf += punkt(r, g, bl, bpp)
+                    continue
+                if anfang is not None:
+                    laeufe.append((anfang, bytes(lauf)))
+                    anfang = None
+                if a:
+                    kanten.append((zx, r, g, bl, a))
+            if anfang is not None:
+                laeufe.append((anfang, bytes(lauf)))
+            self.voll.append(laeufe)
+            self.halb.append(kanten)
+        self._streifen = {}
+
+    def _bauen(self, schirm, basis, versatz):
+        bp = schirm.bp
+        x0, x1 = max(0, self.x), min(schirm.b, self.x + self.b)
+        streifen = []
+        if x1 <= x0:
+            return streifen
+        for zy in range(self.h):
+            py = self.y + versatz + zy
+            if not (0 <= py < schirm.h):
+                continue
+            o = (py * schirm.b + x0) * bp
+            zeile = bytearray(basis[o:o + (x1 - x0) * bp])
+            for zx, roh in self.voll[zy]:
+                sx = self.x + zx
+                von, bis = max(sx, x0), min(sx + len(roh) // bp, x1)
+                if bis > von:
+                    zeile[(von - x0) * bp:(bis - x0) * bp] = roh[(von - sx) * bp:(bis - sx) * bp]
+            for zx, r, g, bl, a in self.halb[zy]:
+                sx = self.x + zx
+                if not (x0 <= sx < x1):
+                    continue
+                q = (sx - x0) * bp
+                hr, hg, hb = hintergrund(zeile[q:q + bp], schirm.bpp)
+                zeile[q:q + bp] = punkt((r * a + hr * (255 - a)) // 255,
+                                        (g * a + hg * (255 - a)) // 255,
+                                        (bl * a + hb * (255 - a)) // 255, schirm.bpp)
+            streifen.append((o, bytes(zeile)))
+        return streifen
+
+    def zeichnen(self, schirm, basis, versatz=0):
+        """Das Bild um `versatz` Punkte verschoben in den Puffer legen.
+        `basis` ist der fertige Hintergrund OHNE Figur."""
+        s = self._streifen.get(versatz)
+        if s is None:
+            s = self._streifen[versatz] = self._bauen(schirm, basis, versatz)
+        for o, zeile in s:
+            schirm.puffer[o:o + len(zeile)] = zeile
 
 
 # ── PSF-Schrift (Konsolenschriften sind ueberall vorhanden) ────────────────
@@ -652,118 +864,242 @@ def kioskumgebung():
     return "chromium"
 
 
+# ── Der Sternenhimmel ──────────────────────────────────────────────────────
+def sternhimmel(breite, hoehe, aussparen, samen=29):
+    """Wo die Sterne stehen — EINMAL ausgewuerfelt, mit festem Samen.
+
+    Fester Samen, weil der Himmel bei jedem Start derselbe sein soll: ein Kind,
+    das jeden Morgen hinsieht, kennt ihn irgendwann. Und ein Bild, das bei
+    jedem Lauf anders aussieht, laesst sich nicht nachpruefen.
+
+    `aussparen` sind Rechtecke (x, y, b, h), in die KEIN Stern hineinragen darf
+    — Figur, Name, Fortschritt, Kiosk-Hinweis. Ein Stern, der durch einen
+    Buchstaben funkelt, sieht nach Fehler aus. Der Rand von 6 Punkten deckt
+    die Arme der Funkelsterne mit ab.
+
+    -> Liste von (x, y, art, farbe, tempo, phase, grund). art 0 ist ein
+    einzelner Punkt, 1 ein kleines Kreuz, 2 ein Funkelstern, der seine Arme
+    streckt und in der Haelfte der Faelle eine Stiftfarbe traegt.
+    """
+    zufall = random.Random(samen)
+    anzahl = breite * hoehe // 3000
+    sterne, versuche = [], 0
+    while len(sterne) < anzahl and versuche < anzahl * 30:
+        versuche += 1
+        x = zufall.randrange(6, max(7, breite - 6))
+        y = zufall.randrange(6, max(7, hoehe - 6))
+        if any(ax - 6 <= x < ax + ab + 6 and ay - 6 <= y < ay + ah + 6
+               for ax, ay, ab, ah in aussparen):
+            continue
+        w = zufall.random()
+        art = 0 if w < 0.62 else (1 if w < 0.88 else 2)
+        if art == 2 and zufall.random() < 0.5:
+            farbe = zufall.choice(ANTENNEN)
+        else:
+            farbe = zufall.choice(STERNFARBEN)
+        tempo = 2 * math.pi / zufall.uniform(1.6, 4.2)   # ein Funkeln je 1,6 bis 4,2 s
+        phase = zufall.uniform(0, 2 * math.pi)
+        grund = zufall.uniform(0.2, 0.55) if art == 0 else zufall.uniform(0.45, 0.7)
+        sterne.append((x, y, art, farbe, tempo, phase, grund))
+    return sterne
+
+
+def sterne_malen(schirm, sterne, t):
+    """Jeder Stern funkelt in seinem eigenen Takt: Helligkeit als Sinus der
+    Zeit t (Sekunden), mit eigener Geschwindigkeit und eigenem Versatz. Die
+    Funkelsterne strecken dabei ihre Arme (1 bis 4 Punkte)."""
+    for x, y, art, farbe, tempo, phase, grund in sterne:
+        hell = grund + (1 - grund) * (0.5 + 0.5 * math.sin(t * tempo + phase))
+        a = int(255 * hell)
+        schirm.tupfen(x, y, farbe, a)
+        if art == 0:
+            continue
+        arm = 1 if art == 1 else 1 + int(3.4 * hell)
+        for d in range(1, arm + 1):
+            ad = a * (arm + 1 - d) // (arm + 1)
+            if art == 1:
+                ad //= 2
+            schirm.tupfen(x - d, y, farbe, ad)
+            schirm.tupfen(x + d, y, farbe, ad)
+            schirm.tupfen(x, y - d, farbe, ad)
+            schirm.tupfen(x, y + d, farbe, ad)
+
+
+def schnuppe_malen(schirm, lage, t):
+    """Alle SCHNUPPE_ALLE Sekunden eine Sternschnuppe, links oder rechts der
+    Figur, schraeg nach unten zur Mitte hin.
+
+    Start und Seite wuerfelt ein Samen aus der laufenden Nummer: jede
+    Schnuppe ist anders, und trotzdem ist das Bild zu einer Zeit t immer
+    dasselbe — sonst liesse sich keine Vorschau vergleichen.
+
+    Sie bleibt OBERHALB des Namens (`schnuppe_bis`) und darf hoechstens bis
+    an den Rand der Figur ziehen; was dort hineinreicht, deckt die Figur zu,
+    weil sie danach gemalt wird. Das sieht aus wie „hinter dem MixPi
+    vorbei" und braucht keine eigene Pruefung.
+    """
+    nummer, rest = divmod(t, SCHNUPPE_ALLE)
+    p = rest / SCHNUPPE_DAUER
+    if p >= 1.0:
+        return
+    zufall = random.Random(int(nummer) * 7919 + 17)
+    weg = min(160, schirm.b // 5)
+    ex, ey = 0.91, 0.41                                  # rund 24 Grad Gefaelle
+    wx, wy = int(weg * ex), int(weg * ey)
+    links = zufall.random() < 0.5
+    if links:
+        lo, hi, richtung = 16, lage["mitte_links"] - 16 - wx // 2, 1
+    else:
+        lo, hi, richtung = lage["mitte_rechts"] + 16 + wx // 2, schirm.b - 16, -1
+    y_hi = lage["schnuppe_bis"] - wy
+    if hi < lo or y_hi < 12:
+        return                        # Schirm zu klein — dann eben keine
+    sx, sy = zufall.randint(lo, hi), zufall.randint(12, y_hi)
+    # Einblenden im ersten Achtel, Ausblenden im letzten Drittel.
+    hell = max(0.0, min(1.0, p / 0.12, (1.0 - p) / 0.35))
+    kx, ky = sx + richtung * wx * p, sy + wy * p
+    laenge = int(min(56, weg * p))            # der Schweif waechst erst heraus
+    for i in range(laenge + 1):
+        a = int(255 * hell * (1 - i / (laenge + 1)) ** 1.6)
+        x, y = int(kx - richtung * ex * i), int(ky - ey * i)
+        schirm.tupfen(x, y, SCHNUPPE, a)
+        if i < 14:
+            schirm.tupfen(x, y + 1, SCHNUPPE, a // 3)
+    kopf = int(190 * hell)
+    x, y = int(kx), int(ky)
+    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        schirm.tupfen(x + dx, y + dy, SCHNUPPE, kopf)
+
+
+def pillen_malen(schirm, lage, erreicht, t):
+    """Sechs Pillen statt eines Balkens — in den Farben der sechs Stifte.
+
+    Erreichte leuchten in ihrer Farbe, die als naechste erwartete glimmt
+    langsam, der Rest bleibt dunkel. Das Glimmen ist KEIN Fortschritt: es
+    zeigt nur, dass die Anzeige lebt, waehrend ein Schritt dauert. Der Stand
+    selbst springt nie zurueck und rueckt nie ohne Meilenstein vor.
+    """
+    n = len(MEILENSTEINE)
+    for i in range(n):
+        x = lage["pille_x"] + i * (lage["pille_b"] + PILLE_LUECKE)
+        farbe = ANTENNEN[i % len(ANTENNEN)]
+        if i < erreicht:
+            f = farbe
+        elif i == erreicht:
+            glimm = 0.5 + 0.5 * math.sin(t * 2 * math.pi / 1.4)
+            f = tuple(int(c) for c in mischfarbe(LEISTE, farbe, 0.15 + 0.30 * glimm))
+        else:
+            f = LEISTE
+        schirm.rechteck(x, lage["pille_y"], lage["pille_b"], PILLE_H, f, radius=PILLE_H // 2)
+
+
+def komponieren(schirm, gross, klein, titel, logo):
+    """Den unbewegten Teil EINMAL bauen und festhalten, wo alles steht.
+
+    -> (basis, lage). `basis` sind Himmel, Schein und Name als fertige Bytes
+    — OHNE Figur, denn die wird je Bild in ihrer Schwebehoehe daraufgelegt.
+    `lage` haelt die Koordinaten, die Sterne und die vorbereitete Figur.
+    """
+    B, H = schirm.b, schirm.h
+    if logo is not None:
+        # ══ DAS LOGO DARF AUCH KLEINER WERDEN (20.08.2026) ══════════════════
+        # Hier stand einmal nur `max(1, min(4, (schirm.h // 3) // logo.h))`.
+        # Diese Wahl kann ausschliesslich VERGROESSERN: sobald das Logo hoeher
+        # ist als das Ziel, wird der Bruch 0 und `max(1, 0)` macht daraus 1 —
+        # Originalgroesse. Am Geraet war der Bildblock damit hoeher als der
+        # Schirm und die Zahl darunter „bisschen nach unten gerutscht".
+        # Das Ziel ist seit dem Sternenhimmel 5/12 der Hoehe (200 px bei 480):
+        # mixpi-startbild.png passt genau, die 256er Rueckfaelle werden halbiert.
+        ziel = H * 5 // 12
+        if logo.h <= ziel:
+            sk, teiler = max(1, min(4, ziel // max(1, logo.h))), 1
+        else:
+            # Aufgerundet, damit das Ergebnis sicher UNTER das Ziel faellt.
+            sk, teiler = 1, -(-logo.h // ziel)
+        fb, fh = max(1, (logo.b * sk) // teiler), max(1, (logo.h * sk) // teiler)
+        luft = 14
+    else:
+        sk = teiler = 1
+        fb = fh = luft = 0
+    # ══ DIE BLOCKHOEHE, von oben durchgezaehlt ═════════════════════════════
+    # Figur, Luft, Name, Luft, Pillen, Luft, Beschriftung, Luft, Zaehler. Die
+    # Rechnung hatte am 20.08.2026 zwei Fehler, die sich teilweise aufhoben
+    # (ein Posten doppelt, die letzte Zeile fehlte) — deshalb steht hier jede
+    # Zeile genau einmal und in der Reihenfolge, in der sie gemalt wird.
+    # NACHGERECHNET (800x480, Figur 200, Terminus-24): 63 px oben, 63 unten.
+    block = fh + luft + gross.hoehe + 26 + PILLE_H + 14 + klein.hoehe + 6 + klein.hoehe
+    kopf = max(SCHWEBEN + 8, (H - block) // 2)
+    fx, fy = (B - fb) // 2, kopf
+    ty = fy + fh + luft
+    tb = gross.textbreite(titel)
+    tx = (B - tb) // 2
+    n = len(MEILENSTEINE)
+    pb = max(8, min(72, (B - 80 - (n - 1) * PILLE_LUECKE) // n))
+    gesamt = n * pb + (n - 1) * PILLE_LUECKE
+    px = (B - gesamt) // 2
+    # Die Grenze traegt den GANZEN Text darunter, nicht nur die Pillen
+    # (dieselbe Lehre wie beim alten Balken: die letzte Zeile lief einmal
+    # acht Punkte ueber den Rand).
+    py = min(H - 10 - klein.hoehe - 6 - klein.hoehe - 14 - PILLE_H, ty + gross.hoehe + 26)
+    ly = py + PILLE_H + 14
+    zy = ly + klein.hoehe + 6
+
+    schirm.verlauf(HIMMEL_OBEN, HIMMEL_UNTEN)
+    if logo is not None:
+        schirm.hof(B // 2, fy + fh // 2, int(max(fb, fh) * 0.82),
+                   HIMMEL_OBEN, HIMMEL_UNTEN, HOF)
+    gross.malen(schirm, titel, tx + 2, ty + 2, SCHATTEN)
+    gross.malen(schirm, titel, tx, ty, TEXT)
+    basis = bytes(schirm.puffer)
+
+    kiosk_b = klein.textbreite("Kiosk: chromium") + 20
+    aussparen = [
+        (fx - 4, fy - SCHWEBEN - 4, fb + 8, fh + 2 * SCHWEBEN + 8),
+        (tx - 6, ty - 4, tb + 12, gross.hoehe + 8),
+        (min(px, B // 2 - 160) - 6, py - 6, max(gesamt, 320) + 12,
+         zy + klein.hoehe + 12 - py),
+        (0, H - klein.hoehe - 32, kiosk_b + 26, klein.hoehe + 32),
+    ]
+    lage = {
+        "figur": Figur(logo, fx, fy, sk, teiler, schirm.bpp) if logo is not None else None,
+        "sterne": sternhimmel(B, H, aussparen),
+        "aussparen": aussparen,
+        "mitte_links": min(fx, tx) if logo is not None else tx,
+        "mitte_rechts": max(fx + fb, tx + tb) if logo is not None else tx + tb,
+        "schnuppe_bis": ty - 16,
+        "pille_x": px, "pille_y": py, "pille_b": pb,
+        "beschriftung_y": ly, "zaehler_y": zy,
+    }
+    return basis, lage
+
+
 # Der unbewegte Teil des Bildes, EINMAL komponiert (14.08.2026, Audit 4.4):
-# Hintergrund fuellen, Logo mit Alpha verrechnen und den Schriftzug setzen
-# sind die drei teuersten Schritte — und sie aendern sich zwischen zwei
-# Bildern nie. Vorher liefen sie zwanzigmal je Sekunde pixelweise in reinem
-# Python, waehrend Backend, X und Chromium um dieselben vier Kerne rangen.
-# Der Schluessel haelt fest, WOFUER der Puffer gilt; ein anderes Logo oder
-# eine andere Schirmgroesse komponieren neu.
-_basis = {"schluessel": None, "puffer": None, "oben": 0}
+# Himmel, Schein und Schriftzug sind die teuersten Schritte — und sie aendern
+# sich zwischen zwei Bildern nie. Der Schluessel haelt fest, WOFUER der Puffer
+# gilt; ein anderer Name, ein anderes Logo oder eine andere Schirmgroesse
+# komponieren neu.
+_basis = {"schluessel": None, "puffer": None, "lage": None}
 
 
 def malen(schirm, gross, klein, erreicht, takt, offen="", logo=None, umgebung="chromium"):
     titel = boxname()
     schluessel = (titel, id(logo), schirm.b, schirm.h, schirm.bpp)
     if _basis["schluessel"] != schluessel:
-        schirm.fuellen(HINTERGRUND)
-        # Alles als EIN Block senkrecht mittig setzen — sonst klebt es oben und
-        # unten bleibt die halbe Anzeige leer (auf 800x480 deutlich sichtbar).
-        if logo is not None:
-            # ══ DAS LOGO DARF AUCH KLEINER WERDEN (20.08.2026) ══════════════
-            # Hier stand nur `max(1, min(4, (schirm.h // 3) // logo.h))`. Diese
-            # Wahl kann ausschliesslich VERGROESSERN: Sobald das Logo hoeher
-            # ist als ein Drittel des Schirms, wird der Bruch 0 und `max(1, 0)`
-            # macht daraus 1 — Originalgroesse.
-            # AM GERAET GEMESSEN: das Logo ist 256x256, der Schirm 480 hoch.
-            # Der Bildblock wurde damit 520 px hoch, also HOEHER als der
-            # Schirm; `kopf` fiel auf sein Minimum 10, und alles darunter
-            # wurde an den unteren Rand gedrueckt. Gemeldet als „die x von 5
-            # zahl ist bisschen nach unten gerutscht" — die Zahl war nicht
-            # verrutscht, sie hatte schlicht keinen Platz mehr.
-            ziel = schirm.h // 3
-            if logo.h <= ziel:
-                sk, teiler = max(1, min(4, ziel // max(1, logo.h))), 1
-            else:
-                # Aufgerundet, damit das Ergebnis sicher UNTER das Ziel faellt:
-                # 256 -> Teiler 2 -> 128 px bei einem Ziel von 160.
-                sk, teiler = 1, -(-logo.h // ziel)
-            lh = (logo.h * sk) // teiler + 14
-        else:
-            sk = teiler = 0
-            lh = 0
-        # ══ DIE BLOCKHOEHE NACHGERECHNET (20.08.2026) ═══════════════════════
-        # Betreiber: „die x von 5 zahl ist bisschen nach unten gerutscht."
-        #
-        # HIER STAND `lh + 34 + 92 + 58 + 76`, und darin steckten ZWEI Fehler,
-        # die sich teilweise aufhoben — deshalb fiel es nie ganz auf:
-        #   * die `34` war ueberzaehlig. Der Titel wird bei `oben` gemalt, und
-        #     `mitte = oben + 92` enthaelt ihn bereits; er wurde also doppelt
-        #     gezaehlt.
-        #   * die letzte Zeile fehlte. `76` ist der Abstand bis zur OBERKANTE
-        #     des Zaehlers; der ist selbst noch `klein.hoehe` hoch (24 px).
-        #
-        # WAS DER INHALT WIRKLICH BRAUCHT, ab `oben` durchgerechnet:
-        #     oben -> mitte      92     (Titel und Notenraum)
-        #     mitte -> py        58     (Abstand zur Leiste)
-        #     py -> Unterkante  100     (Leiste, Beschriftung py+40,
-        #                                Zaehler py+76 plus dessen Hoehe)
-        # macht `lh + 250`. Gerechnet wurden `lh + 260` — der Block galt als
-        # zu hoch, `kopf` fiel zu klein aus, und der Inhalt sass fuenf Pixel zu
-        # weit oben, mit entsprechend mehr Luft unter der Zahl.
-        #
-        # NACHGERECHNET (800x480, Terminus-24, Logo 64 px): vorher 39 px oben
-        # gegen 49 px unten, jetzt 44 gegen 44.
-        block = lh + 92 + 58 + 76 + klein.hoehe
-        kopf = max(10, (schirm.h - block) // 2)
-        if logo is not None:
-            schirm.bild(logo, (schirm.b - (logo.b * sk) // teiler) // 2, kopf, sk, teiler)
-        oben = kopf + lh
-        gross.malen(schirm, titel, (schirm.b - gross.textbreite(titel)) // 2, oben, TEXT)
+        _basis["puffer"], _basis["lage"] = komponieren(schirm, gross, klein, titel, logo)
         _basis["schluessel"] = schluessel
-        _basis["puffer"] = bytes(schirm.puffer)
-        _basis["oben"] = oben
-    else:
-        # Ein memcpy statt zehntausender Python-Schleifendurchlaeufe.
-        schirm.puffer[:] = _basis["puffer"]
-        oben = _basis["oben"]
+    lage = _basis["lage"]
+    t = takt / BILD_PRO_S
 
-    # Aufsteigende Noten als Lebenszeichen — passt zu einer Musikbox besser als
-    # abstrakte Balken. Rein gerechnet, kein Bild noetig: jede Note steigt,
-    # driftet leicht seitlich und verklingt oben.
-    # Reichlich Abstand zum Schriftzug: die Noten steigen bis dicht unter ihn,
-    # und eine Note, die in die Buchstaben ragt, sieht nach Fehler aus.
-    mitte = oben + 92
-    NOTEN = 6
-    steig = 74                       # Weg einer Note von unten nach oben
-    for i in range(NOTEN):
-        # Jede Note eigener Startversatz -> ein steter Strom statt Gleichschritt
-        lauf = ((takt * NOTEN_TEMPO) + i / NOTEN) % 1.0
-        ny = mitte + 30 - int(lauf * steig)
-        drift = math.sin(lauf * 6.0 + i) * 9
-        nx = int(schirm.b / 2 - 108 + i * 43 + drift)
-        # aufblenden im ersten Fuenftel, ausblenden im letzten Drittel
-        if lauf < 0.2:
-            deck = int(255 * lauf / 0.2)
-        elif lauf > 0.68:
-            deck = int(255 * (1 - (lauf - 0.68) / 0.32))
-        else:
-            deck = 255
-        schirm.note(nx, ny, 11, AKZENT, max(0, min(255, deck)), gespiegelt=(i % 2 == 1))
-
-    # Fortschritt aus ERREICHTEN Meilensteinen
-    br, ho = 520, 16
-    # DIE GRENZE MUSS DEN GANZEN TEXT TRAGEN, nicht nur die Leiste. Hier stand
-    # `schirm.h - 92`; unter `py` folgen aber noch die Beschriftung (py+40) und
-    # der Zaehler (py+76), und der ist `klein.hoehe` hoch. Bei 480 px Schirm
-    # und 24 px Schrift lief die letzte Zeile damit bis 488 — acht Pixel ueber
-    # den Rand hinaus, sobald ein grosses Logo `mitte` weit genug nach unten
-    # schob. Die 10 px sind Rand, damit die Zahl nicht an der Kante klebt.
-    px, py = (schirm.b - br) // 2, min(schirm.h - 76 - klein.hoehe - 10, mitte + 58)
-    schirm.rechteck(px, py, br, ho, (0x26, 0x26, 0x26), radius=ho // 2)
-    anteil = erreicht / len(MEILENSTEINE)
-    if anteil > 0:
-        schirm.rechteck(px, py, max(ho, int(br * anteil)), ho, AKZENT, radius=ho // 2)
+    # Ein memcpy statt zehntausender Python-Schleifendurchlaeufe. Danach in
+    # dieser Reihenfolge: Sterne, Schnuppe, Figur (deckt die Schnuppe zu, wo
+    # sie hinter ihr vorbeizieht), Fortschritt und Schrift obenauf.
+    schirm.puffer[:] = _basis["puffer"]
+    sterne_malen(schirm, lage["sterne"], t)
+    schnuppe_malen(schirm, lage, t)
+    if lage["figur"] is not None:
+        versatz = int(round(SCHWEBEN * math.sin(2 * math.pi * t / SCHWEBE_DAUER)))
+        lage["figur"].zeichnen(schirm, _basis["puffer"], versatz)
+    pillen_malen(schirm, lage, erreicht, t)
 
     # ══ NUR ASCII — DIE SCHRIFT KANN NICHT MEHR ═════════════════════════
     # Betreiber, 10.08.2026: „hinter jedem schritt ist ein fragezeichen hinten
@@ -773,37 +1109,29 @@ def malen(schirm, gross, klein, erreicht, takt, offen="", logo=None, umgebung="c
     # das Fragezeichen auch hinter jedem.
     # Drei Punkte tun dasselbe und liegen im Zeichenvorrat.
     beschriftung = (offen + " ...") if offen else "Fertig"
-    klein.malen(schirm, beschriftung, (schirm.b - klein.textbreite(beschriftung)) // 2, py + 40, TEXT)
+    klein.malen(schirm, beschriftung, (schirm.b - klein.textbreite(beschriftung)) // 2,
+                lage["beschriftung_y"], TEXT)
     zaehler = f"{erreicht}/{len(MEILENSTEINE)}"
-    klein.malen(schirm, zaehler, (schirm.b - klein.textbreite(zaehler)) // 2, py + 76, GEDIMMT)
+    klein.malen(schirm, zaehler, (schirm.b - klein.textbreite(zaehler)) // 2,
+                lage["zaehler_y"], GEDIMMT)
 
     # ══ WELCHE KIOSK-UMGEBUNG GLEICH STARTET — unten links ══════════════════
     # Betreiber, 20.08.2026: „ich wuerde gerne auch bei dem screen in einer
     # ecke sehen welches kiosk enviroment wir laden." Und nach dem ersten
     # Versuch: „hab ich jetzt so schnell nicht das kiosk enviroment sehen
     # koennen, es soll nicht aufdringlich aber auffindbar sein."
-    #
-    # ZWEI GRUENDE, WARUM ES BEIM ERSTEN MAL UNSICHTBAR WAR:
-    #   1. Es stand unten RECHTS auf y = h - hoehe - 12 = 444..468 — und der
-    #      Zaehler lag damals bei 446..470. Zwei Texte auf denselben Zeilen,
-    #      der eine mittig, der andere rechts: bei „3/5" ueberschnitten sie
-    #      sich nicht immer, aber sie standen auf derselben Hoehe und lasen
-    #      sich als eine Zeile.
-    #   2. Gedimmt UND ohne Beschriftung: ein blasses „cog" allein in einer
-    #      Ecke sieht aus wie ein Rest, nicht wie eine Auskunft.
-    #
-    # JETZT: unten LINKS (die Gegenseite des Zaehlers, der mittig steht),
-    # mit dem Wort „Kiosk:" davor und einer ruhigen Unterlegung. Die Pille
-    # macht es auffindbar, ohne laut zu sein — sie ist nur wenig heller als
-    # der Hintergrund, waehrend der Text in normaler Textfarbe steht.
-    #
-    # AUS DEM VORAB KOMPONIERTEN TEIL HERAUSGEHALTEN: Der Puffer oben wird nur
+    # Unten LINKS (die Gegenseite des Zaehlers, der mittig steht), mit dem
+    # Wort „Kiosk:" davor und einer ruhigen Unterlegung: nur wenig heller als
+    # der Himmel, der Text in normaler Textfarbe. Beim ersten Versuch stand es
+    # unten rechts auf derselben Hoehe wie der Zaehler und las sich mit ihm
+    # als eine Zeile.
+    # AUS DEM VORAB KOMPONIERTEN TEIL HERAUSGEHALTEN: der Puffer oben wird nur
     # neu gebaut, wenn sich Name, Logo oder Schirmmasse aendern — die Umgebung
     # stuende dort fest, auch wenn jemand sie waehrenddessen umstellte.
     marke = f"Kiosk: {umgebung}"
     mb = klein.textbreite(marke)
     mx, my = 16, schirm.h - klein.hoehe - 16
-    schirm.rechteck(mx - 10, my - 6, mb + 20, klein.hoehe + 12, (0x26, 0x26, 0x26),
+    schirm.rechteck(mx - 10, my - 6, mb + 20, klein.hoehe + 12, LEISTE,
                     radius=(klein.hoehe + 12) // 2)
     klein.malen(schirm, marke, mx, my, TEXT)
     schirm.zeigen()

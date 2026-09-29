@@ -859,7 +859,7 @@ Without this command the hooks sit in the tree but **never** run —
 **Where the knowledge is.** The dearly bought details — which measurement
 refuted which assumption, which workaround was necessary and why — are
 neither in the code nor in this file but in the knowledge pack
-**`llmwiki/pack.yaml`** (1152 entries, version 654). It is deliberately data,
+**`llmwiki/pack.yaml`** (1154 entries, version 658). It is deliberately data,
 not code, and is never executed. It is not read by hand:
 
 ```bash

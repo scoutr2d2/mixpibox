@@ -100,6 +100,21 @@ Flutter-Vorlage). Für einen eigenen Schlüssel: `key.properties` nach der
 [Flutter-Anleitung](https://docs.flutter.dev/deployment/android#sign-the-app)
 anlegen — und nie einchecken.
 
+Das **App-Icon** ist das MixPi-Maskottchen, dieselbe Figur wie auf der Box
+(`mixpi-hoert.png`, Boot-Animation). Die Bilder unter
+`android/app/src/main/res/mipmap-*` werden erzeugt, nicht von Hand bearbeitet:
+
+```bash
+python3 tools/handy-app-icon.py            # neu bauen (aus dem Wurzelverzeichnis)
+python3 tools/handy-app-icon.py --pruefen  # passt es noch zur Vorlage?
+```
+
+Welche Vorlage das ist, steht in `NewDesign/maskottchen.json` beim Zustand
+`hoert`. `--pruefen` läuft in `tools/pruefen.sh` mit und misst auch, dass
+nichts von der Figur aus dem Kreis ragt, den ein runder Launcher stehen lässt.
+Ein neu installiertes Icon zeigt mancher Launcher erst nach einem Neustart des
+Handys — vorher hängt noch das alte im Zwischenspeicher.
+
 ## Am Handy debuggen
 
 Manche Handys verschlucken die Logs der App — auf dem Honor steht

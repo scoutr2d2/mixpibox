@@ -10,6 +10,7 @@ BEKANNTEN Pixeln, inklusive aller fuenf Zeilenfilter.
   python3 tests/splash_test.py
 """
 import importlib.util
+import math
 import os
 import struct
 import sys
@@ -180,6 +181,163 @@ stand = [True, False, True, True, False, False]
 chk("gezaehlt wird jeder erfuellte, auch nach einer Luecke", sum(stand) == 3)
 offen = [n for (n, _), got in zip(bs.MEILENSTEINE, stand) if not got]
 chk("die Beschriftung nennt den ERSTEN offenen Punkt", offen[0] == bs.MEILENSTEINE[1][0])
+
+# ── Der Sternenhimmel (29.09.2026) ────────────────────────────────────────
+# Betreiber: „erstelle mir einen neue boot animation mit sternen und mupibox
+# mit dem maskottchen." Geprueft wird, was man dem Bild am Geraet nur mit
+# Glueck ansieht: ein Stern im Namen, eine Schnuppe durch die Schrift, eine
+# Kante im Himmel um die schwebende Figur.
+class StummeSchrift:
+    """Eine Schrift ohne Datei: nur die Masse, gemalt wird nichts."""
+    def __init__(self, breite, hoehe):
+        self.breite, self.hoehe = breite, hoehe
+
+    def textbreite(self, s):
+        return len(s) * self.breite
+
+    def malen(self, *_):
+        pass
+
+
+class Klotz:
+    """Ein Bild ohne Datei: b x h, ueberall deckendes Weiss."""
+    def __init__(self, b, h):
+        self.b, self.h = b, h
+
+    def punkt(self, x, y):
+        return 255, 255, 255, 255
+
+
+def leer(schirm, x, y, b, h):
+    """Ist das Rechteck unberuehrt schwarz (32 bpp)?"""
+    for zy in range(max(0, y), min(schirm.h, y + h)):
+        o = (zy * schirm.b + max(0, x)) * 4
+        if any(schirm.puffer[o:(zy * schirm.b + min(schirm.b, x + b)) * 4]):
+            return False
+    return True
+
+
+zone = (150, 100, 80, 60)
+himmel = bs.sternhimmel(400, 300, [zone])
+chk("der Himmel hat Sterne", len(himmel) > 10)
+chk("kein Stern steht in der Aussparung oder ihrem Rand",
+    all(not (zone[0] - 6 <= x < zone[0] + zone[2] + 6 and zone[1] - 6 <= y < zone[1] + zone[3] + 6)
+        for x, y, *_ in himmel))
+chk("derselbe Samen gibt denselben Himmel", bs.sternhimmel(400, 300, [zone]) == himmel)
+# Der hellste Funkelstern auf dem naechsten erlaubten Platz: seine Arme
+# duerfen den Rand nicht ueberwinden.
+s = FakeSchirm(400, 300)
+s.fuellen((0, 0, 0))
+nah = [(zone[0] - 7, zone[1] + 20, 2, (255, 255, 255), 0.0, math.pi / 2, 1.0),
+       (zone[0] + 20, zone[1] + zone[3] + 6, 2, (255, 255, 255), 0.0, math.pi / 2, 1.0)]
+bs.sterne_malen(s, nah, 0.0)
+chk("auch voll gestreckte Arme bleiben draussen", leer(s, *zone))
+chk("und gemalt wurde trotzdem", not leer(s, 0, 0, 400, 300))
+for t in (0.0, 0.8, 1.7, 2.9, 4.1):
+    bs.sterne_malen(s, himmel, t)
+chk("ueber mehrere Sekunden funkelt nichts in die Aussparung", leer(s, *zone))
+
+# Das Raster: auf 16 bpp im Mittel die Farbe, auf 32 bpp genau sie.
+farbe = (0x10, 0x0C, 0x2A)
+werte = []
+for y in range(4):
+    v = bs.muster(farbe, y, 16)
+    werte += [bs.von565(v[2 * i:2 * i + 2]) for i in range(4)]
+mittel = [sum(w[k] for w in werte) / 16 for k in range(3)]
+chk("16 bpp: das Raster trifft die Farbe im Mittel",
+    all(abs(mittel[k] - farbe[k]) <= 2.5 for k in range(3)))
+chk("16 bpp: und mischt dafuer benachbarte Stufen", len(set(werte)) > 1)
+chk("32 bpp: eine ganzzahlige Farbe bleibt genau sie selbst",
+    bs.muster(farbe, 1, 32) == bs.punkt(*farbe, 32) * 4)
+s = FakeSchirm(10, 1)
+s.fuellen((0, 0, 0))
+s.spanne(0, 3, 7, bs.punkt(9, 9, 9, 32) * 4)
+chk("eine Spanne fuellt genau von..bis", [s.puffer[i * 4] for i in range(10)] == [0, 0, 0, 9, 9, 9, 9, 0, 0, 0])
+
+# Die Figur: deckend ersetzt, durchsichtig laesst durch, halb mischt — und
+# jede Schwebehoehe wird EINMAL gebaut.
+with tempfile.TemporaryDirectory() as d:
+    p = os.path.join(d, "figur.png")
+    schreibe_png(p, 3, 2, lambda x, y: [(255, 0, 0, 255), (255, 255, 255, 128), (0, 255, 0, 0)][x], 6)
+    s = FakeSchirm(6, 5)
+    s.fuellen((0, 0, 255))
+    basis = bytes(s.puffer)
+    f = bs.Figur(bs.Bild(p), 1, 1, bpp=32)
+
+    def bei(x, y):
+        o = (y * 6 + x) * 4
+        return s.puffer[o + 2], s.puffer[o + 1], s.puffer[o]
+
+    f.zeichnen(s, basis, 0)
+    chk("deckend: die Farbe des Bildes", bei(1, 1) == (255, 0, 0))
+    chk("halb: gemischt mit dem Grund", 120 <= bei(2, 1)[0] <= 135 and bei(2, 1)[2] == 255)
+    chk("durchsichtig: der Grund bleibt", bei(3, 1) == (0, 0, 255))
+    s.puffer[:] = basis
+    f.zeichnen(s, basis, 1)
+    chk("um 1 verschoben steht es eine Zeile tiefer", bei(1, 2) == (255, 0, 0) and bei(1, 1) == (0, 0, 255))
+    f.zeichnen(s, basis, 1)
+    f.zeichnen(s, basis, 0)
+    chk("jede Hoehe wird nur einmal gebaut", len(f._streifen) == 2)
+    f2 = bs.Figur(bs.Bild(p), -2, 4, bpp=32)
+    s.puffer[:] = basis
+    f2.zeichnen(s, basis, 3)
+    chk("halb ausserhalb des Schirms: kein Absturz, nichts gemalt", bytes(s.puffer) == basis)
+
+# Die Pillen: erreichte in ihrer Stiftfarbe, die naechste glimmt, der Rest dunkel.
+s = FakeSchirm(800, 40)
+s.fuellen((0, 0, 0))
+lage = {"pille_x": 154, "pille_y": 10, "pille_b": 72}
+bs.pillen_malen(s, lage, 2, 0.3)
+
+
+def pille(i):
+    x = 154 + i * (72 + bs.PILLE_LUECKE) + 36
+    o = ((10 + bs.PILLE_H // 2) * 800 + x) * 4
+    return s.puffer[o + 2], s.puffer[o + 1], s.puffer[o]
+
+
+chk("erreichte Pillen tragen ihre Stiftfarbe", pille(0) == bs.ANTENNEN[0] and pille(1) == bs.ANTENNEN[1])
+chk("die naechste glimmt — weder dunkel noch schon ganz an",
+    pille(2) not in (bs.LEISTE, bs.ANTENNEN[2]))
+chk("der Rest bleibt dunkel", pille(3) == bs.LEISTE and pille(5) == bs.LEISTE)
+
+# Die Aufteilung: Figur, Name und Text ueberschneiden sich nicht, auch nicht
+# beim Schweben, und die letzte Zeile bleibt auf dem Schirm.
+for b, h in ((800, 480), (480, 320), (1280, 720)):
+    s = FakeSchirm(b, h)
+    _, lage = bs.komponieren(s, StummeSchrift(16, 30), StummeSchrift(12, 24), "MixPiBox", Klotz(172, 200))
+    fig = lage["figur"]
+    titel_oben = lage["schnuppe_bis"] + 16
+    chk(f"{b}x{h}: die schwebende Figur bleibt ueber dem Namen",
+        fig.y + fig.h + bs.SCHWEBEN < titel_oben and fig.y - bs.SCHWEBEN >= 0)
+    chk(f"{b}x{h}: die letzte Zeile bleibt auf dem Schirm", lage["zaehler_y"] + 24 <= h - 10)
+    breite = 6 * lage["pille_b"] + 5 * bs.PILLE_LUECKE
+    chk(f"{b}x{h}: die Pillen passen und stehen mittig",
+        breite <= b and abs(2 * lage["pille_x"] + breite - b) <= 1)
+
+# Die Sternschnuppe bleibt ueber dem Namen — eine Minute lang, jede einzelne.
+s = FakeSchirm(800, 480)
+s.fuellen((0, 0, 0))
+_, lage = bs.komponieren(s, StummeSchrift(16, 30), StummeSchrift(12, 24), "MixPiBox", Klotz(172, 200))
+s.fuellen((0, 0, 0))
+for takt in range(0, 60 * bs.BILD_PRO_S):
+    bs.schnuppe_malen(s, lage, takt / bs.BILD_PRO_S)
+chk("es fliegen Sternschnuppen", not leer(s, 0, 0, 800, lage["schnuppe_bis"]))
+chk("keine zieht unter die Oberkante des Namens",
+    leer(s, 0, lage["schnuppe_bis"] + 2, 800, 480 - lage["schnuppe_bis"] - 2))
+
+# Und das Ganze: fuenf Sekunden Animation auf beiden Farbtiefen, ohne Absturz.
+for bpp in (32, 16):
+    s = FakeSchirm(800, 480, bpp)
+    s.zeigen = lambda: None
+    klotz = Klotz(172, 200)
+    try:
+        for takt in range(0, 50, 3):
+            bs.malen(s, StummeSchrift(16, 30), StummeSchrift(12, 24), takt // 9, takt,
+                     "Netzwerk", klotz, "cog")
+        chk(f"{bpp} bpp: malen() laeuft fuenf Sekunden durch", True)
+    except Exception as e:                          # noqa: BLE001
+        chk(f"{bpp} bpp: malen() laeuft fuenf Sekunden durch ({e})", False)
 
 # ── Netz-Erkennung: NICHT von der 20-Sekunden-Datei abhaengig ─────────────
 # Der Balken blieb auf "Netzwerk" stehen, weil /tmp/network.json von einem
