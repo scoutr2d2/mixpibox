@@ -1,5 +1,5 @@
 id: mupibox
-version: "671"
+version: "672"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -67015,3 +67015,58 @@ entries:
       nur von diesem Werkzeug geschrieben). Das ist eine Betreiber-
       Entscheidung und NICHT getan.
     related: ["leck-wache-mac-als-sorte-und-ausnahme-je-paar", "github-fassung-ohne-aufnahme-per-patch", "fehlende-schutzdatei-heisst-abbruch-nicht-nichts-zu-tun"]
+  - id: weg-von-dietpi-die-kopplung-sitzt-im-einrichtungsweg-nicht-in-der-app
+    title: 'Weg von DietPi? Die App ruft zur Laufzeit nur drei DietPi-Helfer — die Kopplung sitzt im Einrichtungsweg und im Board, und beim RAM ist DietPi nicht der Hebel'
+    kind: referenz
+    tags: [dietpi, betriebssystem, abbild, board, app, plattform, speicher, buildroot, rpi-image-gen, armbian, 2026]
+    stand: "30.09.2026, am Baum gemessen (tools/dietpi-kopplung-inventur.py), Recherche am selben Tag; nicht an der Box."
+    source: 'Betreiber 30.09.2026: „analyse mit recherche ob es noch andere moeglichkeiten gibt anstatt dietpi … was schlankeres was ggf auch auf andere boards passt … die mixpibox mehr eine app … bisschen wie android blos sehr leichtgewichtig" und „wieviel speicher verbrauch hat ein dietpi typisch gibt es da hebel?". Volltext: BETRIEBSSYSTEM-ANALYSE.md.'
+    body: |
+      GEMESSEN (tools/dietpi-kopplung-inventur.py, Code-Zeilen ohne
+      Kommentare): Laufzeit-Code ruft DietPi genau an drei Stellen —
+      dietpi-set_cpu, dietpi-set_swapfile, dietpi-set_software
+      boot_wait_for_network (src/backend-api/src/server.ts:8259-8273).
+      Box-Skripte 35 Zeilen, davon 23 Bash-Aliase. Einrichtung: 10 von 69
+      Rezeptschritten. Der Nutzer `dietpi` (833 Zeilen) ist mechanisch; im
+      Server haben die Pfade schon MUPIBOX_*-Schalter, im Abspieldienst
+      NICHT (/home/dietpi/MuPiBox/media fest). NICHT im Werkzeug, weil es
+      nicht „dietpi" heisst: das Netz laeuft ueber ifupdown + wpa_cli (86 +
+      78 Zeilen) — beim OS-Wechsel der groesste Umbau.
+
+      RAM: DietPi selbst wenige Dutzend MB (Herstellerangabe 30-50 MB, ein
+      Pi-4-Vergleich 109 gegen 176 MiB bei RPi OS Lite; nur Suchauszug).
+      Die Box braucht ~1 GB — Chromium, Node, und Piper (bleibt nach dem
+      ersten Satz fuer immer stehen, server.ts:18248, bis 698 MB). Der
+      Hebel ist ein Leerlauf-Ende fuer Piper, nicht ein anderes OS.
+
+      RECHERCHE-KERN: Buildroot hat KEIN Chromium; der einzige Kiosk-Ersatz
+      dort ist WPE, und WPE leckt beim Abspielen
+      ([[wiedergabe-leck-ist-wpe-chromium-bleibt-flach]]), Cog ist seit
+      17.09.2026 ohne stabile Fassungen (Igalia/cog#799). HiFiBerry hat sein
+      Buildroot-OS aufgegeben und baut auf Debian neu. rpi-image-gen
+      (Raspberry Pi, nur Pi) baut Trixie-Abbilder mit A/B-Layout
+      (`image-rota`); Armbian traegt die Nicht-Pi-Boards, und DietPi nimmt
+      dort ohnehin Armbians Kernel. Debian 13 selbst kann den Pi 5 nicht,
+      jede Basis braucht den Raspberry-Pi-Kernel.
+
+      BOARDS: „andere Boards" verlangt keinen Abschied von DietPi. Die
+      Huerde ist das DSI-Display (Waveshare 5" tritt als Pi-7"-Panel auf,
+      TC358762 + Regler 0x45), dann I2S-Overlay und config.txt. Ein
+      HDMI/USB-Touch wuerde die groesste Huerde streichen.
+
+      APP-BILD: Was fehlt, ist der Schnitt Plattform <-> App. 24 Module in
+      src/backend-api/src (~9 800 Zeilen: netzwerk, funk, bluetooth, akku*,
+      aktualisierung, sicherung, kinderzeit, boxsperre …) sind schon
+      Plattform, haengen aber am selben server.ts (24 901 Zeilen, ~300
+      Routen). Kinderzeit gehoert in die Plattform, sonst umgeht eine
+      zweite App sie — dieselbe Lehre wie bei den Plugins (E35). Shell als
+      EIN Chromium mit Starterseite + App im iframe (cage kann nicht
+      zwischen Fenstern wechseln). App-Huelle ohne Container-Daemon:
+      systemd Portable Services (portablectl, Trixie: systemd-container).
+
+      EMPFEHLUNG (Stufen, Abschnitt 8 der Analyse): 0 entkoppeln auf DietPi,
+      1 logischer Schnitt im selben Prozess (2 GB!), 2 App-Buendel +
+      Starterseite + kleine zweite App, 3 eigenes Abbild (rpi-image-gen),
+      4 zweites Board. Nicht: Buildroot, Yocto, Container-Plattformen,
+      Alpine, NixOS.
+    related: ["wiedergabe-leck-ist-wpe-chromium-bleibt-flach", "pi3-1gb-machbarkeit-gemessen-am-pi5", "mupi-andere-zielhardware", "speicher-waechst-erst-im-betrieb", "ramlog-macht-protokoll-zu-arbeitsspeicher", "mupi-dietpi-trixie", "mupibox-ng-die-zweite-linie-des-ursprungs"]

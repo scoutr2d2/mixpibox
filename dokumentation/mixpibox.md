@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1166 Einträge,
-Fassung 671). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1167 Einträge,
+Fassung 672). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -2068,11 +2068,13 @@ tools/pruefen.sh             # + Typen + alle Baue      ← vor jedem Ausliefern
 tools/pruefen.sh --box       # + mupi-check auf dem Gerät
 ```
 
-151 Schritte laufen immer, 7 weitere nur mit `--box` bzw. am echten Gerät
+152 Schritte laufen immer, 7 weitere nur mit `--box` bzw. am echten Gerät
 (Umzug am echten Bestand, Vorlesen, die drei E2E-Läufe, `mupi-check` und seit
-09.09.2026 die Cover-gegen-Rückfallbild-Probe) — 158
-insgesamt (Stand 28.09.2026, nachgezählt mit `tools/leitplanken-zahl-pruefen.py`;
-am 28.09.2026 kam der Schritt „Tests des Installers" dazu, siehe 7.3, und
+09.09.2026 die Cover-gegen-Rückfallbild-Probe) — 159
+insgesamt (Stand 30.09.2026, nachgezählt mit `tools/leitplanken-zahl-pruefen.py`;
+am 30.09.2026 kam der Selbsttest „DietPi-Kopplung" dazu
+(`tools/dietpi-kopplung-inventur.py`, aus `BETRIEBSSYSTEM-ANALYSE.md`),
+am 28.09.2026 der Schritt „Tests des Installers", siehe 7.3, und
 zwei Wachen, die in keinem Läufer hingen: „Kissen steht beim Einfahren" und
 „Quellen der Dockerfile" (llmwiki
 `elf-ungerufene-wachen-einzeln-abgetragen`) — die zweite ging am selben Tag
