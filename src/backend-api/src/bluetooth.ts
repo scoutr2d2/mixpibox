@@ -89,7 +89,7 @@ export interface Geraet {
  *
  * Gesucht wird das Paar aus Senkenname und Codec-Eigenschaft:
  *
- *   Name: bluez_output.00_9E_C8_61_1A_EA.1
+ *   Name: bluez_output.AA_BB_CC_11_22_33.1
  *       api.bluez5.codec = "sbc"
  *
  * Die Adresse steckt IM NAMEN, mit Unterstrichen statt Doppelpunkten. Ein
@@ -121,7 +121,7 @@ export function parseCodecs(text: string): Record<string, string> {
 /**
  * Ausgabe von `bluetoothctl devices` auswerten. Pure.
  *
- * Form: `Device 00:9E:C8:61:1A:EA 小米蓝牙音箱`
+ * Form: `Device AA:BB:CC:11:22:33 小米蓝牙音箱`
  * Der Name darf Leerzeichen und beliebige Zeichen enthalten — deshalb wird
  * nur bis zum zweiten Feld getrennt und der Rest bleibt zusammen.
  */
@@ -141,7 +141,7 @@ export function parseDevices(text: string): Geraet[] {
  * Trägt das Gerät gar keinen Namen? Pure.
  *
  * BlueZ setzt als Ersatzname die Adresse mit Bindestrichen
- * (`28-0D-B6-85-BD-80`). Bei einer Suche sind das die meisten Funde: Handys,
+ * (`55-EE-66-FF-77-00`). Bei einer Suche sind das die meisten Funde: Handys,
  * Kopfhörer im Ruhezustand, Fitnessbänder, Werbe-Beacons. Sie hier zu
  * erkennen erlaubt der Oberfläche, sie wegzublenden — sonst sucht man seinen
  * Lautsprecher zwischen zwanzig Zahlenreihen.
@@ -302,7 +302,7 @@ export function suchdauer(roh: unknown): number {
  * (am 20.08. gewechselt, die Datei blieb). Jede bluetoothctl-Sitzung beginnt
  * mit `select <wahl>` — und BlueZ antwortet dann
  *
- *     Controller 08:BF:B8:56:CE:44 not available
+ *     Controller 22:BB:33:CC:44:DD not available
  *
  * Diese eine Zeile vergiftete ZWEI Auswertungen zugleich: `ergebnis()` las
  * „not available" als Ausgang des eigentlichen Befehls (jedes Verbinden uebers
@@ -451,7 +451,7 @@ const HCI_FASSUNGEN: Record<number, string> = {
  *
  * STOLPERSTEIN, der hier absichtlich behandelt wird: Geraeteadresse und
  * Paketgroesse stehen auf EINER Zeile —
- *   "BD Address: 00:15:83:F9:C5:4F  ACL MTU: 310:10  SCO MTU: 64:8"
+ *   "BD Address: 44:DD:55:EE:66:FF  ACL MTU: 310:10  SCO MTU: 64:8"
  * Wer dort nach dem dritten Feld greift, bekommt die MAC. Deshalb wird
  * ausdruecklich nach "ACL MTU:" gesucht.
  */

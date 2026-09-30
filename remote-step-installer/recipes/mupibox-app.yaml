@@ -262,6 +262,12 @@ steps:
         printf '127.0.1.1\t%s\n' "$NAME" >> /etc/hosts
       fi
       echo "Rechnername: $(hostname)"
+      # avahi liest den Rechnernamen nur beim START (eingeschaltet im Schritt
+      # mdns des System-Rezepts, also VOR diesem hier). Ohne Neustart meldet
+      # die Box sich bis zum naechsten Booten unter dem alten Namen .local,
+      # und tools/box-finden.py sucht vergeblich. try-restart laesst einen
+      # bewusst abgeschalteten avahi (perf-tune.yaml) in Ruhe.
+      systemctl try-restart avahi-daemon 2>/dev/null || true
     check: |
       test "$(python3 -c "
       import json
@@ -649,6 +655,19 @@ steps:
       [Service]
       Type=simple
       User=${MUPI_USER:-dietpi}
+      # DER SERVER MACHT AUCH TON: die Vorlese-Ansage startet pw-play aus
+      # diesem Dienst, und ein PipeWire-Klient findet seinen Socket nur ueber
+      # XDG_RUNTIME_DIR. Ohne die Zeile faellt er auf Pulse zurueck, und das
+      # Journal meldet einen RECHTE-Fehler, der den Grund verdeckt.
+      # config/services/mupibox-server.service bekam sie am 19.09.2026
+      # (c880b1ed) - DIESES Exemplar derselben Unit erst am 29.09.2026
+      # (AUDIT-2026-09-20 Rang 1). Bis dahin war jede per Rezept bespielte
+      # Box beim Vorlesen stumm. Die Wache tools/tonweg-umgebung-deckung.py
+      # liest seither auch die Units, die ein Rezept per Heredoc schreibt.
+      # KEINE Backticks und kein Dollarzeichen in diesen Kommentaren: der
+      # Heredoc ist absichtlich ungeschuetzt (siehe oben), die Shell fuehrte
+      # beides als Befehl aus.
+      Environment=XDG_RUNTIME_DIR=/run/user/1000
       WorkingDirectory=${MUPI_APP}
       ExecStart=/usr/bin/node ${MUPI_APP}/server.js
       Restart=on-failure
@@ -672,10 +691,17 @@ steps:
       # selbst - auch nicht, wenn er als derselbe Benutzer laeuft.
       #
       # WAS OHNE SIE PASSIERT (am Geraet gemessen, Pi 5, 2026-08-01): mpv
-      # meldet `current-ao: None`, nimmt `loadfile` mit `success` an, legt die
-      # Datei in die Liste - und STARTET SIE NIE. `playlist-count` steigt,
-      # `playlist-pos-1` bleibt -1, `idle-active` bleibt true. Es sieht aus,
+      # meldet "current-ao: None", nimmt "loadfile" mit "success" an, legt die
+      # Datei in die Liste - und STARTET SIE NIE. "playlist-count" steigt,
+      # "playlist-pos-1" bleibt -1, "idle-active" bleibt true. Es sieht aus,
       # als sei die Wiedergabe kaputt; in Wirklichkeit fehlt der Tonausgang.
+      #
+      # HIER STANDEN DIE NAMEN BIS 29.09.2026 IN BACKTICKS. Im ungeschuetzten
+      # Heredoc ist das Befehlsersetzung: die Shell rief bei jeder Installation
+      # "current-ao:", "loadfile", "success" usw. als Befehle auf (als root),
+      # meldete sechsmal "Kommando nicht gefunden" und schrieb den Satz
+      # verstuemmelt in die Unit. Harmlos nur, weil keines der Woerter ein
+      # Programm ist - nachgestellt in einem Wegwerfordner.
       # Jellyfin und lokale Dateien waren damit stumm, WAEHREND Spotify
       # spielte - denn librespot.service traegt diese Zeile laengst.
       #

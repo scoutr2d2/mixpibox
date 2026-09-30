@@ -375,16 +375,29 @@ export function kennungAus(name: string): string {
          nicht für ein Kind. Stünde sie weiter unten zwischen den Karten,
          die dem gewählten Kind gehören, läse sie sich wie eine Eigenschaft
          dieses Kindes — und wer sie dort verstellt, glaubt, er habe es nur
-         für eines getan. -->
+         für eines getan.
+
+         NUR OHNE GAST (E143/5, 30.09.2026). Hier stand „Nach dem Einschalten
+         zeigt die Box die Profilauswahl. So ist es bisher." — auf einer Box
+         mit Gast (der Vorgabe) stimmte das nie: die Box fragt /api/start
+         nur bei abgeschaltetem Gast. Mit Gast gilt Weg (a) „nur das Schloss"
+         (Betreiber 29.09.2026), und das steht jetzt dabei. -->
     <div class="karte">
       <b>Wenn die Box eingeschaltet wird</b>
+      @if (gastAn()) {
+        <p class="hinweis">
+          <b>Der Gast ist an</b> — dann gilt diese Wahl nicht: Die Box macht mit dem
+          letzten Profil weiter. Hat es ein Passwort, fragt sie danach; „Ich bin jemand
+          anderes" führt zur Auswahl samt Gast. Die Wahl hier greift, sobald der Gast aus ist.
+        </p>
+      }
       <div class="wahl" style="margin-top:0.7rem">
         <label [class.an]="startModus() === 'fragen'">
           <input type="radio" name="startmodus" [checked]="startModus() === 'fragen'"
                  (change)="setzeStart('fragen')" />
           <span>
             <b>Fragen, wer hört</b>
-            <span>Nach dem Einschalten zeigt die Box die Profilauswahl. So ist es bisher.</span>
+            <span>Nach dem Einschalten zeigt die Box die Profilauswahl. Das ist die Vorgabe.</span>
           </span>
         </label>
         <label [class.an]="startModus() === 'letztes'">

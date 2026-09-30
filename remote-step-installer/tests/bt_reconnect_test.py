@@ -33,8 +33,8 @@ def pruefe(name, ist, soll):
 
 
 # ── parse_devices — Wortlaut von der Box ──────────────────────────────────
-ECHT = "Device 00:9E:C8:61:1A:EA 小米蓝牙音箱\n"
-pruefe("liest MAC und Namen", btr.parse_devices(ECHT), [("00:9E:C8:61:1A:EA", "小米蓝牙音箱")])
+ECHT = "Device AA:BB:CC:11:22:33 小米蓝牙音箱\n"
+pruefe("liest MAC und Namen", btr.parse_devices(ECHT), [("AA:BB:CC:11:22:33", "小米蓝牙音箱")])
 pruefe("Name mit Leerzeichen bleibt ganz",
        btr.parse_devices("Device AA:BB:CC:DD:EE:FF JBL Go 3\n"),
        [("AA:BB:CC:DD:EE:FF", "JBL Go 3")])
@@ -64,7 +64,7 @@ pruefe("Eingabegeraet auch nicht", btr.ist_audio("\tIcon: input-keyboard\n"), Fa
 pruefe("leer", btr.ist_audio(""), False)
 
 # ── zu_verbinden: die eigentliche Entscheidung ────────────────────────────
-LS = "00:9E:C8:61:1A:EA"
+LS = "AA:BB:CC:11:22:33"
 TEL = "AA:BB:CC:DD:EE:FF"
 geraete = [(LS, "Lautsprecher"), (TEL, "Handy")]
 
@@ -106,7 +106,7 @@ pruefe(
 # `--trocken` hat in Wahrheit verbunden. Ein Trockenlauf, der luegt, ist
 # schlimmer als gar keiner — also wird beides festgenagelt: die Uebergabe als
 # Liste UND der Weg ueber sys.argv, den systemd und die Konsole nehmen.
-GERAETE = "Device 00:9E:C8:61:1A:EA Lautsprecher\n"
+GERAETE = "Device AA:BB:CC:11:22:33 Lautsprecher\n"
 INFO = "\tIcon: audio-card\n\tConnected: no\n"
 
 

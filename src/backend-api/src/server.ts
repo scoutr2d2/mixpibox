@@ -187,6 +187,7 @@ import {
   ANFRAGE_ABSTAND_MS,
   ablageAus as kopplungAus,
   appDarf,
+  beweiseFuer,
   FENSTER_MS,
   geraetAnlegen,
   geraetEntfernen,
@@ -1225,6 +1226,18 @@ app.get('/api/kopplung/status', (req, res) => {
   res.json({ gekoppelt: g !== null, name: g?.name ?? null, ohneKopplung: kopplung.ohneKopplung })
 })
 
+/**
+ * Bist du die Box, die mich kennt? — ohne dass die App ihren Schluessel
+ * zeigen muss (29.09.2026). Frei fuer die App und vor dem Anmeldetor wie das
+ * Koppeln selbst: die Antwort oeffnet nichts. Die Rechnung steht in
+ * kopplung.ts (`beweiseFuer`), der Rufer in handy-app (`kenntSchluessel`).
+ */
+app.post('/api/kopplung/beweis', express.json({ limit: '1kb' }), (req, res) => {
+  const beweise = beweiseFuer(kopplung, (req.body as { frage?: unknown })?.frage)
+  if (!beweise) return res.status(400).json({ error: 'frageUngueltig', hinweis: 'Die Frage ist 32 bis 128 Hex-Zeichen.' })
+  res.json({ beweise })
+})
+
 /** Die Box bitten, QR und Code zu zeigen. Frei fuer die App — hoechstens alle 30 s je Handy. */
 app.post('/api/kopplung/anfrage', express.json({ limit: '1kb' }), (req, res) => {
   const von = String(req.socket.remoteAddress ?? '?')
@@ -1253,6 +1266,10 @@ app.post('/api/kopplung/koppeln', express.json({ limit: '2kb' }), async (req, re
   if (urteil !== 'ok') {
     const hinweis = {
       falsch: 'Der Code stimmt nicht.',
+      // Seit 29.09.2026 eigene Saetze statt „kein Code offen" — siehe `Urteil` in kopplung.ts.
+      zuOft: 'Zu viele falsche Codes. An der Box einen neuen anzeigen lassen.',
+      vergeben:
+        'Diesen Code hat eben ein anderes Gerät benutzt. An der Box unter Admin-Menü → Handys nachsehen — ein fremdes Gerät dort entfernen.',
       abgelaufen: 'Der Code ist abgelaufen. An der Box neu anzeigen lassen.',
       keins: 'An der Box ist gerade kein Code offen. Admin-Menü → Handys → Handy verbinden.',
     }[urteil]
@@ -21629,7 +21646,7 @@ app.get('/api/spotify/maschine', async (_req, res) => {
      * der box das man im gleichen wlan sein sollte auch ggf gleiche frequenz".
      *
      * Der NAME ist die eigentliche Auskunft (am Geraet gemessen stand dort
-     * `ganzschnellimnetz2_2G` — am `_2G` sieht man, dass der Router die
+     * `<heimnetz>_2G` — am `_2G` sieht man, dass der Router die
      * Baender in getrennte Netze legt); das Band daneben erklaert, WARUM es
      * zwei Netze gibt. Still, wenn es nichts zu sagen gibt (Kabel, kein iw).
      */

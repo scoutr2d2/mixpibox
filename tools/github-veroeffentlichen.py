@@ -36,6 +36,44 @@ AUFRUF
     python3 tools/github-veroeffentlichen.py --bauen         # Commit anlegen
     python3 tools/github-veroeffentlichen.py --bauen --push  # und hochladen
     python3 tools/github-veroeffentlichen.py --fern github --zweig main
+    python3 tools/github-veroeffentlichen.py --baum-ohne-aufnahme "<Grund>"   # nur Baum ohne Lokales
+
+DER OHNE-AUFNAHME-SCHUTZ IST PFLICHT (29.09.2026, Audit vom 28.09., §1b Rang 4)
+Zwei lokale Dateien tragen die Zusage „GitHub ohne Aufnahme": der Patch
+`tools/github-ohne-aufnahme.patch` (nimmt die Verdrahtung der Erweiterung aus
+dem Kern) und `tools/github-lokal-muster.txt` (Leck-Muster, die selbst nicht
+hinaus sollen). Bis zum 29.09. waren beide STILL OPTIONAL: fehlte der Patch,
+ging der ungepatchte Stand hinaus, und die Berichtszeile schwieg, weil sie nur
+bei mehr als 0 Pfaden erschien; fehlte die Musterdatei, lief die Leck-Wache
+mit einem Muster weniger. Jetzt bricht JEDER Lauf ab (auch der Trockenlauf,
+damit die Doku-Probe es meldet), wenn eine der beiden fehlt oder leer ist.
+
+Der Abbruch haengt an nichts im Baum — nicht am Ordner der Erweiterung, nicht
+an einem Namen. Eine Bedingung „nur wenn der Plugin-Ordner da ist" verschwaende
+genau dann, wenn jemand die Erweiterung umbenennt, und die Verdrahtung ginge
+weiter still hinaus. Vorbei kommt nur ein ausdruecklicher Schalter fuer einen
+Baum, der GAR NICHTS Lokales traegt (ein Klon von GitHub):
+    --baum-ohne-aufnahme "<Grund, mindestens drei Woerter>"
+Er wird verweigert, sobald die Haus-Ausschlussliste in diesem Baum auch nur
+eine Datei zurueckhielte: das Merkmal ist die SORTE „Baum mit Lokalem", und es
+wird staerker, je mehr Lokales drin liegt, nicht schwaecher. Und er wird
+verweigert, wenn Patch und Muster da sind — kein Schalter fuer jeden Aufruf.
+
+WAS DER SCHUTZ NICHT FINDET — die bekannte Restluecke (nachgemessen 29.09.2026)
+Der Patch kennt nur die Verdrahtung, die es beim Erzeugen gab. NEUE
+Verdrahtung in einer Datei, die er nicht aendert, geht unveraendert hinaus, und
+die zwei lokalen Muster fangen sie nicht auf: sie suchen BESCHREIBUNGSTEXT,
+keine Verdrahtung — ein Aufnahme-Wort und einen Dienstnamen als ganze Woerter
+in EINER Zeile, ohne Punkt dazwischen, hoechstens 60 Zeichen auseinander
+(Aufnahme-Wort zuerst) bzw. 40 (Dienstname zuerst). Durch gehen damit: jeder
+Import und Pfad der Erweiterung ohne Dienstnamen daneben; Bezeichner, in denen
+beide Woerter zusammenkleben (camelCase, snake_case — kein Wortrand);
+Member-Zugriffe (der Punkt beendet das Fenster); Komposita wie
+Aufnahme+Funktion; abgetrennte Verbteile („zeichnet ... auf", „schneidet ...
+mit"); ein Zeilenumbruch zwischen beiden Woertern; englische Woerter ausser
+recording/record. Wer Verdrahtung ergaenzt, erneuert den Patch (--patch-aus);
+das faengt keine Wache ab. Auch die Installationswache nicht: ein Import der
+zurueckgehaltenen Erweiterung ist fuer sie kein fehlender Pfad.
 
 DIE WACHE DARIN (und der Grund, warum das Werkzeug ueberhaupt eines ist statt
 einer Befehlszeile): Bevor irgendetwas gebaut wird, liest es die
@@ -230,8 +268,8 @@ def bildquellen_noetig():
 # haette ein Mensch vorher sehen muessen — und hat es nicht.
 #
 # Geprueft wird der INHALT der Blobs, die hinausgehen — nicht der Arbeitsbaum.
-# Ein Treffer bricht ab. Was absichtlich so aussieht (Attrappen in Tests, das
-# Muster selbst in dieser Datei), steht in der Ausnahmeliste, mit Grund.
+# Ein Treffer bricht ab. Was absichtlich so aussieht, steht in der
+# Ausnahmeliste, mit Grund — und seit dem 29.09.2026 je (datei, muster).
 LECK_MUSTER = [
     # (name, muster) — Muster laufen ueber den Text jedes Blobs
     ("API-Schluessel als Parameter", re.compile(r"(?i)(api_key|apikey|x-emby-token|access_token|client_secret)[=\": ]+[a-z0-9]{24,}")),
@@ -242,28 +280,37 @@ LECK_MUSTER = [
     # meldete zwei davon (sdwlan.py, einrichtung-schirm.py) als Leck.
     ("WLAN-Schluessel", re.compile(r"(?m)^\s*#?\s*(psk|wpa_passphrase|passphrase)\s*[=:]\s*[\"'](?!HIER|<|\$|\{)[^\"'\s]{8,}[\"']")),
     ("bcrypt-Abdruck", re.compile(r"\$2[aby]\$\d{2}\$(?!abcdef)[A-Za-z0-9./]{20,}")),
-    # DIE BSSID STEHT HIER NICHT AUSGESCHRIEBEN — die erste Fassung tat es, und
-    # damit haette die Wache das Geheimnis, das sie bewacht, selbst
-    # veroeffentlicht (dieses Werkzeug geht mit hinaus). Gefunden beim Nachmessen
-    # am Remote-Stand, 23.09.2026. Erkannt wird das Herstellerpraefix des
-    # Routers plus drei ECHTE Oktette; die unkenntlich gemachte Form xx:xx:xx
-    # geht durch.
-    ("BSSID des Heim-WLANs", re.compile(r"(?i)\bdc:39:6f:(?!xx:xx:xx)([0-9a-f]{2}:){2}[0-9a-f]{2}\b")),
+    # DIE BSSID STEHT HIER NICHT MEHR, AUCH NICHT HALB. Die erste Fassung
+    # (23.09.2026) schrieb sie aus; die zweite nannte noch das Herstellerpraefix
+    # des Routers — die halbe BSSID ging mit diesem Werkzeug hinaus, und die
+    # SSID desselben Netzes stand in keinem Muster. Seit dem 29.09.2026 stehen
+    # SSID, BSSID und ein generisches MAC-Muster in tools/github-lokal-muster.txt
+    # (Audit 28.09.2026 §1b Rang 1): die SORTE statt des einen Werts.
     ("Spotify-Zugang", re.compile(r"(?i)(spotify[_-]?(client[_-]?secret|refresh[_-]?token))[=\": ]+[a-z0-9_-]{20,}")),
 ]
+# JE (DATEI, MUSTER), NIE DATEIWEIT (29.09.2026). Bis dahin hiess ein Eintrag
+# „diese Datei wird gar nicht abgetastet" — ausgerechnet dieses Werkzeug stand
+# darin, und ein echter Schluessel hier ginge ungeprueft hinaus. Ein Paar
+# befreit nur SEIN Muster; alle anderen tasten die Datei weiter ab. Ein Paar,
+# das nichts mehr befreit, bricht die Veroeffentlichung ab — eine Ausnahme
+# ohne Anlass ist eine offene Tuer fuer den naechsten echten Wert derselben
+# Sorte. Leer, weil heute keine Datei eine braucht: das Werkzeug traegt seine
+# Muster, ohne sich selbst zu treffen, und die WLAN-Vorlage faellt mit ihrem
+# Platzhalter HIER-DAS-KENNWORT unter die Ausnahme IM Muster.
 LECK_AUSNAHMEN = {
-    # datei: grund — nur diese Dateien duerfen ein Muster tragen
-    "tools/github-veroeffentlichen.py": "traegt die Muster selbst",
-    "config/templates/wpa_supplicant-wlan1.conf": "Platzhalter HIER-DAS-KENNWORT, auskommentiert",
+    # ("pfad/zur/datei", "Name des Musters"): "Grund",
 }
 
 
 # ══ ZUSAETZLICHE MUSTER, DIE SELBST NICHT HINAUS SOLLEN (27.09.2026) ═════════
 #
 # Manche Wortfolgen sollen nicht nach GitHub — dann darf auch das Muster, das
-# sie findet, nicht hinaus. Sie stehen deshalb in `tools/github-lokal-muster.txt`,
-# und diese Datei steht in der Ausschlussliste. Liegt sie nicht da (auf GitHub),
-# laeuft die Wache mit den Mustern oben. Format je Zeile:
+# sie findet, nicht hinaus (seit dem 29.09.2026 auch SSID, BSSID und das
+# generische MAC-Muster). Sie stehen deshalb in `tools/github-lokal-muster.txt`,
+# und diese Datei steht in der Ausschlussliste. Liegt sie nicht da, laeuft nur
+# der Selbsttest mit den Mustern oben (so auf GitHub); eine VEROEFFENTLICHUNG
+# bricht dann ab (schutz_luecken/schutz_pruefen) — bis zum 29.09.2026 lief sie
+# still mit einem Muster weniger. Format je Zeile:
 #     muster: <name> | <regulaerer Ausdruck>
 #     treffer: <text, den das Muster davor finden MUSS>
 #     kein: <text, den es NICHT finden darf>
@@ -271,12 +318,12 @@ LOKAL_MUSTER = os.path.join(WURZEL, "tools", "github-lokal-muster.txt")
 
 
 def lokale_muster_lesen(pfad=LOKAL_MUSTER):
-    """-> [(name, muster, [(text, erwartet), ...])], leer ohne Datei."""
+    """-> [(name, muster, [(text, erwartet, zeilennummer), ...])], leer ohne Datei."""
     if not os.path.exists(pfad):
         return []
     raus = []
     with open(pfad, encoding="utf-8") as f:
-        for zeile in f:
+        for nr, zeile in enumerate(f, 1):
             zeile = zeile.rstrip("\n")
             art, _, rest = zeile.partition(":")
             rest = rest.strip()
@@ -284,7 +331,7 @@ def lokale_muster_lesen(pfad=LOKAL_MUSTER):
                 name, _, ausdruck = rest.partition("|")
                 raus.append((name.strip(), re.compile(ausdruck.strip()), []))
             elif art in ("treffer", "kein") and raus:
-                raus[-1][2].append((rest, art == "treffer"))
+                raus[-1][2].append((rest, art == "treffer", nr))
     return raus
 
 
@@ -305,8 +352,81 @@ LECK_MUSTER += [(n, m) for n, m, _f in lokale_muster_lesen()]
 #     python3 tools/github-veroeffentlichen.py --patch-aus github-ohne-aufnahme
 # schreibt daraus tools/github-ohne-aufnahme.patch (selbst ausgeschlossen).
 # Passt er nicht mehr auf `main`, bricht die Veroeffentlichung ab: dann den
-# Zweig auf `main` neu aufsetzen, Tests laufen lassen, Patch erneuern.
+# Zweig auf `main` neu aufsetzen, Tests laufen lassen, Patch erneuern. Fehlt er
+# oder ist er leer, bricht sie seit dem 29.09.2026 ebenso ab (schutz_pruefen).
 PATCH_OHNE = os.path.join(WURZEL, "tools", "github-ohne-aufnahme.patch")
+
+
+def _rel(pfad):
+    return os.path.relpath(pfad, WURZEL)
+
+
+def schutz_luecken(patch=PATCH_OHNE, muster_pfad=LOKAL_MUSTER):
+    """Was am Ohne-Aufnahme-Schutz fehlt -> [text mit Anleitung], leer = vollstaendig.
+
+    „Da" heisst: die Datei liegt vor UND traegt etwas. Ein leerer Patch schuetzt
+    so wenig wie ein fehlender (`--patch-aus` schreibt ihn leer, wenn der Zweig
+    nichts Eigenes aendert), eine Musterdatei ohne `muster:`-Zeile so wenig wie
+    keine. Umbenannt heisst hier ebenfalls „fehlt" — dann die Konstante
+    nachziehen, nicht den Schutz aussetzen.
+    """
+    luecken = []
+    rp = _rel(patch)
+    erneuern = ("Zweig github-ohne-aufnahme auf main neu aufsetzen, pruefen, dann  "
+                "python3 tools/github-veroeffentlichen.py --patch-aus github-ohne-aufnahme")
+    if not os.path.exists(patch):
+        luecken.append(f"{rp} fehlt (umbenannt? dann PATCH_OHNE nachziehen) -> {erneuern}")
+    elif not open(patch, encoding="utf-8", errors="replace").read().strip():
+        luecken.append(f"{rp} ist leer -> {erneuern}")
+    rm = _rel(muster_pfad)
+    if not os.path.exists(muster_pfad):
+        luecken.append(f"{rm} fehlt -> aus der Geschichte zurueckholen:  git log --oneline -- {rm}")
+    elif not lokale_muster_lesen(muster_pfad):
+        luecken.append(f"{rm} traegt kein Muster (keine Zeile  muster: <name> | <ausdruck>)")
+    return luecken
+
+
+def lokales_im_baum(alle, noetig):
+    """Was die HAUS-Ausschlussliste in diesem Baum zurueckhielte -> [pfad].
+
+    Bewusst die Hausliste, nicht die per --ausschluss gegebene: sonst machte
+    eine leere Probe-Liste aus dem eigenen Baum einen „Baum ohne Lokales".
+    Namentlich gebrauchte Bildquellen zaehlen nicht — sie gehen ohnehin mit.
+    """
+    haus = muster_lesen(AUSSCHLUSS)
+    return [p for _m, _s, p in alle
+            if p not in noetig and any(passt(p, m) for m, _g in haus)]
+
+
+def schutz_pruefen(luecken, grund, lokales):
+    """-> True, wenn der Schutz ausdruecklich ausgesetzt ist; False, wenn er steht.
+
+    Alles andere ist ein Abbruch (SystemExit). Die Texte bleiben kurz, weil
+    doku-luecken-probe.sh vom Trockenlauf nur die letzten sechs Zeilen zeigt.
+    """
+    schalter = "--baum-ohne-aufnahme"
+    if grund is None:
+        if not luecken:
+            return False
+        raise SystemExit(
+            "  ABBRUCH: der Ohne-Aufnahme-Schutz ist unvollstaendig — ohne ihn ginge die\n"
+            "  Verdrahtung der lokalen Aufnahme-Erweiterung mit nach GitHub.\n"
+            + "".join(f"    - {l}\n" for l in luecken)
+            + f'  Nur ein Baum GANZ ohne Lokales (Klon von GitHub) nimmt stattdessen  {schalter} "<Grund>".')
+    if not luecken:
+        raise SystemExit(f"  ABBRUCH: {schalter} ohne Anlass — Patch und Muster liegen da, der Schutz "
+                         "laeuft. Den Schalter weglassen.")
+    if len(grund.split()) < 3:
+        raise SystemExit(f"  ABBRUCH: {schalter} braucht eine Begruendung in mindestens drei Woertern, "
+                         f"warum dieser Baum keine Aufnahme traegt (bekommen: {grund!r}).")
+    if lokales:
+        beispiele = ", ".join(lokales[:3]) + (" ..." if len(lokales) > 3 else "")
+        raise SystemExit(
+            f"  ABBRUCH: {schalter} gilt nur fuer einen Baum ohne Lokales — die Ausschlussliste\n"
+            f"  haelt hier {len(lokales)} Dateien zurueck ({beispiele}).\n"
+            "  Das ist ein Baum mit Lokalem, und genau der braucht den Schutz:\n"
+            + "".join(f"    - {l}\n" for l in luecken).rstrip("\n"))
+    return True
 
 
 def patch_aus_zweig(zweig, ziel=PATCH_OHNE):
@@ -332,10 +452,19 @@ def patch_aus_zweig(zweig, ziel=PATCH_OHNE):
     return text.count("\ndiff --git ") + (1 if text.startswith("diff --git ") else 0)
 
 
-def patch_anwenden(drin, patch=PATCH_OHNE):
-    """-> (neues drin, Anzahl geaenderter Pfade) oder SystemExit, wenn er nicht passt."""
+def patch_anwenden(drin, patch=PATCH_OHNE, fehlen_erlaubt=False):
+    """-> (neues drin, Anzahl geaenderter Pfade) oder SystemExit, wenn er fehlt oder nicht passt.
+
+    FEHLEN IST KEIN „nichts zu tun": bis zum 29.09.2026 gab diese Funktion
+    ohne Datei still den ungepatchten Stand zurueck. `main` prueft vorher mit
+    schutz_pruefen; der Abbruch HIER haelt auch jeden anderen Rufer auf. Nur
+    ein ausdruecklich ausgesetzter Schutz (fehlen_erlaubt) kommt ohne durch.
+    """
     if not os.path.exists(patch):
-        return drin, 0
+        if fehlen_erlaubt:
+            return drin, 0
+        raise SystemExit(f"  ABBRUCH: {_rel(patch)} fehlt — ohne ihn ginge die Verdrahtung "
+                         "der lokalen Aufnahme-Erweiterung mit hinaus.")
     with tempfile.TemporaryDirectory(prefix="ghpatch-") as tmp:
         umg = dict(os.environ, GIT_INDEX_FILE=os.path.join(tmp, "index"))
         ein = "".join(f"{mode} {sha}\t{pfad}\n" for mode, sha, pfad, _g in drin)
@@ -362,12 +491,31 @@ def patch_anwenden(drin, patch=PATCH_OHNE):
     return neu, len(anders)
 
 
-def lecks_suchen(drin):
-    """Jeden veroeffentlichten Blob gegen LECK_MUSTER halten -> [(pfad, name, fund)]."""
-    funde = []
-    for _mode, sha, pfad, _g in drin:
-        if pfad in LECK_AUSNAHMEN:
+def leck_funde(pfad, text, muster=None, ausnahmen=None):
+    """Einen Text gegen die Muster halten -> ([(name, zeile, fund)], {genutzte Paare}). Rein.
+
+    Eine Ausnahme befreit nur ihr (pfad, name)-Paar; ein Pfad allein als
+    Schluessel befreit nichts — die alte dateiweite Form ginge damit nicht
+    still weiter, sondern fiele als Treffer auf.
+    """
+    muster = LECK_MUSTER if muster is None else muster
+    ausnahmen = LECK_AUSNAHMEN if ausnahmen is None else ausnahmen
+    funde, genutzt = [], set()
+    for name, m in muster:
+        f = m.search(text)
+        if not f:
             continue
+        if (pfad, name) in ausnahmen:
+            genutzt.add((pfad, name))
+            continue
+        funde.append((name, text.count("\n", 0, f.start()) + 1, f.group(0)[:60]))
+    return funde, genutzt
+
+
+def lecks_suchen(drin):
+    """Jeden veroeffentlichten Blob gegen LECK_MUSTER halten -> ([(pfad, name, zeile, fund)], {genutzte Paare})."""
+    funde, genutzt = [], set()
+    for _mode, sha, pfad, _g in drin:
         # Binaeres ueberspringen: Bilder, Archive, Binaerstaende.
         if pfad.endswith((".png", ".jpg", ".jpeg", ".woff2", ".zip", ".tgz", ".gz",
                           ".wav", ".mp3", ".ico", ".skp", ".stl", ".f3z", ".xcf")) \
@@ -379,12 +527,35 @@ def lecks_suchen(drin):
             text = r.stdout.decode("utf-8")
         except UnicodeDecodeError:
             continue
-        for name, muster in LECK_MUSTER:
-            m = muster.search(text)
-            if m:
-                zeile = text.count("\n", 0, m.start()) + 1
-                funde.append((pfad, name, zeile, m.group(0)[:60]))
-    return funde
+        f, g = leck_funde(pfad, text)
+        funde += [(pfad, *e) for e in f]
+        genutzt |= g
+    return funde, genutzt
+
+
+def ausnahmen_maengel(ausnahmen=None, muster=None):
+    """Was an LECK_AUSNAHMEN zu breit oder falsch ist -> [text], leer = in Ordnung. Rein.
+
+    Zu breit: ein Schluessel ohne Muster (die alte dateiweite Form), ein
+    Platzhalter in Pfad oder Name, ein Ordner statt einer Datei. Falsch: ein
+    Muster, das es nicht gibt — der Tippfehler befreit nichts, taeuscht aber
+    eine begruendete Ausnahme vor. Doppelte Musternamen machten ein Paar
+    mehrdeutig.
+    """
+    ausnahmen = LECK_AUSNAHMEN if ausnahmen is None else ausnahmen
+    muster = LECK_MUSTER if muster is None else muster
+    namen = [n for n, _m in muster]
+    maengel = [f"Mustername doppelt: {n!r}" for n in sorted(set(namen)) if namen.count(n) > 1]
+    for s in ausnahmen:
+        if not (isinstance(s, tuple) and len(s) == 2 and all(isinstance(x, str) and x for x in s)):
+            maengel.append(f"{s!r} ist kein (datei, muster)-Paar")
+            continue
+        pfad, name = s
+        if any(z in pfad + name for z in "*?[") or pfad.endswith("/"):
+            maengel.append(f"{s!r}: Platzhalter oder Ordner statt einer Datei und eines Musters")
+        if name not in namen:
+            maengel.append(f"{s!r}: ein Muster {name!r} gibt es nicht")
+    return maengel
 
 
 # ══ WER STEHT AUF DEM COMMIT? ═══════════════════════════════════════════════
@@ -472,20 +643,38 @@ def selbsttest():
         schlecht += (not gut)
         print(("  OK   " if gut else "  FAIL ") + f"{muster!r} deckt {pfad!r} -> {ist} (erwartet {erwartet})")
     # Die lokalen Muster bringen ihre Faelle selbst mit (beide Richtungen).
+    # Gezeigt wird die ZEILE des Falls, nicht sein Text: die Treffer-Faelle
+    # tragen das Geheimnis selbst (die SSID), und diese Ausgabe landet bei
+    # einem Fehler ganz in der Doku-Probe — und von dort in der naechsten
+    # Buchung (29.09.2026, llmwiki audit-buchung-ist-veroeffentlichungs-inhalt).
     gesamt = len(faelle)
     for name, muster, texte in lokale_muster_lesen():
-        for text, erwartet in texte:
+        for text, erwartet, nr in texte:
             ist = bool(muster.search(text))
             gut = ist is erwartet
             schlecht += (not gut)
             gesamt += 1
-            print(("  OK   " if gut else "  FAIL ") + f"{name}: {text!r} -> {ist} (erwartet {erwartet})")
+            print(("  OK   " if gut else "  FAIL ") + f"{name}: {_rel(LOKAL_MUSTER)}:{nr} "
+                  f"({'treffer' if erwartet else 'kein'}) -> {ist}")
+    # Die Ausnahmen der Leck-Wache: je (datei, muster), nie dateiweit.
+    maengel = ausnahmen_maengel()
+    gesamt += 1
+    schlecht += bool(maengel)
+    for m in maengel:
+        print(f"  FAIL LECK_AUSNAHMEN: {m}")
+    if not maengel:
+        print(f"  OK   LECK_AUSNAHMEN: {len(LECK_AUSNAHMEN)} Paare, jedes (datei, muster), Mustername eindeutig")
     print(f"\n{gesamt - schlecht}/{gesamt} bestanden")
     return 1 if schlecht else 0
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Kuratierten Stand nach GitHub veroeffentlichen")
+    ap = argparse.ArgumentParser(
+        description="Kuratierten Stand nach GitHub veroeffentlichen",
+        epilog="Ohne tools/github-ohne-aufnahme.patch oder tools/github-lokal-muster.txt bricht jeder "
+               "Lauf ab. Restluecke: NEUE Verdrahtung in Dateien, die der Patch nicht kennt, faengt "
+               "keine Wache — die lokalen Muster suchen nur Beschreibungstext (Aufnahme-Wort und "
+               "Dienstname in einer Zeile, 60/40 Zeichen). Einzelheiten im Kopf des Werkzeugs.")
     ap.add_argument("--bauen", action="store_true", help="Commit auf dem Zweig anlegen")
     ap.add_argument("--push", action="store_true", help="danach hochladen (setzt --bauen voraus)")
     ap.add_argument("--liste", action="store_true", help="jede veroeffentlichte Datei einzeln zeigen")
@@ -500,6 +689,10 @@ def main():
                     help="tools/github-ohne-aufnahme.patch aus dem, was ZWEIG seit dem Abzweigen aendert, erneuern und beenden")
     ap.add_argument("--selbsttest", action="store_true",
                     help="nur die reinen Teile pruefen (Musterlogik) und beenden")
+    ap.add_argument("--baum-ohne-aufnahme", default=None, metavar="GRUND",
+                    help="Ohne-Aufnahme-Schutz aussetzen, NUR fuer einen Baum ganz ohne Lokales "
+                         "(Klon von GitHub); verweigert, sobald die Ausschlussliste hier etwas "
+                         "zurueckhielte oder Patch und Muster da sind")
     a = ap.parse_args()
     if a.push:
         a.bauen = True                       # --push ohne --bauen tat still nichts
@@ -528,9 +721,17 @@ def main():
         raus = [e for e in raus if e[2] not in noetig]
         drin += [(m, s, p, None) for m, s, p, _g in zurueck]
 
+    # Der Ohne-Aufnahme-Schutz ist Pflicht — geprueft, BEVOR irgendetwas
+    # gezaehlt, gedruckt oder gebaut wird. Die Hausliste wird nur gelesen, wenn
+    # jemand den Schalter setzt (siehe lokales_im_baum). Eigener Name, weil die
+    # Schleifen weiter unten `grund` fuer den Ausschlussgrund benutzen.
+    schalter_grund = a.baum_ohne_aufnahme
+    lokales = lokales_im_baum(alle, noetig) if schalter_grund is not None else []
+    ausgesetzt = schutz_pruefen(schutz_luecken(), schalter_grund, lokales)
+
     # Der Ohne-Aufnahme-Patch — VOR allen Zaehlungen und Wachen, damit beide
     # den Stand pruefen, der wirklich hinausgeht.
-    drin, gepatcht = patch_anwenden(drin)
+    drin, gepatcht = patch_anwenden(drin, fehlen_erlaubt=ausgesetzt)
 
     g_drin = groesse([s for _m, s, _p, _g in drin])
     g_raus = groesse([s for _m, s, _p, _g in raus])
@@ -541,8 +742,13 @@ def main():
               f"   (namentlich gebraucht: maskottchen.json / sdstart-bilder.py)")
     print(f"  veroeffentlicht : {len(drin):5d} Dateien   {mb(g_drin):>10s}")
     print(f"  zurueckgehalten : {len(raus):5d} Dateien   {mb(g_raus):>10s}")
-    if gepatcht:
-        print(f"  Ohne-Aufnahme-Patch: {gepatcht} Pfade geaendert oder entfernt")
+    # IMMER GEDRUCKT, auch bei 0: die Zeile belegt, dass der Schritt lief. Bis
+    # zum 29.09.2026 erschien sie nur bei mehr als 0 — ein Leser konnte
+    # „Patch fehlte" nicht von „Patch-Schritt gibt es nicht" unterscheiden.
+    print(f"  Ohne-Aufnahme-Patch: {gepatcht} Pfade geaendert oder entfernt"
+          + (f" — SCHUTZ AUSGESETZT, Baum ohne Aufnahme: {schalter_grund}" if ausgesetzt
+             else f"   ({_rel(PATCH_OHNE)})"))
+    print(f"  lokale Leck-Muster: {len(lokale_muster_lesen())}   ({_rel(LOKAL_MUSTER)})")
     print()
 
     # Je Top-Pfad, damit man auf einen Blick sieht, wo das Gewicht liegt.
@@ -622,12 +828,23 @@ def main():
     print()
 
     print("── Wache: geht etwas hinaus, das nicht hinaus darf? ────────────────")
-    lecks = lecks_suchen(drin)
+    lecks, genutzt = lecks_suchen(drin)
+    # Der Fund nur ANGESCHNITTEN (29.09.2026): Datei und Zeile reichen zum
+    # Finden. Der volle Wert in dieser Ausgabe landete sonst per Kopieren in
+    # der naechsten Buchung — so ist die SSID von vier auf sechs Stellen
+    # gewachsen (llmwiki audit-buchung-ist-veroeffentlichungs-inhalt).
     if lecks:
         for pfad, name, zeile, fund in lecks:
-            print(f"  LECK   {pfad}:{zeile}  {name}: {fund!r}")
+            print(f"  LECK   {pfad}:{zeile}  {name}: {fund[:6]!r}…")
         print()
         print("  ABBRUCH: erst entfernen oder in LECK_AUSNAHMEN begruenden.")
+        return 1
+    ohne_anlass = sorted(set(LECK_AUSNAHMEN) - genutzt, key=repr)
+    if ohne_anlass:
+        for s in ohne_anlass:
+            print(f"  AUSNAHME OHNE ANLASS  {s!r}")
+        print()
+        print("  ABBRUCH: diese Paare befreien nichts mehr — aus LECK_AUSNAHMEN streichen.")
         return 1
     print(f"  {len(drin)} Blobs gegen {len(LECK_MUSTER)} Muster gehalten, kein Treffer.")
     print()

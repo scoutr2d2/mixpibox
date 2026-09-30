@@ -841,6 +841,16 @@ if ! verweis_ausgabe=$(python3 tools/wiki-verweise-im-code-pruefen.py 2>&1); the
   luecken=$((luecken + 1))
 fi
 
+# WERKZEUG-ZITATE IM CODE (29.09.2026): Kommentare nannten Werkzeuge, die nie
+# eingecheckt wurden, samt Messzahlen, die niemand nachrechnen kann — vier
+# Audits hintereinander, weil die Pfadwache nur Prosa liest. Rot ist nur ein
+# Werkzeug, das es auf der Hauptlinie nie gab; geloeschte findet git log.
+echo "── Werkzeug-Zitate im Code (tools/werkzeug-zitate-pruefen.py) ──"
+if ! zitat_ausgabe=$(python3 tools/werkzeug-zitate-pruefen.py 2>&1); then
+  echo "$zitat_ausgabe" | grep -E "PHANTOM|ERLEDIGTE AUSNAHME|WARNUNG"
+  luecken=$((luecken + 1))
+fi
+
 # AUSGEROLLTE VORLAGEN (27.08.2026): die Gegenrichtung zu
 # `doku-pfade-pruefen.py`. Die prueft DOKU → BAUM; eine Vorlage, die niemand
 # erwaehnt, faellt dort nicht auf, sondern verbessert die Trefferquote sogar.
@@ -1066,6 +1076,16 @@ fi
 echo "── Muster der GitHub-Ausschlussliste (tools/github-veroeffentlichen.py --selbsttest) ──"
 if ! ghmuster_ausgabe=$(python3 tools/github-veroeffentlichen.py --selbsttest 2>&1); then
   echo "$ghmuster_ausgabe"
+  luecken=$((luecken + 1))
+fi
+
+# Fehlt der Ohne-Aufnahme-Patch oder die Musterdatei, lief die Veroeffentlichung
+# bis 29.09.2026 STILL mit dem ungepatchten Stand weiter (AUDIT-2026-09-28
+# Rang 4). Der Zeuge faehrt jeden Fall in einem Wegwerf-Baum und liest Rueckgabe
+# UND Grund — ein Absturz zaehlt dort nicht als Abbruch.
+echo "── Ohne-Aufnahme-Schutz fail-closed (tools/github-veroeffentlichen.test.py) ──"
+if ! ghschutz_ausgabe=$(python3 tools/github-veroeffentlichen.test.py 2>&1); then
+  echo "$ghschutz_ausgabe"
   luecken=$((luecken + 1))
 fi
 

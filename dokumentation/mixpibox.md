@@ -4,8 +4,8 @@ Stand: 2026-08-25. **Dieses Dokument ist eine Karte, kein Lexikon.**
 
 Die teuer erkauften Einzelheiten — welcher Workaround warum nötig war, welche
 Messung welche Vermutung widerlegt hat, welche Prüfung sich selbst
-zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1154 Einträge,
-Fassung 658). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
+zufriedenstellte — stehen im Wissenspaket `llmwiki/pack.yaml` (1165 Einträge,
+Fassung 670). Hier steht, **wie die Teile zusammenhängen** und **wo man nachsieht**.
 Wo ein Wiki-Eintrag die Antwort hat, wird er beim Namen genannt, statt sie hier
 ein zweites Mal zu behaupten. Zwei Wahrheiten über dieselbe Sache sind
 schlimmer als eine unvollständige.
@@ -244,6 +244,7 @@ Ausgerollt wird sie über `scripts/systemd/einrichten.sh` (mit Gegenprobe
 | `wifi-powersave-off` | schaltet den WLAN-Energiesparmodus ab, sonst bricht die Verbindung weg |
 | `mixpi-wlan-adapter` | wendet die WLAN-Adapterwahl nach dem Start an |
 | `mupi_wifi` | liest `/boot/add_wifi.json` bei **jedem** Start und trägt ein dort hinterlegtes Netz nach — der Weg, auf dem eine Karte ohne Bildschirm ins WLAN kommt |
+| `avahi-daemon` | Paket-Unit (Debian), keine eigene Datei: macht die Box unter `<name>.local` erreichbar — `/api/box` und `tools/box-finden.py` bauen darauf. Seit 29.09.2026 auf **allen drei** Wegen (autosetup, Update, Rezept-Schritt `mdns`); `box-name` startet sie per `try-restart` neu, weil avahi den Namen nur beim Start liest |
 | `mupi_startstop` | Bestand aus dem Ursprungsprojekt. **Er ist nicht abgeschafft**: `autosetup.sh` schaltet ihn auf einer frischen Karte mit scharf. Auf gewachsenen Boxen steht er oft auf `disabled` — llmwiki `taster-wird-von-niemandem-ueberwacht` misst das an `.169`. Wer „läuft er?" beantworten will, fragt `systemctl is-enabled mupi_startstop` und nicht dieses Kapitel |
 | `mupi_idle_shutdown` | **fährt die Box nach Leerlauf herunter.** Steht in derselben Schleife von `autosetup.sh` und ist damit ab Werk scharf; wer misst und dabei wartet, misst gegen diese Unit |
 | `netzabriss-sonde` | die Funkbild-Sonde des Netzabriss-Messaufbaus: `/home/dietpi/netzabriss/sonde.py`, `Restart=always`, läuft als `dietpi` und schreibt ein Protokoll daneben. **Kein Dauerläufer der Anwendung, sondern ein Messgerät** — Quelle im Baum ist `tools/box/netzabriss-sonde.py`, und sie ist der einzige Eintrag dieser Tabelle, der nichts für den Betrieb tut |
@@ -264,7 +265,7 @@ deshalb liest sich die Tabelle oben wie „was auf jeder Box läuft", obwohl sie
 | `mupi-network-info.timer` | Netzwerkdaten für die Oberfläche, alle 20 s (ab 25 s nach Start), über `mupibox-network-sync.sh`. **Die Unit steht in keiner Datei des Repos** — das Rezept schreibt sie zur Laufzeit mit `cat > …`; `tools/units-decken-sich.sh` kann sie deshalb nicht sehen |
 | `mupibox-netz-watchdog-boot` | der Totmannschalter für WLAN-Änderungen: wer das WLAN über genau dieses WLAN ändert, bekommt ohne Entwarnung einen Rückrollvorgang. Die Boot-Einheit fängt den Neustart vor dem Wecker ab. Schritt ist `optional: true` — er kann im Runner abgewählt sein |
 | `mupibox-bootwache` (`.service`/`.timer`) | nimmt eine unbestätigte `/boot/config.txt` zurück — ein falscher Drehwert ist sonst ein schwarzer Bildschirm, der **sauber bootet**. **Pflichtschritt**, weil die Systemaktion `drehung-zurueck` genau `/opt/mupibox-tools/bootwache.py --zuruecknehmen` ruft. Quelle ist `remote-step-installer/tools/mupibox-bootwache.py` — seit 29.08.2026 inhaltsgleich mit `scripts/box/bootwache.py` (die Fassungen waren auf 197 gegen 808 Zeilen auseinandergelaufen; `tools/zwillinge-nach-ziel.py` hält die Gleichheit seither). `autosetup.sh` kopiert die Box-Fassung nach `/opt/mupibox-tools/`, gestartet wird sie dort von keiner Unit dieses Repos |
-| `zramswap` | DietPi-Bestand, kein eigener Dienst — das Rezept schaltet ihn nur mit ein |
+| `zramswap` | aus dem Paket **zram-tools**, nicht aus DietPi-Bestand (berichtigt 29.09.2026). Eine Assistenten-Karte bekommt DietPis EIGENES zram schon beim Erstlauf (Kartenschlüssel aus `remote-step-installer/controller/mixpi-kartenschluessel.txt`); der Rezept-Schritt `zram` startet zram-tools nur, wenn noch kein zram läuft, und ruft `dietpi-set_swapfile` nur bei einer echten Swap-Datei — `dietpi-set_swapfile 0` schaltet JEDE Auslagerung ab, auch zram, und löscht DietPis zram-Regel |
 
 **Was die Ausrollwege an fremde Units *anhängen*** (gefunden am 30.08.2026).
 Die Tabellen oben beantworten „welche Unit läuft". Sie beantworten **nicht**,
@@ -2067,9 +2068,9 @@ tools/pruefen.sh             # + Typen + alle Baue      ← vor jedem Ausliefern
 tools/pruefen.sh --box       # + mupi-check auf dem Gerät
 ```
 
-146 Schritte laufen immer, 7 weitere nur mit `--box` bzw. am echten Gerät
+151 Schritte laufen immer, 7 weitere nur mit `--box` bzw. am echten Gerät
 (Umzug am echten Bestand, Vorlesen, die drei E2E-Läufe, `mupi-check` und seit
-09.09.2026 die Cover-gegen-Rückfallbild-Probe) — 153
+09.09.2026 die Cover-gegen-Rückfallbild-Probe) — 158
 insgesamt (Stand 28.09.2026, nachgezählt mit `tools/leitplanken-zahl-pruefen.py`;
 am 28.09.2026 kam der Schritt „Tests des Installers" dazu, siehe 7.3, und
 zwei Wachen, die in keinem Läufer hingen: „Kissen steht beim Einfahren" und
@@ -3091,11 +3092,42 @@ viel erst auf der Karte eines Fremden auf — und dort nur als eine Zeile im
 Protokoll („diese Schritte laufen ins Leere"). Beides — Musterlogik
 (`--selbsttest`) und Wache — hängt in `tools/doku-luecken-probe.sh`.
 
+**Fehlt eine Schutzdatei, bricht jeder Lauf ab** (seit 29.09.2026, auch der
+Trockenlauf): `tools/github-ohne-aufnahme.patch` und
+`tools/github-lokal-muster.txt` müssen da und nicht leer sein. Bis dahin hieß
+„fehlt" still „nichts zu tun" — veröffentlicht wurde dann der ungepatchte Stand.
+Nur ein Baum ganz ohne Lokales (ein Klon der GitHub-Fassung) nimmt den Schalter
+`--baum-ohne-aufnahme "<Grund>"`; das Werkzeug lehnt ihn ab, sobald die
+Schutzdateien doch da sind oder `tools/github-ausschluss.txt` hier auch nur
+eine Datei zurückhielte. Die Fälle prüft `tools/github-veroeffentlichen.test.py`
+in einem Wegwerf-Baum, eingehängt in `tools/doku-luecken-probe.sh`.
+
+**Passt der Patch nicht mehr** (der Trockenlauf nennt die Dateien), wird der
+Zweig `github-ohne-aufnahme` neu aufgesetzt — in einem eigenen Arbeitsbaum,
+nie im Hauptbaum, in dem parallele Sitzungen arbeiten:
+
+```bash
+git worktree add <scratch>/ohne-aufnahme github-ohne-aufnahme
+git -C <scratch>/ohne-aufnahme rebase main
+#   Konflikt „geändert/gelöscht" an einer Datei, die der Zweig löscht: git rm
+bash tools/ohne-aufnahme-zweig-pruefen.sh <scratch>/ohne-aufnahme
+python3 tools/github-veroeffentlichen.py --patch-aus github-ohne-aufnahme
+python3 tools/github-veroeffentlichen.py                 # Trockenlauf
+git worktree remove <scratch>/ohne-aufnahme
+```
+
+`tools/ohne-aufnahme-zweig-pruefen.sh` fährt die Schritte der CI
+(`.github/workflows/ci.yml`) auf dem Zweig, dazu Typprüfung und Karma der
+Verwaltung, und bricht vorher ab, wenn im Zweig noch Dateien eines Ordners
+liegen, den die Ausschlussliste zurückhält — das Neu-Aufsetzen bringt
+Dateien, die main dort *neu* angelegt hat, ohne Konflikt mit.
+
 ```bash
 python3 tools/github-veroeffentlichen.py                 # Trockenlauf
 python3 tools/github-veroeffentlichen.py --liste         # jede Datei einzeln
 python3 tools/github-veroeffentlichen.py --bauen         # Commit anlegen
 python3 tools/github-veroeffentlichen.py --bauen --push  # und hochladen
+python3 tools/github-veroeffentlichen.py --baum-ohne-aufnahme "Klon der GitHub-Fassung, nichts Lokales"
 ```
 
 ### 7.16 Fassungen über GitHub: Kanäle, Bauen, Signieren
@@ -3247,18 +3279,21 @@ behauptete im Kopf aber, er täte es.
 Ehrlich benannt, damit niemand darauf baut. **Nachgeprüft am 25.09.2026**
 gegen den Baum; was davon wie abgetragen wird, steht in `BACKLOG.md`, E143.
 
-* **Der Einrichtungsassistent ist verdrahtet — er räumt nur nicht auf.** Seit
-  dem 08.08.2026 (E11b/I9–I13) läuft der Weg ohne Laptop durch: `sdstart`
-  bestückt die Karte, `mixpibox-vorstart.service` entscheidet beim Booten
-  (Netz da → DietPi macht weiter; kein Netz → eigenes WLAN „MixPi Start",
-  Agent und Schirm), die Seite fürs Handy übergibt das WLAN, und der Selbstlauf
-  fährt das Rezept. Am Pi 5 durchgespielt, am Pi 4 nicht. **Offen ist, was
-  danach bleibt** (E143/8 und /10; /9, hostapd und dnsmasq, ist seit dem
-  28.09.2026 aus Rezept und `einrichtung-ap.py` entfernt): der Zweig „kein Netz" im Vorstart fragt die
-  `fertig`-Marke nicht — eine fertige Box, die ohne Router startet, öffnet nach
-  45 s wieder das Einrichtungs-WLAN —, und `step-agent.service` lauscht nach
-  dem Selbstlauf weiter als root auf 0.0.0.0 (der Pair-Deckel aus 5.2 hält,
-  gewollt ist es trotzdem nicht).
+* **Der Einrichtungsassistent ist verdrahtet — sein Aufräumen ist am Gerät
+  ungemessen.** Seit dem 08.08.2026 (E11b/I9–I13) läuft der Weg ohne Laptop
+  durch: `sdstart` bestückt die Karte, `mixpibox-vorstart.service` entscheidet
+  beim Booten (Netz da → DietPi macht weiter; kein Netz → eigenes WLAN „MixPi
+  Start", Agent und Schirm), die Seite fürs Handy übergibt das WLAN, und der
+  Selbstlauf fährt das Rezept. Am Pi 5 durchgespielt, am Pi 4 nicht. **Seit
+  dem 29.09.2026 räumt er auf** (E143/8; /9, hostapd und dnsmasq, ist seit dem
+  28.09.2026 aus Rezept und `einrichtung-ap.py` entfernt): der Vorstart endet
+  auf einer Box mit `/var/lib/mixpibox-lauf/fertig` sofort, auch ohne Netz —
+  vorher öffnete eine fertige Box, die ohne Router startet, wieder das
+  Einrichtungs-WLAN —, und der Selbstlauf schaltet `step-agent.service` vor
+  dem Schlussneustart ab (vorher lauschte er weiter als root auf 0.0.0.0).
+  Wer ihn vom Laptop aus wieder braucht: `./connect <box> --install` (bindet
+  an 127.0.0.1, über den SSH-Tunnel). Gebaut und mit Zeugen belegt, auf keiner
+  Karte gelaufen — das misst der Kartenlauf E143/3 und /10.
 * **Die neue Verwaltung** hat Zeugen für 8 ihrer 28 Seiten direkt, für 6
   weitere über Dienst oder Helfer; 14 sind ungetestet (gezählt 25.09.2026). In
   der CI laufen die Karma-Tests nicht.

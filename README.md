@@ -449,18 +449,16 @@ Damit niemand darauf baut — die lange Fassung steht in
 `dokumentation/mixpibox.md`, Abschnitt 9. Der Plan, nach dem dieser Abschnitt
 verschwindet, steht in `BACKLOG.md`, E143 (nachgeprüft am 25.09.2026):
 
-* **Die Anmeldung greift nur bei abgeschaltetem Gast.** Solange der Gast an ist
-  — die Vorgabe —, startet die Box wortlos im zuletzt aktiven Profil, auch wenn
-  es ein Schloss hat, und der Start-Modus hat keine Wirkung.
 * **Ein neues Eingabegerät zuzuordnen ist Handarbeit.** Die Verwaltungsseite
   dafür fehlt; die Geräteprofile samt SVG-Schemata legen seit dem 25.09.2026
   alle drei Ausrollwege ab, eine Route, die die Zuordnung schreibt, gibt es
   noch nicht.
-* **Der Einrichtungsassistent räumt nicht hinter sich auf.** Der Weg übers
-  Handy (eigenes WLAN, QR, Seite fürs Handy) ist verdrahtet und am Pi 5
-  durchgespielt, am Pi 4 nicht. Nach der Einrichtung bleiben aber der
-  Installations-Agent im Netz und der Vorstart eingeschaltet — eine fertige
-  Box, die ohne Router startet, öffnet wieder das Einrichtungs-WLAN.
+* **Dass der Einrichtungsassistent hinter sich aufräumt, ist am Gerät nicht
+  gemessen.** Der Weg übers Handy (eigenes WLAN, QR, Seite fürs Handy) ist
+  verdrahtet und am Pi 5 durchgespielt, am Pi 4 nicht. Seit dem 29.09.2026
+  schaltet der Selbstlauf den Installations-Agenten ab, und der Vorstart endet
+  auf einer fertigen Box sofort, auch ohne Router — gebaut und mit Tests
+  belegt, auf keiner Karte gelaufen.
 * **Der Lautstärkesprung beim Quellenwechsel** ist real und nicht
   ausgeglichen, wenn Spotify über Soloist spielt: lokale Dateien laufen über
   ReplayGain, Soloist kennt keine Normalisierung. librespot (die Vorgabe)
@@ -482,7 +480,7 @@ halbfertig zu benennen, statt es wegzulassen (dann fehlt es) oder mitzuzählen
 | **EINE Box-Oberfläche.** Der Erprobungs-Umschalter fiel mit E118/1d, die alte Angular/Ionic-Oberfläche wurde mit E118/1e am 05.09.2026 **gelöscht**; der Kiosk lädt fest `/neu/`. In `src/frontend-box/` liegt nur noch ein Nachzügler-Modul samt `LIESMICH.md`. | `scripts/chromium-autostart.sh`, Catch-all in `src/backend-api/src/server.ts` | fertig |
 | **Neue Verwaltung** in Angular, 27 Seiten + Anmeldung, unter `/admin`, mit Suche über alle Einstellungen. | `src/frontend-admin/` | löst den PHP-Admin ab (ausgebaut 19.08.2026); Zeugen für Anmeldeweg, Kinderzeit, Suche und einige weitere Seiten |
 | **Backends in TypeScript** statt gewachsenem JS/PHP. | `src/backend-api/` (142 Testdateien), `src/backend-player/` (15) | in Benutzung |
-| **Profile für mehrere Kinder** — bis zwölf, mit Figur, Geburtstag, Schloss in fünf Eingabearten und eigenen Ablagen je Kind. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | fertig; die Anmeldung greift nur bei abgeschaltetem Gast (3.10) |
+| **Profile für mehrere Kinder** — bis zwölf, mit Figur, Geburtstag, Schloss in fünf Eingabearten und eigenen Ablagen je Kind. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | fertig; mit Gast fragt ein geschütztes letztes Profil beim Einschalten nach seinem Schloss (seit 29.09.2026, E143/5) |
 | **Kinderzeit** — wie lange, wann und an welchen Tagen; serverseitig gezählt, nicht im Browser. | `src/backend-api/src/kinderzeit.ts` | fertig; Regeln je Kind seit 25.09.2026 auch in der Verwaltung |
 | **Belohnungs-Videos** — Eltern geben einzelne Mediathek-Videos frei, in Stücken, mit Zähler. | `NewDesign/video.js`, Verwaltungsseite „Videos" | fertig |
 | **Spiele und Lernen** — sechs Apps in der Schublade, vier Spiele in der Spielecke, jedes einzeln abschaltbar. | `NewDesign/apps.js`, `NewDesign/app.js`, `src/backend-api/src/spiele.ts` | fertig |
@@ -873,7 +871,7 @@ Ohne diesen Befehl liegen die Haken zwar im Baum, laufen aber **nie** —
 **Wo das Wissen steht.** Die teuer erkauften Einzelheiten — welche Messung
 welche Vermutung widerlegt hat, welcher Workaround warum nötig war — stehen
 nicht im Code und nicht in dieser Datei, sondern im Wissenspaket
-**`llmwiki/pack.yaml`** (1154 Einträge, Fassung 658). Es ist bewusst Daten,
+**`llmwiki/pack.yaml`** (1165 Einträge, Fassung 670). Es ist bewusst Daten,
 kein Code, und wird nie ausgeführt. Gelesen wird es nicht von Hand:
 
 ```bash

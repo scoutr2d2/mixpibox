@@ -13,8 +13,8 @@
  *
  *     pactl list short sinks
  *       62     alsa_output.platform-soc_107c000000_sound.stereo-fallback
- *       40524  bluez_output.7C_96_D2_89_35_CC.1               RUNNING
- *     pactl get-default-sink -> bluez_output.7C_96_D2_89_35_CC.1
+ *       40524  bluez_output.DD_EE_FF_44_55_66.1               RUNNING
+ *     pactl get-default-sink -> bluez_output.DD_EE_FF_44_55_66.1
  *
  * Es ist PipeWire mit der Pulse-Schicht. Die Wahl ist also `set-default-sink`
  * — und, weil ein LAUFENDER Strom die alte Wahl behält, zusätzlich
@@ -53,13 +53,13 @@ export interface Ausgang {
  *
  * Erlaubt sind deshalb nur Buchstaben, Ziffern, Punkt, Bindestrich und
  * Unterstrich, und der erste Buchstabe muss ein Buchstabe sein. Genau das
- * liefert PipeWire (`alsa_output.…`, `bluez_output.7C_96_D2_89_35_CC.1`).
+ * liefert PipeWire (`alsa_output.…`, `bluez_output.DD_EE_FF_44_55_66.1`).
  */
 export function istAusgangsname(x: unknown): x is string {
   return typeof x === 'string' && x.length > 0 && x.length <= 200 && /^[A-Za-z][A-Za-z0-9._-]*$/.test(x)
 }
 
-/** Die MAC aus einem `bluez_output.7C_96_D2_89_35_CC.1` — oder null. */
+/** Die MAC aus einem `bluez_output.DD_EE_FF_44_55_66.1` — oder null. */
 export function macAusSink(name: unknown): string | null {
   const m = /^bluez_output\.([0-9A-Fa-f]{2}(?:_[0-9A-Fa-f]{2}){5})\b/.exec(String(name ?? ''))
   return m ? m[1].replace(/_/g, ':').toUpperCase() : null
@@ -116,7 +116,7 @@ export interface BtName {
  * Der Name, der am Schirm steht.
  *
  * ══ ER KOMMT AUS DER BLUETOOTH-LISTE, NICHT AUS DEM SINK-NAMEN ═══════════
- * `bluez_output.7C_96_D2_89_35_CC.1` ist für niemanden ein Lautsprecher.
+ * `bluez_output.DD_EE_FF_44_55_66.1` ist für niemanden ein Lautsprecher.
  * Steht dieselbe MAC in der Bluetooth-Liste, heißt der Ausgang wie das Gerät
  * dort — „Teufel ROCKSTER Cross". Findet sich nichts, bleibt die MAC übrig:
  * eine Adresse ist hässlich, aber sie ist WAHR, und ein erfundener Name

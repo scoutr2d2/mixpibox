@@ -45,7 +45,7 @@ MAC_RE = re.compile(r"^([0-9A-F]{2}(?::[0-9A-F]{2}){5})$", re.I)
 def parse_devices(text):
     """`bluetoothctl devices Trusted` -> [(mac, name)]. Pure.
 
-    Zeilen sehen so aus: `Device 00:9E:C8:61:1A:EA 小米蓝牙音箱`.
+    Zeilen sehen so aus: `Device AA:BB:CC:11:22:33 小米蓝牙音箱`.
     Unpassendes wird uebergangen — die Ausgabe enthaelt je nach Fassung auch
     Hinweiszeilen, und daran darf ein Dienst nicht scheitern.
     """
@@ -89,7 +89,7 @@ def bt_spielt(sinks_text):
     """Spielt gerade ein Bluetooth-Lautsprecher? Pure.
 
     Zeilen von `pactl list short sinks` sehen so aus:
-    `158\tbluez_output.00_9E_C8_61_1A_EA.1\tPipeWire\ts16le 2ch 48000Hz\tRUNNING`.
+    `158\tbluez_output.AA_BB_CC_11_22_33.1\tPipeWire\ts16le 2ch 48000Hz\tRUNNING`.
     Es zaehlt nur RUNNING — eine SUSPENDED-Senke stoert niemand.
     """
     for zeile in (sinks_text or "").splitlines():

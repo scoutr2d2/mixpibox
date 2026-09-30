@@ -4,9 +4,12 @@
  */
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
+import { createHash } from 'node:crypto'
 import {
   ablageAus,
   appDarf,
+  beweiseFuer,
+  beweisVon,
   codeErzeugen,
   FENSTER_MS,
   geraetAnlegen,
@@ -15,6 +18,7 @@ import {
   KOPPLUNG_LEER,
   Kopplungsfenster,
   MAX_FEHLVERSUCHE,
+  MAX_FEHLVERSUCHE_GESAMT,
   nameSauber,
   qrInhalt,
   qrLesen,
@@ -40,7 +44,18 @@ describe('das Kopplungsfenster', () => {
     const f = new Kopplungsfenster()
     f.oeffnen(0, '123456')
     assert.equal(f.pruefen('123456', 1000), 'ok')
-    assert.equal(f.pruefen('123456', 1001), 'keins', 'ein zweites Handy mit demselben Code: nein')
+    // Bis 29.09.2026 hiess das „keins" — und das zweite Handy las „kein Code
+    // offen", waehrend die Eltern ihn noch am Schirm sahen.
+    assert.equal(f.pruefen('123456', 1001), 'vergeben', 'ein zweites Handy mit demselben Code: nein — und warum')
+    assert.equal(f.pruefen('123456', FENSTER_MS + 1), 'keins', 'nach der Frist weiss es niemand mehr')
+  })
+
+  it('von Hand geschlossen weiss es niemand mehr', () => {
+    const f = new Kopplungsfenster()
+    f.oeffnen(0, '123456')
+    assert.equal(f.pruefen('123456', 1), 'ok')
+    f.schliessen()
+    assert.equal(f.pruefen('123456', 2), 'keins')
   })
 
   it('laeuft nach der Frist ab', () => {
@@ -50,17 +65,41 @@ describe('das Kopplungsfenster', () => {
     assert.equal(f.offen(FENSTER_MS + 1), null)
   })
 
-  it(`schliesst nach ${MAX_FEHLVERSUCHE} Fehlversuchen — auch fuer den richtigen Code`, () => {
+  it(`nach ${MAX_FEHLVERSUCHE} Fehlversuchen ist der Code fuer DIESES Geraet verbrannt — auch der richtige`, () => {
     const f = new Kopplungsfenster()
     f.oeffnen(0, '123456')
-    for (let i = 0; i < MAX_FEHLVERSUCHE; i++) assert.equal(f.pruefen('000000', 1), 'falsch')
-    assert.equal(f.pruefen('123456', 2), 'keins')
+    for (let i = 0; i < MAX_FEHLVERSUCHE; i++) assert.equal(f.pruefen('000000', 1, '192.168.178.66'), 'falsch')
+    assert.equal(f.pruefen('123456', 2, '192.168.178.66'), 'zuOft')
+  })
+
+  it('ein ratendes Geraet verbrennt den Code NICHT fuer das Handy der Eltern (Rang 6d)', () => {
+    const f = new Kopplungsfenster()
+    f.oeffnen(0, '123456')
+    for (let i = 0; i < MAX_FEHLVERSUCHE + 3; i++) f.pruefen(String(i).padStart(6, '0'), 1, '192.168.178.66')
+    assert.equal(f.pruefen('123456', 2, '192.168.178.40'), 'ok')
+  })
+
+  it(`alle zusammen: nach ${MAX_FEHLVERSUCHE_GESAMT} Fehlversuchen ist das Fenster fuer jeden zu`, () => {
+    const f = new Kopplungsfenster()
+    f.oeffnen(0, '123456')
+    const geraete = MAX_FEHLVERSUCHE_GESAMT / MAX_FEHLVERSUCHE
+    for (let g = 0; g < geraete; g++) {
+      for (let i = 0; i < MAX_FEHLVERSUCHE; i++) assert.equal(f.pruefen('000000', 1, `10.0.0.${g}`), 'falsch')
+    }
+    assert.equal(f.pruefen('123456', 2, '192.168.178.40'), 'zuOft', 'das naechste Geraet erfaehrt den Grund')
   })
 
   it('ein Fenster FUER ein Handy nimmt den Code von keinem anderen', () => {
     const f = new Kopplungsfenster()
     f.oeffnen(0, '123456', '192.168.178.40')
     assert.equal(f.pruefen('123456', 1, '192.168.178.41'), 'falsch', 'fremdes Handy mit mitgelesenem Code')
+    assert.equal(f.pruefen('123456', 2, '192.168.178.40'), 'ok')
+  })
+
+  it('fremde Versuche gehen nicht vom Konto des gebetenen Handys ab', () => {
+    const f = new Kopplungsfenster()
+    f.oeffnen(0, '123456', '192.168.178.40')
+    for (let i = 0; i < MAX_FEHLVERSUCHE; i++) f.pruefen('123456', 1, '192.168.178.41')
     assert.equal(f.pruefen('123456', 2, '192.168.178.40'), 'ok')
   })
 
@@ -100,6 +139,7 @@ describe('was die App darf', () => {
     assert.equal(appDarf(ablage, '/api/box', undefined), true)
     assert.equal(appDarf(ablage, '/api/kopplung/koppeln', undefined), true)
     assert.equal(appDarf(ablage, '/api/kopplung/status', undefined), true)
+    assert.equal(appDarf(ablage, '/api/kopplung/beweis', undefined), true, 'die Frage „bist du dieselbe Box?" braucht keinen Schluessel')
     assert.equal(appDarf(ablage, '/api/profile', undefined), false)
     assert.equal(appDarf(ablage, '/player/local', 'f'.repeat(64)), false)
   })
@@ -137,6 +177,42 @@ describe('die Ablage lesen', () => {
     assert.equal(nameSauber('  a\nb  '), 'a b')
     assert.equal(nameSauber(''), 'Handy')
     assert.equal(nameSauber('x'.repeat(99)).length, 40)
+  })
+})
+
+describe('der Beweis „dieselbe Box" (Rang 6a)', () => {
+  const abdruck = (s: string) => createHash('sha256').update(s, 'utf8').digest('hex')
+
+  it('rechnet wie die App — derselbe Prueffall steht in handy-app/test/box_client_test.dart', () => {
+    // Einmal mit node:crypto und einmal mit Pythons hmac gerechnet (29.09.2026).
+    assert.equal(
+      beweisVon(abdruck('a'.repeat(64)), '0'.repeat(32)),
+      'ad2f33b3f79acd206fccd0f571f1d6f7204f0e962e737772e5883c2670db7006',
+    )
+  })
+
+  it('antwortet je Handy — und die Antwort traegt weder Schluessel noch Abdruck', () => {
+    const eins = geraetAnlegen(KOPPLUNG_LEER, 'a', 1, fest(1))
+    const zwei = geraetAnlegen(eins.ablage, 'b', 2, fest(2))
+    const frage = 'f'.repeat(32)
+    const b = beweiseFuer(zwei.ablage, frage)
+    assert.deepEqual(b, [beweisVon(abdruck(eins.schluessel), frage), beweisVon(abdruck(zwei.schluessel), frage)])
+    const text = JSON.stringify(b)
+    for (const geheim of [eins.schluessel, zwei.schluessel, abdruck(eins.schluessel), abdruck(zwei.schluessel)]) {
+      assert.equal(text.includes(geheim), false)
+    }
+  })
+
+  it('eine andere Frage gibt einen anderen Beweis — eine alte Antwort taugt nicht fuer eine neue Frage', () => {
+    const { ablage } = geraetAnlegen(KOPPLUNG_LEER, 'a', 1, fest(1))
+    assert.notDeepEqual(beweiseFuer(ablage, '0'.repeat(32)), beweiseFuer(ablage, '1'.repeat(32)))
+  })
+
+  it('nimmt nur eine Frage aus 32 bis 128 Hex-Zeichen', () => {
+    for (const unsinn of [undefined, 42, '', 'abc', 'g'.repeat(32), '0'.repeat(31), '0'.repeat(129)]) {
+      assert.equal(beweiseFuer(KOPPLUNG_LEER, unsinn), null, String(unsinn))
+    }
+    assert.deepEqual(beweiseFuer(KOPPLUNG_LEER, '0'.repeat(32)), [])
   })
 })
 

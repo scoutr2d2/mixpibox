@@ -192,6 +192,83 @@ void main() {
     stand.taktAnhalten();
   });
 
+  group('Umadressieren: der Schluessel gehoert der Box, nicht der Adresse', () {
+    // AUDIT-2026-09-28 §1b Rang 6a: die Sitzung wurde an die Adresse gebunden,
+    // der Schluessel wanderte IMMER mit — schon die Probe `/api/box` trug ihn
+    // an die neue Adresse, bevor irgendwer „Speichern" bestaetigt hatte.
+    late AttrappenBox echt;
+    late AttrappenBox fremd;
+    late BoxenStand stand;
+    late BoxEintrag eintrag;
+
+    setUp(() {
+      SharedPreferences.setMockInitialValues({});
+      echt = AttrappenBox(kopplung: true);
+      fremd = AttrappenBox(kopplung: true, fremd: true);
+      // .63 ist der Tippfehler (eine andere Box im Haus), .70 dieselbe Box
+      // nach einem neuen DHCP-Lease.
+      final unter = {'192.168.178.62': echt, '192.168.178.63': fremd, '192.168.178.70': echt};
+      stand = BoxenStand(clientBauen: (b) => BoxClient(b, client: unter[b.adresse]!.client()));
+      eintrag = BoxEintrag(id: 'x', name: 'Kinderzimmer', adresse: '192.168.178.62', schluessel: AttrappenBox.schluessel);
+      stand.boxen.add(eintrag);
+    });
+
+    Future<void> umadressieren(WidgetTester tester, String neu, bool Function() fertig) async {
+      await tester.pumpWidget(MaterialApp(home: BoxBearbeitenSeite(stand: stand, box: eintrag)));
+      await tester.enterText(find.widgetWithText(TextField, 'Adresse'), neu);
+      await tester.runAsync(() async {
+        await tester.tap(find.text('Speichern'));
+        for (var i = 0; i < 100 && !fertig(); i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 20));
+          await tester.pump();
+        }
+      });
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('eine fremde Box bekommt den Schluessel nie zu sehen — und das Koppeln geht auf', (tester) async {
+      await umadressieren(tester, '192.168.178.63', () => find.text('Mit Kinderzimmer koppeln').evaluate().isNotEmpty);
+      expect(fremd.verlauf, isNotEmpty, reason: 'die neue Adresse wurde gefragt');
+      expect(
+        fremd.verlauf.where((v) => v.mitSchluessel).map((v) => v.weg),
+        isEmpty,
+        reason: 'kein einziger Weg an die fremde Box traegt den Schluessel',
+      );
+      expect(eintrag.adresse, '192.168.178.63');
+      expect(eintrag.schluessel, isNull, reason: 'der Schluessel der echten Box bleibt nicht am neuen Eintrag haengen');
+      expect(find.text('Mit Kinderzimmer koppeln'), findsOneWidget, reason: 'statt still zu scheitern: neu koppeln');
+      expect(find.textContaining('kennt dieses Handy nicht'), findsOneWidget, reason: 'und warum');
+    });
+
+    testWidgets('dieselbe Box unter neuer IP bleibt gekoppelt — der Schluessel geht erst nach dem Beweis hin', (tester) async {
+      await umadressieren(
+        tester,
+        '192.168.178.70',
+        () => eintrag.adresse == '192.168.178.70' && echt.verlauf.any((v) => v.weg == 'GET /api/kopplung/status'),
+      );
+      expect(eintrag.schluessel, AttrappenBox.schluessel, reason: 'kein neues Koppeln, nur weil DHCP umverteilt hat');
+      final wege = echt.verlauf.map((v) => v.weg).toList();
+      final beweis = wege.indexOf('POST /api/kopplung/beweis');
+      final ersterMitSchluessel = echt.verlauf.indexWhere((v) => v.mitSchluessel);
+      expect(beweis, greaterThanOrEqualTo(0), reason: 'die neue Adresse musste sich ausweisen: $wege');
+      expect(echt.verlauf[beweis].mitSchluessel, isFalse, reason: 'der Beweis selbst kommt ohne Schluessel aus');
+      expect(ersterMitSchluessel, greaterThan(beweis), reason: 'der Schluessel geht erst NACH dem Beweis: $wege');
+      expect(find.textContaining('koppeln'), findsNothing);
+    });
+
+    testWidgets('eine Box ohne den Beweis-Weg (vor dem 29.09.2026): lieber neu koppeln als raten', (tester) async {
+      final alt = AttrappenBox(kopplung: true, ohneBeweis: true);
+      final unter = {'192.168.178.62': alt, '192.168.178.70': alt};
+      stand = BoxenStand(clientBauen: (b) => BoxClient(b, client: unter[b.adresse]!.client()));
+      stand.boxen
+        ..clear()
+        ..add(eintrag);
+      await umadressieren(tester, '192.168.178.70', () => find.text('Mit Kinderzimmer koppeln').evaluate().isNotEmpty);
+      expect(alt.verlauf.where((v) => v.mitSchluessel), isEmpty);
+      expect(eintrag.schluessel, isNull);
+    });
+  });
+
   group('Eltern: sperren, Kinderzeit, Sicherung', elternTests);
 
   group('Medien verwalten', () {

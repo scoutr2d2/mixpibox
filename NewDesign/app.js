@@ -1042,8 +1042,10 @@
    * Der EINE Weg fuer eine aendernde Anfrage (POST/PUT/PATCH/DELETE).
    *
    * ══ WARUM ES IHN GIBT (Audit 19.09.2026, Rang 11) ═══
-   * GEMESSEN mit `tools/app-sendejson-schau.mjs`: 44 der 59 `fetch(` dieser
-   * Datei sind aendernd, und 26 davon liefen ohne jede Frist. Die Trennlinie
+   * GEMESSEN am 19.09.2026: 44 der damals 59 `fetch(` dieser Datei sind
+   * aendernd, und 26 davon liefen ohne jede Frist — nachzaehlen mit
+   * `tools/app-eine-stelle-schau.mjs` (Regel R1; der Arbeitsname, der hier
+   * bis zum 29.09.2026 stand, war nie eingecheckt). Die Trennlinie
    * war NICHT die Gefaehrlichkeit, sondern die ENTSTEHUNGSZEIT — die Netz-
    * und Profil-Gruppen waren komplett ungedeckt, waehrend daneben die
    * Dienste-Gruppe ihre 8 s hatte. Das ist das Merkmal einer Regel, die
@@ -3229,6 +3231,13 @@
           API,
           spielerBefehl,
           sprichDann,
+          /* DIE ANSAGE OHNE KNOPF (die Absagen des Video-Schirms). Den Schalter
+           * fragt sie hier, wie `auswahlAnsagen` — `stimme.sprich` selbst fragt
+           * ihn nicht. Bis zum 29.09.2026 fehlte sie, und video.js rief den
+           * Knopf-Umschlag mit einem String (AUDIT-2026-09-23 Rang 1). */
+          sprich: (text) => {
+            if (stimme.modus !== 'aus') void stimme.sprich(text, false)
+          },
           /**
            * DER LAUTSTAERKE-GRIFF — drei Funktionen statt des Objekts.
            *
@@ -9461,7 +9470,7 @@
    * vollen 4-s-Deckel (E118-Griff: „Weg 4001 ms", mehrfach gemessen). Vier
    * Sekunden je Tipp, und niemand wusste warum.
    */
-  const SPRICH_TEXTZONEN = '.kachel-wort, .lane-titel, .weiter-titel, .sprich-knopf'
+  const SPRICH_TEXTZONEN = '.kachel-wort, .lane-titel, .weiter-titel, .video-name, .sprich-knopf'
 
   /** Das kleine Vorlese-Zeichen am unteren Cover-Rand (Betreiber: „ein
    *  kleines vorlese symbol … wird bei aktiviertem vorlese service angezeigt
@@ -9470,7 +9479,7 @@
    *  im DOM liegt es immer, damit ein Einschalten zur Laufzeit keine
    *  einzige Kachel neu bauen muss. */
   function sprichZeichen(k) {
-    const bild = k.querySelector('.kachel-bild, .lane-bild, .weiter-bild')
+    const bild = k.querySelector('.kachel-bild, .lane-bild, .weiter-bild, .video-bild')
     if (!bild || bild.querySelector(':scope > .sprich-knopf')) return
     const z = el('span', 'sprich-knopf')
     z.setAttribute('aria-hidden', 'true')
@@ -10146,7 +10155,8 @@
     void sendeJson(`${API}/profil/aussehen`, 'POST', feld)
   }
 
-  function lichtSetzen(wert) {
+  /** @param melden wie bei `farbeSetzen`: nur eine WAHL geht ans Profil. */
+  function lichtSetzen(wert, melden = true) {
     const dunkel = wert === 'dunkel'
     document.documentElement.setAttribute('data-licht', dunkel ? 'dunkel' : 'hell')
     try {
@@ -10156,8 +10166,9 @@
       // trotzdem richtig — er soll nicht daran haengen, dass etwas gemerkt
       // werden kann.
     }
-    aussehenMelden({ licht: dunkel ? 'dunkel' : 'hell' })
+    if (melden) aussehenMelden({ licht: dunkel ? 'dunkel' : 'hell' })
   }
+  const LICHT_VORGABE = 'dunkel'
 
   function lichtStarten() {
     // ══ DUNKEL IST DIE VORGABE ═══
@@ -10175,19 +10186,25 @@
     // WER SCHON GEWAEHLT HAT, BEHAELT SEINE WAHL. Der Wert unten greift nur,
     // wenn im Speicher NICHTS steht; ein 'hell', das jemand selbst gesetzt
     // hat, ueberlebt diese Aenderung.
-    let wert = 'dunkel'
+    let wert = LICHT_VORGABE
     try {
-      wert = window.localStorage.getItem(LICHT) || 'dunkel'
+      wert = window.localStorage.getItem(LICHT) || LICHT_VORGABE
     } catch {
       /* siehe lichtSetzen */
     }
-    lichtSetzen(wert)
+    lichtSetzen(wert, false)
   }
 
   // DEN STAND EINMAL DURCHSCHREIBEN. Der Einzeiler im Dokumentkopf hat
   // `data-licht` schon gesetzt — er liest aber nur und schreibt nichts
-  // zurueck. Diese Zeile legt den Wert (auch den vorgegebenen „hell") in den
+  // zurueck. Diese Zeile legt den Wert (auch den vorgegebenen) in den
   // Speicher, damit er von hier an an EINER Stelle steht.
+  //
+  // NUR IN DEN SPEICHER, NICHT ANS PROFIL (E72, 30.09.2026). Bis dahin
+  // meldete diese Zeile den Spiegel bei JEDEM Aufbau dem gerade aktiven
+  // Profil — nach einem Wechsel also das Licht des VORIGEN Kindes als
+  // eigenes des neuen, und ein frischer Browser ueberschrieb ein
+  // gewaehltes Licht mit der Vorgabe (tools/mixpi-aussehen-wechsel-schau.mjs).
   lichtStarten()
 
   /* ══ DER FARBSATZ — DIESELBE MECHANIK WIE HELL/DUNKEL ═══
@@ -10313,11 +10330,24 @@
    * schon gefaerbt — was hier kommt, berichtigt ihn, falls am Profil etwas
    * anderes steht (anderer Browser, anderes Kind).
    *
-   * SAGT DER SERVER NICHTS, BLEIBT ES, WIE ES IST: ein Profil ohne eigene
-   * Wahl erbt den Stand der Box, und der steht schon am Schirm. Hier auf
-   * eine Vorgabe zurueckzufallen hiesse, jedem Kind beim ersten Start die
-   * Farbe wegzunehmen.
+   * ══ SAGT DER SERVER NICHTS, ENTSCHEIDET, WEM DER SPIEGEL GEHOERT (E72) ═══
+   *
+   * Der Server antwortet schon mit dem box-weiten Stand, wenn das Profil
+   * nichts Eigenes hat (`darstellungFuer`); leer heisst: auch die Box sagt
+   * nichts. Bis zum 30.09.2026 blieb dann der Spiegel stehen — nach einem
+   * Wechsel der des VORIGEN Kindes. Gemeldet: „Kalea hell → Papa dunkel
+   * (klappt), zurueck nicht". Betreiber (29.09.2026, E72/T3): „Rueckfall
+   * auf die Vorgabe".
+   *
+   * DESHALB MERKT SICH DER SPIEGEL SEINEN BESITZER. Gehoert er einem anderen
+   * Profil, gilt die Vorgabe; gehoert er DIESEM (ein Neuladen ohne Wechsel),
+   * bleibt er — und ohne Besitzer (der erste Start nach dem Update) auch:
+   * das war die alte Regel, und kein Kind verliert dabei seine Farbe.
+   * HIER UND NICHT AM SERVER: die Vorgabe (dunkel, Creme) und der Spiegel
+   * wohnen beide in dieser Datei; der Server kennt keinen von beiden.
    */
+  // NAMENSRAUM-AUSNAHME: gehoert zum Spiegel von Licht und Farbsatz (Geraet).
+  const AUSSEHEN_VON = 'mixpi_aussehen_von_v1'
   async function aussehenHolen() {
     let d = null
     try {
@@ -10326,16 +10356,21 @@
       return // ohne Antwort bleibt der gespiegelte Stand stehen
     }
     if (!d) return
-    if (typeof d.farbe === 'string' && d.farbe && farbeGueltig(d.farbe)) farbeSetzen(d.farbe, false)
-    if (d.licht === 'hell' || d.licht === 'dunkel') {
-      // `lichtSetzen` MELDET IMMER — deshalb hier von Hand, ohne den Rueckweg
-      // ans Netz. Sonst schriebe jeder Seitenaufbau denselben Wert zurueck.
-      document.documentElement.setAttribute('data-licht', d.licht)
-      try {
-        window.localStorage.setItem(LICHT, d.licht)
-      } catch {
-        /* ohne Speicher gilt es nur fuer diesen Besuch */
-      }
+    let von = null
+    try {
+      von = window.localStorage.getItem(AUSSEHEN_VON)
+    } catch {
+      /* ohne Speicher kein Besitzer — dann bleibt es wie vorher */
+    }
+    const fremd = !!von && von !== d.profil
+    if (typeof d.farbe === 'string' && farbeGueltig(d.farbe)) farbeSetzen(d.farbe, false)
+    else if (fremd) farbeSetzen(FARB_VORGABE, false)
+    if (d.licht === 'hell' || d.licht === 'dunkel') lichtSetzen(d.licht, false)
+    else if (fremd) lichtSetzen(LICHT_VORGABE, false)
+    try {
+      if (typeof d.profil === 'string' && d.profil) window.localStorage.setItem(AUSSEHEN_VON, d.profil)
+    } catch {
+      /* siehe oben */
     }
   }
 
@@ -10354,10 +10389,11 @@
     } catch {
       /* siehe farbeSetzen */
     }
-    farbeSetzen(wert)
+    farbeSetzen(wert, false)
   }
 
-  // DEN STAND EINMAL DURCHSCHREIBEN — aus demselben Grund wie bei `lichtStarten`.
+  // DEN STAND EINMAL DURCHSCHREIBEN — aus demselben Grund wie bei `lichtStarten`,
+  // und wie dort nur in den Speicher (E72).
   // UND ES RAEUMT AUF: Steht im Speicher ein Name, den das Stilblatt nicht mehr
   // kennt, schreibt diese Zeile die Vorgabe darueber. Sonst bliebe er dort
   // liegen und faerbte bei jedem Start nichts.
@@ -12025,7 +12061,9 @@
    *
    * ══ WARUM UNTERSEITEN UND NICHT ABSCHNITTE IN EINER ROLLENDEN KARTE ═══
    * Beides war zu haben, und beides ist gemessen worden, statt es zu wissen
-   * (tools/eltern-zwei-ebenen-messen.mjs, am Schirm):
+   * (einmal, am 06.08.2026 am Schirm, mit einem Messskript, das nie
+   * eingecheckt wurde; die 766 px = 9 x 78 stehen in tools/eltern-box-schau.mjs,
+   * die zwei Ebenen bewacht tools/admin-menue-schau.mjs):
    *
    *   ABSCHNITTE UNTEREINANDER   Die Karte traegt sichtbar 235..293 px, je
    *     nachdem ob ihr Kopf einen Knopf hat. „Darstellung" mit allen neun
@@ -31853,6 +31891,21 @@
           // Neuladen gleich wieder fragt.
           anmeldeMarkeSetzen(wer.kennung)
         }
+      } else if (!marke) {
+        /* ══ MIT GAST: NUR DAS SCHLOSS (E143/5, Betreiber 29.09.2026, Weg a) ═══
+         *
+         * Hier stand nichts: eine Box mit Gast (die Vorgabe) wachte wortlos
+         * im letzten Profil auf, AUCH WENN ES EIN SCHLOSS HAT. Jetzt steht
+         * dessen Schloss davor; „Ich bin jemand anderes" fuehrt zu „Wer
+         * hoert?" samt Gast-Kachel. Der Start-Modus gilt hier NICHT — mit
+         * `fragen` als Vorgabe fragte sonst jede Box jeden Morgen (Weg b).
+         * Ohne Schloss: wortlos wie bisher, aber MIT Marke — sonst hielte
+         * ein spaeteres Neuladen (Auslieferung, Schloss neu gesetzt) sich
+         * fuer einen Kaltstart.
+         */
+        const wer = profilAktiv()
+        if (wer && wer.geschuetzt) anmeldeSchlossZeigen(wer)
+        else anmeldeMarkeSetzen(wer ? wer.kennung : GAST)
       }
     } catch {
       /* ohne Antwort bleibt es beim Gast — die Box spielt trotzdem */
@@ -32086,7 +32139,8 @@
   }
 
   /**
-   * NUR DAS SCHLOSS — fuer den Start-Modus `letztes`.
+   * NUR DAS SCHLOSS — fuer den Start-Modus `letztes` und fuer den Kaltstart
+   * mit eingeschaltetem Gast (E143/5).
    *
    * Es zeigt kein „Wer hoert?", sondern gleich die Passwortfrage des
    * Profils, das weitermachen soll. Der Weg dahinter ist
@@ -32108,7 +32162,8 @@
     const blatt = el('div', 'anmelde-blatt')
     blatt.appendChild(el('div', 'anmelde-frage', `Weiter als ${wer.name || wer.kennung}`))
     const reihe = el('div', 'anmelde-reihe')
-    reihe.appendChild(ichKachel(ichBildPfad(wer.figur, profil.ordner), wer.name || wer.kennung, true))
+    const kachel = ichKachel(ichBildPfad(wer.figur, profil.ordner), wer.name || wer.kennung, true)
+    reihe.appendChild(kachel)
     blatt.appendChild(reihe)
 
     const andere = el('button', 'anmelde-andere', 'Ich bin jemand anderes')
@@ -32121,39 +32176,47 @@
     schicht.appendChild(blatt)
     document.body.appendChild(schicht)
 
-    void (async () => {
+    /* ══ ABBRECHEN FUEHRT AUFS SCHLOSS ZURUECK (30.09.2026) ═══
+     *
+     * Hier fragte die Schleife nach einem Abbrechen sofort wieder. Beides
+     * zusammen ging nie: Die Passwortfrage lag UNTER diesem Fenster (11
+     * gegen 60) — sichtbar durch den Schleier, aber kein Finger traf eine
+     * Taste. Seit sie darueber liegt (app.css), haette die Schleife den
+     * Ausweg zugedeckt. Jetzt zeigt Abbrechen das Schloss mit Kachel und
+     * Ausweg, die Kachel fragt von vorn — ins Nichts fuehrt es weiter nicht.
+     */
+    let fragt = false
+    const fragen = async () => {
+      if (fragt) return
+      fragt = true
       let nochmal = false
-      for (;;) {
-        // Ist das Fenster inzwischen weg (der Ausweg wurde genommen), gehoert
-        // diese Schleife niemandem mehr.
-        if (!schicht.isConnected) return
-        const passwort = await passwortAbfragen(wer, nochmal)
-        if (!schicht.isConnected) return
-        if (!passwort) {
-          // ABBRECHEN FUEHRT NICHT INS NICHTS. Wer die Eingabe wegtippt,
-          // steht sonst vor einem Fenster ohne Frage — und die Box waere
-          // stumm, ohne dass etwas kaputt ist.
-          nochmal = false
-          continue
-        }
-        const r = await sendeJson(`${API}/profil/anmelden`, 'POST', { kennung: wer.kennung, passwort })
-        if (r.ok) {
-          anmeldeMarkeSetzen(wer.kennung)
+      try {
+        while (schicht.isConnected) {
+          const passwort = await passwortAbfragen(wer, nochmal)
+          if (!passwort || !schicht.isConnected) return
+          const r = await sendeJson(`${API}/profil/anmelden`, 'POST', { kennung: wer.kennung, passwort })
+          if (r.ok) {
+            anmeldeMarkeSetzen(wer.kennung)
+            schicht.remove()
+            return
+          }
+          if (r.status === 403 || r.status === 401) {
+            nochmal = r.status === 403
+            continue
+          }
+          // Server weg oder kaputt: NICHT einfach durchlassen. Dann lieber die
+          // gewohnte Frage, die ohne Passwort ohnehin nirgends hineinlaesst.
+          meldung('Das hat gerade nicht geklappt.')
           schicht.remove()
+          anmeldeFensterZeigen()
           return
         }
-        if (r.status === 403 || r.status === 401) {
-          nochmal = r.status === 403
-          continue
-        }
-        // Server weg oder kaputt: NICHT einfach durchlassen. Dann lieber die
-        // gewohnte Frage, die ohne Passwort ohnehin nirgends hineinlaesst.
-        meldung('Das hat gerade nicht geklappt.')
-        schicht.remove()
-        anmeldeFensterZeigen()
-        return
+      } finally {
+        fragt = false
       }
-    })()
+    }
+    kachel.addEventListener('click', () => void fragen())
+    void fragen()
   }
 
   /** Die Profile, die an der BOX zur Wahl stehen — ohne abgeschalteten Gast. */

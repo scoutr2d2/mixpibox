@@ -9,14 +9,26 @@
  *
  * ══ WAS HEUTE GESCHIEHT, UND WARUM ES SO GEBAUT WURDE ═══════════════════
  *
- * Nach einem Kaltstart zeigt die Box „Wer hoert?", sobald das aktive Profil
- * NICHT der Gast ist (app.js, `profilHolen`). Der Grund steht dort: „nach
- * einem Kaltstart stuende die Box sonst einfach im letzten Kinderprofil, am
+ * Ist der Gast ABGESCHALTET (E39), zeigt die Box nach einem Kaltstart „Wer
+ * hoert?" (app.js, `profilHolen`). Der Grund steht dort: „nach einem
+ * Kaltstart stuende die Box sonst einfach im letzten Kinderprofil, am
  * Schloss vorbei." Das ist richtig — aber es ist eine ANTWORT AUF DAS
  * SCHLOSS, keine auf den Normalfall. Wo gar kein Passwort gesetzt ist,
  * fragt die Box jeden Morgen nach etwas, das niemand schuetzt.
  *
- * ══ DIE ZWEI MODI ═══════════════════════════════════════════════════════
+ * HIER STAND BIS ZUM 30.09.2026 „sobald das aktive Profil NICHT der Gast
+ * ist" — das war falsch: app.js fragt `/api/start` nur bei
+ * `gastAktiv === false`. MIT GAST (die Vorgabe jeder Box) gilt dieser Modus
+ * NICHT. Dort macht die Box mit dem zuletzt aktiven Profil weiter; hat es
+ * ein Schloss, steht beim Kaltstart dessen Schloss davor, „Ich bin jemand
+ * anderes" fuehrt zu „Wer hoert?" samt Gast (E143/5, Betreiber 29.09.2026:
+ * Weg a, „nur das Schloss"). Den Modus auch mit Gast gelten zu lassen
+ * (Weg b) hiesse mit `fragen` als Vorgabe: jede Box fragt ab dem Update
+ * jeden Morgen — genau das stille Umspringen, das der Kasten „WARUM
+ * `fragen` DIE VORGABE BLEIBT" ausschliesst. Gemessen in
+ * tools/start-modus-schau.mjs.
+ *
+ * ══ DIE ZWEI MODI (nur ohne Gast) ══════════════════════════════════════
  *
  *   fragen   Wie bisher: nach dem Kaltstart kommt „Wer hoert?".
  *   letztes  Das zuletzt gewaehlte Profil macht weiter —

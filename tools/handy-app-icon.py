@@ -33,6 +33,12 @@ Es schreibt
   - mipmap-*/ic_launcher.png            fertiges rundes Icon fuer Launcher
     ohne Adaptive Icons (Android 7) — genau der Ausschnitt, den ein runder
     Launcher vom Adaptive Icon zeigen wuerde, damit beide dasselbe Bild sind
+  - mipmap-*/ic_launcher_monochrom.png  die Ebene fuer eingefaerbte Symbole
+    (Android 13+, „Designte Symbole"): der Launcher nimmt davon nur den
+    Alphakanal und malt ihn in der Themenfarbe. Sie entsteht aus dem
+    Vordergrund, nicht aus einer zweiten Zeichnung — siehe monochrom_gross().
+    Ob ein Launcher sie benutzt, entscheidet er: MagicOS (Honor) etwa hat
+    ein eigenes Themen-System und zeigte am 29.09.2026 das farbige Icon.
 
 Braucht Pillow und numpy (wie tools/bilder-freistellen.py).
 Rueckgabe: 0 gut, 1 Befund (nur --pruefen), 2 Werkzeug fehlt.
@@ -66,6 +72,14 @@ HINTERGRUND = "#FFE3DC"
 EBENE_DP, SICHTBAR_DP, SICHER_R_DP, RADIUS_DP = 108, 72, 33, 31
 # Gebaut wird einmal gross und dann je Dichte verkleinert.
 PX_JE_DP = 16
+
+# Einfarbige Ebene: was deckt, entscheidet der dunkelste Kanal. Der weisse
+# Koerper hat ihn ueberall ueber 0,95 und wird durchsichtig; Umriss, Gesicht,
+# Kopfhoerer (Violett, 0,36) und die Stifte (bunt, nahe 0) decken. Dazwischen
+# weich, damit die Kante zwischen Umriss und Koerper nicht treppt. Am
+# 29.09.2026 mit 0,45/0,80 und 0,65/0,92 verglichen: kein sichtbarer
+# Unterschied, die Farben der Vorlage liegen weit auseinander.
+MONO_TIEF, MONO_HOCH = 0.55, 0.85
 
 # Dichte → Faktor gegenueber mdpi (1 dp = 1 px).
 DICHTEN = {"mdpi": 1, "hdpi": 1.5, "xhdpi": 2, "xxhdpi": 3, "xxxhdpi": 4}
@@ -138,6 +152,50 @@ def rund_gross(vorn: Image.Image) -> Image.Image:
     return bild
 
 
+def monochrom_gross(vorn: Image.Image) -> Image.Image:
+    """Die Ebene fuer eingefaerbte Symbole, aus dem Vordergrund abgeleitet.
+
+    Der Launcher liest nur Alpha. Ein Schattenriss der ganzen Figur waere ein
+    Klecks, in dem man nichts erkennt; erkannt wird MixPi an Umriss, Gesicht,
+    Kopfhoerern und Stiften. Also deckt alles, was NICHT weiss ist, und der
+    weisse Koerper wird durchsichtig — in der Themenfarbe gemalt bleibt eine
+    Linienfigur mit vollen Kopfhoerern.
+    """
+    a = np.asarray(vorn).astype(np.float32) / 255
+    weiss = a[:, :, :3].min(axis=2)
+    deckt = np.clip((MONO_HOCH - weiss) / (MONO_HOCH - MONO_TIEF), 0, 1)
+    alpha = Image.fromarray((a[:, :, 3] * deckt * 255).round().astype(np.uint8))
+    ebene = Image.new("RGBA", vorn.size, (255, 255, 255, 0))
+    ebene.putalpha(alpha)
+    return ebene
+
+
+def mono_befund(mono: Image.Image, vorn: Image.Image) -> str:
+    """Ist die einfarbige Ebene eine Linienfigur? -> Befund oder "".
+
+    Geprueft wird der Zweck, keine Zahl: was im Vordergrund satt WEISS ist
+    (der Koerper), muss durchsichtig sein; was satt FARBIG ist (Umriss,
+    Gesicht, Kopfhoerer, Stifte — kleinster Kanal unter 0,5), muss decken.
+    Eine erste Fassung verglich nur den Deckanteil mit einem Bereich — die
+    Gegenprobe zeigte, dass eine halb zugelaufene und eine fast leere Ebene
+    beide darin landen. Eine zweite verlangte nur den DUNKLEN Umriss: der
+    deckt fast immer, und die Kopfhoerer fielen weg, ohne dass es auffiel.
+    """
+    m = np.asarray(mono)[:, :, 3].astype(np.float32) / 255
+    v = np.asarray(vorn).astype(np.float32) / 255
+    satt = v[:, :, 3] > 0.99
+    klein = v[:, :, :3].min(axis=2)
+    weiss, farbig = satt & (klein > 0.95), satt & (klein < 0.5)
+    if not weiss.any() or not farbig.any():
+        return "im Vordergrund fehlt weisser Koerper oder farbiger Umriss"
+    if (w := m[weiss].mean()) > 0.10:
+        return f"der weisse Koerper deckt im Mittel {w:.0%} (erlaubt 10 %) — die Ebene laeuft zum Klecks zu"
+    if (f := m[farbig].mean()) < 0.90:
+        return (f"Umriss, Kopfhoerer und Stifte decken im Mittel nur {f:.0%} (verlangt 90 %)"
+                " — die Figur zerfaellt")
+    return ""
+
+
 def verkleinert(bild: Image.Image, px: int) -> Image.Image:
     return bild.convert("RGBa").resize((px, px), Image.Resampling.LANCZOS).convert("RGBA")
 
@@ -145,10 +203,12 @@ def verkleinert(bild: Image.Image, px: int) -> Image.Image:
 def alle_bilder() -> dict[Path, Image.Image]:
     vorn = vordergrund_gross()
     rund = rund_gross(vorn)
+    mono = monochrom_gross(vorn)
     bilder = {}
     for name, faktor in DICHTEN.items():
         bilder[RES / f"mipmap-{name}/ic_launcher_vordergrund.png"] = verkleinert(vorn, round(EBENE_DP * faktor))
         bilder[RES / f"mipmap-{name}/ic_launcher.png"] = verkleinert(rund, round(48 * faktor))
+        bilder[RES / f"mipmap-{name}/ic_launcher_monochrom.png"] = verkleinert(mono, round(EBENE_DP * faktor))
     return bilder
 
 
@@ -170,6 +230,7 @@ def texte() -> dict[Path, str]:
         + '<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">\n'
         '    <background android:drawable="@color/ic_launcher_hintergrund"/>\n'
         '    <foreground android:drawable="@mipmap/ic_launcher_vordergrund"/>\n'
+        '    <monochrome android:drawable="@mipmap/ic_launcher_monochrom"/>\n'
         "</adaptive-icon>\n",
     }
 
@@ -188,8 +249,12 @@ def pruefen() -> list[str]:
         groesste = max(hi for _, hi in ImageChops.difference(ist, soll).getextrema())
         if groesste > TOLERANZ:
             befunde.append(f"{name}: weicht um bis zu {groesste} Stufen ab (erlaubt {TOLERANZ})")
-        if ziel.name == "ic_launcher_vordergrund.png" and (n := ausserhalb_sicher(ist)):
+        if ziel.name != "ic_launcher.png" and (n := ausserhalb_sicher(ist)):
             befunde.append(f"{name}: {n} sichtbare Punkte ausserhalb des sicheren 66-dp-Kreises")
+        vorn_datei = ziel.with_name("ic_launcher_vordergrund.png")
+        if ziel.name == "ic_launcher_monochrom.png" and vorn_datei.is_file():
+            if b := mono_befund(ist, Image.open(vorn_datei).convert("RGBA")):
+                befunde.append(f"{name}: {b}")
     for ziel, soll in texte().items():
         if not ziel.is_file() or ziel.read_text(encoding="utf-8") != soll:
             befunde.append(f"{ziel.relative_to(WURZEL)} fehlt oder weicht ab")

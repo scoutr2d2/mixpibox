@@ -3,8 +3,16 @@
          nur in src/debug und src/profile ein) - die Release-App saehe keine
          einzige Box. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- KEINE SICHERUNG, KEIN UMZUG (29.09.2026): in den Einstellungen der
+         App liegen die Kopplungsschluessel der Boxen im Klartext, und ein
+         Schluessel gehoert zu genau einem Handy. allowBackup schaltet bis
+         Android 11 alles ab, ab Android 12 auf manchen Geraeten nur die
+         Cloud; den Umzug von Geraet zu Geraet sperrt erst die Regeldatei
+         (Begruendung dort, Pruefung in test/android_sicherung_test.dart). -->
     <application
         android:label="MixPiBox"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/mixpi_kein_datenauszug"
         android:usesCleartextTraffic="true"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">

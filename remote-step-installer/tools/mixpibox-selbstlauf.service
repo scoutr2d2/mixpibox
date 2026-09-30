@@ -7,6 +7,9 @@ After=network-online.target
 Wants=network-online.target
 # Der Agent liefert die Umgebungserkennung (Modell, Distro, Boot-Pfade), die
 # der Fahrer fuer den Prefix und fuer `when:` braucht.
+# Genauer: der Fahrer laedt /opt/step-agent/agent.py als DATEI, nicht den
+# Dienst. Am Ende schaltet er step-agent.service selbst ab (E143/8); auf der
+# fertigen Box ordnet diese Zeile deshalb nichts mehr, und das ist richtig.
 After=step-agent.service
 
 [Service]

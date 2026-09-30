@@ -262,7 +262,7 @@ describe('istLoopback / vonDerBox', () => {
 describe('btPowerLesen', () => {
   it('liest „Powered: yes" (BlueZ 5.82, an der Box abgelesen)', () => {
     const roh = [
-      'Controller 00:15:83:F9:C5:4F (public)',
+      'Controller 44:DD:55:EE:66:FF (public)',
       '\tName: mupibox #1',
       '\tPowered: yes',
       '\tPowerState: on',

@@ -15,6 +15,18 @@
  *   letztes, ohne Passwort      -> gar kein Fenster, die Box ist einfach da
  *   letztes, mit Passwort       -> das Schloss DIESES Profils, nicht „Wer hoert?"
  *
+ * Das alles gilt nur OHNE Gast. MIT Gast (die Vorgabe jeder Box) gilt seit
+ * E143/5 (Betreiber 29.09.2026, Weg a „nur das Schloss") — unabhaengig vom
+ * Start-Modus, deshalb hier mit `fragen` gemessen:
+ *
+ *   Gast an, Profil mit Passwort   -> sein Schloss; „Ich bin jemand anderes"
+ *                                     fuehrt zu „Wer hoert?" SAMT Gast-Kachel
+ *   Gast an, Profil ohne Passwort  -> gar kein Fenster, wie bisher
+ *   Gast an, Neuladen              -> kein Schloss mehr (die Marke haelt) —
+ *                                     nach dem Aufschliessen UND nach einem
+ *                                     wortlosen Start, dessen Profil erst
+ *                                     spaeter ein Schloss bekommt
+ *
  * ══ UND DIE ECKE, DIE DABEI ZUGEHT ══════════════════════════════════════
  *
  * `POST /api/profil/aktiv` prueft Passwoerter nur bei einem ECHTEN Wechsel.
@@ -49,7 +61,9 @@ import { eigenerBrowser } from './leihgabe.mjs'
 
 const WURZEL = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const PRUEFEN = process.argv.includes('--pruefen')
-const PASSWORT = '2468'
+// SO, WIE DAS ZAHLENFELD ES SCHICKT: `n:` vor den Ziffern (passwortEingabe).
+// Nur dann oeffnet das Tippen am Schloss (Fall 8), was hier gesetzt wurde.
+const PASSWORT = 'n:2468'
 
 let fehler = 0
 const melde = (z) => {
@@ -155,6 +169,69 @@ try {
       return (frage.startsWith('Wer h') ? 'wer-hoert' : 'schloss') + (eingabe ? '+eingabe' : '')
     })()`)
 
+  /**
+   * MIT DEM FINGER TIPPEN, nicht per `element.click()` (30.09.2026).
+   *
+   * Bis dahin klickte dieses Werkzeug per JavaScript — und uebersah, dass die
+   * Passwortfrage UNTER dem Anmeldefenster lag (z-index 11 gegen 60):
+   * `click()` erreicht auch eine verdeckte Taste, ein Kind nicht. Alle
+   * Schloss-Faelle waren gruen, und kein geschuetztes Profil kam nach einem
+   * Kaltstart hinein. Jetzt wird die MITTE des Ziels gerechnet und dort ein
+   * echtes Zeigerereignis abgesetzt — was obenauf liegt, bekommt es.
+   */
+  async function tippe(ziel) {
+    const p = await ev(`(() => { const e = ${ziel}; if (!e) return null
+      const r = e.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } })()`)
+    if (!p) return 'kein Ziel'
+    for (const type of ['mousePressed', 'mouseReleased']) {
+      await send(ws, 'Input.dispatchMouseEvent', { type, x: p.x, y: p.y, button: 'left', clickCount: 1 })
+    }
+    await warte(120)
+    return 'ok'
+  }
+  /** Liegt das Ziel OBENAUF? Sonst traefe ein Finger etwas anderes. */
+  const obenauf = (ziel) =>
+    ev(`(() => { const e = ${ziel}; if (!e) return 'kein Ziel'
+      const r = e.getBoundingClientRect(); const o = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)
+      return o && (o === e || e.contains(o)) ? 'ja' : 'verdeckt von ' + (o ? o.id || o.className : 'nichts') })()`)
+  const taste = (z) =>
+    `[...document.querySelectorAll('.pw-feld.pw-zahlen .pw-taste')].find((x) => x.textContent.trim() === ${JSON.stringify(z)})`
+  const pwKnopf = (wort) => `[...document.querySelectorAll('.pw-schicht button')].find((k) => k.textContent.trim() === ${JSON.stringify(wort)})`
+  const AUSWEG = `document.querySelector('.anmelde-andere')`
+  const kachelVon = (name) =>
+    `[...document.querySelectorAll('#anmelde-schicht .anmelde-reihe > *')].find((k) => k.textContent.includes(${JSON.stringify(name)}))`
+
+  /** Das Zahlen-Passwort eintippen und bestaetigen — Taste fuer Taste, mit dem Finger. */
+  async function eintippen() {
+    for (const z of PASSWORT.slice(2)) {
+      if ((await tippe(taste(z))) !== 'ok') return `Taste ${z} fehlt`
+    }
+    return tippe(pwKnopf('Fertig'))
+  }
+
+  /** Schloss mit Frage: Tasten obenauf, Abbrechen zurueck aufs Schloss, dann der Ausweg. */
+  async function schlossPruefen(titel) {
+    const t = await obenauf(taste('1'))
+    zeile(`${titel}: die Tasten liegen obenauf`, t === 'ja' ? 'ja' : `NEIN (${t})`)
+    if (t !== 'ja') melde(`${titel}: die Passwortfrage ist nicht zu treffen — ${t}`)
+    await tippe(pwKnopf('Abbrechen'))
+    await warte(400)
+    const zurueck = await fenster()
+    zeile(`${titel}: Abbrechen zeigt das Schloss mit Ausweg`, zurueck === 'schloss' ? 'ja' : `NEIN (${zurueck})`)
+    if (zurueck !== 'schloss') melde(`${titel}: nach Abbrechen steht ${zurueck} statt des Schlosses`)
+    // Wer sich vertippt hat und abbricht, fragt ueber die Kachel von vorn.
+    await tippe(`document.querySelector('#anmelde-schicht .anmelde-reihe > *')`)
+    await warte(400)
+    const vorn = await fenster()
+    zeile(`${titel}: die Kachel fragt von vorn`, vorn === 'schloss+eingabe' ? 'ja' : `NEIN (${vorn})`)
+    if (vorn !== 'schloss+eingabe') melde(`${titel}: ein Tipp auf die Kachel oeffnet die Frage nicht (${vorn})`)
+    await tippe(pwKnopf('Abbrechen'))
+    await warte(400)
+    const a = await obenauf(AUSWEG)
+    if (a !== 'ja') melde(`${titel}: „Ich bin jemand anderes" ist nicht zu treffen — ${a}`)
+    return tippe(AUSWEG)
+  }
+
   // ── VORBEDINGUNG: der Gast muss ab sein, sonst gibt es keinen Kaltstart ──
   await lage('gast-aus')
   const stand = await holen('/api/profile')
@@ -198,7 +275,7 @@ try {
     // ── 4. DER AUSWEG ─────────────────────────────────────────────────────
     //
     // Ohne ihn waere die Box in diesem Modus fuer jeden anderen unbenutzbar.
-    const ausweg = await ev(`(() => { const b = document.querySelector('.anmelde-andere'); if (!b) return 'kein Knopf'; b.click(); return 'ok' })()`)
+    const ausweg = await schlossPruefen('„letztes"')
     await warte(700)
     const f4 = await fenster()
     zeile('„Ich bin jemand anderes" fuehrt zur Auswahl', ausweg === 'ok' && f4.startsWith('wer-hoert') ? 'ja' : `NEIN (${ausweg}/${f4})`)
@@ -210,16 +287,103 @@ try {
     //
     // Das EIGENE, schon aktive Profil antippen. Bis zum 20.09.2026 ging das
     // ohne Passwort. Jetzt muss das Schloss kommen.
-    const getippt = await ev(`(() => {
-      const s = document.getElementById('anmelde-schicht'); if (!s) return 'kein Fenster'
-      const k = s.querySelector('.anmelde-reihe > *'); if (!k) return 'keine Kachel'
-      k.click(); return 'ok' })()`)
+    const getippt = await tippe(kachelVon('Liam'))
     await warte(900)
     const f5 = await fenster()
     zeile('das EIGENE geschuetzte Profil fragt jetzt auch', getippt === 'ok' && f5.startsWith('schloss') ? 'ja' : `NEIN (${getippt}/${f5})`)
     if (getippt !== 'ok' || !f5.startsWith('schloss')) {
       melde(`die eigene Kachel kam ohne Passwort durch — die Ecke aus E39 steht offen (${getippt}/${f5})`)
     }
+
+    // ══ MIT GAST (E143/5, Weg a) ══════════════════════════════════════════
+    //
+    // Liam ist aktiv und hat das Probe-Passwort von oben. Der Start-Modus
+    // steht auf `fragen` — die Vorgabe, und genau der Wert, mit dem Weg (b)
+    // jede Box jeden Morgen fragen liesse. Hier darf er nichts ausrichten.
+    await lage('gast-an')
+    await lage('start-fragen')
+    const gastStand = await holen('/api/profile')
+    zeile('Vorbedingung: der Gast ist an', gastStand?.gastAktiv === true ? 'ja' : 'NEIN')
+    if (gastStand?.gastAktiv !== true) melde('die Vorschau meldet den Gast nicht als an — die Gast-Faelle messen dann nichts')
+
+    // ── 6. geschuetzt: das Schloss, nicht die Auswahl und nicht nichts ────
+    await kaltstart()
+    const f6 = await fenster()
+    zeile('Gast an, Profil MIT Passwort: sein Schloss', f6.startsWith('schloss') ? 'ja' : `NEIN (${f6})`)
+    if (!f6.startsWith('schloss')) melde(`mit Gast und Passwort gehoert das Schloss auf den Schirm, stattdessen: ${f6}`)
+
+    // ── 7. der Ausweg fuehrt zur Auswahl SAMT Gast ────────────────────────
+    const ausweg7 = await schlossPruefen('Gast an')
+    await warte(700)
+    const f7 = await fenster()
+    const kacheln7 = await ev(`[...document.querySelectorAll('#anmelde-schicht .anmelde-reihe > *')].map((k) => k.textContent.trim())`)
+    const mitGast = Array.isArray(kacheln7) && kacheln7.includes('Gast')
+    zeile('„Ich bin jemand anderes": „Wer hoert?" samt Gast', ausweg7 === 'ok' && f7.startsWith('wer-hoert') && mitGast ? 'ja' : `NEIN (${ausweg7}/${f7}/${kacheln7})`)
+    if (ausweg7 !== 'ok' || !f7.startsWith('wer-hoert') || !mitGast) {
+      melde(`aus dem Schloss fuehrt kein Weg zu „Wer hoert?" mit Gast-Kachel (${ausweg7}/${f7}/${kacheln7})`)
+    }
+
+    // ── 8. aufschliessen, dann NEULADEN: kein zweites Schloss ─────────────
+    await kaltstart()
+    const getippt8 = await eintippen()
+    await warte(1200)
+    const f8a = await fenster()
+    zeile('Gast an, mit dem Finger aufgeschlossen: das Fenster ist weg', getippt8 === 'ok' && f8a === 'nichts' ? 'ja' : `NEIN (${getippt8}/${f8a})`)
+    if (getippt8 !== 'ok' || f8a !== 'nichts') melde(`nach dem richtigen Passwort steht noch: ${getippt8}/${f8a}`)
+    await send(ws, 'Page.reload')
+    await warte(2600)
+    const f8 = await fenster()
+    zeile('Gast an, Neuladen nach dem Aufschliessen: kein Schloss', f8 === 'nichts' ? 'ja' : `NEIN (${f8})`)
+    if (f8 !== 'nichts') melde(`ein gewoehnliches Neuladen zeigte wieder: ${f8} — es haelt sich fuer einen Kaltstart`)
+
+    // ── 9. ungeschuetzt: wortlos wie bisher ───────────────────────────────
+    const kalea = await fetch(new URL('/api/profil/aktiv', ZIEL), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ kennung: 'kalea' }),
+    }).catch(() => null)
+    if (!kalea?.ok) melde('der Wechsel auf Kalea (ohne Passwort) misslang — Fall 9 bis 11 messen nichts')
+    await kaltstart()
+    const f9 = await fenster()
+    zeile('Gast an, Profil OHNE Passwort: gar kein Fenster', f9 === 'nichts' ? 'ja' : `NEIN (${f9})`)
+    if (f9 !== 'nichts') melde(`ein ungeschuetztes Profil mit Gast startet wortlos, stattdessen: ${f9}`)
+
+    // ── 10. Schloss kommt SPAETER dazu, dann Neuladen: nicht fragen ───────
+    //
+    // Der wortlose Start setzt die Marke. Ohne sie hielte das naechste
+    // Neuladen (eine Auslieferung, ein Schloss, das Kalea eben gesetzt hat)
+    // sich fuer einen Kaltstart.
+    const kaleaPw = await fetch(new URL('/api/profil/passwort', ZIEL), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ art: 'zahlen', neu: PASSWORT }),
+    }).catch(() => null)
+    if (!kaleaPw?.ok) melde('Kaleas Passwort liess sich nicht setzen — Fall 10 und 11 messen nichts')
+    await send(ws, 'Page.reload')
+    await warte(2600)
+    const f10 = await fenster()
+    zeile('Gast an, Schloss spaeter gesetzt, Neuladen: kein Schloss', f10 === 'nichts' ? 'ja' : `NEIN (${f10})`)
+    if (f10 !== 'nichts') melde(`nach einem wortlosen Start fragte ein Neuladen: ${f10}`)
+
+    // ── 11. DAS GESCHWISTERKIND MIT EIGENEM SCHLOSS ───────────────────────
+    //
+    // Kaleas Schloss steht, Liam geht ueber den Ausweg und tippt SEINE
+    // Kachel — die Frage kommt aus `werWaehlen`, nicht aus dem Start-Schloss.
+    // Auch sie lag seit E39 unter „Wer hoert?".
+    await kaltstart()
+    await schlossPruefen('Kalea')
+    await warte(700)
+    await tippe(kachelVon('Liam'))
+    await warte(700)
+    const t11 = await obenauf(taste('1'))
+    zeile('„Wer hoert?" → Liam: seine Tasten liegen obenauf', t11 === 'ja' ? 'ja' : `NEIN (${t11})`)
+    if (t11 !== 'ja') melde(`die Passwortfrage aus „Wer hoert?" ist nicht zu treffen — ${t11}`)
+    await eintippen()
+    await warte(2800)
+    const wer11 = (await holen('/api/profile'))?.aktiv
+    const f11 = await fenster()
+    zeile('… richtig getippt: Liam ist dran, kein Fenster', wer11 === 'liam' && f11 === 'nichts' ? 'ja' : `NEIN (${wer11}/${f11})`)
+    if (wer11 !== 'liam' || f11 !== 'nichts') melde(`nach Liams Passwort: aktiv ${wer11}, am Schirm ${f11}`)
   }
 
   console.log(fehler ? `\n  ${fehler} Abweichung(en)` : '\n  ohne Abweichung')

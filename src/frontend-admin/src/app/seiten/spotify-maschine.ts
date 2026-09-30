@@ -199,7 +199,7 @@ interface MaschinenStand {
             <ol>
               <!-- DIE BOX SAGT, WO SIE HAENGT, statt zu mahnen. „Gleiches WLAN
                    wie die Box" gibt dem Lesenden nichts, was er nachsehen
-                   koennte. Am 22.08.2026 hing sie in ganzschnellimnetz2_2G bei
+                   koennte. Am 22.08.2026 hing sie in <heimnetz>_2G bei
                    2447 MHz — an dem _2G sieht man, dass dieser Router die
                    Baender in GETRENNTE Netze legt. Ein Handy im 5-GHz-Netz
                    findet die Box dann unter Umstaenden gar nicht, weil Spotify

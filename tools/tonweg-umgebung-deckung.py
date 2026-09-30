@@ -29,7 +29,8 @@ Ausreisser — und ausgerechnet der, dessen Tonweg am seltensten benutzt wird.
 
 ══ WAS DIESE WACHE PRUEFT — AUF DIE SORTE, NICHT AUF EINE NAMENSLISTE ══════
 
-Fuer jede Unit unter `config/services/`:
+Fuer jede Unit, WO IMMER SIE ENTSTEHT (Herleitung weiter unten bei
+„DER DRITTE AUSROLLWEG"):
 
   * Laeuft sie als ROOT? Dann geht sie diese Wache nichts an. Der
     Systemton-Server laeuft selbst als root (`pulseaudio --system`), und
@@ -52,16 +53,68 @@ Handarbeit hier, und sie traegt einen ANKER: zeigt ein Eintrag ins Leere,
 bricht die Wache ab, statt ihn stillschweigend zu ueberspringen. Eine
 Zuordnung, die nicht mehr passt, macht die Wache sonst blind und gruen.
 
+══ DER DRITTE AUSROLLWEG — EINE UNIT KANN AUCH IN EINEM REZEPT ENTSTEHEN ═══
+
+Bis zum 29.09.2026 las diese Wache nur `config/services/*.service`. Am
+Abend ihres Entstehens war sie richtig — und hatte trotzdem ein Loch, das
+AUDIT-2026-09-20 Rang 1 fand: `remote-step-installer/recipes/mupibox-app.yaml`
+schreibt DIESELBE Unit `mupibox-server.service` ein zweites Mal, als Heredoc
+im Schritt `dienste-systemd`, und dieses Exemplar hatte die Zeile NICHT.
+Jede per Rezept bespielte Box war beim Vorlesen stumm, waehrend die Wache
+gruen meldete — ihr Sichtfeld war ein Ordner, und ein Heredoc liegt in
+keinem Ordner (Wiki: unit-im-heredoc-entgeht-der-unit-wache).
+
+Deshalb sucht die Wache seither nach der SORTE „hier entsteht eine Unit",
+nicht nach einem Pfad:
+
+  * jede Datei im Baum (verfolgt oder neu, nicht ignoriert), die auf
+    `.service` endet — egal in welchem Ordner;
+  * jeder Heredoc in einem Skript, Rezept oder Python-Modul, der nach
+    /etc/systemd/system/<name>.service schreibt (`cat > ziel <<ENDE`,
+    `cat <<ENDE > ziel`, `tee ziel <<ENDE`).
+
+Ein UNGESCHUETZTER Heredoc (`<<EOF` statt `<<'EOF'`) setzt Variablen ein.
+Die Wache tut dasselbe mit den `env:`-Werten des Rezepts — sonst stuende im
+Serverfall nur `ExecStart=/usr/bin/node ${MUPI_APP}/server.js` da, der
+Quellort waere unsichtbar, und die Wache wieder still gruen. Bleibt in einem
+Dienst ohne root nach dem Einsetzen eine Variable im ExecStart stehen, bricht
+sie ab statt zu raten. Ebenso, wenn eine Zeile nach Heredoc-Unit AUSSIEHT,
+sich aber nicht lesen laesst (etwa ein Unit-Name aus einer Variablen): eine
+Unit, die die Wache nicht lesen kann, darf sie nicht als gesund zaehlen.
+
     python3 tools/tonweg-umgebung-deckung.py            Bericht
     python3 tools/tonweg-umgebung-deckung.py --pruefen  still; Ende 1 bei Luecke
 """
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
 WURZEL = Path(__file__).resolve().parent.parent
-UNITS = WURZEL / "config/services"
+
+# Dateien, in denen ein Heredoc eine Unit schreiben kann. Ohne Endung zaehlt
+# eine Datei mit, wenn ihre erste Zeile ein Shell-Shebang ist (die Starter
+# des Installers heissen `connect`, `sdstart` …).
+HEREDOC_ENDUNGEN = (".sh", ".yaml", ".yml", ".py")
+
+# Was ueber Units SPRICHT statt sie zu schreiben: das Wissenspaket und die
+# Handbuecher zitieren Heredocs; das Kompilat unter src/deploy/ ist eine
+# Kopie, keine Quelle ([[kommentar-und-kompilat-sind-keine-gegenstelle]]).
+NICHT_QUELLE = ("llmwiki/", "src/deploy/", "node_modules/")
+
+# `cat > /etc/systemd/system/x.service <<ENDE` und die umgedrehte Form
+# `cat <<ENDE > /etc/systemd/system/x.service`. Der Name endet vor einem
+# Zeichen, das nicht mehr zum Namen gehoert — sonst hielte die Wache das
+# Drop-In `x.service.d/y.conf` fuer die ganze Unit.
+_ZIEL = r"/etc/systemd/system/([\w@-][\w@.-]*\.service)(?![\w./-])"
+_MARKE = r"<<-?\s*(['\"]?)\\?(\w+)"
+HEREDOC_VORN = re.compile(_ZIEL + r"[^\n]*?" + _MARKE + r"\2")
+HEREDOC_HINTEN = re.compile(_MARKE + r"\1[^\n]*?" + _ZIEL)
+# Was nach Heredoc-Unit AUSSIEHT — jede solche Zeile muss eine der beiden
+# Formen oben treffen, sonst ist sie unlesbar (Selbstpruefung, siehe Kopf).
+SIEHT_AUS_WIE = re.compile(r"<<.*/etc/systemd/system/\S*\.service(?![\w./-])"
+                           r"|/etc/systemd/system/\S*\.service(?![\w./-]).*<<")
 
 # Programme, die einen PipeWire- oder Pulse-Klienten aufmachen. Sorte, nicht
 # Marke: wer einen davon startet, braucht den Socket-Pfad.
@@ -114,11 +167,97 @@ def quelle_nennt_ton(ordner: Path) -> str:
     return ""
 
 
+def baum_dateien() -> list[str]:
+    """Alle Dateien des Baums, verfolgt ODER neu — nur nicht ignoriert.
+
+    NICHT nur `git ls-files`: eine Unit, die gerade erst entsteht, ist noch
+    unversioniert, und genau dann soll die Wache sie sehen — gemessen am
+    29.09.2026 mit einer unversionierten Probe-Unit, die sofort rot wurde."""
+    aus = subprocess.run(
+        ["git", "-C", str(WURZEL), "ls-files", "-co", "--exclude-standard", "-z"],
+        capture_output=True, check=True,
+    ).stdout.decode("utf-8", "replace")
+    return sorted(n for n in aus.split("\0") if n and not n.startswith(NICHT_QUELLE))
+
+
+def kann_heredoc_tragen(rel: str) -> bool:
+    pfad = WURZEL / rel
+    if pfad.suffix in HEREDOC_ENDUNGEN:
+        return True
+    if pfad.suffix:
+        return False
+    try:
+        with open(pfad, "rb") as f:
+            erste = f.readline(200)
+    except OSError:
+        return False
+    return erste.startswith(b"#!") and b"sh" in erste
+
+
+def rezept_umgebung(text: str) -> dict:
+    """Die `env:`-Werte auf oberster Ebene eines Rezepts — ohne YAML-Parser,
+    damit die Wache auf einem Rechner ohne PyYAML genauso sieht."""
+    werte = {}
+    block = re.search(r"^env:[ \t]*\n((?:[ \t]+.*\n|[ \t]*\n)+)", text, re.M)
+    if not block:
+        return werte
+    for m in re.finditer(r"^[ \t]+([A-Z_][A-Z0-9_]*):[ \t]*(.*?)[ \t]*$", block.group(1), re.M):
+        werte[m.group(1)] = m.group(2).strip("'\"")
+    return werte
+
+
+def einsetzen(text: str, umgebung: dict) -> str:
+    """Was die Shell in einem UNGESCHUETZTEN Heredoc einsetzt. Unbekannte
+    Variablen bleiben stehen — der Aufrufer erkennt daran, dass er rät."""
+    def ersatz(m):
+        name, vorgabe = m.group(1) or m.group(3), m.group(2)
+        if name in umgebung:
+            return umgebung[name]
+        if vorgabe is not None:
+            return vorgabe
+        return m.group(0)
+    return re.sub(r"\$\{([A-Za-z_]\w*)(?::-([^}]*))?\}|\$([A-Za-z_]\w*)", ersatz, text)
+
+
+def heredoc_units(rel: str, befunde_unlesbar: list) -> list:
+    """Jede Unit, die diese Datei per Heredoc nach /etc/systemd/system schreibt
+    -> [(Herkunft, Unit-Name, Text)]."""
+    try:
+        zeilen = (WURZEL / rel).read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        return []
+    umgebung = rezept_umgebung("\n".join(zeilen)) if rel.endswith((".yaml", ".yml")) else {}
+    funde = []
+    for nr, zeile in enumerate(zeilen):
+        m = HEREDOC_VORN.search(zeile)
+        if m:
+            name, zitat, marke = m.group(1), m.group(2), m.group(3)
+        else:
+            m = HEREDOC_HINTEN.search(zeile)
+            if m:
+                zitat, marke, name = m.group(1), m.group(2), m.group(3)
+        if not m:
+            if SIEHT_AUS_WIE.search(zeile) and not zeile.lstrip().startswith("#"):
+                befunde_unlesbar.append(f"{rel}:{nr + 1}: {zeile.strip()[:90]}")
+            continue
+        geschuetzt = bool(zitat) or ("<<\\" in zeile) or ("<<-\\" in zeile)
+        rumpf = []
+        for folge in zeilen[nr + 1:]:
+            if folge.strip() == marke:
+                break
+            rumpf.append(folge.strip())
+        else:
+            befunde_unlesbar.append(f"{rel}:{nr + 1}: Heredoc {marke} endet nie")
+            continue
+        text = "\n".join(rumpf)
+        if not geschuetzt:
+            text = einsetzen(text, umgebung)
+        funde.append((f"{rel}:{nr + 1} (Heredoc)", name, text))
+    return funde
+
+
 def main() -> int:
     still = "--pruefen" in sys.argv
-    if not UNITS.is_dir():
-        print(f"ABBRUCH: {UNITS} fehlt — ohne Gegenstand prueft diese Wache nichts.")
-        return 2
 
     # Anker der Zuordnung zuerst: eine tote Zuordnung macht blind.
     for ausgeliefert, quelle in QUELLORTE.items():
@@ -129,16 +268,51 @@ def main() -> int:
             print("und waere still gruen — das ist schlimmer als ein Befund.")
             return 2
 
+    # ── WO UNITS ENTSTEHEN: zwei Sorten, beide aus dem ganzen Baum ──────────
+    dateien = baum_dateien()
+    units = []  # (Herkunft, Unit-Name, Text)
+    for rel in dateien:
+        if rel.endswith(".service"):
+            text = (WURZEL / rel).read_text(encoding="utf-8", errors="replace")
+            units.append((rel, Path(rel).name, text))
+    n_dateien = len(units)
+    unlesbar: list = []
+    for rel in dateien:
+        if rel == "tools/tonweg-umgebung-deckung.py":
+            continue  # der eigene Kopf zitiert die Formen, die er sucht
+        if kann_heredoc_tragen(rel):
+            units.extend(heredoc_units(rel, unlesbar))
+    n_heredoc = len(units) - n_dateien
+
+    if n_dateien == 0:
+        print("ABBRUCH: im ganzen Baum liegt keine einzige *.service-Datei — die")
+        print("Dateiliste ist kaputt (git?), nicht der Baum. Ohne Gegenstand prueft")
+        print("diese Wache nichts.")
+        return 2
+    if unlesbar:
+        print("ABBRUCH: diese Zeilen sehen nach einer Unit im Heredoc aus, lassen")
+        print("sich aber nicht lesen (Unit-Name aus einer Variablen? Heredoc ohne")
+        print("Ende?). Eine Unit, die die Wache nicht lesen kann, zaehlt sie nicht")
+        print("als gesund:")
+        for u in unlesbar:
+            print(f"  UNLESBAR {u}")
+        return 2
+
     luecken = []
+    geraten = []
     geprueft = 0
-    for unit in sorted(UNITS.glob("*.service")):
-        text = unit.read_text(encoding="utf-8", errors="replace")
+    for herkunft, name, text in units:
         wirksam = "\n".join(z for z in text.splitlines() if not z.lstrip().startswith("#"))
 
         nutzer = re.search(r"^User=(.+)$", wirksam, re.M)
         if not nutzer or nutzer.group(1).strip() == "root":
             continue  # root: andere Frage, siehe Kopf
         geprueft += 1
+
+        start = re.search(r"^ExecStart=(.*)$", wirksam, re.M)
+        if start and "$" in start.group(1) and herkunft.endswith("(Heredoc)"):
+            geraten.append(f"{herkunft} {name}: ExecStart={start.group(1)}")
+            continue
 
         grund = ""
         for prog in TON_PROGRAMME:
@@ -156,20 +330,30 @@ def main() -> int:
             continue
 
         if not re.search(r"^Environment=.*XDG_RUNTIME_DIR=", wirksam, re.M):
-            luecken.append((unit.name, grund))
-            print(f"  FEHLT in {unit.name}: Environment=XDG_RUNTIME_DIR — {grund}")
+            luecken.append((herkunft, name, grund))
+            print(f"  FEHLT in {herkunft} -> {name}: Environment=XDG_RUNTIME_DIR — {grund}")
+
+    if geraten:
+        print("ABBRUCH: im ExecStart dieser Heredoc-Units bleibt nach dem Einsetzen")
+        print("der Rezept-Umgebung eine Variable stehen — welches Programm dort")
+        print("startet, laesst sich nicht sehen, also auch nicht, ob es Ton macht:")
+        for g in geraten:
+            print(f"  GERATEN {g}")
+        return 2
 
     if luecken:
         print()
         print("  Ohne XDG_RUNTIME_DIR findet ein PipeWire-Klient seinen Socket nicht,")
         print("  faellt auf Pulse zurueck und scheitert dort mit einer Meldung ueber")
         print("  RECHTE — die den wahren Grund verdeckt. Vorbild: die Zeile in")
-        print("  config/services/mupibox-player.service.")
+        print("  config/services/mupibox-player.service. Eine Unit, die an ZWEI Orten")
+        print("  entsteht (Datei UND Rezept-Heredoc), braucht die Zeile an beiden.")
         print(f"\n{len(luecken)} LUECKE(N).")
         return 1
 
     if not still:
-        print(f"  KEINE LUECKE ({geprueft} Dienste ohne root geprueft).")
+        print(f"  KEINE LUECKE ({geprueft} Dienste ohne root geprueft; gelesen: "
+              f"{n_dateien} Unit-Dateien, {n_heredoc} Units aus Heredocs).")
     return 0
 
 

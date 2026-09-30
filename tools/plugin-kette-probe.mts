@@ -48,7 +48,7 @@ const WURZEL = path.resolve(HIER, '..')
 const kennung = process.argv[2]
 const begriff = process.argv[3] ?? 'hörspiel'
 if (!kennung) {
-  console.error('Aufruf: npx tsx tools/plugin-kette-probe.ts <plugin-kennung> [suchbegriff]')
+  console.error('Aufruf: npx tsx tools/plugin-kette-probe.mts <plugin-kennung> [suchbegriff]')
   process.exit(2)
 }
 

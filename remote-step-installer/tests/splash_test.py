@@ -326,6 +326,22 @@ chk("es fliegen Sternschnuppen", not leer(s, 0, 0, 800, lage["schnuppe_bis"]))
 chk("keine zieht unter die Oberkante des Namens",
     leer(s, 0, lage["schnuppe_bis"] + 2, 800, 480 - lage["schnuppe_bis"] - 2))
 
+# Die Notbremse misst mit der MONOTONEN Uhr. Mit time.time() endete die
+# Animation am Geraet 0,12 s nach dem Zeitabgleich (Uhr +24 h) bei „5/6
+# Netzwerk ..." — gemessen an Box .62 am 29.09.2026. Gesucht wird im
+# Syntaxbaum, nicht im Text: ein Kommentar, der den alten Aufruf zitiert,
+# ist kein Aufruf.
+import ast as _ast
+with open(os.path.join(REPO, "tools", "mupibox-boot-splash.py"), encoding="utf-8") as _f:
+    _baum = _ast.parse(_f.read())
+_wanduhr = [k.lineno for k in _ast.walk(_baum)
+            if isinstance(k, _ast.Call) and isinstance(k.func, _ast.Attribute)
+            and k.func.attr == "time" and isinstance(k.func.value, _ast.Name)
+            and k.func.value.id == "time"]
+chk(f"keine Wanduhr im Splash (time.time() in Zeile {_wanduhr})" if _wanduhr
+    else "keine Wanduhr im Splash — der Zeitabgleich beim Start beendet es nicht",
+    not _wanduhr)
+
 # Und das Ganze: fuenf Sekunden Animation auf beiden Farbtiefen, ohne Absturz.
 for bpp in (32, 16):
     s = FakeSchirm(800, 480, bpp)

@@ -35,8 +35,9 @@
  * gibt sofort zurueck und fragt danach im Worker weiter; den Stand liest die
  * Seite ueber `GET stand`.
  */
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { threadId } from 'node:worker_threads'
 
 export const ANBIETER = {
   openrouter: { adresse: 'https://openrouter.ai/api/alpha/decisions', modell: 'typesafe/jev-latest' },
@@ -87,14 +88,34 @@ export function woerter(text) {
   )
 }
 
-/** Welcher Dienst hinter einem Eintrag steht — dieselbe Einteilung wie `dienstVon()` im Kern. */
+/**
+ * Welcher Dienst hinter einem Eintrag steht — dieselbe Einteilung wie
+ * `dienstVon()` im Kern (src/backend-api/src/medien.ts), Zweig fuer Zweig.
+ *
+ * EINE VERFEINERUNG, MIT ABSICHT: wo der Kern „plugin" sagt, steht hier die
+ * Kennung des Plugins (`mixpi-archive`), gelesen wie `pluginKennungAus()` es
+ * tut. Jev und die Seite „Gruppen" sollen sehen, WELCHES Plugin; der Kern
+ * sagt das erst mit dieser zweiten Funktion. Ohne gueltige Kennung bleibt
+ * es beim Sammelwort.
+ *
+ * KLEINSCHREIBUNG UND `anderes` WIE IM KERN (AUDIT-2026-09-28 §1b Rang 5):
+ * vorher lief `type: "Spotify"` hier als „Spotify", im Kern als spotify, und
+ * ein unbekannter Typ kam roh durch statt als `anderes` — waehrend dieser
+ * Kommentar schon „dieselbe Einteilung" behauptete. Der Zeuge haelt die
+ * Funktion deshalb gegen das ECHTE dienstVon(), nicht gegen eine Tabelle.
+ */
 export function dienstAus(eintrag) {
-  const t = String(eintrag?.type ?? '')
+  const t = String(eintrag?.type ?? '').toLowerCase()
   if (t.startsWith('spotify')) return 'spotify'
   if (t.startsWith('jellyfin')) return 'jellyfin'
   if (t === 'library' || t === 'local') return 'lokal'
-  if (t === 'plugin') return String(eintrag?.id ?? '').split(':')[0] || 'plugin'
-  return t || 'anderes'
+  if (t === 'radio' || t === 'rss' || t === 'ard') return t
+  if (t === 'plugin') {
+    const id = String(eintrag?.id ?? '').trim()
+    const i = id.indexOf(':')
+    return i > 0 && i < id.length - 1 ? id.slice(0, i) : 'plugin'
+  }
+  return 'anderes'
 }
 
 /**
@@ -295,7 +316,59 @@ const LEER = () => ({ lauf: null, antworten: {}, entscheidungen: {} })
  */
 let imSpeicher = null
 
+/*
+ * WAEHREND EINES DURCHLAUFS GIBT ES NUR EINE ABLAGE — die im Speicher des
+ * Workers. Er schreibt sie alle zehn Antworten GANZ zurueck. Bis 29.09.2026
+ * las `entscheiden` derweil von der Platte, trug das Urteil ein und schrieb;
+ * der naechste Zwischenstand des Workers kannte das Urteil nicht und schrieb
+ * darueber. Der Klick war weg, ohne Meldung, und das Paar tauchte wieder auf
+ * (AUDIT-2026-09-28 §1b Rang 2).
+ *
+ * WARUM KEIN RIEGEL wie bei `vergessen`: ein Durchlauf ueber 300 Paare dauert
+ * Minuten, und genau dann sitzt jemand vor der Seite und klickt die ersten
+ * Vorschlaege weg. Ihn abzuweisen hiesse, den Fehler hoeflicher zu machen.
+ * WARUM KEINE EIGENE DATEI FUER ENTSCHEIDUNGEN: zwei Klicks gleichzeitig
+ * haetten dort denselben Wettlauf (lesen, aendern, schreiben), die Kette
+ * unten braucht es also ohnehin — und mit ihr reicht eine Datei, ohne
+ * Umzug der Entscheidungen, die schon in gruppen.json stehen.
+ *
+ * Das haelt nur, weil je Plugin genau EIN Worker laeuft: plugin-wirt.ts
+ * beendet den alten, bevor es einen neuen startet. `laufend` verlaesst sich
+ * seit jeher auf dasselbe.
+ */
+let laufAblage = null
+
+/*
+ * JEDE AENDERUNG DER ABLAGE LAEUFT NACHEINANDER: lesen, aendern, schreiben
+ * als EIN Schritt, und der naechste beginnt erst danach. Das deckt, was die
+ * geteilte Ablage allein nicht deckt — zwei Klicks gleichzeitig, ein Klick
+ * gegen den Start eines Durchlaufs, zwei Starts gegeneinander.
+ */
+let kette = Promise.resolve()
+
+function nacheinander(schritt) {
+  const ergebnis = kette.then(schritt)
+  // Der Fehler gehoert dem Aufrufer, der ihn ueber `ergebnis` bekommt. Die
+  // Kette selbst darf an ihm nicht reissen, sonst schriebe nie wieder jemand.
+  kette = ergebnis.then(
+    () => undefined,
+    () => undefined,
+  )
+  return ergebnis
+}
+
+/** Lesen, aendern, schreiben — als ein Schritt der Kette. */
+function ablageAendern(kontext, aendern) {
+  return nacheinander(async () => {
+    const ablage = await ablageLesen(kontext)
+    const ergebnis = aendern(ablage)
+    await ablageSchreiben(kontext, ablage)
+    return ergebnis
+  })
+}
+
 async function ablageLesen(kontext) {
+  if (laufAblage) return laufAblage
   if (!kontext.datenOrdner) {
     if (!imSpeicher) imSpeicher = LEER()
     return imSpeicher
@@ -308,7 +381,32 @@ async function ablageLesen(kontext) {
   }
 }
 
-async function ablageSchreiben(kontext, ablage) {
+/** Fortlaufend fuer diesen Worker; zwischen Workern trennt `threadId`. */
+let schreibNr = 0
+
+/**
+ * Der Name der Zwischendatei — JE AUFRUF ein anderer.
+ *
+ * Bis 29.09.2026 hiess sie fest `gruppen.json.neu`. Zwei Schreiber zugleich
+ * schrieben dann in DIESELBE Datei, der eine benannte die halbe des anderen
+ * um, und `ablageLesen` las eine kaputte Ablage als leer — beim naechsten
+ * Schreiben waren alle Antworten und Entscheidungen weg. Dieselbe Hausfalle
+ * wie die vierzehn Kopien in server.ts (llmwiki
+ * `vierzehn-kopien-und-die-abweichung-ist-der-fehler`); das Vorbild ist
+ * `zwischenname()` in src/backend-api/src/atomar.ts. Nachgebaut statt
+ * importiert, weil auf der Box nur das Buendel server.js liegt, kein Quelltext.
+ *
+ * WARUM `threadId` ZUSAETZLICH ZUR PROZESSKENNUNG: ein Plugin laeuft in einem
+ * Worker-Thread, `process.pid` ist die des Servers — geteilt mit JEDEM Plugin
+ * und nach einem Neustart (Einstellungen geaendert) mit dem eigenen
+ * Vorgaenger-Worker, dessen Zaehler ebenfalls bei 1 anfing.
+ */
+export function zwischenname(ziel) {
+  return `${ziel}.${process.pid}.${threadId}.${++schreibNr}.tmp`
+}
+
+/** Fuer die Zeugen exportiert: schreibt die Ablage, ohne die Kette zu fragen. */
+export async function ablageSchreiben(kontext, ablage) {
   if (!kontext.datenOrdner) {
     imSpeicher = ablage
     return
@@ -317,8 +415,16 @@ async function ablageSchreiben(kontext, ablage) {
   const ziel = join(kontext.datenOrdner, 'gruppen.json')
   // Erst daneben, dann umbenennen: ein Absturz mitten im Schreiben laesst die
   // alte Datei stehen statt einer halben.
-  await writeFile(`${ziel}.neu`, JSON.stringify(ablage, null, 1))
-  await rename(`${ziel}.neu`, ziel)
+  const zwischen = zwischenname(ziel)
+  try {
+    await writeFile(zwischen, JSON.stringify(ablage, null, 1))
+    await rename(zwischen, ziel)
+  } catch (e) {
+    // Keine Leiche im Datenordner — sie traege mit jedem Fehlschlag eine
+    // neue Nummer und wuerde nie wieder ueberschrieben.
+    await rm(zwischen, { force: true }).catch(() => undefined)
+    throw e
+  }
 }
 
 /**
@@ -359,7 +465,8 @@ export function speicherLeeren() {
  * `eintraege` ist fuer die Zeugen; auf der Box kommt der Bestand von der Platte.
  */
 export async function starten(kontext, { eintraege } = {}) {
-  if (laufend) return { ok: true, text: 'Laeuft schon — der Stand steht unter „Gruppen".' }
+  const laeuftSchon = { ok: true, text: 'Laeuft schon — der Stand steht unter „Gruppen".' }
+  if (laufend) return laeuftSchon
   if (!kontext.holen) return { ok: false, text: 'Recht „netz" fehlt' }
   const z = zugang(kontext.einstellungen)
   if (z.fehler) return { ok: false, text: z.fehler }
@@ -370,36 +477,47 @@ export async function starten(kontext, { eintraege } = {}) {
     if (b.fehler) return { ok: false, text: `Bestand nicht lesbar: ${b.fehler}` }
     liste = b.eintraege
   }
-  const ablage = await ablageLesen(kontext)
   const grenze =
     Number(kontext.einstellungen?.hoechstensPaare) > 0 ? Number(kontext.einstellungen.hoechstensPaare) : 300
   const namen = namenAus(liste)
-  const offen = kandidaten(namen).filter((p) => {
-    const s = paarSchluessel(p.a.name, p.b.name)
-    return !ablage.antworten[s] && !ablage.entscheidungen[s]
-  })
-  const dran = offen.slice(0, grenze)
+  const paare = kandidaten(namen)
 
-  ablage.lauf = {
-    begonnen: new Date().toISOString(),
-    fertig: null,
-    namen: namen.length,
-    paare: dran.length,
-    uebersprungen: offen.length - dran.length,
-    gefragt: 0,
-    fehler: [],
-    abgebrochen: null,
-    kosten: 0,
-    anbieter: z.anbieter,
-    modell: z.modell,
-  }
-  await ablageSchreiben(kontext, ablage)
+  // PRUEFEN, LESEN UND UEBERNEHMEN IN EINEM SCHRITT DER KETTE. Die Pruefung
+  // oben allein liess zwei Starts durch, die beide vor dem ersten `await`
+  // standen — zwei Laeufe, doppelte Kosten, und der langsamere schrieb die
+  // Antworten des schnelleren weg. Und ein Klick, der gerade von der Platte
+  // gelesen hat, darf nicht in eine Ablage schreiben, die der Lauf schon haelt.
+  return nacheinander(async () => {
+    if (laufend) return laeuftSchon
+    const ablage = await ablageLesen(kontext)
+    const offen = paare.filter((p) => {
+      const s = paarSchluessel(p.a.name, p.b.name)
+      return !ablage.antworten[s] && !ablage.entscheidungen[s]
+    })
+    const dran = offen.slice(0, grenze)
 
-  laufend = abarbeiten(kontext, z, ablage, dran).finally(() => {
-    laufend = null
+    ablage.lauf = {
+      begonnen: new Date().toISOString(),
+      fertig: null,
+      namen: namen.length,
+      paare: dran.length,
+      uebersprungen: offen.length - dran.length,
+      gefragt: 0,
+      fehler: [],
+      abgebrochen: null,
+      kosten: 0,
+      anbieter: z.anbieter,
+      modell: z.modell,
+    }
+    await ablageSchreiben(kontext, ablage)
+
+    laufAblage = ablage
+    laufend = abarbeiten(kontext, z, ablage, dran).finally(() => {
+      laufend = null
+    })
+    const rest = ablage.lauf.uebersprungen ? ` (${ablage.lauf.uebersprungen} weitere ueber dem Deckel)` : ''
+    return { ok: true, text: `Gestartet: ${dran.length} Paare aus ${namen.length} Namen${rest}.` }
   })
-  const rest = ablage.lauf.uebersprungen ? ` (${ablage.lauf.uebersprungen} weitere ueber dem Deckel)` : ''
-  return { ok: true, text: `Gestartet: ${dran.length} Paare aus ${namen.length} Namen${rest}.` }
 }
 
 async function abarbeiten(kontext, z, ablage, paare) {
@@ -429,17 +547,33 @@ async function abarbeiten(kontext, z, ablage, paare) {
         if (ablage.lauf.fehler.length < 20) ablage.lauf.fehler.push(`${p.a.name} / ${p.b.name}: ${text}`)
         if (kette >= FEHLER_KETTE) ablage.lauf.abgebrochen = `${FEHLER_KETTE} Fehler hintereinander, zuletzt: ${text}`
       }
-      ablage.lauf.gefragt++
-      if (ablage.lauf.gefragt % 10 === 0) await ablageSchreiben(kontext, ablage).catch(() => {})
+      const n = ++ablage.lauf.gefragt
+      if (n % 10 === 0) {
+        // GEMELDET WIE DER SCHLUSS, NICHT VERSCHLUCKT: bis 29.09.2026 stand
+        // hier `.catch(() => {})`. Ein voller oder schreibgeschuetzter
+        // Datenordner fiel damit erst am Ende auf — nach 300 bezahlten Fragen.
+        await nacheinander(() => ablageSchreiben(kontext, ablage)).catch((e) =>
+          kontext.protokoll?.(`Zwischenstand nach ${n} Antworten nicht geschrieben: ${e?.message ?? e}`),
+        )
+      }
     }
   }
   try {
     await Promise.all(Array.from({ length: PARALLEL }, arbeiter))
   } finally {
     ablage.lauf.fertig = new Date().toISOString()
-    await ablageSchreiben(kontext, ablage).catch((e) =>
-      kontext.protokoll?.(`Ablage nicht geschrieben: ${e?.message ?? e}`),
-    )
+    await nacheinander(async () => {
+      try {
+        await ablageSchreiben(kontext, ablage)
+      } catch (e) {
+        kontext.protokoll?.(`Ablage nicht geschrieben: ${e?.message ?? e}`)
+      } finally {
+        // ERST NACH DEM LETZTEN SCHREIBEN LOSLASSEN, und im selben Schritt der
+        // Kette: wer danach dran ist, liest von der Platte — und die traegt
+        // jetzt auch jede Entscheidung, die waehrend des Laufs kam.
+        laufAblage = null
+      }
+    })
   }
 }
 
@@ -515,23 +649,26 @@ export default {
       // vorschnelles „Nein". Nur fuer abgelehnte: ein angenommenes Paar
       // steht als Gruppe beim Kern, und dort ist „Lösen" der Rueckweg.
       if (anfrage?.rumpf?.alle === 'abgelehnt' && urteil === 'offen') {
-        const ablage = await ablageLesen(kontext)
-        let n = 0
-        for (const [s, e] of Object.entries(ablage.entscheidungen)) {
-          if (e?.urteil === 'abgelehnt') {
-            delete ablage.entscheidungen[s]
-            n++
+        const n = await ablageAendern(kontext, (ablage) => {
+          let zurueck = 0
+          for (const [s, e] of Object.entries(ablage.entscheidungen)) {
+            if (e?.urteil === 'abgelehnt') {
+              delete ablage.entscheidungen[s]
+              zurueck++
+            }
           }
-        }
-        await ablageSchreiben(kontext, ablage)
+          return zurueck
+        })
         return { inhalt: { ok: true, zurueck: n } }
       }
       if (!paar || !URTEILE.has(urteil))
         return { status: 400, inhalt: { fehler: 'paar und urteil (angenommen|abgelehnt|offen) noetig' } }
-      const ablage = await ablageLesen(kontext)
-      if (urteil === 'offen') delete ablage.entscheidungen[paar]
-      else ablage.entscheidungen[paar] = { urteil, am: new Date().toISOString() }
-      await ablageSchreiben(kontext, ablage)
+      // Laeuft ein Durchlauf, landet das Urteil in SEINER Ablage und wird
+      // sofort geschrieben — siehe `laufAblage`. Kein Abweisen, kein Verlust.
+      await ablageAendern(kontext, (ablage) => {
+        if (urteil === 'offen') delete ablage.entscheidungen[paar]
+        else ablage.entscheidungen[paar] = { urteil, am: new Date().toISOString() }
+      })
       return { inhalt: { ok: true } }
     }
     return {
@@ -561,12 +698,18 @@ export default {
   async aktion(kennung, kontext) {
     if (kennung === 'durchlauf') return starten(kontext)
     if (kennung === 'vergessen') {
-      if (laufend) return { ok: false, text: 'Erst den laufenden Durchlauf abwarten.' }
-      const ablage = await ablageLesen(kontext)
-      const n = Object.keys(ablage.antworten).length
-      ablage.antworten = {}
-      await ablageSchreiben(kontext, ablage)
-      return { ok: true, text: `${n} Antworten vergessen; Entscheidungen bleiben.` }
+      // DER RIEGEL BLEIBT HIER, anders als bei `entscheiden`: Antworten
+      // wegwerfen, waehrend der Lauf neue hinzufuegt, ist ein Widerspruch in
+      // sich — und es ist ein seltener Knopf der Eltern, kein Klick im Fluss.
+      // Geprueft IN der Kette, damit kein Start dazwischenrutscht.
+      return nacheinander(async () => {
+        if (laufend) return { ok: false, text: 'Erst den laufenden Durchlauf abwarten.' }
+        const ablage = await ablageLesen(kontext)
+        const n = Object.keys(ablage.antworten).length
+        ablage.antworten = {}
+        await ablageSchreiben(kontext, ablage)
+        return { ok: true, text: `${n} Antworten vergessen; Entscheidungen bleiben.` }
+      })
     }
     if (kennung === 'verbindung') {
       if (!kontext.holen) return { ok: false, text: 'Recht „netz" fehlt' }

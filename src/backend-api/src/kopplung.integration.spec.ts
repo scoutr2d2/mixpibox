@@ -10,6 +10,7 @@
  * (auth.ts) mit seinen eigenen Zeugen.
  */
 import assert from 'node:assert/strict'
+import { createHash, createHmac } from 'node:crypto'
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
@@ -66,6 +67,7 @@ describe('Kopplung der Handy-App ueber die Schnittstelle', () => {
 
   let schluessel = ''
   let id = ''
+  let code = ''
 
   it('sperrt die App ohne Schluessel — aber nicht den Browser', async () => {
     const r = await request(app).get('/api/profile').set(APP).expect(403)
@@ -96,7 +98,27 @@ describe('Kopplung der Handy-App ueber die Schnittstelle', () => {
       .expect(200)
     schluessel = r2.body.schluessel
     id = r2.body.id
+    code = f.body.code
     assert.match(schluessel, /^[0-9a-f]{64}$/)
+  })
+
+  it('wer mit demselben Code zu spaet kommt, liest, dass ein anderes Geraet schneller war', async () => {
+    const r = await request(app).post('/api/kopplung/koppeln').set(APP).send({ code }).expect(403)
+    assert.equal(r.body.error, 'kopplung_vergeben')
+    assert.match(r.body.hinweis, /anderes Gerät/)
+  })
+
+  it('beweist ohne Schluessel, dass sie dieses Handy kennt — und gibt dabei nichts heraus', async () => {
+    const frage = '0123456789abcdef'.repeat(2)
+    // OHNE x-mixpi-schluessel: die App fragt eine Adresse, der sie noch nicht traut.
+    const r = await request(app).post('/api/kopplung/beweis').set(APP).send({ frage }).expect(200)
+    const abdruck = createHash('sha256').update(schluessel, 'utf8').digest()
+    const erwartet = createHmac('sha256', abdruck).update(`mixpi-kopplung-beweis:${frage}`, 'utf8').digest('hex')
+    assert.deepEqual(r.body.beweise, [erwartet])
+    assert.equal(JSON.stringify(r.body).includes(schluessel), false)
+    assert.equal(JSON.stringify(r.body).includes(abdruck.toString('hex')), false)
+    const unsinn = await request(app).post('/api/kopplung/beweis').set(APP).send({ frage: 'x' }).expect(400)
+    assert.equal(unsinn.body.error, 'frageUngueltig')
   })
 
   it('mit Schluessel ist die App drin — und die Ablage kennt ihn nicht', async () => {

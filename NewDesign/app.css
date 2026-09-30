@@ -303,30 +303,13 @@
   --griff: 66px;
 
   /* ── DIE BREITE DER OFFENEN SCHUBLADE (03.09.2026) ───
-   *
-   * GERECHNET GEGEN DAS RASTER, NICHT GEWAEHLT — UND ZWAR GEGEN EIN RASTER,
-   * DAS SICH NICHT RUEHRT: Die Schublade VERDECKT die Buehne, sie verkleinert
-   * sie nicht (die Begruendung steht bei `.sch-flaeche` in index.html). Das
-   * Raster behaelt seine 684 px und seine vier Spalten zu `--kachel` (150 px
-   * ab Werk) mit `--kachel-abstand` (12 px) Luft.
-   *
-   * WAS DIE ZAHL ALSO ENTSCHEIDET, IST NUR, WIE VIELE SPALTEN SICHTBAR
-   * BLEIBEN. Die Buehne beginnt bei x 88; 280 verdecken davon 192 px, es
-   * bleiben 800 - 280 = 520 px Sicht. Bei 150 + 12 je Spalte sind das drei
-   * ganze Spalten und ein Rest — man sieht, wo man herkommt. Bei 360 waeren
-   * es zwei, bei 200 dreieinhalb. 280 ist die groesste Breite, die dem Regal
-   * noch drei Spalten laesst, und daraus stammt sie.
-   *
-   * DIE OBERGRENZE IST DER SCHIRM: `min()` gegen 62 % verhindert, dass die
-   * Schublade auf einem 480-px-Schirm (hochkant, oder eine kuenftige kleinere
-   * Box) fast alles verdeckt. Bei 800 greift die Klammer nicht (496 > 280),
-   * sie steht fuer den Tag, an dem jemand ein anderes Panel ansteckt.
-   *
-   * WAS DAVON ABHAENGT: die feste Breite der Zeilen (`.kat` im offenen
-   * Zustand). Sie ist mit Absicht FEST und nicht `100%` — waehrend des Zuges
-   * aendert sich die Breite der Liste bei jedem Bild, und Zeilen zu 100 %
-   * wuerden bei jedem Bild neu umbrechen. So wird nur noch beschnitten.
-   * Gemessen mit tools/schublade-messen.mjs. */
+   * Hier stand die Rechnung fuer `min(280px, 62vw)` (drei Rasterspalten
+   * bleiben sichtbar). Sie galt nur einen Tag — der Absatz darunter sagt,
+   * warum; der tote Block fiel am 29.09.2026. Was davon bleibt: die Zeilen
+   * (`.kat` im offenen Zustand) sind FEST breit und nicht `100%`, sonst
+   * braechen sie waehrend des Zuges bei jedem Bild neu um; so wird nur
+   * beschnitten. Einmal gemessen am 03.09.2026 mit einem Messskript, das nie
+   * eingecheckt wurde. */
   /* ZWEI SPALTEN ZU 88 px — die Leiste und die Apps daneben. Es ist
      ausdruecklich ein VIELFACHES der Leistenbreite und keine runde Zahl:
      Die Schublade macht eine zweite Spalte auf, sie verbreitert nicht die
@@ -1355,8 +1338,8 @@ img[hidden] { display: none; }
  * keine einzige — die Leiste ist dann nicht „zurueckgestellt", sie ist
  * UNBERUEHRT. Das ist der Unterschied zwischen „sieht wieder aus wie vorher"
  * und „ist wieder wie vorher", und nur das Zweite haelt einem Umbau in einem
- * halben Jahr stand. Gegengeprueft mit tools/schublade-messen.mjs, das beide
- * Zustaende gegen dieselben Zahlen misst.
+ * halben Jahr stand. Gegengeprueft am 03.09.2026, beide Zustaende gegen
+ * dieselben Zahlen — mit einem Messskript, das nie eingecheckt wurde.
  *
  * ══ DREI ZUSTAENDE, UND WARUM ES DREI SIND ═══
  *   `body.schublade`        der Schalter ist an. Geschlossen sieht die
@@ -7192,8 +7175,9 @@ body.ton-pausiert .spielt-marke svg rect { animation-play-state: paused; }
 
    ── KEINE `--mupi-*` VARIABLE ───
    Mit Absicht: die Naht zwischen darstellung.service.ts und dieser Oberflaeche
-   hat schon 18 Luecken (tools/mupi-variablen-abgleich.mjs). Ein Muster darf
-   sie nicht um die neunzehnte erweitern, bevor die achtzehn beantwortet sind.
+   hatte am 04.08.2026 schon 18 Luecken (tools/mupi-variablen-abgleich.mjs —
+   beide fielen am 05.09.2026 mit der alten Oberflaeche, 6281ac5c). Ein Muster
+   durfte sie nicht um die neunzehnte erweitern.
 
    ── UND NICHT `body.ohne-bezeichnung` ───
    Das Thema „Tiger Mupi" setzt `bezeichnung: false`, und daran haengt in der
@@ -9528,6 +9512,13 @@ body.ff-bild.fp-an .gross-balken i::after { width: 42px; height: 42px; }
   align-items: center;
   justify-content: center;
 }
+/* DIE PASSWORTFRAGE GEHOERT UEBER DIE ANMELDUNG (30.09.2026). Mit 11 lag
+   sie UNTER diesem Fenster: durch den Schleier zu sehen, aber kein Finger
+   traf eine Taste — seit E39 beim Tipp auf ein geschuetztes Profil in „Wer
+   hoert?", seit dem 20.09. auch am Start-Schloss (tools/start-modus-schau.mjs
+   tippt jetzt mit echten Zeigerereignissen). Nur eine Frage, die NACH dem
+   Fenster aufgeht; ueberall sonst bleibt sie bei 11. */
+#anmelde-schicht ~ .pw-schicht { z-index: 61; }
 .anmelde-blatt { text-align: center; max-width: 90vw; }
 .anmelde-frage { font-size: 1.6rem; font-weight: 700; margin-bottom: 1.2rem; }
 /* DER AUSWEG AUS DEM START-SCHLOSS (20.09.2026).

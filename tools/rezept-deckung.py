@@ -94,6 +94,7 @@ NETZLAUFWERK_TS = WURZEL / "src" / "backend-api" / "src" / "netzlaufwerk.ts"
 ERSTWEG = WURZEL / "autosetup" / "autosetup.sh"
 UPDATEWEG = WURZEL / "update" / "start_mupibox_update.sh"
 SERVER_TS = WURZEL / "src" / "backend-api" / "src" / "server.ts"
+EIGENE_NAMEN_TS = WURZEL / "src" / "backend-api" / "src" / "eigene-namen.ts"
 PACK = WURZEL / "llmwiki" / "pack.yaml"
 
 # ── Abschnitt 3: die Tabelle, und warum sie kurz bleiben darf ───────────────
@@ -149,6 +150,24 @@ MERKMALS_PAKETE = [
         ),
         # Der Grund steht im Wissenspaket, nicht in einem der Ausrollwege.
         "gilt_solange": (PACK, r"\bmupi-rpi-lgpio\b"),
+    },
+    {
+        # NACHGETRAGEN 29.09.2026 (AUDIT-2026-09-23 Rang 2): autosetup.sh und
+        # der Update-Weg installierten avahi seit dem 20.09., das Rezept
+        # nicht — die dritte Instanz desselben Musters in drei Audits, und
+        # diese Tabelle kannte das Paket nicht, also meldete sie nichts.
+        "paket": "avahi-daemon",
+        "merkmal": "Auffindbarkeit unter <name>.local (mDNS)",
+        "folge": (
+            "die Box ist unter <name>.local nicht zu finden — die Verwaltung "
+            "nennt den Namen trotzdem als Ausweg, tools/box-finden.py und die "
+            "Handy-App fallen auf die Portsuche zurueck, und die hat am "
+            "20.09.2026 einen fremden Rechner fuer die Box gehalten"
+        ),
+        # Der Server nennt `<name>.local` als eigene Adresse (Riegel gegen
+        # fremde Host-Kopfzeilen UND die Liste der Auswege). Solange er das
+        # tut, muss den Namen jemand im Netz beantworten.
+        "gilt_solange": (EIGENE_NAMEN_TS, r"\.local`\)"),
     },
 ]
 

@@ -15,7 +15,7 @@
 # tools/bootkette-schau.py — jede Zeile aus `journalctl -b -o short-monotonic`):
 #
 #       [ 4,120]  DHCPDISCOVER auf wlan0, interval 8     <- ins Leere: nicht assoziiert
-#       [ 6,595]  wlan0: Associated with dc:39:6f:xx:xx:xx
+#       [ 6,595]  wlan0: Associated with xx:xx:xx:xx:xx:xx
 #       [ 6,609]  CTRL-EVENT-CONNECTED                   <- ab hier ginge alles
 #       [11,560]  DHCPDISCOVER, interval 14              <- erst jetzt wieder gefragt
 #       [11,675]  DHCPOFFER von 192.168.178.1            <- Antwort nach 115 ms

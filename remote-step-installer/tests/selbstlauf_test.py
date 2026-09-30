@@ -133,6 +133,14 @@ _echt_neustart = sl.neustart_ausloesen
 sl.neustart_ausloesen = lambda: _rufe.append("reboot")
 assert sl.neustart_ausloesen is not _echt_neustart, \
     "ABBRUCH: der Neustart ist nicht stillgelegt — das haette den Rechner heruntergefahren"
+# DIE ZWEITE NAHT, GLEICHE REGEL: `agent_abschalten` ruft auf einer Box
+# `systemctl disable/stop`. Auf dem Arbeitsrechner haelt sie ihr eigener
+# Riegel auf — stillgelegt wird sie hier trotzdem, und in DENSELBEN Merker
+# wie der Neustart: nur so laesst sich die Reihenfolge der beiden ablesen.
+_echt_agent_aus = sl.agent_abschalten
+sl.agent_abschalten = lambda: _rufe.append("agent-aus")
+assert sl.agent_abschalten is not _echt_agent_aus, \
+    "ABBRUCH: das Abschalten des Agenten ist nicht stillgelegt"
 _d = tempfile.mkdtemp()
 sl.STAND_DATEI = os.path.join(_d, "stand.json")
 _rezept = {"steps": [{"id": "nichts", "run": "true"}]}
@@ -145,12 +153,123 @@ try:
     chk("erster Durchlauf startet neu", "reboot" in _rufe)
     chk("und hinterlaesst die Marke",
         os.path.exists(os.path.join(_d, "fertig")))
+    # E143/8: VORHER lauschte der Agent auf der fertigen Box weiter als root
+    # auf 0.0.0.0. Genau EIN Abschalten, und zwar VOR dem Neustart — danach
+    # liefe dieser Prozess nicht mehr, um es zu tun.
+    chk("erster Durchlauf schaltet den Agenten ab, und zwar VOR dem Neustart",
+        _rufe == ["agent-aus", "reboot"])
     _rufe.clear()
     sl.fahren(_lauf, stand_datei=sl.STAND_DATEI)
     chk("zweiter Durchlauf startet NICHT neu — keine Schleife",
         "reboot" not in _rufe)
+    # Die Unit laeuft bei JEDEM Start. Holt jemand den Agenten spaeter per
+    # `connect --install` zurueck, darf der naechste Start ihn nicht wieder
+    # abschalten — sonst verliert der Laptop ihn bei jedem Neustart im Rezept.
+    chk("zweiter Durchlauf laesst den Agenten in Ruhe (connect --install haelt)",
+        "agent-aus" not in _rufe)
 finally:
     sl.neustart_ausloesen = _echt_neustart
+    sl.agent_abschalten = _echt_agent_aus
+
+print("\n── Das Abschalten steht im Code VOR dem Neustart ──")
+# Der Laufzeittest oben sieht die Reihenfolge der Aufrufe; dieser sieht den
+# QUELLTEXT. Beide zusammen, weil jeder eine Luecke des anderen deckt: ein
+# auskommentierter Aufruf verschwindet aus dem Syntaxbaum (eine `in`-Suche
+# faende ihn im Kommentar weiter), und eine Stelle, die der Test nicht
+# erreicht, saehe der Laufzeittest nie.
+import ast as _ast  # noqa: E402
+with open(os.path.join(_HIER, "tools", "selbstlauf.py"), encoding="utf-8") as _f:
+    _baum = _ast.parse(_f.read())
+_fahren = next(n for n in _baum.body
+               if isinstance(n, _ast.FunctionDef) and n.name == "fahren")
+
+
+def _rufe_von(name):
+    return [n.lineno for n in _ast.walk(_fahren)
+            if isinstance(n, _ast.Call) and isinstance(n.func, _ast.Name)
+            and n.func.id == name]
+
+
+_z_aus, _z_neu = _rufe_von("agent_abschalten"), _rufe_von("neustart_ausloesen")
+chk(f"fahren() ruft agent_abschalten genau einmal ({len(_z_aus)})", len(_z_aus) == 1)
+chk(f"fahren() ruft neustart_ausloesen genau einmal ({len(_z_neu)})", len(_z_neu) == 1)
+chk("und das Abschalten steht davor",
+    len(_z_aus) == 1 and len(_z_neu) == 1 and _z_aus[0] < _z_neu[0])
+
+print("\n── Wie abgeschaltet wird ──")
+_aussen = sl.agent_abschalt_befehle(False)
+chk("zuerst disable — das haelt ueber den Neustart",
+    bool(_aussen) and _aussen[0] == ["systemctl", "disable", sl.AGENT_UNIT])
+chk("danach stop, ohne zu warten (ein haengender Auftrag haelt den Neustart nicht auf)",
+    len(_aussen) == 2 and _aussen[1] == ["systemctl", "stop", "--no-block", sl.AGENT_UNIT])
+chk("kein mask — sonst holt `connect --install` ihn nicht mehr zurueck",
+    not any("mask" in b for b in _aussen))
+_innen = sl.agent_abschalt_befehle(True)
+chk("laeuft der Selbstlauf IN der Gruppe des Agenten: nur disable, kein stop",
+    _innen == [["systemctl", "disable", sl.AGENT_UNIT]])
+
+# Die Gruppe wird aus /proc/self/cgroup gelesen — hier aus Dateien, die so
+# aussehen. v2 ist die eine Zeile `0::…`, v1 traegt die Endung hinter
+# `name=systemd:`.
+_cg = tempfile.mkdtemp()
+
+
+def _gruppe(inhalt):
+    p = os.path.join(_cg, "cgroup")
+    with open(p, "w", encoding="utf-8") as f:
+        f.write(inhalt)
+    return sl.in_unit_gruppe(sl.AGENT_UNIT, p)
+
+
+chk("cgroup v2: im Agenten erkannt",
+    _gruppe("0::/system.slice/step-agent.service\n") is True)
+chk("cgroup v1: im Agenten erkannt",
+    _gruppe("12:pids:/system.slice/step-agent.service\n"
+            "1:name=systemd:/system.slice/step-agent.service\n") is True)
+chk("eigene Unit (der gewohnte Weg): nicht im Agenten",
+    _gruppe("0::/system.slice/mixpibox-selbstlauf.service\n") is False)
+chk("ein aehnlicher Name zaehlt nicht",
+    _gruppe("0::/system.slice/step-agent.service-alt\n") is False)
+chk("nicht lesbar heisst: nicht darin",
+    sl.in_unit_gruppe(sl.AGENT_UNIT, os.path.join(_cg, "gibt-es-nicht")) is False)
+
+class _Erg:
+    returncode, stdout, stderr = 0, "", ""
+
+
+def _merker(gerufen):
+    # Antwortet wie ein gelungener Aufruf: faellt ein Riegel, soll ein FAIL
+    # dastehen und kein Absturz an `r.returncode`.
+    return lambda befehl, **k: (gerufen.append(befehl), _Erg())[1]
+
+
+# DIE VERDRAHTUNG: die Naht fragt die Gruppe und ruft, was die reine Funktion
+# sagt. Der Riegel ist hier ERZWUNGEN offen — deshalb laeuft jeder Aufruf in
+# den Merker, nie in systemctl.
+_gerufen = []
+_v2 = os.path.join(_cg, "v2-agent")
+with open(_v2, "w", encoding="utf-8") as _f:
+    _f.write("0::/system.slice/step-agent.service\n")
+_eigen = os.path.join(_cg, "v2-eigen")
+with open(_eigen, "w", encoding="utf-8") as _f:
+    _f.write("0::/system.slice/mixpibox-selbstlauf.service\n")
+sl.agent_abschalten(auf_box=True, ausfuehren=_merker(_gerufen), cgroup_datei=_eigen)
+chk("auf der Box, eigene Unit: disable, dann stop",
+    _gerufen == sl.agent_abschalt_befehle(False))
+_gerufen.clear()
+sl.agent_abschalten(auf_box=True, ausfuehren=_merker(_gerufen), cgroup_datei=_v2)
+chk("auf der Box, in der Gruppe des Agenten: nur disable",
+    _gerufen == [["systemctl", "disable", sl.AGENT_UNIT]])
+
+# DER RIEGEL DER ECHTEN NAHT: ausserhalb einer Box ruft sie NICHTS. Geprueft
+# mit einem Merker an Stelle von subprocess.run — versagte der Riegel, landete
+# der Aufruf dort und nicht bei systemctl.
+if not (os.path.isdir("/boot/dietpi") or os.path.isdir("/etc/mupibox")):
+    _gerufen.clear()
+    sl.agent_abschalten(ausfuehren=_merker(_gerufen))
+    chk("das echte Abschalten ruft ausserhalb einer Box nichts auf", _gerufen == [])
+else:
+    print("  \033[33mHINWEIS\033[0m  laeuft auf einer Box — Abschalt-Riegel nicht geprueft")
 
 # DER ZWEITE RIEGEL, und der wirkt auch ohne Test-Attrappe: der ECHTE
 # Neustart weigert sich auf allem, was keine Box ist. Hier wird er also

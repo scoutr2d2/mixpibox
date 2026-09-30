@@ -40,19 +40,19 @@ import {
 
 describe('istMac — die Stelle, an der die alte Seite ihr Loch hatte', () => {
   it('nimmt echte Adressen an', () => {
-    for (const m of ['00:9E:C8:61:1A:EA', '7c:e7:12:af:5c:83', 'FF:FF:FF:FF:FF:FF'])
+    for (const m of ['AA:BB:CC:11:22:33', '66:ff:77:00:88:11', 'FF:FF:FF:FF:FF:FF'])
       assert.equal(istMac(m), true, m)
   })
 
   it('weist alles ab, was einen Befehl anhängen könnte', () => {
     for (const m of [
-      '00:9E:C8:61:1A:EA; reboot',
-      '00:9E:C8:61:1A:EA && rm -rf /',
+      'AA:BB:CC:11:22:33; reboot',
+      'AA:BB:CC:11:22:33 && rm -rf /',
       '$(reboot)',
       '`reboot`',
-      '00:9E:C8:61:1A:EA\nreboot',
-      '00:9E:C8:61:1A:EA ',
-      ' 00:9E:C8:61:1A:EA',
+      'AA:BB:CC:11:22:33\nreboot',
+      'AA:BB:CC:11:22:33 ',
+      ' AA:BB:CC:11:22:33',
     ])
       assert.equal(istMac(m), false, JSON.stringify(m))
   })
@@ -60,8 +60,8 @@ describe('istMac — die Stelle, an der die alte Seite ihr Loch hatte', () => {
   it('weist alles ab, was keine Adresse ist', () => {
     for (const m of [
       '00:9E:C8:61:1A',
-      '00:9E:C8:61:1A:EA:FF',
-      '00-9E-C8-61-1A-EA',
+      'AA:BB:CC:11:22:33:FF',
+      'AA-BB-CC-11-22-33',
       'ZZ:9E:C8:61:1A:EA',
       '',
       null,
@@ -73,7 +73,7 @@ describe('istMac — die Stelle, an der die alte Seite ihr Loch hatte', () => {
   })
 
   it('normalisiert auf Großbuchstaben, wie BlueZ es meldet', () => {
-    assert.equal(macNormal('7c:e7:12:af:5c:83'), '7C:E7:12:AF:5C:83')
+    assert.equal(macNormal('66:ff:77:00:88:11'), '66:FF:77:00:88:11')
   })
 })
 
@@ -95,16 +95,16 @@ describe('istAktion / BEFEHL', () => {
 describe('parseDevices', () => {
   // Wörtlich von der Box.
   const echt = [
-    'Device 27:66:09:E8:33:74 27-66-09-E8-33-74',
-    'Device 48:CA:43:DA:0A:E9 QMN000BZP4N8H1L6',
-    'Device 7C:E7:12:AF:5C:83 HM_B2500_5c83',
-    'Device 00:9E:C8:61:1A:EA 小米蓝牙音箱',
+    'Device 88:11:99:22:AA:33 88-11-99-22-AA-33',
+    'Device 77:00:88:11:99:22 QMN000BZP4N8H1L6',
+    'Device 66:FF:77:00:88:11 HM_B2500_8811',
+    'Device AA:BB:CC:11:22:33 小米蓝牙音箱',
   ].join('\n')
 
   it('liest Adresse und Namen', () => {
     const g = parseDevices(echt)
     assert.equal(g.length, 4)
-    assert.equal(g[3].mac, '00:9E:C8:61:1A:EA')
+    assert.equal(g[3].mac, 'AA:BB:CC:11:22:33')
     assert.equal(g[3].name, '小米蓝牙音箱', 'nicht-lateinische Namen müssen durchkommen')
   })
 
@@ -128,21 +128,21 @@ describe('parseDevices', () => {
 
 describe('istNamenlos', () => {
   it('erkennt die Adress-Ersatznamen von BlueZ', () => {
-    assert.equal(istNamenlos('28:0D:B6:85:BD:80', '28-0D-B6-85-BD-80'), true)
-    assert.equal(istNamenlos('28:0D:B6:85:BD:80', '28:0d:b6:85:bd:80'), true)
-    assert.equal(istNamenlos('28:0D:B6:85:BD:80', ''), true)
+    assert.equal(istNamenlos('55:EE:66:FF:77:00', '55-EE-66-FF-77-00'), true)
+    assert.equal(istNamenlos('55:EE:66:FF:77:00', '55:ee:66:ff:77:00'), true)
+    assert.equal(istNamenlos('55:EE:66:FF:77:00', ''), true)
   })
 
   it('lässt echte Namen in Ruhe', () => {
-    assert.equal(istNamenlos('00:9E:C8:61:1A:EA', '小米蓝牙音箱'), false)
-    assert.equal(istNamenlos('7C:E7:12:AF:5C:83', 'HM_B2500_5c83'), false)
+    assert.equal(istNamenlos('AA:BB:CC:11:22:33', '小米蓝牙音箱'), false)
+    assert.equal(istNamenlos('66:FF:77:00:88:11', 'HM_B2500_8811'), false)
   })
 })
 
 describe('parseInfo', () => {
   // Wörtlich von der Box.
   const echt = [
-    'Device 00:9E:C8:61:1A:EA (public)',
+    'Device AA:BB:CC:11:22:33 (public)',
     '\tName: 小米蓝牙音箱',
     '\tAlias: 小米蓝牙音箱',
     '\tClass: 0x0024041c (2360348)',
@@ -206,7 +206,7 @@ describe('art', () => {
 
 describe('parseShow', () => {
   const echt = [
-    'Controller 88:A2:9E:48:F6:50 mupibox [default]',
+    'Controller 11:AA:22:BB:33:CC mupibox [default]',
     '\tAlias: mupibox',
     '\tPowered: yes',
     '\tDiscoverable: no',
@@ -215,7 +215,7 @@ describe('parseShow', () => {
 
   it('liest den Adapter', () => {
     const a = parseShow(echt)
-    assert.equal(a?.mac, '88:A2:9E:48:F6:50')
+    assert.equal(a?.mac, '11:AA:22:BB:33:CC')
     assert.equal(a?.name, 'mupibox')
     assert.equal(a?.an, true)
     assert.equal(a?.sucht, false)
@@ -274,7 +274,7 @@ describe('ergebnis', () => {
 
   it('erkennt die Fehlermeldungen, die BlueZ wirklich schickt', () => {
     // Genau diese Zeile kam auf der Box zurueck.
-    const e = ergebnis('Device 03:BE:C9:23:41:AC not available')
+    const e = ergebnis('Device 99:22:AA:33:BB:44 not available')
     assert.equal(e.ok, false)
     assert.match(e.meldung, /not available/)
     assert.equal(ergebnis('Failed to pair: org.bluez.Error.AuthenticationFailed').ok, false)
@@ -291,11 +291,11 @@ describe('ergebnis', () => {
 describe('ohneSelectFehlzeile — die tote Adapterwahl darf kein Befehlsergebnis werden', () => {
   // Der Fall vom 09.09.2026 (MixPiBox .62): Wahl-Datei zeigte auf den am
   // 20.08. gewechselten USB-Stecker. Zeilen abgeschrieben von der Box.
-  const WAHL = '08:BF:B8:56:CE:44'
+  const WAHL = '22:BB:33:CC:44:DD'
   const fehlzeile = `Controller ${WAHL} not available`
 
   it('tilgt genau die Controller-Zeile der gewählten Adresse', () => {
-    const roh = `${fehlzeile}\nAttempting to connect to 00:9E:C8:61:1A:EA\nConnection successful`
+    const roh = `${fehlzeile}\nAttempting to connect to AA:BB:CC:11:22:33\nConnection successful`
     const sauber = ohneSelectFehlzeile(roh, WAHL)
     assert.doesNotMatch(sauber, /not available/)
     assert.match(sauber, /Connection successful/)
@@ -304,31 +304,31 @@ describe('ohneSelectFehlzeile — die tote Adapterwahl darf kein Befehlsergebnis
   it('macht aus einem vergifteten Erfolg wieder einen Erfolg', () => {
     // GENAU der Fehlmodus des Menüs: ergebnis() las das select-Echo als
     // Ausgang des connect und meldete „not available" an die Oberfläche.
-    const roh = `${fehlzeile}\nAttempting to connect to 00:9E:C8:61:1A:EA\nConnection successful`
+    const roh = `${fehlzeile}\nAttempting to connect to AA:BB:CC:11:22:33\nConnection successful`
     assert.equal(ergebnis(roh).ok, false)
     assert.equal(ergebnis(ohneSelectFehlzeile(roh, WAHL)).ok, true)
   })
 
   it('lässt ein „Device … not available" stehen — das ist eine echte Auskunft', () => {
-    const roh = `${fehlzeile}\nDevice 03:BE:C9:23:41:AC not available`
+    const roh = `${fehlzeile}\nDevice 99:22:AA:33:BB:44 not available`
     const sauber = ohneSelectFehlzeile(roh, WAHL)
-    assert.match(sauber, /Device 03:BE:C9:23:41:AC not available/)
+    assert.match(sauber, /Device 99:22:AA:33:BB:44 not available/)
     assert.equal(ergebnis(sauber).ok, false)
   })
 
   it('lässt Controller-Zeilen ANDERER Adapter stehen', () => {
-    const show = 'Controller 88:A2:9E:48:F6:50 (public)\n\tAlias: MixPiBox #1\n\tPowered: yes'
+    const show = 'Controller 11:AA:22:BB:33:CC (public)\n\tAlias: MixPiBox #1\n\tPowered: yes'
     assert.equal(ohneSelectFehlzeile(`${fehlzeile}\n${show}`, WAHL), show)
   })
 
   it('gibt parseShow den echten Adapter zurück statt der toten Wahl', () => {
     // Vor dem Filter meldete /api/bluetooth die MAC aus der Fehlzeile als
     // Adapter — einen Controller, den es auf der Box gar nicht gab.
-    const roh = [fehlzeile, 'Controller 88:A2:9E:48:F6:50 (public)', '\tAlias: MixPiBox #1', '\tPowered: yes'].join(
+    const roh = [fehlzeile, 'Controller 11:AA:22:BB:33:CC (public)', '\tAlias: MixPiBox #1', '\tPowered: yes'].join(
       '\n',
     )
     assert.equal(parseShow(roh)?.mac, WAHL)
-    assert.equal(parseShow(ohneSelectFehlzeile(roh, WAHL))?.mac, '88:A2:9E:48:F6:50')
+    assert.equal(parseShow(ohneSelectFehlzeile(roh, WAHL))?.mac, '11:AA:22:BB:33:CC')
   })
 
   it('ändert ohne gültige Wahl nichts', () => {
@@ -348,7 +348,7 @@ describe('akkuAus — Ladezustand, wenn das Geraet ihn meldet', () => {
   })
 
   it('findet die Zeile auch mitten in einer langen Ausgabe', () => {
-    const aus = ['Device 00:9E:C8:61:1A:EA', '\tConnected: yes', '\tBattery Percentage: 0x28 (40)', '\tIcon: audio-card'].join('\n')
+    const aus = ['Device AA:BB:CC:11:22:33', '\tConnected: yes', '\tBattery Percentage: 0x28 (40)', '\tIcon: audio-card'].join('\n')
     assert.equal(akkuAus(aus), 40)
   })
 
@@ -368,18 +368,18 @@ describe('parseCodecs — welcher Codec ausgehandelt wurde', () => {
   it('parseCodecs liest Adresse aus dem Senkennamen und den Codec darunter', () => {
     const text = `
   Sink #441
-  	Name: bluez_output.00_9E_C8_61_1A_EA.1
+  	Name: bluez_output.AA_BB_CC_11_22_33.1
   	Properties:
   		api.bluez5.codec = "sbc"
   		api.bluez5.profile = "a2dp-sink"
   Sink #520
-  	Name: bluez_output.7C_96_D2_89_35_CC.1
+  	Name: bluez_output.DD_EE_FF_44_55_66.1
   	Properties:
   		api.bluez5.codec = "aptx"
   `
     assert.deepEqual(parseCodecs(text), {
-      '00:9E:C8:61:1A:EA': 'sbc',
-      '7C:96:D2:89:35:CC': 'aptx',
+      'AA:BB:CC:11:22:33': 'sbc',
+      'DD:EE:FF:44:55:66': 'aptx',
     })
   })
 
@@ -387,7 +387,7 @@ describe('parseCodecs — welcher Codec ausgehandelt wurde', () => {
     // Zwischen Bluetooth-Senke und Codec steht eine andere Senke: der Codec
     // gehoert dann zu KEINER — lieber nichts anzeigen als das Falsche.
     const text = `
-  	Name: bluez_output.00_9E_C8_61_1A_EA.1
+  	Name: bluez_output.AA_BB_CC_11_22_33.1
   	Name: alsa_output.platform-soc_sound.stereo-fallback
   		api.bluez5.codec = "sbc"
   `
@@ -406,7 +406,7 @@ describe('parseCodecs — welcher Codec ausgehandelt wurde', () => {
 
 /** Echte Ausgabe der Box (2026-07-28), gekuerzt auf das Wesentliche. */
 const HCICONFIG = `hci0:	Type: Primary  Bus: USB
-	BD Address: 00:15:83:F9:C5:4F  ACL MTU: 310:10  SCO MTU: 64:8
+	BD Address: 44:DD:55:EE:66:FF  ACL MTU: 310:10  SCO MTU: 64:8
 	UP RUNNING PSCAN
 	RX bytes:1653152 acl:176 sco:0 events:234074 errors:0
 	HCI Version: 4.0 (0x6)  Revision: 0x22bb
@@ -414,12 +414,12 @@ const HCICONFIG = `hci0:	Type: Primary  Bus: USB
 	Manufacturer: Cambridge Silicon Radio (10)
 
 hci1:	Type: Primary  Bus: UART
-	BD Address: 88:A2:9E:48:F6:50  ACL MTU: 1021:8  SCO MTU: 64:1
+	BD Address: 11:AA:22:BB:33:CC  ACL MTU: 1021:8  SCO MTU: 64:1
 	UP RUNNING PSCAN
 	HCI Version: 5.0 (0x9)  Revision: 0x1
 
 hci2:	Type: Primary  Bus: USB
-	BD Address: 08:BF:B8:56:CE:44  ACL MTU: 1021:6  SCO MTU: 255:12
+	BD Address: 22:BB:33:CC:44:DD  ACL MTU: 1021:6  SCO MTU: 255:12
 	UP RUNNING PSCAN
 	HCI Version: 5.1 (0xa)  Revision: 0xdfc
 `
@@ -607,7 +607,7 @@ hci1:	Type: Primary  Bus: USB
 describe('Bluetooth 6.0 am alten hciconfig', () => {
   const BT600 = [
     'hci1:	Type: Primary  Bus: USB',
-    '	BD Address: B0:82:E2:1F:9C:E5  ACL MTU: 1021:6  SCO MTU: 255:12',
+    '	BD Address: 33:CC:44:DD:55:EE  ACL MTU: 1021:6  SCO MTU: 255:12',
     '	UP RUNNING',
     '	HCI Version:  (0xe)  Revision: 0xceb',
   ].join('\n')

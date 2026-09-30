@@ -149,12 +149,61 @@ def patch_dietpi_txt(text, cfg):
     return "\n".join(out) + "\n"
 
 
+# ══ DIE SCHLUESSEL, DIE JEDE KARTE BRAUCHT — EINE TABELLE FUER BEIDE WEGE ══
+#
+# AUDIT-2026-09-25 Rang 3: die zwei Karten-Wege (dieser hier und
+# scripts/make-boot-sd.sh) teilten keine Zeile. AUTO_SETUP_ACCEPT_LICENSE
+# stand nur hier, die zram-Schluessel (E5/B7) nur im Bash-Weg — eine
+# Assistenten-Karte bekam /var/swap auf der SD, eine Bash-Karte keinen
+# Lizenzschluessel. Seit dem 29.09.2026 lesen BEIDE Wege dieselbe Datei; was
+# ein Weg aus seinen eigenen Eingaben ableitet, bleibt bei ihm (dietpi_cfg
+# unten). tools/kartenwege-schluessel-zwilling.py faehrt beide gegen eine
+# Probekarte und vergleicht das Ergebnis.
+KARTENSCHLUESSEL = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                "mixpi-kartenschluessel.txt")
+
+# DIESELBE Form verlangt make-boot-sd.sh — streng, damit beide Leser dasselbe
+# lesen. Kein / und kein & im Wert: der Bash-Weg setzt ihn per sed ein.
+_KARTENZEILE = re.compile(r"([A-Z][A-Z0-9_]*)=([A-Za-z0-9_.:+-]*)")
+
+
+def kartenschluessel(pfad=KARTENSCHLUESSEL):
+    """Die gemeinsame Tabelle -> {SCHLUESSEL: WERT}, in Dateireihenfolge.
+
+    Wirft bei jeder Zeile, die der Bash-Weg anders lesen koennte, statt sie zu
+    ueberspringen: eine still verworfene Zeile ist genau die Abweichung, gegen
+    die diese Tabelle da ist. Fehlt die Datei, faellt das beim Kartenschreiben
+    auf und nicht erst beim ersten Booten."""
+    werte = {}
+    with open(pfad, encoding="utf-8") as f:
+        for nr, zeile in enumerate(f, 1):
+            z = zeile.rstrip("\r\n")
+            if not z.strip() or z.startswith("#"):
+                continue
+            m = _KARTENZEILE.fullmatch(z)
+            if not m:
+                raise ValueError(f"{pfad}:{nr}: keine Zeile der Form SCHLUESSEL=WERT: {z!r}")
+            if m.group(1) in werte:
+                raise ValueError(f"{pfad}:{nr}: {m.group(1)} steht zweimal da")
+            werte[m.group(1)] = m.group(2)
+    if not werte:
+        raise ValueError(f"{pfad}: keine einzige Zeile — die Tabelle ist leer")
+    return werte
+
+
 def dietpi_cfg(password, hostname="DietPi", wifi=False, locale="C.UTF-8",
                keyboard="de", timezone="Europe/Berlin", ssh="openssh", country="DE"):
     """Die Schlüssel für ein NACKTES, automatisch aufgesetztes DietPi mit SSH.
     Bewusst KEINE Zusatzsoftware (AUTO_SETUP_INSTALL_SOFTWARE_ID leer) — alles
-    Weitere fährt später der Controller."""
+    Weitere fährt später der Controller.
+
+    Vorne die gemeinsame Tabelle (kartenschluessel), dahinter nur, was dieser
+    Weg aus den Eingaben des Assistenten ableitet. Ein Schluessel gehoert an
+    GENAU einen der beiden Orte — steht er in beiden, bricht es hier ab."""
     # ══ DIE LIZENZZUSTIMMUNG — HIER STAND SIE ABSICHTLICH NICHT ═════════════
+    #
+    # (Seit 29.09.2026 steht sie in mixpi-kartenschluessel.txt, weil der
+    # Bash-Weg sie genauso braucht. Die Geschichte bleibt hier stehen.)
     #
     # Betreiber, 10.08.2026: „also blauer bildschirm install gestoppt von
     # dietpi."
@@ -178,8 +227,7 @@ def dietpi_cfg(password, hostname="DietPi", wifi=False, locale="C.UTF-8",
     # „steht da, wird ignoriert" ist eine Zeile; der Preis fuer „fehlt" ist
     # eine Box, die vor einem blauen Kasten steht und auf eine Tastatur wartet,
     # die es nicht gibt.
-    return {
-        "AUTO_SETUP_ACCEPT_LICENSE": "1",
+    eigene = {
         "AUTO_SETUP_AUTOMATED": "1",
         "AUTO_SETUP_GLOBAL_PASSWORD": password,
         "AUTO_SETUP_SSH_SERVER_INDEX": "-2" if ssh == "openssh" else "-1",
@@ -200,10 +248,15 @@ def dietpi_cfg(password, hostname="DietPi", wifi=False, locale="C.UTF-8",
         "AUTO_SETUP_TIMEZONE": timezone,
         "AUTO_SETUP_DESKTOP": "none",
         "AUTO_SETUP_INSTALL_SOFTWARE_ID": "",      # NICHTS extra
-        "AUTO_SETUP_CUSTOM_SCRIPT_EXEC": "1",      # SSH-Schluessel bzw. Agent-Installer
         "SURVEY_OPTED_IN": "0",
         "CONFIG_SERIAL_CONSOLE_ENABLE": "1",
     }
+    gemeinsam = kartenschluessel()
+    doppelt = sorted(set(gemeinsam) & set(eigene))
+    if doppelt:
+        raise ValueError(f"{', '.join(doppelt)} steht in mixpi-kartenschluessel.txt UND "
+                         f"in dietpi_cfg — ein Schluessel gehoert an genau einen Ort")
+    return {**gemeinsam, **eigene}
 
 
 def _wifi_esc(s):
@@ -1946,6 +1999,30 @@ dietpi_weiterfuehren() {{
   return 1
 }}
 
+# ── AUF DER FERTIGEN BOX HAT DER VORSTART NICHTS MEHR ZU TUN ───────────────
+# Die Marke schreibt der Selbstlauf, wenn ALLE Schritte durch sind — dieselbe,
+# die `schirm_sicherstellen` und mixpibox-einrichtung.service fragen. Bis zum
+# 29.09.2026 fragte sie NUR der Schirm; der Zweig "kein Netz" weiter unten
+# kannte sie nicht (BACKLOG E143/8). Eine fertige Box, die ohne Router
+# startete (Urlaub, Router aus, neues WLAN), bekam bei JEDEM solchen Start die
+# ganze Einrichtung: den Einrichtungsschirm ueber der Oberflaeche, den Agenten
+# als root auf 0.0.0.0, das OFFENE WLAN der Einrichtung (wer sich dort
+# einbucht, bekommt ohne Code den Einrichtungs-Schluessel und kann der Box
+# ein WLAN vorgeben, agent.auto_pair_erlaubt) — und weil diese Unit
+# Before=getty@tty1 steht, kam der Kiosk erst nach der Wartezeit (bis
+# {wartezeit // 60} min). Am Code gelesen, am Geraet nicht gemessen.
+# Ein neues WLAN traegt die fertige Box selbst ein (Eltern-Bereich auf dem
+# Schirm, /api/netzwerk); das Handy braucht sie dafuer nicht mehr.
+# VOR DER WARTESCHLEIFE, nicht erst im Zweig ohne Netz: auch der Zweig MIT
+# Netz tut auf der fertigen Box nichts mehr (der Schirm schweigt, DietPi steht
+# auf Stufe 2) — die Schleife hielte den Kiosk nur auf, bis das WLAN steht.
+# Wer die Einrichtung auf einer fertigen Box wirklich will, loescht die Marke:
+# dieselbe Regel wie in mixpibox-einrichtung.service.
+if [ -f /var/lib/mixpibox-lauf/fertig ]; then
+  echo "Box ist eingerichtet (/var/lib/mixpibox-lauf/fertig) - der Vorstart hat nichts zu tun."
+  exit 0
+fi
+
 RUNDEN=20
 grep -q "network=" /etc/wpa_supplicant/wpa_supplicant.conf 2>/dev/null && RUNDEN=45
 for i in $(seq 1 "$RUNDEN"); do
@@ -2195,6 +2272,10 @@ def verify_boot(boot_dir, *, wifi=None, debug_display=False, diagnose=False, hos
         if hostname:
             pruef.append((f"AUTO_SETUP_NET_HOSTNAME={hostname}" in dt, f"Name der Box: {hostname}"))
         pruef.append(("AUTO_SETUP_SSH_SERVER_INDEX=-2" in dt, "SSH-Server (OpenSSH) vorgesehen"))
+        # Die gemeinsame Tabelle — nachgelesen auf der KARTE, nicht im Speicher.
+        for k, v in kartenschluessel().items():
+            pruef.append((bool(re.search(rf"^{k}={re.escape(v)}$", dt, re.M)),
+                          f"Kartenschluessel {k}={v}"))
 
     if wifi:
         w = lies("dietpi-wifi.txt")

@@ -367,6 +367,9 @@ BEKANNT: dict[str, str] = {
     "schirm-auf-null.mjs": "--ziel zeigt auf die echte Box; der Sandkastenteil ist der kleinere",
     "schirm-auf-null-api.mjs": "dasselbe ueber PUT /api/schirm/helligkeit an der Box",
     "mixpi-wartung.sh": "SCHALTET den Sperr-Schirm der echten Box (POST /api/wartung) — ein Eingriff auf Zuruf, kein Urteil; ohne Box endet es mit 2",
+    # 29.09.2026 eingetragen. Die Seite am Baum (Startbild gegen seine Quelle)
+    # haengt als `bootsplash-vorschau.py --pruefen` in tools/pruefen.sh.
+    "bootsplash-am-geraet.py": "liest /dev/fb0 der ECHTEN Box per SSH (das letzte Bild der Boot-Animation); mit --neustart STARTET es sie neu — ein Eingriff auf Zuruf, kein Urteil; Ausgang 1 heisst „Box nicht erreichbar\"",
     # ── Braucht ein NAS im Netz (28.09.2026) ───────────────────────────────
     "nas-sonde.py": (
         "misst ein Netzlaufwerk: Freigaben suchen, Rate, Abrissprobe (--haengen). Ausgang 1 "
@@ -419,6 +422,7 @@ BEKANNT: dict[str, str] = {
     "dienstwechsel-am-dienst.mjs": "startet den echten Abspieldienst mit Tonmaschine — nicht hermetisch genug fuer den schnellen Teil",
     "update-frische-box-probe.sh": "braucht `zip`; ohne das Paket bricht sie jetzt mit 2 ab statt einen roten Schritt zu melden",
     "pruefen-einzelschritt.py": "faehrt EINEN Schritt aus pruefen.sh fuer eine Gegenprobe; sein Ausgang ist das Urteil von pruefen.sh selbst, das ohnehin laeuft",
+    "ohne-aufnahme-zweig-pruefen.sh": "braucht als Argument einen EIGENEN Arbeitsbaum des Zweigs github-ohne-aufnahme und laeuft beim Erneuern des Patchs von Hand (Handbuch 7.15); im Laeufer gaebe es diesen Baum nicht — ob der Patch passt, meldet dort der Trockenlauf der Veroeffentlichung",
     # (Hier stand bis 28.09.2026 die Sorte „Ohne Gegenstand" mit
     # pruef-zeitformate.js: gruen, aber ihr Gegenstand war eine eingefrorene
     # Leiche. Der Betreiber hat die Zeit-Kette an dem Tag geloescht. Wer

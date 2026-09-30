@@ -6,11 +6,17 @@
  * Tabelle antwortet; so prueft jeder Zeuge auch, was hinausgeht.
  */
 import assert from 'node:assert/strict'
-import { beforeEach, describe, it } from 'node:test'
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { after, beforeEach, describe, it } from 'node:test'
+import { setTimeout as warten } from 'node:timers/promises'
 import { antwort, kontext } from '../pruefstand.mjs'
 import plugin, {
   ANBIETER,
+  ablageSchreiben,
   antwortLesen,
+  dienstAus,
   frageRumpf,
   hauptVon,
   kandidaten,
@@ -21,6 +27,7 @@ import plugin, {
   starten,
   woerter,
   zugang,
+  zwischenname,
 } from './index.mjs'
 
 const BESTAND = [
@@ -282,6 +289,230 @@ describe('der Durchlauf', () => {
   it('startet ohne das Recht netz nicht', async () => {
     const { k } = kontext({ netz: false, einstellungen: EINST })
     assert.equal((await starten(k, { eintraege: BESTAND })).ok, false)
+  })
+})
+
+/* ── Gleichzeitig: kein Klick geht verloren (AUDIT-2026-09-28 §1b Rang 2) ── */
+
+const ordner = []
+after(async () => {
+  for (const o of ordner) await rm(o, { recursive: true, force: true })
+})
+
+/**
+ * Ein Datenordner auf der PLATTE. Nur dort gab es den Verlust — im Speicher
+ * teilen sich Worker und Klick ohnehin dasselbe Objekt, und die alten Zeugen
+ * liefen alle so. Deshalb hat keiner von ihnen den Fehler gesehen.
+ */
+async function neuerOrdner() {
+  const o = await mkdtemp(join(tmpdir(), 'mixpi-gruppen-'))
+  ordner.push(o)
+  return o
+}
+
+async function platte(o) {
+  return JSON.parse(await readFile(join(o, 'gruppen.json'), 'utf8'))
+}
+
+/**
+ * Eine Frist je Zeuge dieses Blocks: ein Wettlauf, den eine Sabotage
+ * wieder aufreisst, darf als FAIL-Zeile enden, nicht als stehender Lauf.
+ */
+const FRIST = { timeout: 10_000 }
+
+/** Zwoelf Namen mit gemeinsamen Woertern — 66 Paare, genug fuer mehrere Zwischenstaende. */
+const VIELE = Array.from({ length: 12 }, (_, i) => ({ type: 'library', artist: `Team Karacho, Gast ${i}`, title: 'x' }))
+
+/**
+ * Jev mit Schranke: jede Frage wartet, bis `los()` — und ab der Frage Nummer
+ * `halt` noch einmal, bis `weiter()`. So klickt der Zeuge MITTEN im Lauf und
+ * liest die Platte, waehrend der Lauf steht: ohne Uhr und ohne Glueck.
+ */
+function jevMitSchranke(gesendet, halt = Number.POSITIVE_INFINITY) {
+  const antworte = jev(gesendet)
+  let los, weiter, angekommen
+  const erst = new Promise((r) => {
+    los = r
+  })
+  const dann = new Promise((r) => {
+    weiter = r
+  })
+  const ersteFrage = new Promise((r) => {
+    angekommen = r
+  })
+  let n = 0
+  return {
+    antworten: async (adresse, gaben) => {
+      angekommen()
+      await erst
+      if (++n >= halt) await dann
+      return antworte(adresse, gaben)
+    },
+    ersteFrage,
+    los: () => los(),
+    weiter: () => weiter(),
+  }
+}
+
+describe('Gleichzeitig: kein Klick geht verloren', () => {
+  it('eine Entscheidung waehrend des Durchlaufs ueberlebt den naechsten Zwischenstand des Workers', FRIST, async () => {
+    const j = jevMitSchranke([], 26)
+    const { k } = kontext({ antworten: j.antworten, einstellungen: { ...EINST, hoechstensPaare: 40 } })
+    const o = await neuerOrdner()
+    k.datenOrdner = o
+    const paar = paarSchluessel('Team Karacho, Gast 0', 'Team Karacho, Gast 1')
+
+    assert.equal((await starten(k, { eintraege: VIELE })).ok, true)
+    try {
+      await j.ersteFrage
+      const r = await plugin.http({ methode: 'POST', pfad: 'entscheiden', rumpf: { paar, urteil: 'abgelehnt' } }, k)
+      assert.equal(r.status ?? 200, 200, 'waehrend des Laufs wird niemand abgewiesen')
+      j.los()
+
+      // Warten, bis der Worker einen Zwischenstand MIT Antworten geschrieben
+      // hat. Der ist sicher NACH dem Klick entstanden: bis `los()` war keine
+      // einzige Frage beantwortet.
+      let d = await platte(o)
+      for (let i = 0; i < 500 && Object.keys(d.antworten).length === 0; i++) {
+        await warten(10)
+        d = await platte(o)
+      }
+      assert.ok(Object.keys(d.antworten).length > 0, 'kein Zwischenstand geschrieben — Vorbedingung des Zeugen fehlt')
+      assert.equal(
+        d.lauf.fertig,
+        null,
+        'der Lauf muss noch stehen, sonst prueft das den Schluss statt des Zwischenstands',
+      )
+      assert.equal(
+        d.entscheidungen[paar]?.urteil,
+        'abgelehnt',
+        'der Zwischenstand des Workers hat den Klick ueberschrieben',
+      )
+      assert.equal((await plugin.http({ methode: 'GET', pfad: 'stand' }, k)).inhalt.abgelehnt, 1)
+
+      j.weiter()
+      await laufAbwarten()
+      d = await platte(o)
+      assert.ok(d.lauf.fertig)
+      assert.equal(d.entscheidungen[paar]?.urteil, 'abgelehnt', 'der Schlussstand hat den Klick ueberschrieben')
+    } finally {
+      // AUCH WENN ES ROT WIRD, die Schranken oeffnen: sonst bleibt der Lauf
+      // stehen, `laufend` bleibt gesetzt, und jeder spaetere Zeuge wartet
+      // ewig — aus einem lesbaren FAIL wird ein Haenger ohne Zeile.
+      j.los()
+      j.weiter()
+      await laufAbwarten()
+    }
+  })
+
+  it('zwei Klicks zugleich kommen beide an', FRIST, async () => {
+    const { k } = kontext({ antworten: jev([]), einstellungen: EINST })
+    k.datenOrdner = await neuerOrdner()
+    const gabby = paarSchluessel("Gabby's Dollhouse", 'Gabby’s Dollhouse Deutschland')
+    const maus = paarSchluessel('Die Maus', 'Die Maus, Eva mit Gitarre, Der Elefant')
+    await Promise.all([
+      plugin.http({ methode: 'POST', pfad: 'entscheiden', rumpf: { paar: gabby, urteil: 'abgelehnt' } }, k),
+      plugin.http({ methode: 'POST', pfad: 'entscheiden', rumpf: { paar: maus, urteil: 'angenommen' } }, k),
+    ])
+    const d = await platte(k.datenOrdner)
+    assert.deepEqual(Object.keys(d.entscheidungen).sort(), [gabby, maus].sort())
+  })
+
+  it('zwei Starts zugleich ergeben EINEN Durchlauf, nicht zwei bezahlte', FRIST, async () => {
+    const gesendet = []
+    const { k } = kontext({ antworten: jev(gesendet), einstellungen: EINST })
+    k.datenOrdner = await neuerOrdner()
+    const r = await Promise.all([starten(k, { eintraege: BESTAND }), starten(k, { eintraege: BESTAND })])
+    await laufAbwarten()
+    await laufAbwarten()
+    assert.deepEqual(
+      r.map((x) => x.text.startsWith('Gestartet')).sort(),
+      [false, true],
+      r.map((x) => x.text).join(' | '),
+    )
+    assert.equal(gesendet.length, kandidaten(namenAus(BESTAND)).length, 'jedes Paar genau einmal gefragt')
+  })
+
+  it('meldet einen Zwischenstand, der nicht geschrieben wurde, statt ihn zu verschlucken', FRIST, async () => {
+    const j = jevMitSchranke([])
+    const { k, protokoll } = kontext({ antworten: j.antworten, einstellungen: { ...EINST, hoechstensPaare: 25 } })
+    const o = await neuerOrdner()
+    k.datenOrdner = o
+    await starten(k, { eintraege: VIELE })
+    try {
+      await j.ersteFrage
+      // Den Ordner durch eine DATEI ersetzen: dann scheitern mkdir und
+      // Schreiben auch unter root — ein chmod haelt root nicht auf.
+      await rm(o, { recursive: true, force: true })
+      await writeFile(o, 'kein Ordner')
+    } finally {
+      j.los()
+      await laufAbwarten()
+    }
+    assert.ok(
+      protokoll.some((z) => /^Zwischenstand nach \d+ Antworten nicht geschrieben: /.test(z)),
+      `Protokoll: ${protokoll.join(' | ') || '(leer)'}`,
+    )
+  })
+})
+
+describe('Zwischendatei', () => {
+  it('heisst je Aufruf anders', () => {
+    const z = '/irgendwo/gruppen.json'
+    assert.notEqual(zwischenname(z), zwischenname(z))
+  })
+
+  it('vierzig Schreiber zugleich: jeder kommt durch, die Datei ist ganz, keine Leiche bleibt', FRIST, async () => {
+    const k = { datenOrdner: await neuerOrdner() }
+    // GROSS GENUG, dass ein Schreibvorgang NICHT in einem Zug durchgeht
+    // (llmwiki vierzehn-kopien-und-die-abweichung-ist-der-fehler) — Node
+    // schreibt in Stuecken zu 512 KiB.
+    const fuellung = 'x'.repeat(1_500_000)
+    const r = await Promise.allSettled(Array.from({ length: 40 }, (_, nr) => ablageSchreiben(k, { nr, fuellung })))
+    assert.deepEqual(
+      r.filter((x) => x.status === 'rejected').map((x) => String(x.reason)),
+      [],
+    )
+    const d = await platte(k.datenOrdner)
+    assert.equal(d.fuellung.length, fuellung.length)
+    assert.deepEqual(await readdir(k.datenOrdner), ['gruppen.json'])
+  })
+})
+
+describe('Dienst eines Eintrags', () => {
+  it('teilt ein wie dienstVon() im Kern — „Spotify" gross geschrieben ist spotify', async () => {
+    // DER KERN IST DIE QUELLE, keine Tabelle hier: eine Tabelle waere die
+    // naechste Kopie, die still veraltet. Node liest medien.ts ohne Bauschritt
+    // (Type-Stripping); die Datei importiert nichts.
+    const { dienstVon, pluginKennungAus } = await import('../../src/backend-api/src/medien.ts')
+    const faelle = [
+      { type: 'Spotify' },
+      { type: 'SPOTIFY' },
+      { type: 'spotify' },
+      { type: 'Jellyfin' },
+      { type: 'jellyfinAudio' },
+      { type: 'Library' },
+      { type: 'local' },
+      { type: 'Radio' },
+      { type: 'rss' },
+      { type: 'ARD' },
+      { type: 'plugin', id: 'mixpi-archive:faust1teil' },
+      { type: 'Plugin', id: ' mixpi-archive:faust1teil ' },
+      { type: 'plugin', id: 'ohne-doppelpunkt' },
+      { type: 'plugin', id: ':nur-rest' },
+      { type: 'plugin', id: 'nur-kennung:' },
+      { type: 'plugin' },
+      { type: 'podcast' },
+      { type: '' },
+      {},
+      null,
+    ]
+    for (const e of faelle) {
+      const kern = dienstVon(e)
+      const erwartet = kern === 'plugin' ? (pluginKennungAus(e)?.split(':')[0] ?? 'plugin') : kern
+      assert.equal(dienstAus(e), erwartet, JSON.stringify(e))
+    }
+    assert.equal(dienstAus({ type: 'Spotify' }), 'spotify')
   })
 })
 

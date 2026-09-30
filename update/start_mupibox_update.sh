@@ -1678,10 +1678,17 @@ echo "==========================================================================
 	# gar nicht braucht: <name>.local findet die Box, egal welche Adresse der
 	# DHCP gerade vergeben hat.
 	#
-	# INSTALLIERT WAR AVAHI BIS HEUTE AUF KEINEM DER BEIDEN WEGE. Dass die
+	# INSTALLIERT WAR AVAHI BIS HEUTE AUF KEINEM DER DREI WEGE. Dass die
 	# Box im Haus trotzdem unter MixPiBox.local zu erreichen war, lag an
 	# DietPi — also an Glueck, nicht an diesem Projekt. Auf einer frischen
 	# Karte konnte es anders ausgehen, und niemand haette gewusst warum.
+	#
+	# DREI, nicht zwei: hier stand bis 29.09.2026 „auf keinem der BEIDEN
+	# Wege", und genau der dritte blieb liegen — das Installer-Rezept
+	# (remote-step-installer/recipes/mupibox.yaml, Schritte deps + mdns),
+	# ueber das frische Karten heute wirklich entstehen. Nachgezogen mit
+	# AUDIT-2026-09-23 Rang 2; tools/rezept-deckung.py haelt das Paket
+	# seither auf allen drei Wegen zusammen.
 	#
 	# `enable --now`, weil Installieren nicht Einschalten ist: ein Dienst, der
 	# liegt und nicht laeuft, beantwortet keine einzige Anfrage.

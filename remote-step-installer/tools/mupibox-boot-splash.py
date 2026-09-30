@@ -1190,17 +1190,30 @@ def main():
 
     konsole = KonsoleAus()
     konsole.__enter__()
-    start = time.time()
+    # ══ MONOTONE UHR, NICHT DIE WANDUHR (29.09.2026) ═══════════════════════
+    # Hier stand `time.time()`. Am Geraet (Box .62, Pi 5) gemessen, Sekunden
+    # seit dem Kernelstart:
+    #     19,43  DHCPACK — die Box hat Netz
+    #     19,55  systemd-timesyncd: Uhr springt von „28.09. 22:11" (fake-hwclock,
+    #            letzter Stand vor dem Ausschalten) auf „29.09. 22:47"
+    #     19,67  Animation beendet
+    # Nach dem Sprung von gut 24 Stunden galt die Notbremse MAX_LAUFZEIT als
+    # laengst ueberschritten, und die Schleife endete 0,12 s spaeter — ehe die
+    # naechste Pruefung das Netz abhaken konnte. Auf dem Schirm blieb „5/6
+    # Netzwerk ..." stehen, auf einer Box, die laengst online war. Die Wanduhr
+    # springt beim Hochfahren IMMER, sobald das Netz da ist; genau dann laeuft
+    # dieses Skript. time.monotonic() zaehlt seit dem Start und springt nie.
+    start = time.monotonic()
     beschriftung_offen = MEILENSTEINE[0][0]
     erreicht = 0
     takt = 0
-    letzte_pruefung = 0.0
+    letzte_pruefung = float("-inf")
     try:
-        while time.time() - start < MAX_LAUFZEIT:
+        while time.monotonic() - start < MAX_LAUFZEIT:
             # Meilensteine nur zweimal je Sekunde pruefen — die Abfragen kosten,
             # das Bild soll trotzdem fluessig laufen.
-            if time.time() - letzte_pruefung > 0.5:
-                letzte_pruefung = time.time()
+            if time.monotonic() - letzte_pruefung > 0.5:
+                letzte_pruefung = time.monotonic()
                 # JEDEN Meilenstein einzeln pruefen. Beim ersten unerfuellten
                 # abzubrechen liess den Balken stehen, sobald ein spaeter
                 # Schritt frueh fertig war und ein frueher noch fehlte (am

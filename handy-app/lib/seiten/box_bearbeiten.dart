@@ -134,6 +134,15 @@ class _BoxBearbeitenSeiteState extends State<BoxBearbeitenSeite> {
       return;
     }
     setState(() => _pruefe = true);
+    final gleicheAdresse = widget.box?.adresse == adresse;
+    // DER SCHLUESSEL GEHOERT ZUR BOX, NICHT ZUR ADRESSE — und deshalb geht er
+    // an eine neue Adresse erst, wenn die beweist, dass sie dieselbe Box ist
+    // (`kenntSchluessel`, 29.09.2026). Bis dahin wanderte er IMMER mit, und
+    // schon die Probe `/api/box` trug ihn zum neuen Host: ein Tippfehler in
+    // der letzten Stelle, und eine fremde Box im Haus hatte ihn
+    // (AUDIT-2026-09-28 §1b Rang 6a). Ein anderer Port (HTTP/HTTPS) auf
+    // derselben Adresse ist dieselbe Box — dafuer braucht es keinen Beweis.
+    final mitzunehmen = gleicheAdresse ? null : widget.box?.schluessel;
     // Zur Probe mit einem Wegwerf-Eintrag: das Zeugnis (HTTPS) wird dabei
     // zum ersten Mal gesehen und gemerkt.
     final probe = BoxEintrag(
@@ -142,26 +151,30 @@ class _BoxBearbeitenSeiteState extends State<BoxBearbeitenSeite> {
       adresse: adresse,
       port: _port,
       https: _https,
-      fingerabdruck: (widget.box?.adresse == adresse && widget.box?.https == _https) ? widget.box?.fingerabdruck : null,
-      sitzung: widget.box?.adresse == adresse ? widget.box?.sitzung : null,
-      // DER SCHLUESSEL GEHOERT ZUR BOX, nicht zur Adresse: bekommt dieselbe Box
-      // eine neue IP, bleibt sie gekoppelt. Nur ein ANDERER Port (HTTP/HTTPS)
-      // aendert daran nichts — es ist dieselbe Box.
-      schluessel: widget.box?.schluessel,
+      fingerabdruck: (gleicheAdresse && widget.box?.https == _https) ? widget.box?.fingerabdruck : null,
+      sitzung: gleicheAdresse ? widget.box?.sitzung : null,
+      schluessel: gleicheAdresse ? widget.box?.schluessel : null,
     );
     // UEBER DIE FABRIK DES ZUSTANDS, nicht fest gebaut — dieselbe, die spaeter
     // die Box bedient; in Tests steckt dort die Attrappe.
     final c = widget.stand.clientBauen(probe);
     String? gefundenerName;
     String? fehler;
+    var bewiesen = false;
     try {
       gefundenerName = await c.kennung();
-      if (gefundenerName == null) fehler = 'Unter dieser Adresse antwortet etwas, aber keine MixPiBox.';
+      if (gefundenerName == null) {
+        fehler = 'Unter dieser Adresse antwortet etwas, aber keine MixPiBox.';
+      } else if (mitzunehmen != null) {
+        bewiesen = await c.kenntSchluessel(mitzunehmen);
+      }
     } on BoxFehler catch (e) {
       fehler = e.satz;
     } finally {
       c.schliessen();
     }
+    if (bewiesen) probe.schluessel = mitzunehmen;
+    final schluesselBleibtZurueck = mitzunehmen != null && !bewiesen;
     if (!mounted) return;
     setState(() => _pruefe = false);
     if (fehler != null) {
@@ -193,6 +206,19 @@ class _BoxBearbeitenSeiteState extends State<BoxBearbeitenSeite> {
         ..sitzung = probe.sitzung
         ..schluessel = probe.schluessel;
       await widget.stand.geaendert(alt);
+    }
+    // DER SCHLUESSEL IST WEG, nicht nur „gerade nicht gesendet": ihn fuer den
+    // Fall zu behalten, dass die alte Adresse zurueckkommt, hiesse einen
+    // zweiten Zustand „ruhender Schluessel" mitzufuehren — fuer einen Fall,
+    // den ein erneutes Koppeln in einer Minute erledigt. Das alte Handy steht
+    // dann an der Box noch unter „Handys" und laesst sich dort entfernen.
+    if (schluesselBleibtZurueck && mounted) {
+      meldung(
+        context,
+        fehler == null
+            ? 'Die Box unter $adresse kennt dieses Handy nicht — bitte neu koppeln.'
+            : 'Ob unter $adresse dieselbe Box antwortet, ließ sich nicht prüfen — bitte neu koppeln, sobald sie erreichbar ist.',
+      );
     }
     // GLEICH KOPPELN, statt eine tote Box in die Liste zu stellen (27.09.2026,
     // Betreiber: „gute idee"). Suche und Eintragen von Hand fragen nur

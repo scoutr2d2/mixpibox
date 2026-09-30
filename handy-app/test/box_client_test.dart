@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -10,7 +11,7 @@ import 'package:mixpibox_fernbedienung/modell.dart';
 /// Eine nachgebaute Box: antwortet so, wie backend-api es tut (Pfade und
 /// Fehlerformen aus server.ts / auth.ts abgeschrieben, Stand 27.09.2026).
 class AttrappenBox {
-  AttrappenBox({this.passwort, this.kopplung = false});
+  AttrappenBox({this.passwort, this.kopplung = false, this.fremd = false, this.ohneBeweis = false});
 
   /// Verwaltungspasswort; null = Box ohne Anmeldung.
   final String? passwort;
@@ -21,6 +22,19 @@ class AttrappenBox {
   static const kopplungsCode = '123456';
   static final schluessel = 'a' * 64;
   final List<Map<String, String>> kopfzeilen = [];
+
+  /// Eine ANDERE MixPiBox, mit der dieses Handy nie gekoppelt war: sie kennt
+  /// [schluessel] nicht, nur ihren eigenen. Fuer das Umadressieren (29.09.2026).
+  final bool fremd;
+
+  /// Eine Box von vor dem 29.09.2026 ohne `/api/kopplung/beweis`.
+  final bool ohneBeweis;
+
+  String get _eigenerSchluessel => fremd ? 'b' * 64 : schluessel;
+
+  /// Jede Anfrage in ihrer Reihenfolge — und ob sie den Schluessel trug.
+  /// Daran haengt der Zeuge „erst der Beweis, dann der Schluessel".
+  final List<({String weg, bool mitSchluessel})> verlauf = [];
 
   /// Bitten an die Box, den Code zu zeigen — mit dem Namen, den die App schickte.
   final List<String> bitten = [];
@@ -104,10 +118,17 @@ class AttrappenBox {
   MockClient client() => MockClient((req) async {
     final pfad = req.url.path;
     kopfzeilen.add(req.headers);
+    verlauf.add((weg: '${req.method} $pfad', mitSchluessel: req.headers.containsKey('x-mixpi-schluessel')));
     // DIE SPERRE DER BOX: dieselben offenen Wege wie OFFEN_FUER_APP in kopplung.ts.
     if (kopplung && req.headers['x-mixpi-app'] != null) {
-      const offen = ['/api/box', '/api/kopplung/anfrage', '/api/kopplung/koppeln', '/api/kopplung/status'];
-      if (!offen.contains(pfad) && req.headers['x-mixpi-schluessel'] != schluessel) {
+      final offen = [
+        '/api/box',
+        '/api/kopplung/anfrage',
+        if (!ohneBeweis) '/api/kopplung/beweis',
+        '/api/kopplung/koppeln',
+        '/api/kopplung/status',
+      ];
+      if (!offen.contains(pfad) && req.headers['x-mixpi-schluessel'] != _eigenerSchluessel) {
         return _json({'error': 'nichtGekoppelt', 'hinweis': 'Dieses Handy ist mit der Box nicht gekoppelt.'}, 403);
       }
     }
@@ -203,12 +224,29 @@ class AttrappenBox {
       return _json({'ok': true});
     }
     if (pfad == '/api/kopplung/status') {
-      return _json({'gekoppelt': req.headers['x-mixpi-schluessel'] == schluessel, 'name': null, 'ohneKopplung': !kopplung});
+      return _json({
+        'gekoppelt': req.headers['x-mixpi-schluessel'] == _eigenerSchluessel,
+        'name': null,
+        'ohneKopplung': !kopplung,
+      });
+    }
+    // WIE beweiseFuer() in kopplung.ts: je gekoppeltem Handy ein HMAC ueber
+    // die Frage, verschluesselt mit dem ABDRUCK — den Schluessel selbst kennt
+    // die Box nicht. Hier von Hand gerechnet, NICHT ueber die Funktion der App,
+    // sonst bestaetigte die App sich selbst.
+    if (pfad == '/api/kopplung/beweis' && !ohneBeweis) {
+      final frage = (jsonDecode(req.body) as Map)['frage'];
+      if (frage is! String || !RegExp(r'^[0-9a-f]{32,128}$').hasMatch(frage)) {
+        return _json({'error': 'frageUngueltig'}, 400);
+      }
+      final abdruck = sha256.convert(utf8.encode(_eigenerSchluessel)).bytes;
+      final beweis = Hmac(sha256, abdruck).convert(utf8.encode('mixpi-kopplung-beweis:$frage')).toString();
+      return _json({'beweise': [beweis]});
     }
     if (pfad == '/api/kopplung/koppeln') {
       final code = (jsonDecode(req.body) as Map)['code'];
       if (code != kopplungsCode) return _json({'error': 'kopplung_falsch', 'hinweis': 'Der Code stimmt nicht.'}, 403);
-      return _json({'schluessel': schluessel, 'id': 'hdy_1'});
+      return _json({'schluessel': _eigenerSchluessel, 'id': 'hdy_1'});
     }
     // WIE DIE BOX: das LESEN der Sperre steht VOR dem Tor (server.ts).
     if (pfad == '/api/boxsperre' && req.method == 'GET') {
@@ -518,6 +556,29 @@ void main() {
       await c.profile();
       expect(box.kopfzeilen.last['x-mixpi-schluessel'], AttrappenBox.schluessel);
       expect(BoxEintrag.ausJson(e.alsJson()).schluessel, AttrappenBox.schluessel, reason: 'ueberlebt das Speichern');
+    });
+
+    test('der Beweis rechnet wie die Box — derselbe Prueffall steht in kopplung.spec.ts', () {
+      // Einmal mit node:crypto und einmal mit Pythons hmac gerechnet (29.09.2026).
+      expect(
+        kopplungsBeweis('a' * 64, '0' * 32),
+        'ad2f33b3f79acd206fccd0f571f1d6f7204f0e962e737772e5883c2670db7006',
+      );
+    });
+
+    test('kenntSchluessel: die echte Box ja, eine fremde und eine alte nein — und keine sieht den Schluessel', () async {
+      for (final (box, erwartet) in [
+        (AttrappenBox(kopplung: true), true),
+        (AttrappenBox(kopplung: true, fremd: true), false),
+        (AttrappenBox(kopplung: true, ohneBeweis: true), false),
+        (AttrappenBox(ohneBeweis: true), false),
+      ]) {
+        // Der Eintrag TRAEGT den Schluessel schon — der Kopf darf trotzdem nicht mit.
+        final e = eintrag()..schluessel = AttrappenBox.schluessel;
+        final c = BoxClient(e, client: box.client());
+        expect(await c.kenntSchluessel(AttrappenBox.schluessel), erwartet, reason: 'fremd=${box.fremd} ohneBeweis=${box.ohneBeweis}');
+        expect(box.verlauf.where((v) => v.mitSchluessel), isEmpty);
+      }
     });
   });
 

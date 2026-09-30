@@ -20,6 +20,12 @@
 // AUFRUF
 //   node tools/neu-groessen-schau.mjs             Tabelle roh + gzip
 //   node tools/neu-groessen-schau.mjs --pruefen   still; Ende 1 ueber Deckel
+//   node tools/neu-groessen-schau.mjs --verlauf <rev>
+//                                  je Commit seit <rev>: Bytes und Zuwachs der
+//                                  gedeckelten Dateien, und wann welcher Deckel
+//                                  riss. Die Frage „woher kommt der Zuwachs?"
+//                                  stellte jedes Audit von Hand (29.09.2026).
+import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -153,7 +159,22 @@ const DECKEL = {
   // Deckelfrage ist. DARUNTER LIEGT WEITER DIE ALTSCHULD vom 13.09.: HEAD
   // stand schon 1.615 B ueber dem alten Deckel, und der zugesagte Abbau von
   // spieltMarkieren() steht weiter aus. Der Deckel legalisiert sie NICHT.
-  'NewDesign/app.js': 1_700_000,
+  // -> 1_730_000 (29.09.2026, AUDIT-2026-09-28 §1c Punkt 6). Neun Tage
+  // dauerrot, und die Audits nannten den falschen Taeter: 67162e17 fasst
+  // NewDesign/ gar nicht an. Nachgemessen mit `--verlauf ade699d9` (Zuwachs
+  // seit dem letzten Deckel, 1.684.606 B / gzip 563.240):
+  //   Nachricht fuers Kind (1808149c, 21.09.) ............  +4.114
+  //   Handy-App und Kopplung (8028b471 … 497e4d05) ........ +17.819  RISS in
+  //     a5f6c3d0 (27.09., Code und QR am Schirm, +8.093)
+  //   Theme-Gestalter (d7b4c878 heimgeholt + 9 Folgezuege) +20.139
+  //   Review-Texte der Cloud-Sitzung (ca94f361) ...........  -4.268
+  //   Video-Stimme + ehrliche Zitate (29.09.) .............    +745
+  // GEMESSEN 1.723.155 B (gzip 575.760). Schrumpfen war geprueft und traegt
+  // nicht: tote-funktionen-schau nennt zwei Kandidaten (~3,7 kB), einer davon
+  // (`sprichImBrowser`) steht mit Grund da. Alles Uebrige waere Begruendung
+  // streichen — und die gehoert zur Hausform (siehe 30.08.). Luft: knapp
+  // 7 kB, damit der naechste Zug wieder eine Deckelfrage ist.
+  'NewDesign/app.js': 1_730_000,
   // NEU am 03.09.2026. Die Apps der Schublade: Memory, Puzzle, Rechnen, Uhr,
   // Lesen, Malen. Eigene Datei, eigener Deckel — genau das war der Sinn des
   // Auszugs. Gemessen beim Anlegen; die Luft ist knapp gehalten, damit die
@@ -220,7 +241,23 @@ const DECKEL = {
   // zwei Spieler-Chips. Die Vollbild-Regeln heissen jetzt `app-voll` statt
   // `mal-voll` — Groesse unveraendert, nur die Sorte statt der einen App.
   // Gemessen 459.933 B.
-  'NewDesign/app.css': 465_000,
+  // -> 489_000 (29.09.2026, AUDIT-2026-09-28 §1c Punkt 6; `--verlauf
+  // ade699d9`, Stand davor 462.503 B / gzip 162.862):
+  //   Nachricht + Karte (1808149c, fb0a38e7, 21.09.) ......  +2.192
+  //   Handy-App (35900c99, 497e4d05) ......................  +1.268
+  //   Theme-Gestalter (d7b4c878 … 2fb2a5cc, 14 Zuege) ..... +20.070  RISS in
+  //     d7b4c878 (27.09., PR #6 von GitHub heimgeholt, +4.901): Glas-Kopfleiste,
+  //     Ellipsen, Verlaeufe, Schatten, Mini-Player-Formen, Glas-aus-Schalter
+  //   Review-Texte (ca94f361) .............................    -720
+  //   29.09.: toter 280-px-Block der Schublade (die Zahl galt einen Tag) -917
+  // GEMESSEN 484.396 B (gzip 169.280). tote-stile-schau meldet 0 tote Regeln
+  // — es gibt nichts Totes zu streichen. Die Gestalter-Welle ist Arbeit fuer
+  // den Betreiber, keine Rutschbahn; wer das CSS doch schrumpfen will: die
+  // Gestalter-Regeln haengen fast alle an Rumpf-Klassen (`body.kopf-glas`,
+  // `.kopf-inseln`, `.mp-oben`, `.tb-unten`, `.hg-eigen`) und koennten in ein
+  // eigenes gestalter.css (Vorbild video.css) — ob die Kaskade die neue
+  // Reihenfolge traegt, ist NICHT geprueft.
+  'NewDesign/app.css': 489_000,
   // -> 97_000 am 03.09.2026: die Schublade braucht im Rumpf ihre Flaeche, den
   // Griff und die Buehne einer App (Kopf, Titel, Inhalt). Gemessen 95.698 B —
   // vorher lag die Datei mit 91.188 B unter dem Deckel, diese Arbeit hat ihn
@@ -234,7 +271,12 @@ const DECKEL = {
   // Vortagen und stand seit mindestens dem 09.09. dauerrot. Eine Wache, die
   // immer meldet, deckt den naechsten echten Fund zu; der Deckel sitzt
   // wieder knapp ueber dem Ist, die Herkunft der 7,5 kB bleibt unerfunden.
-  'NewDesign/index.html': 110_000,
+  // -> 113_500 (29.09.2026, AUDIT-2026-09-28 §1c Punkt 6). Seit dem 21.09.
+  // dauerrot — gerissen hat 1808149c (Nachricht fuers Kind, +1.529 auf
+  // 110.168 B), danach Handy-App (+723) und Theme-Gestalter (+1.624),
+  // Review-Texte -74, am 29.09. ein ehrliches Zitat +37. GEMESSEN 112.478 B
+  // (gzip 40.066; am 20.09. 108.639 / 38.815). Rund 1 kB Luft.
+  'NewDesign/index.html': 113_500,
   // 16_000 / 7_000 (20.09.2026): die Belohnungs-Videos. Sie stehen von
   // Anfang an in EIGENEN Dateien und nicht in app.js/app.css — beide lagen
   // beim Bau bei 99 % ihres Deckels, und apps.js hat denselben Schnitt am
@@ -261,6 +303,63 @@ const DECKEL = {
   // Gemessen 27.406 B.
   'NewDesign/video.js': 29_000,
   'NewDesign/video.css': 9_000,
+}
+
+// ── --verlauf: WOHER DER ZUWACHS KOMMT (29.09.2026) ─────────────────────────
+// Drei Audits in Folge schrieben einer Welle zu, die Deckel gerissen zu haben,
+// ohne es je nachzurechnen — und das Nachrechnen zeigte beim ersten Lauf, dass
+// app.js und app.css schon VOR dem genannten Commit darueber lagen. Gerechnet
+// wird am Commit selbst (`git cat-file -s`), nicht am Arbeitsbaum; der steht
+// als letzte Zeile getrennt da, weil dort eine Nachbarsitzung mitschreibt.
+// RISS heisst: dieser Commit hob die Datei ueber den HEUTIGEN Deckel aus
+// DECKEL — wer einen alten Riss sucht, setzt den alten Wert kurz davor ein.
+const verlaufAb = process.argv.indexOf('--verlauf')
+if (verlaufAb > 0) {
+  const von = process.argv[verlaufAb + 1]
+  if (!von) {
+    console.error('Aufruf: node tools/neu-groessen-schau.mjs --verlauf <rev>')
+    process.exit(2)
+  }
+  const git = (...a) => execFileSync('git', a, { cwd: WURZEL, encoding: 'utf8' }).trim()
+  const groesse = (rev, rel) => {
+    try {
+      return Number(git('cat-file', '-s', `${rev}:${rel}`))
+    } catch {
+      return 0
+    }
+  }
+  const dateien = Object.keys(DECKEL)
+  const kurz = (rel) => rel.replace('NewDesign/', '')
+  const commits = git('log', '--reverse', '--format=%h', `${von}^..HEAD`, '--', ...dateien)
+    .split('\n')
+    .filter(Boolean)
+  let vorher = Object.fromEntries(dateien.map((d) => [d, groesse(`${von}^`, d)]))
+  const liste = (werte) => dateien.map((d) => `${kurz(d)} ${werte[d].toLocaleString('de-DE')}`).join(', ')
+  console.log(`Stand vor ${von}: ${liste(vorher)}`)
+  const summe = Object.fromEntries(dateien.map((d) => [d, 0]))
+  const zeile = (marke, jetzt, titel) => {
+    const teile = dateien
+      .filter((d) => jetzt[d] !== vorher[d])
+      .map((d) => {
+        const diff = jetzt[d] - vorher[d]
+        summe[d] += diff
+        const riss = vorher[d] <= DECKEL[d] && jetzt[d] > DECKEL[d] ? ' RISS' : ''
+        return `${kurz(d)} ${diff > 0 ? '+' : ''}${diff.toLocaleString('de-DE')}${riss}`
+      })
+    if (teile.length) console.log(`  ${marke.padEnd(9)} ${teile.join(', ').padEnd(46)} ${titel.slice(0, 70)}`)
+    vorher = jetzt
+  }
+  for (const c of commits) {
+    zeile(
+      c,
+      Object.fromEntries(dateien.map((d) => [d, groesse(c, d)])),
+      git('log', '-1', '--format=%ad %s', '--date=short', c),
+    )
+  }
+  zeile('Baum', Object.fromEntries(dateien.map((d) => [d, readFileSync(join(WURZEL, d)).length])), '(uncommittet)')
+  const gewachsen = dateien.filter((d) => summe[d])
+  console.log(`Summe: ${gewachsen.map((d) => `${kurz(d)} ${summe[d].toLocaleString('de-DE')}`).join(', ')}`)
+  process.exit(0)
 }
 
 const still = process.argv.includes('--pruefen')

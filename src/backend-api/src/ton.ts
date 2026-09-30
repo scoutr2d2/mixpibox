@@ -157,7 +157,7 @@ export function zielName(ziel: Ziel, geraetName?: string): string {
 export interface Senke {
   /** Laufende Nummer von PipeWire — aendert sich bei jedem Verbinden. */
   id: number
-  /** Stabiler Name, z. B. `bluez_output.00_9E_C8_61_1A_EA.1`. */
+  /** Stabiler Name, z. B. `bluez_output.AA_BB_CC_11_22_33.1`. */
   name: string
 }
 

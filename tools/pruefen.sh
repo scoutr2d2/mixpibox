@@ -338,6 +338,28 @@ schritt "Tests neue Verwaltung" admin_tests
 # Box-Oberflaeche oben: ein Karma-fremder Import risse den Browserlauf mit.
 schritt "Node-Tests neue Verwaltung" node_specs src/frontend-admin
 
+# ── Und die Handy-App? ─────────────────────────────────────────────────────
+#
+# Bis 29.09.2026 rief `flutter test` nur die CI, und die nur bei Aenderungen
+# unter handy-app/**. Zwei Zeugen lesen aber Dateien des KERNS: der
+# Dienst-Abgleich liest die Regeln aus src/backend-api/src/medien.ts, der
+# Kopplungs-Beweis rechnet denselben Prueffall wie kopplung.ts. Eine Aenderung
+# nur am Kern faerbte sie nie. Flutter liegt hier ohne sudo unter
+# ~/development/flutter und nicht im PATH; ohne Flutter ueberspringt sich der
+# Schritt wie die Verwaltungstests ohne Browser.
+handy_app_tests() {
+  local flutter
+  flutter=$(command -v flutter || true)
+  [ -z "$flutter" ] && [ -x "$HOME/development/flutter/bin/flutter" ] && flutter="$HOME/development/flutter/bin/flutter"
+  if [ -n "$flutter" ]; then
+    (cd handy-app && "$flutter" test 2>&1) | grep -q "All tests passed!"
+  else
+    echo "kein Flutter gefunden - Tests der Handy-App uebersprungen"
+    return 0
+  fi
+}
+schritt "Tests Handy-App" handy_app_tests
+
 # Und der leiseste Fehler der Verwaltung: die Suche kennt einen Schalter nicht.
 #
 # Ihr Bestand (src/frontend-admin/src/app/such-bestand.ts) wird AUS DEN SEITEN
@@ -1138,6 +1160,12 @@ schritt "Spieleliste an drei Orten" python3 tools/spiele-liste-deckung.py --prue
 # EIGENE VORSCHAU: der Schritt setzt ein Passwort und schaltet den Gast ab;
 # in einer geliehenen bliebe beides stehen und traefe den naechsten Lauf.
 schritt "Was beim Einschalten passiert" node tools/start-modus-schau.mjs --pruefen
+# AUSSEHEN BEIM PROFILWECHSEL (E72, 29.09.2026). Ein Profil ohne eigenes
+# Aussehen bekommt die VORGABE der Box, nicht das des vorigen Kindes — und
+# beim Seitenaufbau wird nichts mehr ans Profil gemeldet (bis dahin schrieb
+# jeder Aufbau das Licht des vorigen Kindes als eigenes fest). Der Zeuge geht
+# den Wechsel in BEIDE Richtungen; nur der Hinweg war schon vorher gruen.
+schritt "Aussehen beim Profilwechsel (E72)" node tools/mixpi-aussehen-wechsel-schau.mjs --pruefen
 # BLEIBT DIE BOX AUFFINDBAR (20.09.2026)? Drei Teile, von denen jeder still
 # wegbrechen kann: avahi auf beiden Ausrollwegen (installiert UND
 # eingeschaltet), die Kennmarke `GET /api/box`, und dass tools/box-finden.py
@@ -1478,6 +1506,13 @@ schritt "Bau Verwaltung" bau_admin
 #
 # Die Wache liest deploy.sh und das Zip, statt eine vierte Handliste zu fuehren.
 schritt "Rezept-Deckung (dritter Ausrollweg)" python3 tools/rezept-deckung.py --pruefen
+
+# DIE ZWEI KARTENWEGE TEILTEN KEINE ZEILE (AUDIT-2026-09-25 Rang 3): den
+# Lizenzschluessel setzte nur sdprep.py, die zram-Schluessel nur
+# make-boot-sd.sh. Seit 29.09.2026 lesen beide EINE Tabelle
+# (remote-step-installer/controller/mixpi-kartenschluessel.txt); die Wache
+# bespielt zwei Probekarten und vergleicht, was auf ihnen landet. 0,1 s.
+schritt "Karten-Wege: dieselben dietpi-Schluessel" python3 tools/kartenwege-schluessel-zwilling.py --pruefen
 
 # ZWEI GEWOHNHEITEN, EIN URSPRUNG (AUDIT-2026-09-19, Raenge 3 und 10f): eine
 # Zwischendatei, die nur die Prozesskennung traegt, und ein roher Fehler in

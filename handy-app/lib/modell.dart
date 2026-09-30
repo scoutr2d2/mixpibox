@@ -242,6 +242,42 @@ int _zahl(Object? v) {
   return (adresse: m.group(1)!, port: int.parse(m.group(2)!), code: m.group(3)!);
 }
 
+// ── Welcher Dienst? (29.09.2026) ─────────────────────────────────────────
+//
+// DIESELBE EINTEILUNG WIE `dienstVon()` IM KERN (src/backend-api/src/medien.ts).
+// Bis 29.09.2026 stand hier eine eigene Fassung ohne `toLowerCase` und ohne
+// radio/rss/ard/plugin: `type: "Spotify"` sortierte der Kern als spotify ein,
+// die App zeigte „Spotify" als eigenen Dienst, und ein unbekannter Typ kam
+// roh durch statt als „anderes" (AUDIT-2026-09-28 §1b Rang 5).
+//
+// ALS TABELLEN, nicht als if-Kette: test/dienst_deckung_test.dart liest die
+// Regeln aus medien.ts und vergleicht sie mit genau diesen beiden Tabellen —
+// in beide Richtungen, also auch „und sonst nichts". Wer im Kern einen Dienst
+// nachtraegt, sieht den Test hier rot, bis er ihn auch hier nachtraegt.
+
+/// `type` beginnt mit … → Dienst. Die Reihenfolge ist die des Kerns.
+const dienstNachVorsilbe = {'spotify': 'spotify', 'jellyfin': 'jellyfin'};
+
+/// `type` ist genau … → Dienst. `plugin` steht fuer ALLE Plugins (E87) —
+/// welches, steht im `id` des Eintrags, nicht im Typ.
+const dienstNachTyp = {
+  'library': 'lokal',
+  'local': 'lokal',
+  'radio': 'radio',
+  'rss': 'rss',
+  'ard': 'ard',
+  'plugin': 'plugin',
+};
+
+/// Der Dienst zu einem `type`, wie der Kern ihn einteilt.
+String dienstVon(String typ) {
+  final t = typ.toLowerCase();
+  for (final e in dienstNachVorsilbe.entries) {
+    if (t.startsWith(e.key)) return e.value;
+  }
+  return dienstNachTyp[t] ?? 'anderes';
+}
+
 /// Ein Eintrag der Box, wie die Verwaltung ihn sieht (`GET /api/medien`).
 class MedienEintrag {
   const MedienEintrag({
@@ -251,6 +287,7 @@ class MedienEintrag {
     this.kategorie = 'music',
     this.typ = '',
     this.cover = '',
+    this.dienstDerBox = '',
   });
 
   /// Die Kennung des Eintrags — alle Aenderungen gehen ueber sie.
@@ -263,14 +300,14 @@ class MedienEintrag {
   final String typ;
   final String cover;
 
-  /// Der Dienst hinter dem Eintrag — dieselbe Einteilung wie `dienstVon`
-  /// im Kern (medien.ts).
-  String get dienst {
-    if (typ.startsWith('spotify')) return 'spotify';
-    if (typ.startsWith('jellyfin')) return 'jellyfin';
-    if (typ == 'library' || typ == 'local') return 'lokal';
-    return typ.isEmpty ? 'anderes' : typ;
-  }
+  /// Was die Box selbst als Dienst nennt: `GET /api/medien` traegt je Eintrag
+  /// `dienst: dienstVon(e)` (server.ts, seit 28.07.2026). Leer, wenn nicht.
+  final String dienstDerBox;
+
+  /// Der Dienst hinter dem Eintrag. ZUERST DAS WORT DER BOX — es ist der Kern
+  /// selbst, und ein Dienst, den eine neuere Box kennt, erscheint so ohne
+  /// neue App. Nur ohne es rechnet die App selbst ([dienstVon]).
+  String get dienst => dienstDerBox.isNotEmpty ? dienstDerBox : dienstVon(typ);
 
   static List<MedienEintrag> listeAusJson(Object? liste) => (liste as List? ?? const [])
       .whereType<Map>()
@@ -282,6 +319,8 @@ class MedienEintrag {
           kategorie: _text(e['category']).isEmpty ? 'music' : _text(e['category']),
           typ: _text(e['type']),
           cover: _text(e['cover']),
+          // Nur ein Wort, nie ein zu Text gemachtes Objekt.
+          dienstDerBox: e['dienst'] is String ? e['dienst'] as String : '',
         ),
       )
       .where((e) => e.schluessel.isNotEmpty)

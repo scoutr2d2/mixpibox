@@ -37,6 +37,11 @@ seiner Gruppe.
 Ein zweiter Durchlauf fragt nur Paare, die noch keine Antwort haben — nach
 neuen Alben also nur die neuen.
 
+Du kannst schon entscheiden, während der Durchlauf noch läuft: jede
+Entscheidung wird sofort gespeichert und bleibt stehen. (Bis 29.09.2026
+konnte ein Klick währenddessen still verloren gehen — der Durchlauf schrieb
+seinen Zwischenstand darüber.)
+
 ## Was hinausgeht
 
 Je Paar: die beiden Namen, ihre Dienste, die Zahl der Einträge und bis zu fünf

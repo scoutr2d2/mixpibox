@@ -15,6 +15,12 @@
 #  Usage:
 #     scripts/make-boot-sd.sh <boot-partition-mountpoint> [--yes]
 #                             [--wifi <SSID>] [--wifi-country <CC>]
+#     scripts/make-boot-sd.sh <boot-partition-mountpoint> --nur-schluessel
+#         -> only (re)applies the dietpi.txt keys every card needs, from the
+#            table shared with the sdstart assistant
+#            (remote-step-installer/controller/mixpi-kartenschluessel.txt);
+#            no package, no copy. tools/kartenwege-schluessel-zwilling.py uses
+#            it to compare both card paths without a 20-second package build.
 #
 #  Example (SD auto-mounted by the desktop):
 #     scripts/make-boot-sd.sh /media/$USER/bootfs
@@ -32,11 +38,13 @@ note() { echo " -> $*"; }
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BOOT=""
 ASSUME_YES=0
+NUR_SCHLUESSEL=0
 WIFI_SSID=""
 WIFI_COUNTRY="DE"
 while [ $# -gt 0 ]; do
   case "$1" in
     --yes)          ASSUME_YES=1 ;;
+    --nur-schluessel) NUR_SCHLUESSEL=1 ;;
     --wifi)         shift; WIFI_SSID="${1:-}"; [ -n "${WIFI_SSID}" ] || die "--wifi needs an SSID" ;;
     --wifi-country) shift; WIFI_COUNTRY="${1:-DE}" ;;
     -*)             die "unknown option: $1 (see the header for usage)" ;;
@@ -57,6 +65,60 @@ esac
 # don't splatter files onto a random folder the user pointed us at.
 if [ ! -f "${BOOT}/dietpi.txt" ] && [ ! -f "${BOOT}/config.txt" ] && [ ! -f "${BOOT}/cmdline.txt" ]; then
   die "'${BOOT}' has no dietpi.txt/config.txt/cmdline.txt — that does not look like a DietPi/RPi boot partition. Flash DietPi first."
+fi
+
+# ══ DIE SCHLUESSEL, DIE JEDE KARTE BRAUCHT — AUS EINER TABELLE FUER BEIDE WEGE ══
+#
+# Bis zum 29.09.2026 standen hier zwei eigene Bloecke (CUSTOM_SCRIPT_EXEC und
+# die zram-Schluessel), und der Assistent (remote-step-installer/controller/
+# sdprep.py) fuehrte eine eigene Liste. Die beiden teilten keine Zeile und
+# liefen auseinander (AUDIT-2026-09-25 Rang 3): AUTO_SETUP_ACCEPT_LICENSE
+# stand nur dort, zram nur hier. Jetzt lesen BEIDE dieselbe Datei; warum
+# jeder Schluessel dasteht, steht an ihm, in der Tabelle selbst.
+#
+# GELESEN WIRD VOR DEM PAKETBAU: eine kaputte Tabelle soll in der ersten
+# Sekunde auffallen, nicht nach zwanzig. Und STRENG, mit derselben Form wie
+# sdprep.kartenschluessel() — eine Zeile, die der eine Leser verwirft und der
+# andere nimmt, waere genau die Abweichung, gegen die die Tabelle da ist.
+KARTENSCHLUESSEL="${REPO_ROOT}/remote-step-installer/controller/mixpi-kartenschluessel.txt"
+karten_schluessel_lesen() {
+  local zeile nr=0 n=0
+  [ -f "${KARTENSCHLUESSEL}" ] || die "shared key table missing: ${KARTENSCHLUESSEL}"
+  while IFS= read -r zeile || [ -n "${zeile}" ]; do
+    nr=$((nr + 1))
+    zeile="${zeile%$'\r'}"
+    [ -z "${zeile//[[:space:]]/}" ] && continue
+    case "${zeile}" in '#'*) continue ;; esac
+    [[ "${zeile}" =~ ^[A-Z][A-Z0-9_]*=[A-Za-z0-9_.:+-]*$ ]] \
+      || die "${KARTENSCHLUESSEL}:${nr}: not KEY=VALUE (letters, digits, . _ : + - only): ${zeile}"
+    printf '%s\n' "${zeile}"
+    n=$((n + 1))
+  done < "${KARTENSCHLUESSEL}"
+  [ "${n}" -gt 0 ] || die "${KARTENSCHLUESSEL} has no keys"
+}
+KARTEN_TEXT="$(karten_schluessel_lesen)"
+mapfile -t KARTEN_PAARE <<< "${KARTEN_TEXT}"
+
+# Setzt jeden Tabellenschluessel in der dietpi.txt der Karte: vorhandene und
+# AUSKOMMENTIERTE Zeilen werden umgeschrieben (so liefert DietPi manche aus),
+# fehlende angehaengt. Zweimal fahren aendert nichts mehr.
+karten_schluessel_setzen() {
+  local dt="${BOOT}/dietpi.txt" paar schluessel
+  for paar in "${KARTEN_PAARE[@]}"; do
+    schluessel="${paar%%=*}"
+    if grep -q "^[#[:space:]]*${schluessel}=" "${dt}"; then
+      sed -i "s|^[#[:space:]]*${schluessel}=.*|${paar}|" "${dt}"
+    else
+      printf '\n%s\n' "${paar}" >> "${dt}"
+    fi
+    note "dietpi.txt: ${paar}"
+  done
+}
+
+if [ "${NUR_SCHLUESSEL}" -eq 1 ]; then
+  [ -f "${BOOT}/dietpi.txt" ] || die "--nur-schluessel needs ${BOOT}/dietpi.txt"
+  karten_schluessel_setzen
+  exit 0
 fi
 
 # --- read the version this repo ships --------------------------------------
@@ -90,8 +152,9 @@ echo "About to stage MuPiBox ${VER} onto:  ${BOOT}"
 echo "  - ${TARBALL_NAME}           (this repo @ HEAD, incl. bin/nodejs/deploy.zip)"
 echo "  - autosetup.sh              (with the local-source patch)"
 echo "  - Automation_Custom_Script.sh (DietPi first-boot installer)"
-echo "  - dietpi.txt: enable AUTO_SETUP_CUSTOM_SCRIPT_EXEC=1 (if present)"
-echo "  - dietpi.txt: swap as zram, not /var/swap on the SD (BACKLOG E5/B7)"
+for paar in "${KARTEN_PAARE[@]}"; do
+  echo "  - dietpi.txt: ${paar}   (shared card table, if dietpi.txt is present)"
+done
 [ -n "${WIFI_SSID}" ] && echo "  - dietpi-wifi.txt for SSID '${WIFI_SSID}' (passphrase prompted, hidden)"
 if [ "${ASSUME_YES}" -ne 1 ]; then
   read -r -p "Proceed? [y/N] " ans
@@ -223,55 +286,15 @@ cp "${TMP}/${TARBALL_NAME}"               "${BOOT}/${TARBALL_NAME}"
 cp "${REPO_ROOT}/autosetup/autosetup.sh"  "${BOOT}/autosetup.sh"
 cp "${TMP}/Automation_Custom_Script.sh"   "${BOOT}/Automation_Custom_Script.sh"
 
-# --- make DietPi actually run our first-boot script ------------------------
+# --- the dietpi.txt keys every card needs (shared table, see above) --------
 if [ -f "${BOOT}/dietpi.txt" ]; then
-  if grep -q '^[#[:space:]]*AUTO_SETUP_CUSTOM_SCRIPT_EXEC=' "${BOOT}/dietpi.txt"; then
-    sed -i 's/^[#[:space:]]*AUTO_SETUP_CUSTOM_SCRIPT_EXEC=.*/AUTO_SETUP_CUSTOM_SCRIPT_EXEC=1/' "${BOOT}/dietpi.txt"
-  else
-    printf '\nAUTO_SETUP_CUSTOM_SCRIPT_EXEC=1\n' >> "${BOOT}/dietpi.txt"
-  fi
-  note "dietpi.txt: AUTO_SETUP_CUSTOM_SCRIPT_EXEC=1"
-
-  # SWAP ALS ZRAM — und der Grund, warum das HIER stehen muss.
-  #
-  # config/templates/dietpi.txt traegt seit dem 04.08.2026
-  # AUTO_SETUP_SWAPFILE_LOCATION=zram (BACKLOG E5/B7). Nur: DIESE VORLAGE
-  # KOMMT AUF KEINEM WEG DIESES REPOS AUF EINE KARTE. Beim Gegenlesen am
-  # 04.08.2026 nachgesehen: make-boot-sd.sh legt Tarball, autosetup.sh und
-  # Automation_Custom_Script.sh ab und aendert an der dietpi.txt der Karte
-  # genau zwei Schluessel (CUSTOM_SCRIPT_EXEC, WLAN) — die Vorlage wird nie
-  # kopiert; flash-mupibox-sd.sh sucht dietpi.txt nur, um die Partition zu
-  # erkennen; autosetup.sh laeuft ohnehin erst NACH DietPis Erstlauf, wenn
-  # der Swap laengst angelegt ist. Ohne diesen Block waere B7 im Backlog
-  # FERTIG und auf einer frischen Karte trotzdem /var/swap.
-  #
-  # WARUM ZRAM: eine 2-GB-Box ohne Swap wird unter Chromium unerreichbar
-  # (dreimal erlebt, Wiki: zram-statt-swap-auf-der-box). Der Bedarf entsteht
-  # im BETRIEB, nicht beim Booten — nach 9,7 h waren 1318 statt 744 MB belegt
-  # und 91 MB ausgelagert, fast alles ein Prozess (piper, 698 MB PSS;
-  # gemessen 04.08.2026 an Box .169, Wiki: speicher-waechst-erst-im-betrieb).
-  # zram ist komprimierter Swap IM RAM, kostet also keine SD-Schreibzyklen.
-  # Box .169 faehrt bereits so (1005 MB zram in /proc/swaps) — bewiesen auf
-  # genau dieser Hardware, nur eben nicht aus diesem Repo heraus.
-  #
-  # SIZE=1 heisst "auto", bei zram = 50 % des RAM. NICHT 0 setzen: das waere
-  # gar kein Swap. (Die dietpi.txt der laufenden .169 sagt SIZE=0 und
-  # LOCATION=/var/swap und hat trotzdem zram — dietpi.txt wirkt NUR beim
-  # Erstlauf, spaetere Umstellungen stehen nicht darin. Wer den Zustand einer
-  # laufenden Box aus ihrer dietpi.txt ablesen will, liest die falsche Datei.)
-  #
-  # ZURUECK: auf der Karte AUTO_SETUP_SWAPFILE_LOCATION=/var/swap setzen,
-  # bevor der Pi das erste Mal startet. Danach: dietpi-config.
-  for _paar in 'AUTO_SETUP_SWAPFILE_SIZE=1' 'AUTO_SETUP_SWAPFILE_LOCATION=zram'; do
-    _schluessel="${_paar%%=*}"
-    if grep -q "^[#[:space:]]*${_schluessel}=" "${BOOT}/dietpi.txt"; then
-      sed -i "s/^[#[:space:]]*${_schluessel}=.*/${_paar}/" "${BOOT}/dietpi.txt"
-    else
-      printf '\n%s\n' "${_paar}" >> "${BOOT}/dietpi.txt"
-    fi
-  done
-  unset _paar _schluessel
-  note "dietpi.txt: AUTO_SETUP_SWAPFILE_SIZE=1, AUTO_SETUP_SWAPFILE_LOCATION=zram"
+  # HIER STANDEN BIS 29.09.2026 ZWEI EIGENE BLOECKE: AUTO_SETUP_CUSTOM_SCRIPT_EXEC
+  # und die zram-Schluessel (E5/B7), samt ihrer Begruendung. Beides steht jetzt
+  # in der gemeinsamen Tabelle, die Begruendung an jedem Schluessel — und der
+  # Assistent liest dieselbe Datei. Die Vorlage config/templates/dietpi.txt
+  # bleibt, was sie war: sie kommt auf keine Karte
+  # (Wiki: dietpi-txt-vorlage-ist-kein-ausrollweg).
+  karten_schluessel_setzen
 else
   echo "NOTE: no dietpi.txt on this SD — if this is NOT DietPi, ensure your OS"
   echo "      runs /boot/Automation_Custom_Script.sh once on first boot yourself."

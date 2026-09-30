@@ -1,0 +1,74 @@
+# DIE dietpi.txt-SCHLUESSEL, DIE JEDE KARTE BRAUCHT — egal, auf welchem Weg
+# sie entsteht.
+#
+# Gelesen von BEIDEN Karten-Wegen, und von keinem abgeschrieben:
+#
+#   remote-step-installer/controller/sdprep.py   dietpi_cfg()  (sdstart, sdgui,
+#                                                 sdtui, sdprep — der Assistent)
+#   scripts/make-boot-sd.sh                       der Bash-Weg ohne Assistent
+#
+# WARUM ES DIESE DATEI GIBT (29.09.2026, AUDIT-2026-09-25 Rang 3): Die zwei
+# Wege teilten keine einzige Zeile, und ihre Schluesselmengen liefen messbar
+# auseinander. AUTO_SETUP_ACCEPT_LICENSE stand NUR in sdprep.py, die
+# zram-Schluessel (BACKLOG E5/B7) NUR in make-boot-sd.sh. Jeder Weg war fuer
+# sich gruen und hatte die Haelfte. Zwei Listen derselben Sache laufen
+# auseinander — also gibt es jetzt EINE, und die Zwillings-Wache
+#     tools/kartenwege-schluessel-zwilling.py
+# faehrt beide Wege gegen eine Probekarte und vergleicht, was WIRKLICH auf
+# der Karte steht.
+#
+# WAS HIER HINGEHOERT: nur, was fuer JEDE Karte gilt. Was ein Weg aus seinen
+# eigenen Eingaben ableitet (Passwort, Name, WLAN, Sprache …), bleibt bei ihm;
+# die Zwillings-Wache fuehrt diese Ausnahmen mit Grund.
+#
+# FORMAT, und beide Leser pruefen es STRENG (sonst liest der eine etwas
+# anderes als der andere): SCHLUESSEL=WERT, eine Zeile je Schluessel, kein
+# Leerraum, keine Anfuehrungszeichen. Der Wert besteht nur aus Buchstaben,
+# Ziffern und . _ : + - (der Bash-Weg setzt ihn per sed ein — ein / oder & im
+# Wert waere dort ein anderer Befehl). Kommentare nur am Zeilenanfang.
+#
+# WIRKT NUR BEIM ERSTLAUF. dietpi.txt wird von DietPi genau einmal gelesen;
+# wer den Zustand einer LAUFENDEN Box aus ihrer dietpi.txt abliest, liest die
+# falsche Datei (Wiki: dietpi-txt-vorlage-ist-kein-ausrollweg).
+
+# ── DIE LIZENZZUSTIMMUNG ────────────────────────────────────────────────────
+# Betreiber, 10.08.2026: „also blauer bildschirm install gestoppt von dietpi."
+# Ein whiptail-Dialog wartet an einer Box ohne Tastatur fuer immer.
+#
+# OFFEN, mit Datum (29.09.2026 nachgesehen): Das heutige dietpi.txt im
+# DietPi-Quelltext fuehrt den Schluessel nicht mehr; DietPis eigene Vorlage
+# sagt, AUTO_SETUP_AUTOMATED=1 schliesse die Zustimmung ein. Der Assistent
+# setzt AUTOMATED=1 ohnehin, der Bash-Weg NICHT (Netz und Erstlauf
+# ueberlaesst er dem Menschen). Ob ein Abbild den Schluessel noch liest,
+# entscheidet also das Abbild — und kennt es ihn nicht, ueberliest DietPi ihn.
+# Der Preis fuers Dastehen ist eine Zeile, der Preis fuers Fehlen war am
+# 10.08. ein blauer Kasten.
+AUTO_SETUP_ACCEPT_LICENSE=1
+
+# ── UNSER ERSTSTART-SKRIPT LAEUFT ───────────────────────────────────────────
+# Beide Wege legen /boot/Automation_Custom_Script.sh ab (der Bash-Weg den
+# MuPiBox-Installer, der Assistent SSH-Schluessel bzw. Agent). Ohne diesen
+# Schalter liegt das Skript da und laeuft nie.
+AUTO_SETUP_CUSTOM_SCRIPT_EXEC=1
+
+# ── SWAP ALS ZRAM, NICHT ALS DATEI AUF DER SD (BACKLOG E5/B7) ───────────────
+# Eine 2-GB-Box ohne Swap wird unter Chromium unerreichbar (dreimal erlebt,
+# Wiki: zram-statt-swap-auf-der-box); der Bedarf entsteht im Betrieb, nicht
+# beim Booten (nach 9,7 h 1318 statt 744 MB belegt, fast alles piper;
+# gemessen 04.08.2026 an Box .169). zram ist komprimierter Swap IM RAM und
+# kostet keine SD-Schreibzyklen.
+#
+# SIZE=1 heisst „auto", bei zram = 50 % des RAM. NICHT 0 — das waere gar kein
+# Swap.
+#
+# ACHTUNG, NACHBAR: der Rezept-Schritt `zram` (recipes/mupibox.yaml) ruft auf
+# einer Box mit Datei-Swap `dietpi-set_swapfile 0`. Das schaltet per
+# `swapoff -a` JEDE Auslagerung ab und raeumt DietPis eigenes zram weg
+# (nachgelesen im DietPi-Quelltext, Swap_Disable). Seit dieser Tabelle hat
+# eine Assistenten-Karte DietPis zram schon ab dem Erstlauf — der Schritt ruft
+# das Werkzeug deshalb nur noch, wenn wirklich eine Datei auszulagern ist.
+#
+# ZURUECK: auf der Karte AUTO_SETUP_SWAPFILE_LOCATION=/var/swap setzen, bevor
+# der Pi das erste Mal startet. Danach: dietpi-config.
+AUTO_SETUP_SWAPFILE_SIZE=1
+AUTO_SETUP_SWAPFILE_LOCATION=zram

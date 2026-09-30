@@ -107,8 +107,12 @@ HEBEL = [
         # dietpi.txt der Karte an Ort und Stelle, autosetup.sh laeuft erst
         # nach DietPis Erstlauf. Wer die Vorlage abfragt, misst eine Absicht;
         # dieses Werkzeug soll den AUSROLLWEG messen.
-        "repo_datei": "scripts/make-boot-sd.sh",
-        "repo_muster": r"AUTO_SETUP_SWAPFILE_LOCATION=zram",
+        # Seit 29.09.2026 schreiben BEIDE Kartenwege (make-boot-sd.sh und
+        # sdprep.py) die Schluessel aus EINER Tabelle; make-boot-sd.sh traegt
+        # den Wert selbst nicht mehr. Die Zwillings-Wache
+        # tools/kartenwege-schluessel-zwilling.py haelt fest, dass beide sie lesen.
+        "repo_datei": "remote-step-installer/controller/mixpi-kartenschluessel.txt",
+        "repo_muster": r"^AUTO_SETUP_SWAPFILE_LOCATION=zram$",
     },
     {
         "id": "disable-splash",

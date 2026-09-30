@@ -1246,7 +1246,7 @@ function akkuHochrechnen(punkt, kapazitaetMah) {
  * der Filter ueberhaupt greift.
  */
 const BT_STAMM = {
-  mac: '7C:96:D2:89:35:CC',
+  mac: 'DD:EE:FF:44:55:66',
   name: 'Teufel ROCKSTER Cross',
   gekoppelt: true,
   vertraut: true,
@@ -1256,12 +1256,12 @@ const BT_STAMM = {
 
 /** Was eine Suche zutage foerdert. Vor der ersten Suche steht nichts davon da. */
 const BT_FUNDE = [
-  { mac: '00:1A:7D:DA:71:13', name: 'Kopfhörer Lina', art: 'kopfhoerer' },
-  { mac: '38:F9:D3:12:0B:A4', name: 'Papas Handy', art: 'telefon' },
+  { mac: 'AA:00:BB:11:CC:22', name: 'Kopfhörer Lina', art: 'kopfhoerer' },
+  { mac: 'BB:11:CC:22:DD:33', name: 'Papas Handy', art: 'telefon' },
   // OHNE NAMEN: ein Thermometer, eine Steckdose, ein Auto im Hof. Die
   // Oberflaeche blendet solche Zeilen aus; ohne diese hier waere das eine
   // ungeprueft behauptete Eigenschaft.
-  { mac: '4C:65:A8:D0:1E:77', name: '4C-65-A8-D0-1E-77', namenlos: true },
+  { mac: 'CC:22:DD:33:EE:44', name: 'CC-22-DD-33-EE-44', namenlos: true },
 ]
 
 /**

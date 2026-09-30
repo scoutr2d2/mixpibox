@@ -65,7 +65,9 @@ mode (`MUPI_LOCAL_SRC`), and `scripts/make-boot-sd.sh` wires it up for you.
 
    It builds `MuPiBox-<ver>.tgz` from HEAD (incl. `bin/nodejs/deploy.zip`), copies
    the patched `autosetup.sh` + a generated `Automation_Custom_Script.sh`, and
-   sets `AUTO_SETUP_CUSTOM_SCRIPT_EXEC=1` in `dietpi.txt`. (Commit first — it ships
+   sets the keys every card needs in `dietpi.txt` — custom script, licence,
+   zram swap — from `remote-step-installer/controller/mixpi-kartenschluessel.txt`
+   (the same table the setup wizard's `sdprep.py` reads). (Commit first — it ships
    the last commit, not uncommitted edits.)
 4. **Give DietPi network + headless config** on the same boot partition:
    `dietpi.txt` → `AUTO_SETUP_AUTOMATED=1` + locale, and `dietpi-wifi.txt` →

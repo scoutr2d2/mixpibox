@@ -196,6 +196,53 @@ chk("die Lizenzzustimmung steht drin (sonst blauer Dialog auf Trixie)",
     "AUTO_SETUP_ACCEPT_LICENSE=1" in _de)
 chk("und genau einmal", _de.count("AUTO_SETUP_ACCEPT_LICENSE") == 1)
 
+# ── Die gemeinsame Kartenschluessel-Tabelle (AUDIT-2026-09-25 Rang 3) ──────
+# Beide Karten-Wege lesen controller/mixpi-kartenschluessel.txt. Was sie
+# verlangt, muss im Assistenten ankommen; was sie verbietet, muss er ablehnen
+# — GENAUSO wie make-boot-sd.sh, sonst lesen die Zwillinge Verschiedenes.
+_tab = sdprep.kartenschluessel()
+chk("die Tabelle traegt die zram-Schluessel (E5/B7)",
+    _tab.get("AUTO_SETUP_SWAPFILE_LOCATION") == "zram" and _tab.get("AUTO_SETUP_SWAPFILE_SIZE") == "1")
+chk("der Assistent schreibt JEDEN Tabellenschluessel",
+    all(f"{k}={v}\n" in _de for k, v in _tab.items()))
+
+
+def _tabelle(inhalt):
+    p = os.path.join(tempfile.mkdtemp(), "t.txt")
+    open(p, "w", encoding="utf-8").write(inhalt)
+    return p
+
+
+def _wirft(inhalt):
+    try:
+        sdprep.kartenschluessel(_tabelle(inhalt))
+    except ValueError:
+        return True
+    return False
+
+
+chk("Tabelle: Kommentar und Leerzeile werden uebergangen",
+    sdprep.kartenschluessel(_tabelle("# x\n\nA_B=1\n")) == {"A_B": "1"})
+chk("Tabelle: Schraegstrich im Wert wird abgelehnt (der Bash-Weg setzt per sed ein)",
+    _wirft("AUTO_SETUP_SWAPFILE_LOCATION=/var/swap\n"))
+chk("Tabelle: Leerraum um das = wird abgelehnt", _wirft("A_B = 1\n"))
+chk("Tabelle: eingerueckter Kommentar wird abgelehnt (Bash liest ihn genauso)",
+    _wirft("  # x\nA_B=1\n"))
+chk("Tabelle: doppelter Schluessel wird abgelehnt", _wirft("A_B=1\nA_B=2\n"))
+chk("Tabelle: leere Tabelle wird abgelehnt", _wirft("# nur Kommentar\n"))
+# Ein Schluessel an ZWEI Orten (Tabelle UND eigene Liste des Assistenten)
+# waere die alte Doppelliste durch die Hintertuer — dietpi_cfg bricht ab.
+_echt = sdprep.kartenschluessel
+sdprep.kartenschluessel = lambda: {"AUTO_SETUP_AUTOMATED": "1"}
+try:
+    sdprep.dietpi_cfg("pw")
+    _doppelt_abgelehnt = False
+except ValueError:
+    _doppelt_abgelehnt = True
+finally:
+    sdprep.kartenschluessel = _echt
+chk("Schluessel in Tabelle UND dietpi_cfg wird abgelehnt", _doppelt_abgelehnt)
+
 # ── Erstboot-Skript ────────────────────────────────────────────────────────
 s = sdprep.custom_script(agent_port=8099, ssh_pubkey="ssh-ed25519 AAAAC3xyz user@host")
 chk("Skript ist bash", s.startswith("#!/bin/bash"))
@@ -458,9 +505,13 @@ def _karte(**dateien):
 GUT_WIFI = ("aWIFI_SSID[0]='Heim'\naWIFI_KEY[0]='k'\naWIFI_KEYMGR[0]='WPA-PSK'\n"
             "aWIFI_EAP[0]=''\naWIFI_IDENTITY[0]=''\naWIFI_PASSWORD[0]=''\n"
             "aWIFI_PHASE1[0]=''\naWIFI_PHASE2[0]=''\naWIFI_CERT[0]=''\n")
+# Die gemeinsamen Kartenschluessel gehoeren seit 29.09.2026 zur heilen Karte —
+# aus der Tabelle gelesen, nicht abgeschrieben (sonst liefe dieser Test der
+# Tabelle hinterher, genau die Sorte Doppelliste, gegen die sie steht).
 GUT_DT = ("AUTO_SETUP_AUTOMATED=1\nAUTO_SETUP_NET_HOSTNAME=mupibox\n"
           "AUTO_SETUP_SSH_SERVER_INDEX=-2\nAUTO_SETUP_NET_WIFI_ENABLED=1\n"
-          "AUTO_SETUP_NET_WIFI_COUNTRY_CODE=DE\n")
+          "AUTO_SETUP_NET_WIFI_COUNTRY_CODE=DE\n"
+          + "".join(f"{k}={v}\n" for k, v in sdprep.kartenschluessel().items()))
 GUT_CL = "root=x consoleblank=0\n"
 GUT_CF = "dtoverlay=vc4-kms-v3d\ndtoverlay=vc4-kms-dsi-7inch\n"
 _wifi = {"ssid": "Heim", "key": "k"}
@@ -507,6 +558,12 @@ _d = _karte(**{"dietpi_txt": GUT_DT, "dietpi__wifi_txt": GUT_WIFI,
                "cmdline_txt": "root=x quiet consoleblank=0\n", "config_txt": GUT_CF})
 chk("stehengebliebenes 'quiet' wird gemeldet",
     any("quiet" in t for t in _fehler(_d, debug_display=True)))
+
+# Fehler 5: ein Kartenschluessel fehlt auf der Karte (etwa zram) -> /var/swap auf der SD
+_d = _karte(**{"dietpi_txt": GUT_DT.replace("AUTO_SETUP_SWAPFILE_LOCATION=zram\n", ""),
+               "dietpi__wifi_txt": GUT_WIFI, "cmdline_txt": GUT_CL, "config_txt": GUT_CF})
+chk("fehlender Kartenschluessel wird BENANNT",
+    any("AUTO_SETUP_SWAPFILE_LOCATION" in t for t in _fehler(_d, wifi=_wifi)))
 
 chk("fehlende dietpi.txt wird gemeldet",
     any("dietpi.txt" in t for t in _fehler(_karte(**{"config_txt": GUT_CF}))))
@@ -739,6 +796,74 @@ chk("fertige Box: der Einrichtungsschirm bleibt aus",
     "/var/lib/mixpibox-lauf/fertig" in _ss)
 chk("und zwar BEVOR irgendetwas gestartet wird",
     _ss.index("/var/lib/mixpibox-lauf/fertig") < _ss.index("setsid"))
+
+# 8) UND DER ZWEIG OHNE NETZ FRAGT SIE AUCH (BACKLOG E143/8, 29.09.2026).
+#    Bis dahin kannte nur `schirm_sicherstellen` die Marke. Startete eine
+#    fertige Box ohne Router, lief die ganze Einrichtung an: Agent als root
+#    auf 0.0.0.0, offenes Einrichtungs-WLAN, Schirm ueber der Oberflaeche —
+#    und der Kiosk wartete, weil der Vorstart vor getty@tty1 steht.
+#    NUR AUSFUEHRBARE ZEILEN ZAEHLEN: ein auskommentierter Riegel steht noch
+#    als Text im Skript, und eine `in`-Suche faende ihn dort weiter.
+print("\n── Vorstart: auf der fertigen Box keine Einrichtung, auch ohne Netz ──")
+import re as _re  # noqa: E402
+_MARKE = "/var/lib/mixpibox-lauf/fertig"
+_befehle = [z for z in _v.splitlines() if z.strip() and not z.lstrip().startswith("#")]
+
+
+def _erste(treffer):
+    return next((i for i, z in enumerate(_befehle) if treffer(z)), None)
+
+
+# OBERSTE EBENE (keine Einrueckung): derselbe Text in einer Funktion liefe nur,
+# wenn jemand sie ruft — `schirm_sicherstellen` ist genau so ein Fall.
+_riegel = _erste(lambda z: z.startswith(f"if [ -f {_MARKE} ]; then"))
+_schleife = _erste(lambda z: z.startswith('for i in $(seq 1 "$RUNDEN")'))
+_kein_netz = _erste(lambda z: "Kein Netz. MixPiBox-Einrichtung" in z)
+_agent_lan = _erste(lambda z: "agent.py --host 0.0.0.0" in z)
+_ap_an = _erste(lambda z: _re.search(r'einrichtung-ap\.py"?\s+starten', z) is not None)
+chk("die Marke wird als Befehl auf oberster Ebene gefragt, nicht nur im Kommentar",
+    _riegel is not None)
+chk("die Stellen, gegen die er stehen muss, sind auffindbar",
+    None not in (_schleife, _kein_netz, _agent_lan, _ap_an))
+chk("VOR der Warteschleife — die hielte den Kiosk sonst bis zum WLAN auf",
+    _riegel is not None and _schleife is not None and _riegel < _schleife)
+chk("VOR dem Zweig ohne Netz: vor Agent im LAN und eigenem WLAN",
+    _riegel is not None and None not in (_kein_netz, _agent_lan, _ap_an)
+    and _riegel < min(_kein_netz, _agent_lan, _ap_an))
+
+# UND ER HAELT WIRKLICH AN. Der Riegel wird aus dem ERZEUGTEN Skript
+# geschnitten und in einer Wegwerf-Shell gefahren — mit einer Marke im
+# Wegwerfordner statt in /var/lib. Das ganze Skript laeuft hier bewusst nicht:
+# es kopiert nach /opt, ruft systemctl und kennt `reboot`.
+_block = None
+if _riegel is not None:
+    _ende = next((i for i in range(_riegel + 1, len(_befehle))
+                  if _befehle[i] == "fi"), None)
+    if _ende is not None:
+        _block = "\n".join(_befehle[_riegel:_ende + 1])
+
+
+def _riegel_fahren(mit_marke):
+    with tempfile.TemporaryDirectory() as d:
+        marke = os.path.join(d, "fertig")
+        if mit_marke:
+            open(marke, "w").close()
+        probe = ("set -u\n" + _block.replace(_MARKE, marke)
+                 + "\necho EINRICHTUNG-GESTARTET\n")
+        return __import__("subprocess").run(
+            ["bash", "-c", probe], capture_output=True, text=True, timeout=10)
+
+
+if _block is None:
+    chk("fertige Box ohne Netz: die Einrichtung startet NICHT (Riegel nicht gefunden)", False)
+    chk("unfertige Box ohne Netz: die Einrichtung startet weiter (Riegel nicht gefunden)", False)
+else:
+    _mit = _riegel_fahren(True)
+    chk("fertige Box ohne Netz: die Einrichtung startet NICHT",
+        _mit.returncode == 0 and "EINRICHTUNG-GESTARTET" not in _mit.stdout)
+    _ohne = _riegel_fahren(False)
+    chk("unfertige Box ohne Netz: die Einrichtung startet weiter",
+        _ohne.returncode == 0 and "EINRICHTUNG-GESTARTET" in _ohne.stdout)
 
 # ── Rueckmeldung, wenn kein Netz besteht ───────────────────────────────────
 # Betreiber, 31.08.2026, nach einem Lauf, der eine halbe Stunde bei 7 % stand:

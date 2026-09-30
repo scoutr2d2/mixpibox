@@ -230,7 +230,7 @@ describe('parseProcWireless', () => {
 
 describe('parseWpaStatus', () => {
   const echt = [
-    'bssid=0c:72:74:93:06:54',
+    'bssid=cc:00:dd:11:ee:22',
     'freq=5300',
     'ssid=ganznahamnetzFritz',
     'id=0',

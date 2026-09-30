@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  NICHTS VON DIESER APP VERLAESST DAS HANDY (29.09.2026, AUDIT-2026-09-28
+  §1b Rang 6b): weder in die Cloud-Sicherung noch beim Umzug auf ein neues
+  Handy (Geraet-zu-Geraet).
+
+  WARUM ALLES UND NICHT NUR DIE BOXENLISTE: in den Einstellungen der App
+  (shared_preferences, boxen.v1) stehen je Box der Kopplungsschluessel und
+  die Sitzung der Verwaltung, im Klartext. Ein Schluessel gehoert zu genau
+  EINEM Handy; die Box fuehrt die Handys einzeln und entfernt sie einzeln.
+  Ein wiederhergestellter Schluessel waere ein zweites Handy unter dem
+  Namen des ersten. Sonst liegt hier nichts, das einen Umzug lohnt: nach
+  dem Wechsel die Boxen neu hinzufuegen und koppeln.
+
+  WARUM NEBEN allowBackup="false" AUCH DIESE DATEI: ab Android 12 (Ziel-API
+  31 und hoeher) schaltet allowBackup auf manchen Geraeten nur die Cloud ab,
+  nicht den Umzug von Geraet zu Geraet. Den regelt nur <device-transfer>.
+  Alle neun Bereiche einzeln, weil eine Regel nur fuer ihren Bereich gilt,
+  und KEIN include: ein einziges include machte aus der Sperrliste eine
+  Erlaubnisliste. Umzug zu iOS (cross-platform-transfer, ab Android 16
+  QPR2) gibt es nur, wenn eine App ihn ausdruecklich traegt; diese tut es
+  nicht.
+
+  Geprueft wird das in handy-app/test/android_sicherung_test.dart.
+  Quelle: developer.android.com/identity/data/autobackup
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+        <exclude domain="device_root" path="."/>
+        <exclude domain="device_file" path="."/>
+        <exclude domain="device_database" path="."/>
+        <exclude domain="device_sharedpref" path="."/>
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="."/>
+        <exclude domain="file" path="."/>
+        <exclude domain="database" path="."/>
+        <exclude domain="sharedpref" path="."/>
+        <exclude domain="external" path="."/>
+        <exclude domain="device_root" path="."/>
+        <exclude domain="device_file" path="."/>
+        <exclude domain="device_database" path="."/>
+        <exclude domain="device_sharedpref" path="."/>
+    </device-transfer>
+</data-extraction-rules>

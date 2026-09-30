@@ -37,6 +37,9 @@
  *      sonst ist sie eine Sackgasse ueber dem ganzen Bild.
  *   6. Ohne Piper (`bereit: false`) bleibt es still, statt vier Sekunden zu
  *      warten.
+ *   (7. ist der Vorlauf.) 8. Seit dem 29.09.2026 auch der VIDEO-SCHIRM
+ *      (NewDesign/video.js): Kachel und Absagen sprechen, der Lernmodus gilt
+ *      dort wie im Raster — er hatte vom ersten Tag an geschwiegen.
  *
  * „SPIELT" HEISST SEIT E95/V STUFE 2 (31.08.2026) in 5. und 6.: Der Tipp
  * stellt EINEN Spielwunsch — `POST /api/spielen` mit dem Schluessel der
@@ -450,6 +453,104 @@ try {
     'waehrend der Wiedergabe rechnet Piper nichts vor (sonst stockt das Hoerspiel)',
   )
 
+  /* ══ 8. DER VIDEO-SCHIRM SPRICHT (29.09.2026, AUDIT-2026-09-23 Rang 1) ════
+   *
+   * NewDesign/video.js rief bis zu diesem Tag `sprichDann(text)` mit EINEM
+   * String; der Umschlag des Hauses erwartet einen KNOPF. TypeError, vom
+   * leeren catch verschluckt: keine der sechs Absagen hat je gesprochen, und
+   * die Video-Kacheln riefen den Umschlag gar nicht — als einzige Kacheln
+   * ohne Antipp- und Lernmodus. Vier Audits lang offen, denn diese Datei
+   * tippte nur das Raster an, und Sprache bewegt kein Pixel.
+   *
+   * GEZAEHLT WIRD NUR, WAS DIE BOX WIRKLICH SAGT (`abspielen=1`). Der Vorlauf
+   * holt dieselben Saetze ohne das Merkmal vorab — ohne diesen Filter waere
+   * die Lernmodus-Zeile gruen, sobald der Takt einmal vorbeikam.
+   *
+   * Fuenf Fragen, jede fuer sich rot zu bekommen:
+   *   a) die Video-Kachel traegt ihren Satz (`data-sprich`) — der Umschlag ist dran,
+   *   b) antippen: der Tipp sagt GENAU diesen Satz, und der Schirm geht trotzdem auf,
+   *   c) antippen: eine Absage sagt ihren Grund,
+   *   d) lernen: der TEXT der Kachel spricht in Silben und startet KEIN Video,
+   *   e) aus: die Absage steht da und bleibt stumm.
+   *
+   * DER TIPP AUF DIE KACHEL BRAUCHT `userGesture`: ohne das verweigert Chrome
+   * `play()`, und „Das Video startet nicht." spraeche mit (gemessen in
+   * tools/video-belohnung-schau.mjs, 20.09.2026). DER SCHIRM GEHT NACH 700 ms
+   * WIEDER ZU — das Probevideo ist zwei Sekunden lang, und wer 90 % davon
+   * laufen laesst, verbraucht die Freigabe, gegen die der naechste misst.
+   */
+  console.log('\nDer Video-Schirm spricht (Kachel und Absage):')
+  const evG = async (e) =>
+    (await send(ws, 'Runtime.evaluate', { expression: e, returnByValue: true, awaitPromise: true, userGesture: true }))
+      ?.result?.value
+  const laut = (g) => g.gesprochen.filter((x) => x.abspielen === true)
+  const lautListe = (g) =>
+    laut(g)
+      .map((x) => `„${x.text}"`)
+      .join(', ') || '(nichts)'
+  const VIDEO_KACHEL = `document.querySelector('#video-reihe .video-kachel')`
+  await lage('still')
+  await lage('videos-voll')
+  await neu('antippen')
+  const videoSatz = await ev(`(${VIDEO_KACHEL} || {}).dataset?.sprich || ''`)
+  console.log(`  Video-Kachel sagt: ${videoSatz ? `„${videoSatz}"` : '(nichts)'}`)
+  sagen(!!videoSatz && /anschauen$/.test(videoSatz), 'die Video-Kachel traegt einen Satz, der sagt, was der Tipp tut')
+  // AUF DAS BILD, nicht auf den Namen — der Name ist Textzone und startet nichts.
+  await evG(`(() => { const b = ${VIDEO_KACHEL}?.querySelector('.video-bild'); if (b) b.click() })()`)
+  await warte(700)
+  const g8 = await gesprochen()
+  const schirmAuf = await ev(`!document.getElementById('video-schirm').hidden`)
+  await ev(`document.getElementById('video-weg').click()`)
+  console.log(`  gesagt: ${lautListe(g8)}`)
+  sagen(
+    laut(g8).some((x) => x.text === videoSatz),
+    'antippen: der Tipp auf die Video-Kachel spricht genau ihren Satz',
+  )
+  sagen(schirmAuf === true, 'und der Video-Schirm geht trotzdem auf (die Stimme laeuft nebenher)')
+
+  await warte(600)
+  await lage('videos-aufgebraucht')
+  await lage('gesprochen-leeren')
+  await evG(`(() => { const b = ${VIDEO_KACHEL}?.querySelector('.video-bild'); if (b) b.click() })()`)
+  await warte(1200)
+  const g8c = await gesprochen()
+  const absage = await ev(`document.getElementById('video-wort').textContent || ''`)
+  console.log(`  Absage: „${absage}" — gesagt: ${lautListe(g8c)}`)
+  sagen(
+    !!absage && laut(g8c).some((x) => x.text === absage),
+    'antippen: die Absage des Video-Schirms wird gesprochen, nicht nur geschrieben',
+  )
+  await ev(`document.getElementById('video-weg').click()`)
+
+  await lage('videos-voll')
+  await neu('lernen')
+  await ev(`(() => { const w = ${VIDEO_KACHEL}?.querySelector('.video-name'); if (w) w.click() })()`)
+  await warte(1500)
+  const g8d = await gesprochen()
+  const lernText = await ev(`(() => { const k = document.getElementById('lern');
+    return k && !k.hidden ? (document.getElementById('lern-text').textContent || '') : null })()`)
+  const startNachWort = await ev(`!document.getElementById('video-schirm').hidden`)
+  console.log(`  Einblendung: ${lernText === null ? '(keine)' : `„${lernText}"`}`)
+  sagen(
+    lernText !== null && laut(g8d).some((x) => x.silben === true),
+    'lernen: der Name der Video-Kachel steht gross da und wird in Silben gesprochen',
+  )
+  sagen(startNachWort === false, 'lernen: der Tipp auf den TEXT startet kein Video')
+  await ev(`document.getElementById('lern').click()`)
+
+  await neu('aus')
+  await lage('videos-aufgebraucht')
+  await evG(`(() => { const b = ${VIDEO_KACHEL}?.querySelector('.video-bild'); if (b) b.click() })()`)
+  await warte(1200)
+  const g8e = await gesprochen()
+  const absageAus = await ev(`document.getElementById('video-wort').textContent || ''`)
+  sagen(
+    !!absageAus && g8e.gesprochen.length === 0,
+    `aus: die Absage steht da („${absageAus}") und es wird NICHTS abgerufen`,
+  )
+  await ev(`document.getElementById('video-weg').click()`)
+  await lage('videos-voll')
+
   console.log(`\n${fehler ? `${fehler} Abweichung(en)` : 'keine Abweichung'}`)
 } catch (e) {
   console.error('FEHLER:', e.message)
@@ -485,6 +586,10 @@ try {
   // Werkzeug, das nur auf dem gruenen Weg aufraeumt, laesst die Vorschau
   // gerade dann verstellt stehen, wenn es einen Fehler gefunden hat — also
   // genau dann, wenn als naechstes jemand hinsieht.
+  // Abschnitt 8 stellt die Video-Freigaben um; ihr Verbrauch steckt nicht in
+  // der Lage, die `zurueckgeben` hinlegt (dieselbe Zeile wie in
+  // tools/video-belohnung-schau.mjs).
+  await lage('videos-voll').catch(() => {})
   await brw.schliessen()
   await leihe.zurueckgeben()
 }

@@ -71,7 +71,16 @@
   let el = null
   let API = '/api'
   let spielerBefehl = null
+  /**
+   * ZWEI SPRECHWEGE, weil es zwei Sorten Satz gibt (29.09.2026, AUDIT-2026-09-23
+   * Rang 1): `sprichDann(knopf, satz, name, beiTipp)` ist der Umschlag des Hauses
+   * um einen KNOPF — Antipp- und Lernmodus haengen daran. `sprich(text)` ist die
+   * ANSAGE ohne Knopf (die Absagen des Schirms); sie fragt den Schalter selbst.
+   * Bis heute rief `sagen()` den Umschlag mit einem blossen String — TypeError,
+   * vom leeren catch verschluckt, und keine der Absagen hat je gesprochen.
+   */
   let sprichDann = null
+  let sprich = null
   /**
    * DER LAUTSTAERKE-GRIFF DES HAUSES — drei Funktionen, nicht das Objekt.
    *
@@ -201,7 +210,13 @@
       bildkasten.appendChild(el('span', 'video-rest', `${v.rest}×`))
       knopf.appendChild(bildkasten)
       knopf.appendChild(el('span', 'video-name', titel))
-      knopf.addEventListener('click', () => void oeffnen(v))
+      // DURCH DEN UMSCHLAG DES HAUSES, wie jede andere Kachel: nur so gilt
+      // hier der Antipp- und der Lernmodus (Text spricht, Bild startet), und
+      // der Vorlauf findet den Satz am `data-sprich`. Derselbe Satz wie im
+      // aria-label — „…, noch 2 mal anschauen" sagt schon, was der Tipp tut.
+      const oeffnenTat = () => void oeffnen(v)
+      if (typeof sprichDann === 'function') sprichDann(knopf, knopf.getAttribute('aria-label'), v.name, oeffnenTat)
+      else knopf.addEventListener('click', oeffnenTat)
       stapel.appendChild(knopf)
     }
     reihe.appendChild(stapel)
@@ -218,9 +233,9 @@
   function sagen(text) {
     const feld = $('video-wort')
     if (feld) feld.textContent = text
-    if (typeof sprichDann === 'function' && text) {
+    if (typeof sprich === 'function' && text) {
       try {
-        sprichDann(text)
+        sprich(text)
       } catch {
         /* die Stimme ist Zugabe, kein Weg */
       }
@@ -536,6 +551,7 @@
       API = kontext.API || '/api'
       spielerBefehl = kontext.spielerBefehl
       sprichDann = kontext.sprichDann
+      sprich = kontext.sprich ?? null
       lautstaerke = kontext.lautstaerke ?? null
 
       const spieler = $('video-spieler')

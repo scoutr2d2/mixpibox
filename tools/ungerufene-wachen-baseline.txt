@@ -6,7 +6,7 @@
 #
 # Die Ratsche blockt, wenn ein Rang SINKT. Ein Werkzeug, das hier fehlt,
 # gilt als Rang 1: neue Wachen muessen eingehaengt oder begruendet sein.
-# Eingefroren am 2026-09-29. Neu einfrieren: python3 tools/ungerufene-wachen.py --einfrieren
+# Eingefroren am 2026-09-30. Neu einfrieren: python3 tools/ungerufene-wachen.py --einfrieren
 laeufer remote-step-installer/tests/anim_test.py
 laeufer remote-step-installer/tests/bootsplash_zeichen_test.py
 laeufer remote-step-installer/tests/bootwache_test.py
@@ -37,6 +37,7 @@ laeufer remote-step-installer/tests/splash_test.py
 laeufer remote-step-installer/tests/touchbridge_test.py
 laeufer remote-step-installer/tests/tui_smoke.py
 laeufer remote-step-installer/tests/watch_test.py
+laeufer remote-step-installer/tests/zram_schritt_test.py
 offen remote-step-installer/tools/bild-sitz-pruefen.py
 offen remote-step-installer/tools/bilder-pruefen-gegenprobe.py
 offen remote-step-installer/tools/bootplatz-messen.py
@@ -127,6 +128,7 @@ offen tools/bilder-wirklich-da.py
 offen tools/bildwahl-gruppen-schau.mjs
 bekannt tools/blaettern-schau.mjs
 offen tools/bootkette-schau.py
+bekannt tools/bootsplash-am-geraet.py
 laeufer tools/bootsplash-vorschau.py
 laeufer tools/box-adresse-deckung.py
 offen tools/box-dienst-inventur.py
@@ -248,6 +250,7 @@ laeufer tools/gestalter-format-bauen.mjs
 laeufer tools/gestalter-katalog-deckung.mjs
 laeufer tools/gestalter-schau.mjs
 laeufer tools/github-veroeffentlichen.py
+laeufer tools/github-veroeffentlichen.test.py
 laeufer tools/glas-rueckfall-wache.py
 laeufer tools/grenzruf-verb-deckung.py
 laeufer tools/groessen-regler-schau.mjs
@@ -300,6 +303,7 @@ offen tools/kartenseite-ausgang-messen.py
 offen tools/kartenseite-erste-meldung.py
 offen tools/kartenwahl-gegenprobe.py
 offen tools/kartenwahl-nachzuegler-probe.py
+laeufer tools/kartenwege-schluessel-zwilling.py
 offen tools/kennung-beweis.py
 offen tools/kind-am-tor.mjs
 offen tools/kind-loeschen-nachlass.mjs
@@ -377,6 +381,7 @@ bekannt tools/mitschnitt-quelle-anlegen.py
 offen tools/mitschnitt-stummel.py
 offen tools/mitschnitt-zeichen-probe.py
 offen tools/mitschnitt-zuordnungen-nachtragen.py
+laeufer tools/mixpi-aussehen-wechsel-schau.mjs
 laeufer tools/mixpi-box-altlasten-probe.py
 offen tools/mixpi-box-altlasten.py
 offen tools/mixpi-fassung-schneiden.py
@@ -419,6 +424,7 @@ laeufer tools/newdesign-kopieren.py
 laeufer tools/newdesign-mitlieferung-deckung.py
 laeufer tools/npm-skripte-deckung.py
 offen tools/oberflaeche-gegen-server.py
+bekannt tools/ohne-aufnahme-zweig-pruefen.sh
 offen tools/ordnername-angriff.py
 offen tools/pack-abgleich.py
 laeufer tools/pack-doppelte-schluessel.py
@@ -595,6 +601,7 @@ bekannt tools/welche-box.sh
 laeufer tools/wellen-regler-schau.mjs
 offen tools/wer-hoert-wechsel-fremde-stellen.mjs
 offen tools/werkzeug-ecke-schau.mjs
+laeufer tools/werkzeug-zitate-pruefen.py
 offen tools/wiki-anhaengen.py
 offen tools/wiki-eintragen.py
 offen tools/wiki-pflege.py

@@ -43,7 +43,7 @@ Werkzeug rot und jemand schaltet es ab". Genau das war eingetreten:
 `document.body.style.setProperty`, niemand trug es nach, und die Wache mahnte
 `NewDesign/app.css:7736` als tote Zeile an — eine Zeile, die malt. Rot auf
 einen Fehlalarm ist schlimmer als gar keine Wache; abgeschaltet hatte sie
-niemand, weil sie in KEINER Probe laeuft (siehe `tools/wachen-ohne-probe.py`).
+niemand, weil sie in KEINER Probe laeuft (siehe `tools/ungerufene-wachen.py`).
 
 Die Liste wird deshalb GELESEN statt gepflegt: jede
 `…style.setProperty('--x', …)` in den Oberflaechen-JS gilt als Erklaerung, mit

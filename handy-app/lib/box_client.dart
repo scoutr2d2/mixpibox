@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:http/http.dart' as http;
@@ -56,6 +57,17 @@ class ProfilPasswortNoetig extends BoxFehler {
   ProfilPasswortNoetig(this.art, {bool falsch = false})
     : super(falsch ? 'Das Passwort passt nicht.' : 'Dieses Profil hat ein Passwort.', status: falsch ? 403 : 401);
   final String? art;
+}
+
+/// Der Beweis, dass eine Box den ABDRUCK von [schluessel] kennt:
+/// HMAC-SHA256 ueber `mixpi-kopplung-beweis:<frage>`, verschluesselt mit
+/// sha256(schluessel) — dieselbe Rechnung wie `beweisVon()` in
+/// src/backend-api/src/kopplung.ts. Beide Seiten nageln denselben Prueffall
+/// fest (box_client_test.dart, kopplung.spec.ts); laeuft eine davon weg, wird
+/// jede Umadressierung zum Neu-Koppeln, still und ohne Fehler.
+String kopplungsBeweis(String schluessel, String frage) {
+  final abdruck = sha256.convert(utf8.encode(schluessel)).bytes;
+  return Hmac(sha256, abdruck).convert(utf8.encode('mixpi-kopplung-beweis:$frage')).toString();
 }
 
 /// Spricht mit EINER Box.
@@ -542,6 +554,40 @@ class BoxClient {
     if (s is! String || s.isEmpty) throw BoxFehler('Die Box hat keinen Schlüssel geschickt.');
     box.schluessel = s;
     geaendert?.call(box);
+  }
+
+  /// IST DAS DIESELBE BOX, DIE [schluessel] AUSGEGEBEN HAT? (29.09.2026)
+  ///
+  /// Gefragt, BEVOR der Schluessel an eine neue Adresse geht — sonst traegt
+  /// ein Tippfehler ihn zu einem fremden Geraet (AUDIT-2026-09-28 §1b Rang 6a).
+  /// Die Box kennt nur den Abdruck (sha256) des Schluessels, das Handy den
+  /// Schluessel selbst; gemeinsam ist beiden also der Abdruck. Das Handy
+  /// schickt eine frische Zufallsfrage, die Box antwortet je gekoppeltem
+  /// Handy mit einem HMAC darueber ([kopplungsBeweis]) — dabei verlaesst
+  /// weder der Schluessel noch der Abdruck eines der beiden Geraete.
+  ///
+  /// OHNE DEN SCHLUESSEL-KOPF, egal was in `box` steht: die Frage geht ja
+  /// gerade an eine Adresse, der noch niemand traut.
+  ///
+  /// `false` auch fuer eine Box von vor dem 29.09.2026 ohne den Weg — dann
+  /// laesst sich nichts beweisen, und neu koppeln ist die ehrliche Antwort.
+  ///
+  /// WAS ES NICHT FAENGT: ein Geraet, das die Frage an die echte Box
+  /// DURCHREICHT und deren Antwort zurueckgibt. Wer das im Heimnetz aufbaut,
+  /// braucht den Schluessel nicht — ohne `x-mixpi-app` fragt er die Box
+  /// ohnehin ungesperrt (die Kopplung sperrt die App, nicht das Netz).
+  Future<bool> kenntSchluessel(String schluessel) async {
+    final r = Random.secure();
+    final frage = List.generate(16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+    final kopf = {..._kopf, 'content-type': 'application/json'}..remove(schluesselKopf);
+    final antwort = await _senden(
+      _client.post(_uri('/api/kopplung/beweis'), headers: kopf, body: jsonEncode({'frage': frage})),
+    );
+    if (antwort.statusCode != 200) return false;
+    final j = _jsonOderNull(antwort.body);
+    final beweise = j is Map && j['beweise'] is List ? j['beweise'] as List : const [];
+    final erwartet = kopplungsBeweis(schluessel, frage);
+    return beweise.any((b) => b == erwartet);
   }
 
   // ── Box sperren (28.09.2026) ──────────────────────────────────────────

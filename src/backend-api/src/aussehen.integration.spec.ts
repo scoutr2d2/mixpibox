@@ -49,6 +49,9 @@ describe('Aussehen je Profil', () => {
         profile: [
           { kennung: 'kalea', name: 'Kalea', angelegt: 1 },
           { kennung: 'liam', name: 'Liam', angelegt: 2 },
+          // Mia bekommt NIE ein eigenes Aussehen — sie ist das Profil ohne
+          // Eigenes im Wechsel-Test (E72) am Ende dieser Datei.
+          { kennung: 'mia', name: 'Mia', angelegt: 3 },
         ],
         aktiv: 'kalea',
       }),
@@ -168,6 +171,39 @@ describe('Aussehen je Profil', () => {
     const r = await request(app).get('/api/profil/aussehen').expect(200)
     assert.equal(r.body.profil, 'kalea')
     assert.notEqual(r.body.farbe, 'kittypink', 'Liams Farbe darf bei Kalea nicht auftauchen')
+  })
+
+  it('E72: Wechsel in BEIDE Richtungen — ohne Eigenes gilt die Box, nie das vorige Kind', async () => {
+    /* Gemeldet: „Kalea hell → Papa dunkel (klappt), zurueck nicht". Betreiber
+     * (29.09.2026, E72/T3): ein Profil ohne eigenes Aussehen bekommt die
+     * Box-VORGABE. Die Oberflaeche (aussehenHolen) verlaesst sich darauf,
+     * dass der Server fuer so ein Profil den box-weiten Stand nennt und
+     * sonst NICHTS — nie den Rest des vorigen Kindes.
+     *
+     * DER RUECKWEG IST DER PUNKT: der Hinweg klappte schon in der Meldung.
+     * Liam hat seit den Tests oben kittypink/hell, Mia hat nichts. */
+    const ansehen = async (kennung: string) => {
+      await request(app).post('/api/profil/aktiv').send({ kennung }).expect(200)
+      const a = (await request(app).get('/api/profil/aussehen').expect(200)).body
+      const d = (await request(app).get('/api/darstellung').expect(200)).body
+      return { a, d }
+    }
+    for (const runde of ['hin', 'zurueck']) {
+      const liam = await ansehen('liam')
+      assert.equal(liam.a.eigen, true, `${runde}: Liam hat Eigenes`)
+      assert.equal(liam.a.farbe, 'kittypink', `${runde}: Liams Farbe`)
+      assert.equal(liam.a.licht, 'hell', `${runde}: Liams Licht`)
+
+      const mia = await ansehen('mia')
+      assert.equal(mia.a.profil, 'mia')
+      assert.equal(mia.a.eigen, false, `${runde}: Mia hat nichts Eigenes`)
+      assert.equal(mia.a.farbe, BOX_STAND.aktuell.farbe, `${runde}: Mia bekommt die Farbe der BOX, nicht Liams`)
+      assert.equal(mia.a.licht, '', `${runde}: die Box sagt zum Licht nichts — dann gilt die Vorgabe der Oberflaeche`)
+      assert.equal(mia.d.eigen, false)
+      assert.equal((mia.d.aktuell as { kachelForm: string }).kachelForm, 'eckig', `${runde}: Themenfelder der Box`)
+    }
+    // Und das Ansehen allein legt nichts an: kein Festschreiben beim Wechsel.
+    assert.equal(existsSync(join(ordner, 'profile', 'mia', 'darstellung.json')), false)
   })
 
   it('Unsinn wird abgewiesen — data-farbe faehrt in einen CSS-Wahler', async () => {

@@ -35,13 +35,21 @@
 #   bt-wechsel.sh                 alle Adapter bewerten, nichts aendern
 #   bt-wechsel.sh --auf hci2      Lautsprecher an diesen Adapter umziehen
 #   bt-wechsel.sh --auf usb-neu   an den zuletzt eingesteckten USB-Adapter
+#   Lautsprecher: der, der gerade den Ton traegt, oder ausdruecklich
+#   env MUPI_LAUTSPRECHER=<MAC> bt-wechsel.sh ...
 #
 # Danach IMMER messen (mupi-ton --sek 8) UND HINHOEREN - die Mitschrift war
 # schon vorher sauber, entschieden wird das am Ohr.
 
 set -u
-LS="${MUPI_LAUTSPRECHER:-7C:96:D2:89:35:CC}"   # Teufel ROCKSTER Cross
 export XDG_RUNTIME_DIR=/run/user/1000
+# DER LAUTSPRECHER: ausdruecklich per MUPI_LAUTSPRECHER, sonst der, der gerade
+# den Ton traegt - seine MAC steckt im Namen der Standardsenke
+# (bluez_output.AA_BB_CC_11_22_33.1). Bis zum 29.09.2026 stand hier die echte
+# MAC eines Lautsprechers als Vorgabe - und dieses Skript geht nach GitHub
+# (Audit 28.09.2026, Rang 1). Leer heisst: keiner bekannt, nichts markieren.
+LS="${MUPI_LAUTSPRECHER:-$(pactl get-default-sink 2>/dev/null \
+  | sed -n 's/^bluez_output\.\([0-9A-Fa-f_]\{17\}\)\..*/\1/p' | tr _ :)}"
 
 GRUEN='\033[32m'; ROT='\033[31m'; GELB='\033[33m'; GRAU='\033[90m'; AUS='\033[0m'
 
@@ -103,7 +111,7 @@ zeigen() {
     : "${mtu:=0}"; : "${puf:=?}"; : "${bus:=?}"; : "${fassung:=?}"
 
     marke=""
-    hcitool -i "$h" con 2>/dev/null | grep -qi "$LS" && marke="${GRUEN}  <- traegt den Ton${AUS}"
+    [ -n "$LS" ] && hcitool -i "$h" con 2>/dev/null | grep -qi "$LS" && marke="${GRUEN}  <- traegt den Ton${AUS}"
     n=$(note "$mtu" "$fassung" "$kennung" "$bus")
     if [ "$n" -gt "$bestnote" ]; then bestnote="$n"; bester="$h"; fi
 
@@ -122,16 +130,17 @@ zeigen() {
   done
 
   echo
-  echo "  Gekoppelt ist der Lautsprecher bei:"
+  echo "  Gekoppelt ist der Lautsprecher${LS:+ $LS} bei:"
   local irgendwo=0
-  for d in $(sudo -n ls /var/lib/bluetooth/ 2>/dev/null); do
+  [ -n "$LS" ] && for d in $(sudo -n ls /var/lib/bluetooth/ 2>/dev/null); do
     if sudo -n ls "/var/lib/bluetooth/$d/" 2>/dev/null | grep -qi "$LS"; then
       for h in $(ls /sys/class/bluetooth/ 2>/dev/null | grep -E '^hci[0-9]+$'); do
         [ "$(adr_von "$h")" = "$d" ] && { echo "    $h ($d)"; irgendwo=1; }
       done
     fi
   done
-  [ "$irgendwo" = "0" ] && echo -e "    ${GELB}(nirgends)${AUS}"
+  [ -z "$LS" ] && echo -e "    ${GELB}(keiner bekannt - gerade spielt keiner, MUPI_LAUTSPRECHER fehlt)${AUS}"
+  [ -n "$LS" ] && [ "$irgendwo" = "0" ] && echo -e "    ${GELB}(nirgends)${AUS}"
 
   [ -n "$bester" ] && echo -e "\n  Nach diesen Zahlen am geeignetsten: ${GRUEN}$bester${AUS}"
   echo -e "  ${GRAU}Umziehen mit: bt-wechsel.sh --auf <hciN>${AUS}"
@@ -140,6 +149,8 @@ zeigen() {
 umziehen() {
   local ziel="$1"
   [ -d "/sys/class/bluetooth/$ziel" ] || { echo -e "${ROT}$ziel gibt es nicht.${AUS}"; return 1; }
+  [ -n "$LS" ] || { echo -e "${ROT}Welcher Lautsprecher? Gerade spielt keiner ueber Bluetooth.${AUS}"
+                    echo "  env MUPI_LAUTSPRECHER=<MAC> bt-wechsel.sh --auf $ziel"; return 1; }
   local adr; adr=$(adr_von "$ziel")
   echo -e "\nUmzug auf $ziel ($adr)"
   echo "───────────────────────────────────────────────────────────────────"
@@ -189,5 +200,5 @@ umziehen() {
 case "${1:-}" in
   ''|--zeigen) zeigen ;;
   --auf)       umziehen "${2:-}" ;;
-  *)           sed -n '2,40p' "$0" ;;
+  *)           sed -n '2,42p' "$0" ;;
 esac

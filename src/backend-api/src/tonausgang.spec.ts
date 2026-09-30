@@ -23,12 +23,12 @@ import {
 const SINKS = [
   'Failed to load cookie file from cookie: No such file or directory',
   '62\talsa_output.platform-soc_107c000000_sound.stereo-fallback\tPipeWire\ts32le 2ch 48000Hz\tSUSPENDED',
-  '40524\tbluez_output.7C_96_D2_89_35_CC.1\tPipeWire\ts24le 2ch 48000Hz\tRUNNING',
+  '40524\tbluez_output.DD_EE_FF_44_55_66.1\tPipeWire\ts24le 2ch 48000Hz\tRUNNING',
 ].join('\n')
 
 describe('istAusgangsname', () => {
   it('lässt durch, was PipeWire wirklich vergibt', () => {
-    assert.equal(istAusgangsname('bluez_output.7C_96_D2_89_35_CC.1'), true)
+    assert.equal(istAusgangsname('bluez_output.DD_EE_FF_44_55_66.1'), true)
     assert.equal(istAusgangsname('alsa_output.platform-soc_107c000000_sound.stereo-fallback'), true)
   })
 
@@ -58,7 +58,7 @@ describe('sinksAus', () => {
     // Liste — und am Schirm als waehlbarer Lautsprecher.
     assert.deepEqual(sinksAus(SINKS), [
       { name: 'alsa_output.platform-soc_107c000000_sound.stereo-fallback', laeuft: false },
-      { name: 'bluez_output.7C_96_D2_89_35_CC.1', laeuft: true },
+      { name: 'bluez_output.DD_EE_FF_44_55_66.1', laeuft: true },
     ])
   })
 
@@ -84,7 +84,7 @@ describe('stroemeAus', () => {
 
 describe('macAusSink', () => {
   it('holt die Adresse aus dem Bluetooth-Ausgang', () => {
-    assert.equal(macAusSink('bluez_output.7C_96_D2_89_35_CC.1'), '7C:96:D2:89:35:CC')
+    assert.equal(macAusSink('bluez_output.DD_EE_FF_44_55_66.1'), 'DD:EE:FF:44:55:66')
   })
   it('sagt beim eingebauten Ausgang nichts', () => {
     assert.equal(macAusSink('alsa_output.platform-soc_107c000000_sound.stereo-fallback'), null)
@@ -93,10 +93,10 @@ describe('macAusSink', () => {
 })
 
 describe('ausgangWort', () => {
-  const BT = [{ mac: '7C:96:D2:89:35:CC', name: 'Teufel ROCKSTER Cross' }]
+  const BT = [{ mac: 'DD:EE:FF:44:55:66', name: 'Teufel ROCKSTER Cross' }]
 
   it('nimmt den Namen aus der Bluetooth-Liste', () => {
-    assert.deepEqual(ausgangWort('bluez_output.7C_96_D2_89_35_CC.1', BT), {
+    assert.deepEqual(ausgangWort('bluez_output.DD_EE_FF_44_55_66.1', BT), {
       wort: 'Teufel ROCKSTER Cross',
       art: 'bluetooth',
     })
@@ -121,12 +121,12 @@ describe('ausgangWort', () => {
 })
 
 describe('ausgaenge', () => {
-  const BT = [{ mac: '7C:96:D2:89:35:CC', name: 'Teufel ROCKSTER Cross' }]
+  const BT = [{ mac: 'DD:EE:FF:44:55:66', name: 'Teufel ROCKSTER Cross' }]
 
   it('setzt die Box zuletzt und merkt sich, welcher gewählt ist', () => {
     // SORTIERT: Wer zwei Lautsprecher verbunden hat, will zwischen IHNEN
     // waehlen; die Box selbst ist der Rueckweg und steht deshalb unten.
-    const a = ausgaenge(SINKS, 'bluez_output.7C_96_D2_89_35_CC.1', BT)
+    const a = ausgaenge(SINKS, 'bluez_output.DD_EE_FF_44_55_66.1', BT)
     assert.deepEqual(
       a.map((x) => [x.wort, x.gewaehlt, x.laeuft]),
       [

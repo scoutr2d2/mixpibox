@@ -1,5 +1,5 @@
 id: mupibox
-version: "658"
+version: "670"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -9033,8 +9033,8 @@ entries:
       Ausschalten der Box alle 30 Sekunden das Funkmodul zu belegen.
 
       NEBENBEFUND ZU DEN BT-ADAPTERN: die Box hat DREI Controller
-      (00:15:83:F9:C5:4F „mupibox #1" [default], 08:BF:B8:56:CE:44 „mupibox #2",
-      88:A2:9E:48:F6:50 „mupibox"). Jeder hat seine eigene Geraeteliste.
+      (00:15:83:xx:xx:xx „mupibox #1" [default], 08:BF:B8:xx:xx:xx „mupibox #2",
+      88:A2:9E:xx:xx:xx „mupibox"). Jeder hat seine eigene Geraeteliste.
       `bluetoothctl devices Trusted` auf dem Standardadapter zeigt „Teufel
       ROCKSTER Cross" und „Smart Soundbar 10158750" — bt-reconnect.py arbeitet
       dagegen mit „Teufel ROCKSTER Cross" und „小米蓝牙音箱". Es sieht also einen
@@ -41673,16 +41673,16 @@ entries:
 
       `/api/spotify/maschine` traegt ein Feld `netz`; am Geraet gemessen:
 
-          netz: {"ssid": "ganzschnellimnetz2_2G", "band": "2,4 GHz"}
+          netz: {"ssid": "ganzschnell…_2G", "band": "2,4 GHz"}
 
       Die Karte schreibt daraus „Handy ins gleiche WLAN wie die Box:
-      **ganzschnellimnetz2_2G** · 2,4 GHz". `null` (Kabel, kein `iw`, kein
+      **ganzschnell…_2G** · 2,4 GHz". `null` (Kabel, kein `iw`, kein
       Name) faellt still auf den alten Satz zurueck — ein Zubrot darf die
       Karte nie kippen.
 
       ══ DER NAME IST DIE AUSKUNFT, NICHT DAS BAND ══════════════════════════
 
-      Wer „verbinde dich mit ganzschnellimnetz2_2G" liest, muss NICHTS
+      Wer „verbinde dich mit ganzschnell…_2G" liest, muss NICHTS
       verstehen — er sucht diesen Namen in seiner WLAN-Liste. Das Band steht
       nur daneben, weil es erklaert, WARUM es zwei Netze mit aehnlichem Namen
       gibt. An dem `_2G` sieht man, dass dieser Router die Baender in GETRENNTE
@@ -53411,7 +53411,7 @@ entries:
     title: "mixpibox.local loest auf ZWEI Geraete auf - Deploys und Waechter nur an die feste Adresse der Arbeits-Box"
     match: "mixpibox.local|zweitbox|zweite box|host key changed|remote host identification|deploy falsche box|192.168.178.78|mdns konflikt"
     sev: high
-    cause: "Befund 31.08.2026 beim Deploy-Waechter: mixpibox.local beantwortete mDNS mit den Adressen ZWEIER Geraete - der Arbeits-Box (192.168.178.78, MAC 88:a2:9e:48:f6:4f, E95-Stand, Familien-Spotify) und einer Zweitbox (192.168.178.79, Pi-MAC e4:5f:01:7d:18:d2, ALTER Stand ohne /api/spielen, spielte selbst ARD ueber mplayer, ssh nur ueber IPv6). Jede Namens-Aufloesung ist damit eine Lotterie: der Waechter um 16:31 hielt die freie ZWEITBOX fuer die freie Arbeits-Box, und der folgende ssh-Deploy brach an deren fremdem Hostschluessel ab (REMOTE HOST IDENTIFICATION HAS CHANGED) - zum Glueck, denn sonst waere auf die falsche Box ausgeliefert worden, waehrend die Familie auf der richtigen hoerte"
+    cause: "Befund 31.08.2026 beim Deploy-Waechter: mixpibox.local beantwortete mDNS mit den Adressen ZWEIER Geraete - der Arbeits-Box (192.168.178.78, MAC 88:a2:9e:xx:xx:xx, E95-Stand, Familien-Spotify) und einer Zweitbox (192.168.178.79, Pi-MAC e4:5f:01:xx:xx:xx, ALTER Stand ohne /api/spielen, spielte selbst ARD ueber mplayer, ssh nur ueber IPv6). Jede Namens-Aufloesung ist damit eine Lotterie: der Waechter um 16:31 hielt die freie ZWEITBOX fuer die freie Arbeits-Box, und der folgende ssh-Deploy brach an deren fremdem Hostschluessel ab (REMOTE HOST IDENTIFICATION HAS CHANGED) - zum Glueck, denn sonst waere auf die falsche Box ausgeliefert worden, waehrend die Familie auf der richtigen hoerte"
     fix: "Alles Geraetebezogene an die FESTE Adresse 192.168.178.78 (oder die MAC-stabile ULA fd8e:ca9c:6cb9:0:8aa2:9eff:fe48:f64f), nie an den Namen. Der Hostschluessel der Arbeits-Box (SHA256:cyVF6JC0..., Key-Datei vom 11.08.2026) ist als NEUER known_hosts-Eintrag fuer die Adresse aufgenommen; der alte Namens-Eintrag blieb ABSICHTLICH stehen und blockiert Namens-Deploys mit der Hostkey-Warnung - das ist eine Sperre, kein Schaden. Identitaet der Arbeits-Box im Zweifel per API pruefen: POST /api/spielen mit leerem Rumpf antwortet dort mit dem Fehlertext 'schluessel fehlt', die Zweitbox mit einer Express-404-HTML-Seite. OFFEN: Betreiber entscheidet, ob die Zweitbox versorgt wird und wie der mDNS-Namenskonflikt aufgeloest wird"
     tags: [betrieb, deploy, netz, ssh, 2026]
     related: [post-api-spielen-ist-die-spielfunktion]
@@ -58082,7 +58082,7 @@ entries:
       Adapter-Dienst mit Status 0 — und TROTZDEM traegt wlan0 die
       Verbindung: 192.168.178.78 an `ganznahamnetz_5G`. wlan1 steht auf
       `wpa_state=SCANNING`, weil seine wpa-Datei nur die Netze des alten
-      Standorts kennt (`ganzschnellimnetz2_2G/_5G`).
+      Standorts kennt (`ganzschnell…_2G/_5G`).
     related: [ifup-riegel-execcondition-statt-execstartpre]
     body: |
       WARUM DAS EIN GLUECKSFALL IST: Der Rettungszweig feuert genau dann,
@@ -58553,8 +58553,8 @@ entries:
     source: >
       09.09.2026, MixPiBox .62, Betreiber: "mixpi bluetooth verbindung klappt
       nicht ueber das menue der box". Am Geraet belegt: Wahl-Datei las
-      08:BF:B8:56:CE:44, bluetoothctl list kannte nur 88:A2:9E:48:F6:50
-      (eingebaut, default) und B0:82:E2:1F:9C:E5 (USB). Gegenprobe: connect
+      08:BF:B8:xx:xx:xx, bluetoothctl list kannte nur 88:A2:9E:xx:xx:xx
+      (eingebaut, default) und B0:82:E2:xx:xx:xx (USB). Gegenprobe: connect
       OHNE select lief 6 s bis br-connection-page-timeout (Lautsprecher aus),
       ueber den Server-Weg kam die Absage sofort. Fix ausgeliefert und beide
       Messungen wiederholt.
@@ -58568,12 +58568,12 @@ entries:
 
       DIE URSACHE IST EINE EINZIGE ZEILE. /etc/mupibox/bt-adapter (die
       Adapterwahl der Verwaltung, hier gesetzt am 15.08.) zeigte auf den
-      USB-Stick 08:BF:B8:56:CE:44. Am 20.08. wechselte der Stick - der
-      ASUS-Dongle heisst seither B0:82:E2:1F:9C:E5, die Datei blieb.
+      USB-Stick 08:BF:B8:xx:xx:xx. Am 20.08. wechselte der Stick - der
+      ASUS-Dongle heisst seither B0:82:E2:xx:xx:xx, die Datei blieb.
       btctl() beginnt jede bluetoothctl-Sitzung mit `select <wahl>`, und
       BlueZ antwortet:
 
-          Controller 08:BF:B8:56:CE:44 not available
+          Controller 08:BF:B8:xx:xx:xx not available
 
       Diese Zeile vergiftete DREI Auswertungen zugleich:
         1. ergebnis() las "not available" als Ausgang des eigentlichen
@@ -64339,7 +64339,7 @@ entries:
       des Heim-WLANs im veroeffentlichten Baum. Der Fix (16994546) maskierte
       die BSSID an drei Stellen und nahm GENAU DIESE EINE BSSID namentlich in
       LECK_MUSTER von tools/github-veroeffentlichen.py auf. Zwei Tage spaeter
-      stand fest: die SSID desselben Netzes (ganzschnellimnetz2_2G/_5G) ging
+      stand fest: die SSID desselben Netzes (ganzschnell…_2G/_5G) ging
       weiter mit hinaus — in vier veroeffentlichten Dateien, darunter
       ausgelieferter Quelltext (server.ts:21024, spotify-maschine.ts:202,
       BACKLOG, pack.yaml). Eine SSID ist ueber WLAN-Ortungsdatenbanken
@@ -66340,11 +66340,15 @@ entries:
       mehreren Sabotagen je FAIL-Zeile pruefen, ob es DIE erwartete ist.
 
       OFFEN:
-        (1) Am Geraet ansehen. Ausliefern mit `tools/ausliefern.py`: das
-            Startbild ist auf der Box NEU und braucht `--auch-neue`; das Skript
-            laeuft dort (Unit) aus /usr/local/bin/mupibox-boot-splash.py.
-            Danach einmal neu starten und hinsehen — Farbe auf dem DSI-Panel
-            und die Lesbarkeit der dunklen Stahlblau-Pille sagt nur das Panel.
+        (1) ERLEDIGT 29.09.2026, 22:52, Box .62 (Pi 5): mit `tools/ausliefern.py
+            --nur scripts --auch-neue` hinter dem Wartungsschirm ausgeliefert
+            (Startbild NEU, Skript dorthin, wo die Unit es startet:
+            /usr/local/bin/mupibox-boot-splash.py), neu gestartet, das letzte
+            Bild aus fb0 geholt (`tools/bootsplash-am-geraet.py`): Sternenhimmel,
+            echte Konsolenschrift, alle sechs Pillen, „Fertig 6/6". Dabei
+            gefunden: [[startskript-notbremse-mit-wanduhr-endet-beim-zeitabgleich]].
+            Offen bleibt nur der Blick aufs PANEL (Farbe, die dunkle
+            Stahlblau-Pille) — fb0 zeigt die Pixel, nicht das Panel.
         (2) `Schirm.note()` ist seitdem ungenutzt (splash_test prueft es
             weiter). Stehen gelassen, weil das Fehlerbild und der
             Einrichtungsschirm dieses Modul als Zeichenbibliothek laden.
@@ -66428,6 +66432,558 @@ entries:
       nur die Schnittstellen MTP und Massenspeicher, keine fuer ADB — das ist
       am Handy einzuschalten, nicht von hier.
 
-      Nicht gebaut: eine Monochrom-Ebene fuer eingefaerbte Symbole
-      (Android 13+).
+      EINFARBIGE EBENE (nachgebaut 29.09.2026, spaet): `ic_launcher_monochrom.png`
+      je Dichte plus `<monochrome>` im Adaptive-Icon-XML, fuer eingefaerbte
+      Symbole ab Android 13. Der Launcher liest davon nur Alpha. Ein
+      Schattenriss der ganzen Figur waere ein Klecks; abgeleitet wird sie
+      deshalb aus dem Vordergrund: was NICHT weiss ist (kleinster Farbkanal
+      unter 0,55, weich bis 0,85), deckt — Umriss, Gesicht, Kopfhoerer,
+      Stifte —, der weisse Koerper wird durchsichtig. Ergebnis: eine
+      Linienfigur mit vollen Kopfhoerern. Schwellen 0,45/0,80 und 0,65/0,92
+      sahen gleich aus, die Farben der Vorlage liegen weit auseinander.
+      Bau mit `<monochrome>` gegen compileSdk der Flutter-Vorlage geprueft
+      (`aapt2 dump xmltree` zeigt das Element im APK). Am Honor NICHT zu
+      sehen: MagicOS hat ein eigenes Themen-System (`icons=Ocean Realm
+      (dynamic)` in den Einstellungen, nur gelesen) und zeigt das farbige.
+
+      DIE GEGENPROBE WAR DER FUND — ZWEIMAL ([[gegenprobe-bleibt-gruen-ist-der-fund]]).
+      Erste Wache: Deckanteil der Ebene gegenueber der Figur zwischen 15 und
+      85 %. Eine halb zugelaufene Ebene (Koerper 70 % deckend) und eine, der
+      Kopfhoerer und Stifte fehlten, blieben beide GRUEN — beide landeten im
+      Bereich. Zweite Wache: der satt WEISSE Koerper muss durchsichtig sein,
+      der satt DUNKLE Umriss decken. Der Klecks fiel jetzt auf, die fehlenden
+      Kopfhoerer nur KNAPP (84-90 % gegen verlangte 90 %, je nach Dichte):
+      der Umriss ist so dunkel, dass er fast jede Schwelle uebersteht.
+      Jetzt: satt weiss -> hoechstens 10 % Deckung, satt FARBIG (kleinster
+      Kanal unter 0,5: Umriss UND Kopfhoerer UND Stifte) -> mindestens 90 %.
+      Echt: 0,1-0,2 % und 97-99 %. Sabotagen: Klecks 70 % Koerper,
+      Kopfhoerer weg 50-54 %, nichts deckt 0 % — alle weit jenseits der
+      Grenze. LEHRE: eine Wache, die nach dem AUFFAELLIGSTEN Merkmal fragt
+      (der schwarze Umriss), faengt den Fehler nicht, der das
+      zweitauffaelligste nimmt. Nach dem ZWECK fragen: was muss decken?
     related: ["handy-app-flutter-fernbedienung", "mixpi-maskottchen-familie", "bilder-aufbereiten-drei-fallen", "boot-animation-sternenhimmel-mit-schwebendem-mixpi", "icons-grundformen-statt-freihand", "gegenprobe-bleibt-gruen-ist-der-fund"]
+  - id: speicher-ablage-und-platten-klick-ueberschreiben-sich
+    title: 'Der Worker haelt die Ablage im Speicher, der Klick liest die Platte - der naechste Zwischenstand loescht den Klick still'
+    kind: falle
+    tags: [wettlauf, atomar, plugins, gruppen, lost-update, gegenprobe, zeugen, 2026]
+    stand: "29.09.2026, im Baum gebaut und mit Zeugen gegen die Platte belegt; am Geraet und gegen den echten Dienst ungemessen."
+    source: 'AUDIT-2026-09-28 Rang 2 (mixpi-gruppen), abgetragen 29.09.2026. Geaendert: plugins/mixpi-gruppen/index.mjs, index.spec.mjs (7 neue Zeugen), README.md.'
+    body: |
+      DIE BAUART: Ein Hintergrundlauf haelt einen Zustand im Speicher und
+      schreibt ihn periodisch GANZ zurueck. Jeder andere Schreiber, der in
+      dieser Zeit von der Platte liest, aendert und schreibt, wird beim
+      naechsten Zwischenstand ueberschrieben — ohne Fehler, ohne Meldung.
+      In mixpi-gruppen traf das die Ja/Nein-Klicks waehrend eines
+      Durchlaufs (Worker flusht alle 10 Antworten, `entscheiden` las frisch).
+
+      EIN RIEGEL MACHT DEN FEHLER NUR HOEFLICHER. „Waehrend des Laufs nicht"
+      weist den Nutzer genau dann ab, wenn er klickt. Gebaut wurde:
+        1. Waehrend eines Laufs gibt es EINE Ablage — `ablageLesen` liefert
+           das Speicherobjekt des Workers, der Klick traegt dort ein und
+           schreibt sofort.
+        2. Lesen-Aendern-Schreiben laeuft als EIN Schritt einer
+           Promise-Kette (`nacheinander`/`ablageAendern`). Das braucht es
+           auch ohne Lauf: zwei Klicks zugleich verloren einen, zwei Starts
+           zugleich ergaben zwei bezahlte Laeufe, und der zweite schrieb
+           „0 Paare" ueber den ersten.
+      Eine eigene Datei je Schreiber haette nur Teil 1 geloest.
+
+      WARUM DIE ALTEN ZEUGEN NICHTS SAHEN: Sie liefen OHNE Datenordner. Im
+      Speicher teilen Worker und Klick dasselbe Objekt — der Fehler entsteht
+      nur auf der Platte. Wettlaeufe dieser Art nur gegen die Platte pruefen.
+
+      DIE ZWISCHENDATEI braucht je Aufruf einen eigenen Namen, im Worker
+      zusaetzlich `threadId`: `process.pid` ist dort die des SERVERS, alle
+      Plugins teilen sie. Die feste `.neu` liess 39 von 40 gleichzeitigen
+      Schreibern an ENOENT sterben, und eine halbe Datei las der Leser als
+      leer — der naechste Schreibvorgang loeschte dann alles.
+
+      GEGENPROBE MIT SCHRANKE: Eine Fake-API, die auf `los()`/`weiter()`
+      wartet, macht den Zwischenstand ohne Uhr pruefbar. Die Schranke muss in
+      `finally` aufgehen — sonst wird die Sabotage zum Haenger statt zur
+      FAIL-Zeile (so beim ersten Versuch passiert).
+
+      OFFEN: `ablageLesen` liest eine kaputte gruppen.json weiter als leer;
+      die eigenen Schreibwege erzeugen keine halbe Datei mehr, der Leser
+      selbst ist nicht gehaertet. `tools/schreibstelle-und-fehlerleck.py`
+      sieht nur src/backend-api und nur `${process.pid}.tmp` — feste
+      Endungen wie `.neu` in Plugins (noch in mixpi-klexikon/index.mjs um
+      Z. 602) findet es nicht.
+    related: ["vierzehn-kopien-und-die-abweichung-ist-der-fehler", "interpreten-gruppen-jev-schlaegt-vor-der-mensch-legt-zusammen", "doppelung-lassen-auseinanderlaufen-messen", "gegenprobe-statt-gruen-glauben"]
+  - id: fehlende-schutzdatei-heisst-abbruch-nicht-nichts-zu-tun
+    title: 'Eine Schutzdatei, deren Fehlen „nichts zu tun" bedeutet, ist optional - und damit kein Schutz'
+    kind: regel
+    tags: [github, veroeffentlichen, wache, fail-closed, gegenprobe, sorte, 2026]
+    stand: "29.09.2026, im Wegwerf-Baum gemessen (alter und neuer Stand); am echten Baum nur als Trockenlauf auf einer Kopie."
+    source: 'AUDIT-2026-09-28 Rang 4, abgetragen 29.09.2026. Geaendert: tools/github-veroeffentlichen.py, neu tools/github-veroeffentlichen.test.py (15 Faelle, eingehaengt in tools/doku-luecken-probe.sh), dokumentation/mixpibox.md 7.15.'
+    body: |
+      WAS WAR: Der Veroeffentlicher brach ab, wenn der Ohne-Aufnahme-Patch
+      NICHT PASSTE — lief aber still weiter, wenn er FEHLTE
+      (`if not exists: return drin, 0`), und die Berichtszeile erschien nur
+      bei „gepatcht > 0". Dasselbe fuer tools/github-lokal-muster.txt: die
+      Leck-Wache lief dann mit sieben statt acht Mustern. Im Wegwerf-Baum
+      nachgemessen: `--bauen` legte den Commit ohne Patch an.
+
+      DIE REGEL: Fehlt die EINGABE einer Wache, ist das ein Befund, kein
+      Leerlauf. Erkennungszeichen im Code: `if not path.exists(): return
+      unveraendert`. Und die Berichtszeile erscheint IMMER, auch mit 0 —
+      sonst sieht niemand, ob der Schritt ueberhaupt lief.
+
+      AUSLOESER NACH SORTE, NICHT NACH PFAD: Das Audit schlug vor, nur dann
+      abzubrechen, wenn plugins/mixpi-mitschnitt/ im Baum liegt. Diese
+      Bedingung verschwindet mit einer Umbenennung — genau dem Fall, den sie
+      fangen soll. Gebaut: unbedingter Abbruch, dazu EIN begruendungspflichtiger
+      Schalter `--baum-ohne-aufnahme "<Grund>"` fuer einen GitHub-Klon. Seine
+      eigene Wache fragt nach der Sorte: haelt tools/github-ausschluss.txt
+      hier irgendetwas zurueck, gibt es Lokales, und der Schalter wird
+      abgelehnt. Die Pruefung wird staerker, je mehr Lokales im Baum liegt.
+
+      RESTLUECKE (im Docstring benannt): Die lokalen Muster suchen
+      BESCHREIBUNGSTEXT, keine Verdrahtung. Durch gehen Importe,
+      zusammengeklebte Bezeichner, Punkt oder Zeilenumbruch zwischen den
+      Woertern, Komposita. Neue Verdrahtung in Dateien, die der Patch nicht
+      kennt, heisst: Patch erneuern. Eine moegliche Wache: keine
+      veroeffentlichte Code-Datei nennt einen zurueckgehaltenen
+      Plugin-Ordner — heute tun das nur vier Dateien, alle Text.
+
+      NEBENFUND GEGENPROBE: Das Edit-Werkzeug kuerzt nachgestellte
+      Leerzeichen im Ersetzungstext; eine Ruecknahme war dadurch um ein Byte
+      daneben und fiel nur ueber `sha256sum -c` auf. Vor der Sabotage die
+      Pruefsumme festhalten, danach vergleichen.
+    related: ["github-fassung-ohne-aufnahme-per-patch", "aufnahme-erweiterung-bleibt-lokal", "wache-auf-sorte-nicht-auf-pfad", "leck-muster-kennt-den-wert-statt-der-sorte", "gegenprobe-statt-gruen-glauben"]
+  - id: einrichtung-raeumt-erst-auf-wenn-jeder-zweig-die-marke-fragt
+    title: 'Eine Fertig-Marke, die nur ein Zweig fragt, raeumt nicht auf - Vorstart und step-agent nach dem Selbstlauf'
+    kind: falle
+    tags: [installer, einrichtung, vorstart, selbstlauf, agent, sicherheit, systemd, E143, 2026]
+    stand: "29.09.2026, im Baum gebaut und mit Zeugen belegt; auf keiner Karte gelaufen (Messung: BACKLOG E143/3 und /10)."
+    source: 'BACKLOG E143/8, abgetragen 29.09.2026. Geaendert: remote-step-installer/controller/sdprep.py (vorstart_skript), tools/selbstlauf.py, tools/mixpibox-selbstlauf.service (Kommentar), tests/selbstlauf_test.py, tests/sdprep_test.py; Handbuch 9, README 3.10.'
+    body: |
+      DER BEFUND WAR SCHLIMMER ALS DIE BACKLOG-ZELLE. Die Marke
+      `/var/lib/mixpibox-lauf/fertig` fragten zwei Stellen:
+      `schirm_sicherstellen` und `mixpibox-einrichtung.service`. Der Zweig
+      „kein Netz" des Vorstarts fragte sie NICHT. Eine fertige Box ohne
+      Router bekam deshalb bei jedem Start die ganze Einrichtung: Agent als
+      root auf 0.0.0.0, das offene WLAN, in dem man den Einrichtungs-
+      Schluessel ohne Code bekommt (`auto_pair_erlaubt`), den QR-Schirm ueber
+      der Oberflaeche — und, weil die Unit `Before=getty@tty1` steht, einen
+      Kiosk, der bis zu 20 min wartet. Dazu blieb `step-agent.service` nach
+      dem Selbstlauf eingeschaltet; nur `mixpibox-einrichtung` und `-ap`
+      schaltete das Rezept ab.
+
+      LEHRE 1 — DIE MARKE GEHOERT AN DEN EINGANG, NICHT IN EINEN ZWEIG. Der
+      Riegel steht jetzt auf oberster Ebene vor der Warteschleife: auch der
+      Zweig MIT Netz tut auf einer fertigen Box nichts mehr.
+
+      LEHRE 2 — VOR DEM ABSCHALTEN FRAGEN, WER DEN DIENST DANACH BRAUCHT.
+      Handy-Seite: nein (nach dem Schlussneustart gilt ein neuer Code).
+      Selbstlauf: nein (laedt agent.py als Datei). Laptop fuer spaetere
+      Rezeptlaeufe: ja — `./connect <box> --install` schreibt die Unit neu
+      (127.0.0.1, SSH-Tunnel). Deshalb `disable` und NICHT `mask`, und nur
+      beim ersten Mal: die Selbstlauf-Unit laeuft bei jedem Start und haette
+      den zurueckgeholten Agenten sonst jedes Mal wieder abgeschaltet.
+
+      LEHRE 3 — `systemctl stop` TRIFFT DIE GANZE KONTROLLGRUPPE. Wer in dem
+      Dienst steckt, den er stoppt (etwa per `rsi exec`), beendet sich
+      selbst. `/proc/self/cgroup` fragen (v1 und v2) und dann nur `disable`.
+
+      LEHRE 4 — STOPP MIT `--no-block`. Die Selbstlauf-Unit hat
+      `TimeoutStartSec=infinity`; ein haengender Stopp-Auftrag hielte den
+      Schlussneustart fuer immer fest.
+
+      PRUEFUNG: Reihenfolge ueber den Syntaxbaum (ein auskommentierter Aufruf
+      wird rot), der Shell-Riegel wird aus dem ERZEUGTEN Skript geschnitten
+      und in bash mit und ohne Marke in einem Wegwerfordner gefahren. Beide
+      Naehte haben einen Umgebungsriegel.
+
+      BEIFANG, NICHT GEBAUT: Ein vom Vorstart per setsid gestarteter Agent
+      sitzt in der Kontrollgruppe von `mixpibox-vorstart.service`, nicht in
+      `step-agent.service` — den erreicht `stop step-agent` nicht, erst der
+      Neustart. `rsi-auf` wirft die Ausgabe von `connect` weg und sagt nur
+      „Verbinden fehlgeschlagen" statt den Hinweis auf `--install`.
+
+      AM GERAET ZU MESSEN (E143/3, /10): nach dem Schlussneustart
+      `systemctl is-enabled step-agent` = disabled, `ss -tlnp` ohne 8099,
+      Vorstart-Log „Box ist eingerichtet"; dann die fertige Box ohne Router
+      starten — kein Einrichtungs-WLAN, kein QR, Kiosk sofort
+      (`systemd-analyze critical-chain getty@tty1.service`, zweimal).
+    related: ["readme-3-9-nachgeprueft", "ap-ohne-hostapd-wpa-mode2", "pi3-1gb-machbarkeit-gemessen-am-pi5", "gegenprobe-statt-gruen-glauben"]
+  - id: zwillings-zeuge-braucht-soll-spalte
+    title: 'Ein Zwillings-Zeuge braucht eine Soll-Spalte - Gleichheit allein uebersieht den Fehler, den beide Fassungen teilen'
+    kind: muster
+    tags: [doppelung, zeuge, gegenprobe, nachtmodus, aufraeumen, plugins, 2026]
+    stand: "29.09.2026, im Baum gebaut; Nachtfenster und Aufraeumen am Geraet ungemessen."
+    source: 'AUDIT-2026-09-28 Rang 5 (erste Haelfte) und Rang 8, abgetragen 29.09.2026. Geaendert: plugins/mixpi-mitschnitt/auftrag.mjs, index.mjs, auftrag.spec.mjs, neu nachtfenster-zwilling.spec.mjs und rohreste.spec.mjs; src/backend-api/src/nachtfenster.ts + spec; src/frontend-admin/src/app/seiten/aufzeichnen.ts (dritte Kopie, nur Anzeige).'
+    body: |
+      WO EINE REGEL ZWEIMAL STEHEN MUSS ([[doppelung-lassen-auseinanderlaufen-messen]]),
+      laufen beide Fassungen ueber EINE gemeinsame Falltabelle — nicht ueber
+      einen Textvergleich. Jede Zeile traegt ein SOLL, dazu ein Durchlauf ueber
+      jede Minute eines Tages. Eine Ausnahme ist dort ein ERGEBNIS
+      („wirft TypeError"), kein Absturz — so nennt die FAIL-Zeile den Fall.
+
+      DIE SOLL-SPALTE IST DER KERN. In der Gegenprobe wurden beide Fassungen
+      GLEICH zurueckgebaut: der Gleichheitsteil blieb gruen, nur das Soll
+      wurde rot. Am alten Stand fand die Tabelle 7 Abweichungen (Plugin nahm
+      null/0/ms/Text als Uhr, Server warf) — und einen Fehler, den BEIDE
+      teilten: waren beide Zeiten unlesbar („22 Uhr"), galt das als „kein
+      Fenster", der Nachtmodus also sofort und dauerhaft. `null` stand fuer
+      zwei Bedeutungen. LEHRE: leer und unlesbar sind zwei Zustaende, nie
+      ein gemeinsamer Nullwert. Eine dritte Kopie (Verwaltung, nur Anzeige)
+      trug denselben Fehler und ist mitgezogen.
+
+      WO DER ZEUGE WOHNT: Die zweite Fassung liegt in einer Erweiterung, die
+      nicht veroeffentlicht wird. Der Zeuge liegt deshalb BEI ihr und wird mit
+      ihr zurueckgehalten; er laedt die Kern-.ts direkt (Node streift Typen
+      ohne tsx ab) und laeuft ueber `npm run test:plugins`.
+
+      ZWEITE LEHRE, gleiche Erweiterung: AUFRAEUMEN NACH BESITZ, NICHT NACH
+      ALTER. Verwaiste Rohdateien in /dev/shm (450 MB am Pi 5 gemessen, siehe
+      [[pi3-1gb-machbarkeit-gemessen-am-pi5]]) fielen nie, weil nur der
+      regulaere Abschluss sie loeschte. Ein Aufnehmer kann Stunden alt sein
+      und trotzdem laufen — Alter sagt nichts. Geschuetzt ist, was der Worker
+      SELBST haelt (Prozess, Arbeiter-PIDs, laufende Datei, vor jedem Loeschen
+      noch einmal geprueft). Und Prozessnamen EXAKT vergleichen: das alte
+      `includes(EIGENNAME)` traf auch die Arbeiter-Prozesse — jeder Start
+      beendete eine laufende Nachschnitt-Aufnahme still, und die gekuerzte
+      Datei ging als vollstaendig durch.
+
+      FOLGE FUER DIE VEROEFFENTLICHUNG: Die Aenderung an nachtfenster.ts
+      bricht den Ohne-Aufnahme-Patch (er loescht die Datei samt altem
+      Inhalt). Beim Erneuern die zwei neuen Specs im Zweig mit loeschen.
+    related: ["doppelung-lassen-auseinanderlaufen-messen", "pi3-1gb-machbarkeit-gemessen-am-pi5", "aufnahme-erweiterung-bleibt-lokal", "github-fassung-ohne-aufnahme-per-patch", "gegenprobe-bleibt-gruen-ist-der-fund"]
+  - id: startskript-notbremse-mit-wanduhr-endet-beim-zeitabgleich
+    title: 'Eine Notbremse mit time.time() in einem Startskript loest aus, sobald das Netz kommt - die Boot-Animation endete bei „5/6 Netzwerk", auf einer Box, die laengst online war'
+    kind: falle
+    tags: [boot, splash, zeit, uhr, timesyncd, fake-hwclock, python, pi5, 2026]
+    stand: "29.09.2026, an Box .62 (Pi 5) gemessen: Journal auf monotoner Zeit (journalctl -o short-monotonic), vorher und nachher je ein Start, das letzte Splash-Bild aus /dev/fb0."
+    source: 'Beim Ausliefern der Sternenhimmel-Animation gefunden ([[boot-animation-sternenhimmel-mit-schwebendem-mixpi]]). Geaendert: scripts/mupibox/mupibox-boot-splash.py main() (+ Zwilling), remote-step-installer/tests/splash_test.py, neu tools/bootsplash-am-geraet.py.'
+    body: |
+      SYMPTOM: Das letzte Bild der Boot-Animation (am Pi 5 bleibt es in
+      /dev/fb0 stehen, X schreibt dort nicht hinein) zeigte „Netzwerk ... 5/6"
+      — alles erreicht ausser dem Netz, obwohl die Box per SSH erreichbar war.
+      Die Animation war NICHT haengengeblieben, sie hatte sich beendet.
+
+      GEMESSEN (Sekunden seit dem Kernelstart, `journalctl -b -o short-monotonic`):
+
+          19,43  dhclient: DHCPACK auf wlan1 — die Box hat Netz
+          19,55  systemd-timesyncd: „Initial clock synchronization to
+                 Tue 2026-09-29 22:47:13" — die Uhr stand auf dem Stand von
+                 fake-hwclock (28.09. ~22:11) und springt gut 24 h vor
+          19,67  mupibox-boot-splash.service: Deactivated successfully
+
+      URSACHE: Die Notbremse `while time.time() - start < MAX_LAUFZEIT` (120 s)
+      misst mit der WANDUHR. Nach dem Sprung gilt sie als laengst ueberschritten,
+      die Schleife endet 0,12 s spaeter — ehe die naechste Meilenstein-Pruefung
+      (alle 0,5 s) das Netz abhaken kann. Auf dieser Box kommt das Netz ZULETZT
+      (Kiosk und Chromium laufen schon, der WLAN-Stick braucht rund 19 s), also
+      traf es genau den letzten Schritt, und „Fertig" erschien nie.
+
+      WARUM DAS JEDES STARTSKRIPT TRIFFT: Der Sprung ist beim Hochfahren keine
+      Ausnahme, sondern die Regel — fake-hwclock stellt die Uhr auf den letzten
+      gesicherten Stand, timesyncd korrigiert, sobald das Netz da ist. Wie weit
+      sie springt, haengt davon ab, wie lange die Box aus war: nach einer Nacht
+      Stunden, nach einem Urlaub Wochen. Jedes Skript, das in diesen Sekunden
+      eine Frist, ein Zeitlimit oder einen Abstand mit time.time() misst, hat
+      genau dann einen Fehler, wenn das Netz kommt. [[uhr-springt-beim-booten-journal-zeit-luegt]]
+      beschreibt denselben Sprung als Falle beim PROTOKOLLLESEN; hier ist er
+      eine im CODE.
+
+      BEHOBEN: time.monotonic() fuer Start, Notbremse und Pruefabstand (zaehlt
+      seit dem Kernelstart, springt nie). Test in splash_test.py sucht im
+      SYNTAXBAUM nach Aufrufen `time.time()` — ein Kommentar, der den alten
+      Aufruf zitiert, zaehlt nicht. Gegenprobe: `start = time.time()` zurueck
+      -> genau diese Pruefung rot (68/69), zurueckgenommen per gezieltem Edit.
+
+      NACHHER GEMESSEN (22:52, naechster Start): DHCPACK 20,60 — Zeitabgleich
+      20,74 — Animation endet 21,81, also eine Pruefung plus 0,6 s „Fertig"
+      nach dem Sprung; fb0 zeigt „Fertig 6/6". EINSCHRAENKUNG: dieser Sprung
+      war nur wenige Minuten gross (die Box war kurz vorher gelaufen). Dass
+      der Wert egal ist, sagt der Code (monotonic), nicht diese eine Messung.
+
+      MITSCHNITT GEHT HIER NICHT: SSH antwortet erst mit dem Netz, und das
+      Netz ist auf dieser Box der letzte Meilenstein — `tools/bootsplash-am-geraet.py
+      --neustart` bekam die ersten Bilder bei 21,8 s, da war die Animation
+      schon fertig. Was bleibt, ist ihr letztes Bild in fb0 — fuer diese Frage
+      genau das richtige.
+
+      NICHT GEPRUEFT: ob andere Startskripte (Fehlerbild, Kioskwache,
+      Bootwache) dieselbe Bauart haben. Suche: im Syntaxbaum nach
+      `time.time()` in Skripten, die vor dem Netz starten.
+    related: ["boot-animation-sternenhimmel-mit-schwebendem-mixpi", "uhr-springt-beim-booten-journal-zeit-luegt", "boot-animation-mit-echtem-fortschritt", "kiosk-wartet-auf-dhcp"]
+  - id: schluessel-geht-nur-an-die-box-die-ihn-kennt
+    title: 'Ein Geheimnis geht an eine neue Adresse erst nach einem Beweis - und schon die Erreichbarkeitsprobe ist ein Versand'
+    kind: falle
+    tags: [handy-app, kopplung, sicherheit, android, backup, hmac, flutter, 2026]
+    stand: "29.09.2026, im Baum gebaut, flutter test 81 und Kopplungs-Specs 35 gruen; am echten Handy und an Box .62 (faehrt einen aelteren Stand) ungemessen."
+    source: 'AUDIT-2026-09-28 Rang 6 (a)-(d) und Rang 5 (Dart-Teil), abgetragen 29.09.2026. Geaendert: handy-app/lib/box_client.dart, lib/seiten/box_bearbeiten.dart, lib/modell.dart, AndroidManifest.xml, neu res/xml/mixpi_kein_datenauszug.xml, test/android_sicherung_test.dart, test/dienst_deckung_test.dart, README; src/backend-api/src/kopplung.ts + Specs, server.ts (Route POST /api/kopplung/beweis). Quellen (b): developer.android.com/identity/data/autobackup, developer.android.com/about/versions/12/behavior-changes-12#backup-restore, pub.dev/packages/flutter_secure_storage.'
+    body: |
+      BEFUND: Beim Umadressieren einer gekoppelten Box band die App die
+      Sitzung an die Adresse, den Schluessel nicht. SCHLIMMER ALS IM AUDIT:
+      Schon die Erreichbarkeitsprobe `GET /api/box` lief ueber denselben
+      Client-Kopf und trug den Schluessel zum neuen Host — bevor jemand
+      „Speichern" bestaetigte. Ein Tippfehler in der Adresse genuegte.
+
+      LEHRE 1: Jede Anfrage an einen noch nicht vertrauten Host ist ein
+      Versand. Den Kopf LEER bauen und das Geheimnis erst nach dem Beweis
+      dazutun — nicht beim Speichern nachfiltern.
+
+      LEHRE 2: Einen Beweis ohne Preisgabe liefert das Geheimnis, das beide
+      schon teilen. Die Box speichert sha256(Schluessel), das Handy kann ihn
+      rechnen. `POST /api/kopplung/beweis` mit einer Zufallsfrage antwortet
+      HMAC(Abdruck, Frage) je gekoppeltem Handy — „dieselbe Box", ohne dass
+      Schluessel oder Abdruck uebers Netz gehen, und der Abdruck oeffnet die
+      Sperre nicht. Ein oeffentlicher Box-Name waere kein Beweis gewesen
+      (`/api/box` liefert den Rechnernamen). Grenze: ein Geraet, das die Frage
+      an die echte Box weiterreicht — hier unerheblich, weil die Kopplung die
+      APP sperrt, nicht das Netz.
+
+      LEHRE 3: Den HMAC-Prueffall wortgleich in beide Sprachen legen (Dart-
+      und Node-Test) und die Test-Attrappe unabhaengig rechnen lassen — sonst
+      bestaetigt die App sich selbst.
+
+      LEHRE 4 (Android): `allowBackup=false` genuegt ab Zielplattform 31 nicht;
+      manche Hersteller ziehen die Daten beim Geraeteumzug trotzdem mit. Erst
+      `dataExtractionRules` mit `<cloud-backup>` UND `<device-transfer>` sperrt
+      das — jeder der neun Bereiche einzeln ausgeschlossen, kein `include`.
+      flutter_secure_storage haette dieselbe Sperre verlangt und schuetzt
+      zusaetzlich nur gegen ein gerootetes Handy.
+
+      LEHRE 5: Ein Koppelfenster nicht an den ersten VERSUCH binden. Das ist
+      ein Wettlauf statt einer Zustimmung (wer den Code abliest, ist gleich
+      schnell), und ein einziger Rateversuch irgendeines Geraets sperrte die
+      Eltern aus. Gebaut: Fehlerkonto je Geraet (5) plus Deckel fuer alle
+      (20), und dem zu spaeten Geraet den Grund nennen („vergeben", „zuOft")
+      statt „kein Code offen".
+
+      NEBENBEI: `flutter test` lief nur in der CI und nur bei Aenderungen
+      unter handy-app/** — der Dienst-Abgleich liest aber medien.ts im Kern.
+      Seit 29.09.2026 haengt er in tools/pruefen.sh (Schritt „Tests
+      Handy-App", ueberspringt sich ohne Flutter).
+    related: ["gegenprobe-statt-gruen-glauben", "doppelung-lassen-auseinanderlaufen-messen"]
+  - id: patch-neu-aufsetzen-bringt-neue-dateien-der-erweiterung-still-mit
+    title: 'Beim Neu-Aufsetzen des Ohne-Aufnahme-Zweigs kommen NEUE Dateien im Ordner der Erweiterung ohne Konflikt mit'
+    kind: falle
+    tags: [github, veroeffentlichen, patch, rebase, zweig, werkzeug, 2026]
+    stand: "29.09.2026, beim Erneuern des Patchs (Zweig 58590a20 auf e5f3b189) gemessen; neues Werkzeug tools/ohne-aufnahme-zweig-pruefen.sh mit zwei Gegenproben."
+    source: 'Erneuerung des Ohne-Aufnahme-Patchs nach den Commits d5f740ad (nachtfenster.ts, aufzeichnen.ts, zwei neue Specs im Ordner der Erweiterung). Geaendert: tools/github-ohne-aufnahme.patch, neu tools/ohne-aufnahme-zweig-pruefen.sh, tools/ungerufene-wachen.py (BEKANNT), dokumentation/mixpibox.md 7.15.'
+    body: |
+      DER ANLASS: Drei Dateien, die der Zweig `github-ohne-aufnahme` loescht
+      (nachtfenster.ts + Spec, aufzeichnen.ts), wurden auf main geaendert.
+      Der Trockenlauf brach ab (so gewollt, siehe
+      [[fehlende-schutzdatei-heisst-abbruch-nicht-nichts-zu-tun]]), das
+      Neu-Aufsetzen meldete sechs Konflikte „geaendert/geloescht" — alle mit
+      `git rm` geloest.
+
+      DIE FALLE: main hatte im Ordner der Erweiterung auch zwei Dateien NEU
+      angelegt (zwei Specs). Die kamen beim Rebase OHNE Konflikt in den
+      Zweig — der Loesch-Commit kannte sie ja nicht. Im Zweig haetten sie
+      dann ohne die Module gelegen, die sie laden, und `test:plugins` waere
+      dort rot geworden; den Patch selbst stoeren sie nicht, weil die
+      Ausschlussliste den Ordner ohnehin zurueckhaelt. Ein Konflikt meldet
+      nur, was BEIDE Seiten anfassen, nicht was eine Seite neu hinlegt.
+
+      DAS WERKZEUG: `bash tools/ohne-aufnahme-zweig-pruefen.sh <arbeitsbaum>`
+      bricht zuerst ab, wenn im Zweig noch Dateien eines plugins/-Ordners
+      liegen, den tools/github-ausschluss.txt zurueckhaelt (die Ordner kommen
+      aus der Liste, nicht aus dem Skript), und faehrt dann die Schritte von
+      .github/workflows/ci.yml plus Typen und Karma der Verwaltung. Vorher
+      tippte jede Erneuerung (drei in zwei Tagen) ihre eigene Befehlsliste.
+      Gegenproben: eine Datei der Erweiterung zurueckgelegt -> ABBRUCH rc 1
+      mit Pfad; eine rote Spec -> Schritt „Tests Plugins" FEHLER mit der
+      FAIL-Zeile dieser Spec. Es haengt bewusst in keinem Laeufer (braucht
+      den Zweig-Baum als Argument; BEKANNT mit Grund) — ob der Patch passt,
+      meldet dort der Trockenlauf.
+
+      ABLAUF (Handbuch 7.15): eigener Arbeitsbaum im Scratch, nie der
+      Hauptbaum; `rebase main`; Konflikte an geloeschten Dateien mit git rm;
+      Werkzeug; `--patch-aus github-ohne-aufnahme`; Trockenlauf (liest den
+      INDEX — den neuen Patch vorher stagen); Arbeitsbaum entfernen.
+      node_modules verlinkt das Werkzeug aus dem Hauptbaum, statt zu
+      installieren.
+    related: ["github-fassung-ohne-aufnahme-per-patch", "fehlende-schutzdatei-heisst-abbruch-nicht-nichts-zu-tun", "zwillings-zeuge-braucht-soll-spalte", "wache-auf-sorte-nicht-auf-pfad"]
+  - id: leck-wache-mac-als-sorte-und-ausnahme-je-paar
+    title: 'Die Leck-Wache sucht MACs als Sorte - frei sind nur Doppelziffer-Oktette, und eine Ausnahme gilt je (datei, muster)'
+    kind: muster
+    tags: [github, veroeffentlichen, leck, wache, mac, ssid, sorte, 2026]
+    stand: "29.09.2026, am ganzen Baum gemessen (null Fehlalarme, jeder Treffer ein echtes Geraet); die GitHub-Historie traegt die alten Werte weiter."
+    source: 'AUDIT-2026-09-28 Rang 1 (dritter Lauf offen, Betreiber-Vorlage 1c Punkt 2), Betreiber 29.09.2026: machen. Geaendert: tools/github-lokal-muster.txt, tools/github-veroeffentlichen.py (+ .test.py, Zeugen l-p), Code und Tests mit echten Werten (bluetooth.ts, ton.ts, tonausgang.ts, Specs, bt-reconnect.py samt Installer-Zwilling, neu-vorschau.mjs, dhcp-schneller.sh, bt-wechsel.sh), BACKLOG/AUDIT/Wiki maskiert.'
+    body: |
+      VORHER stand in der VEROEFFENTLICHTEN Wache ein Muster, das genau den
+      einen Router kannte (Herstellerpraefix), und die Heim-SSID stand in
+      vier veroeffentlichten Dateien — die Audit-Buchung hatte sie sogar noch
+      einmal im Klartext wiederholt ([[audit-buchung-ist-veroeffentlichungs-inhalt]]).
+      Die Infrastruktur fuer lokale Muster gab es seit dem 27.09.
+      (tools/github-lokal-muster.txt, selbst zurueckgehalten); sie trug nur
+      den Aufnahme-Wortlaut.
+
+      JETZT, als SORTE statt als Wert ([[leck-muster-kennt-den-wert-statt-der-sorte]]):
+        heim-ssid          der Grundname mit jeder Endung; die maskierte
+                           Form „ganzschnell…" ist ausdruecklich frei
+        mac-adresse        jede MAC in DREI Schreibweisen — `:` fuer
+                           bluetoothctl, `-` fuer den BlueZ-Ersatznamen,
+                           `_` fuer pactl-Senken und D-Bus-Pfade. Nur `:`
+                           zu suchen haette die Haelfte verfehlt.
+        bssid-heim-router  das alte Muster, aus der veroeffentlichten Wache
+                           hierher verschoben statt gestrichen
+      Frei sind nur xx-Platzhalter, Werte aus lauter DOPPELTEN Ziffern
+      (AA:BB:CC:…, 00:11:22:…), der Dokumentationsblock aus RFC 7042 und
+      Ketten ab neun Paaren (Fingerabdruecke). Tests nehmen solche Werte —
+      am ganzen Baum gab es danach null Fehlalarme.
+
+      AUSNAHMEN je (datei, muster), nicht je Datei — und eine Ausnahme, die
+      nichts mehr befreit, bricht die Veroeffentlichung ab. Die zwei alten
+      dateiweiten Ausnahmen waren beide unnoetig; auch die Wache selbst wird
+      wieder abgetastet.
+
+      AUSGABEN zeigen einen Fund nur ANGESCHNITTEN. Sonst landet der Wert
+      per Kopie aus der Probe-Ausgabe in der naechsten Buchung — genau so
+      war die SSID am 25.09. gewachsen.
+
+      MASKIEREN IN TEXTEN: letzte drei Oktette zu xx (Herstellerpraefix
+      bleibt lesbar), SSID-Grundname zu „ganzschnell…". Im Code ein
+      erfundener Wert, der in ALLEN Schreibweisen gleich ersetzt wird — ein
+      Geraetename, der die letzten MAC-Ziffern trug, musste mit.
+
+      GRENZEN: MACs ohne Trenner und die Cisco-Punktform findet das Muster
+      nicht; eine NEUE SSID braucht eine neue Musterzeile. Die GitHub-
+      HISTORIE (sechs Veroeffentlichungs-Commits 27.–29.09.) traegt SSID und
+      MACs weiter; weg nur durch Umschreiben und Force-Push — Betreiber-
+      Entscheidung. Folgekosten: Zeilen, die der Ohne-Aufnahme-Patch als
+      Kontext traegt, lassen ihn nicht mehr passen (hier ton.spec.ts,
+      tonausgang.spec.ts) — erneuern mit tools/ohne-aufnahme-zweig-pruefen.sh.
+    related: ["leck-muster-kennt-den-wert-statt-der-sorte", "audit-buchung-ist-veroeffentlichungs-inhalt", "wache-auf-sorte-nicht-auf-pfad", "fehlende-schutzdatei-heisst-abbruch-nicht-nichts-zu-tun"]
+  - id: dietpi-set-swapfile-null-nimmt-jedes-zram-mit
+    title: 'dietpi-set_swapfile 0 schaltet ALLE Auslagerung ab - auch zram - und loescht DietPis zram-Regel; die Zwei-Zeilen-Schliessung des Audits waere eine Verschlechterung gewesen'
+    kind: falle
+    tags: [zram, swap, dietpi, rezept, karte, ausrollweg, zwilling, installer, gegenprobe, 2026]
+    stand: "29.09.2026, im DietPi-Quelltext nachgelesen und mit Attrappen nachgestellt (tests/zram_schritt_test.py); auf keiner Karte gemessen."
+    source: 'AUDIT-2026-09-25 Rang 3 (Karten-Schluessel-Zwilling), Betreiber 29.09.2026: machen. Geaendert: neu remote-step-installer/controller/mixpi-kartenschluessel.txt, sdprep.py, scripts/make-boot-sd.sh (--nur-schluessel), recipes/mupibox.yaml (Schritt zram), neu tests/zram_schritt_test.py, neu tools/kartenwege-schluessel-zwilling.py (in pruefen.sh), tools/bootkette-schau.py. Quellen: github.com/MichaIng/DietPi dietpi/func/dietpi-set_swapfile und dietpi.txt, DietPi-Issue 3326.'
+    body: |
+      DER AUDIT-BEFUND stimmte: den Lizenzschluessel setzte nur sdprep.py
+      (Assistenten-Karte), die zram-Schluessel nur make-boot-sd.sh (Bash-Weg).
+      Vorgeschlagen war als Minimal-Schliessung „je zwei Zeilen".
+
+      DIE FALLE: DietPis `dietpi-set_swapfile 0` (Swap_Disable) ruft
+      `swapoff -a` und entfernt `98-dietpi-zram-swap.rules` samt
+      modules-load. Der Rezept-Schritt `zram` rief genau das. Folge 1 (schon
+      heute): das eben per zram-tools gestartete Geraet ist sofort wieder aus,
+      der `check` des Schritts ist rot, erst der Neustart heilt. Folge 2 (mit
+      der Zwei-Zeilen-Schliessung): neben DietPis EIGENEM zram, das die
+      Assistenten-Karte dann beim Erstlauf bekommen haette, waere die
+      Auslagerung fuer immer weg — auf jeder neuen Box.
+
+      REGEL: Bevor ein Schluessel auf einen weiteren Weg wandert, jeden
+      SPAETEREN Schritt lesen, der dieselbe Ressource anfasst — und ein
+      fremdes Werkzeug im Quelltext nachlesen, nicht nach seinem Namen
+      beurteilen („set_swapfile 0" klingt nach „keine Datei", heisst aber
+      „keine Auslagerung").
+
+      GEBAUT: EINE Tabelle `mixpi-kartenschluessel.txt` in dietpi.txt-Form
+      (SCHLUESSEL=WERT; Bash liest sie ohne Python, sdprep laeuft auch unter
+      Windows, die Datei liegt im Installer und damit auch im remoteinstaller-
+      Repo). NICHT `dietpi_cfg` als Quelle, wie das Audit vorschlug: die
+      Funktion traegt Passwort, Netz und Sprache, die der Bash-Weg absichtlich
+      nicht setzt. Beide Leser sind gleich streng und lehnen dieselbe kaputte
+      Zeile mit derselben Zeilennummer ab. Der Schritt `zram` ruft
+      dietpi-set_swapfile nur noch bei einer echten Swap-Datei und nie neben
+      DietPis zram, und faehrt zram danach wieder hoch.
+
+      WACHEN: `tools/kartenwege-schluessel-zwilling.py --pruefen` bespielt
+      zwei Probekarten (je drei Ausgangslagen) und vergleicht, was landet;
+      Eintraege nur auf einem Weg brauchen eine Begruendung.
+      `tests/zram_schritt_test.py` liest den run:-Block woertlich und faehrt
+      ihn mit Attrappen in vier Lagen. Sabotagen (alte zram-Logik, Neustart
+      von zramswap auskommentiert, Tabelle umgangen, Bash-Weg ohne
+      Lizenzschluessel) je rot.
+
+      AM GERAET OFFEN: ob DietPi Trixie mit SWAPFILE_LOCATION=zram beim
+      Erstlauf zram anlegt und der Schritt danach „zram laeuft schon" meldet
+      (/proc/swaps, Regel vorhanden); ob neuere Abbilder ACCEPT_LICENSE noch
+      lesen — das heutige upstream-dietpi.txt fuehrt den Schluessel nicht mehr.
+    related: ["dietpi-txt-vorlage-ist-kein-ausrollweg", "unit-im-heredoc-entgeht-der-unit-wache", "zwei-ausrollwege-eine-handgefuehrte-liste"]
+  - id: phantom-zitat-heisst-nie-eingecheckt
+    title: 'Ein Werkzeug-Zitat im Code ist erst falsch, wenn niemand es nachrechnen kann - und vor dem Anheben eines Deckels nachrechnen, wer ihn gerissen hat'
+    kind: regel
+    tags: [wachen, kommentare, zitate, audit, groessen-deckel, oberflaeche, vorlesen, video, 2026]
+    stand: "29.09.2026, am ganzen Baum gemessen (3832 Zitate); Video-Stimme im Browser gegen eine eigene Vorschau belegt, am Geraet ungemessen."
+    source: 'Betreiber-Vorlage AUDIT-2026-09-28 1c, Punkte 3, 5, 6 (Betreiber 29.09.2026: machen). Geaendert: NewDesign/video.js, app.js, app.css, index.html; tools/neu-sprechen-schau.mjs (Abschnitt 8), tools/neu-groessen-schau.mjs (--verlauf, neue Deckel), neu tools/werkzeug-zitate-pruefen.py (in doku-luecken-probe.sh), tools/plugin-kette-probe.mts, tools/stilnamen-pruefen.py.'
+    body: |
+      PHANTOM-ZITATE: Vier Audits hintereinander meldeten Kommentare, die
+      Werkzeuge mit Messzahlen zitierten, die es nie gab — weil die Pfadwache
+      (doku-pfade-pruefen.py) nur PROSA liest ([[wiederkehrender-befund-ist-ablauffehler]]).
+      Neu: tools/werkzeug-zitate-pruefen.py liest Code-Kommentare in
+      NewDesign, src, plugins, tools, desktop, handy-app.
+
+      DIE TRENNLINIE IST DIE NACHRECHENBARKEIT, NICHT DIE EXISTENZ. Ein
+      geloeschtes Werkzeug findet `git log`; ein nie eingechecktes niemand.
+      Rot ist deshalb nur, was es auf der Hauptlinie NIE gab. Geloeschte,
+      ausdruecklich als „nie eingecheckt" markierte, Platzhalter und
+      Bauablage zaehlt die Wache mit, ohne rot zu werden. Wahrheit ist der
+      INDEX, nicht der Arbeitsbaum. Und `--first-parent`: ohne das bringt die
+      per git subtree hereingezogene Geschichte Pfade mit, die es hier nie gab.
+      Wer ein Zitat ehrlich machen will, schreibt „einmal gemessen am …, nie
+      eingecheckt" — den Namen umzubiegen reicht nicht.
+      Einer der vier Audit-Funde war keiner: das Werkzeug lag vom 04.08. bis
+      05.09. im Baum. Zwei echte Phantome standen in tools/ selbst (eine
+      Aufrufzeile mit .ts statt .mts, ein Verweis auf eine nie gebaute
+      Probe-Wache).
+
+      GROESSEN-DECKEL: Drei Audits schrieben das Reissen einem Commit zu, der
+      NewDesign/ gar nicht anfasst. `node tools/neu-groessen-schau.mjs
+      --verlauf <rev>` rechnet es je Commit nach: index.html riss am 21.09.,
+      app.js und app.css am 27.09. (Kopplung, Gestalter). Schrumpfen reichte
+      nachweislich nicht (tote Funktionen ~3,7 kB, tote Stile nichts); also
+      angehoben — mit Datum, Welle, Bytes und gzip im Kommentar, und mit
+      knappem Polster, damit die Wache beim naechsten Zuwachs wieder spricht
+      ([[dauerrote-wache-ist-keine]]).
+
+      VIDEO-STIMME: video.js rief die Hausfunktion sprichDann mit EINEM
+      String statt (Element, Satz), der leere catch verschluckte den
+      TypeError — die Stimme hat im Video-Schirm nie gesprochen, und die
+      Kacheln waren aus dem Antipp- und Lernmodus gefallen. Jetzt reicht der
+      Kontext einen Helfer `sprich` herein, der wie die Auswahl-Ansage erst
+      den Schalter fragt. Lehre: ein leerer catch um eine Zugabe macht aus
+      einem Aufruffehler dauerhafte Stille — der Browser-Zeuge muss am
+      Sprech-Ausgang abfragen, nicht am Aufruf.
+    related: ["wiederkehrender-befund-ist-ablauffehler", "dauerrote-wache-ist-keine", "kommentar-und-kompilat-sind-keine-gegenstelle"]
+  - id: spiegel-beim-start-gemeldet-schreibt-fest
+    title: 'Ein Spiegel, der beim Seitenaufbau ans Profil meldet, schreibt das Aussehen des vorigen Kindes fest - und element.click() erreicht auch verdeckte Tasten'
+    kind: falle
+    tags: [aussehen, profile, oberflaeche, anmeldung, gast, schloss, zeugen, E72, E143, 2026]
+    stand: "29.09.2026, im Browser gegen eine eigene Vorschau belegt (beide Zeugen in pruefen.sh); am Geraet ungemessen."
+    source: 'Betreiber-Entscheidungen 29.09.2026: E143/4 Weg (a) „nur das Schloss", E72/T3 „Rueckfall auf die Vorgabe". Geaendert: NewDesign/app.js, NewDesign/app.css, src/backend-api/src/start.ts, aussehen.integration.spec.ts, src/frontend-admin/src/app/seiten/kinderzeit.ts, tools/start-modus-schau.mjs, neu tools/mixpi-aussehen-wechsel-schau.mjs.'
+    body: |
+      E72, DIE MELDUNG: „Kalea hell → Papa dunkel klappt, zurueck nicht".
+      Der Backlog-Verdacht („der Server sagt fuer Kalea nichts, also bleibt
+      das Licht stehen") war nur die halbe Ursache. Die ganze:
+      `lichtStarten()` und `farbeStarten()` riefen den MELDENDEN Setter und
+      schickten den localStorage-Spiegel bei JEDEM Seitenaufbau per POST ans
+      gerade aktive Profil (seit 15.08.). Nach einem Wechsel traf Kind B also
+      mit dem Licht von Kind A ein — und bekam es als EIGENES geschrieben.
+      Ein frischer Browser ueberschrieb umgekehrt das eigene Aussehen des
+      aktiven Kindes mit der Vorgabe. Erst der Blick auf das Feld `eigen` am
+      Server zeigte das Festschreiben.
+
+      REGEL 1: Beim ANWENDEN nie melden — nur eine Wahl des Menschen geht ans
+      Profil. REGEL 2: Ein Spiegel, der mehreren Besitzern dient, muss seinen
+      Besitzer kennen (`mixpi_aussehen_von_v1`), sonst ist „leer" nicht von
+      „fremd" zu unterscheiden; bei fremdem Spiegel gilt die Vorgabe.
+      GRENZE: Profile, in die das alte Echo schon geschrieben hat, fuehren
+      das fremde Aussehen jetzt als eigenes — zurueck nur, indem man bei dem
+      Kind einmal selbst waehlt.
+
+      E143/5, DER SCHWESTERFALL: Gebaut wurde Weg (a) — mit Gast an fragt ein
+      geschuetztes letztes Profil beim KALTSTART nach seinem Schloss (die
+      Sitzungs-Marke `mixpi_angemeldet_v1` trennt Kaltstart von Neuladen).
+      Dabei zeigte sich: die Passwortfrage `.pw-schicht` (z-index 11) lag
+      seit E39 (16.08.) UNTER dem Anmeldefenster (z-index 60). Man sah sie
+      durch den Schleier, aber kein Finger traf eine Taste — in „Wer hoert?"
+      bei jedem geschuetzten Profil. Die Start-Modus-Schau war trotzdem
+      gruen, weil sie per JS `element.click()` tippte, und das erreicht
+      auch verdeckte Elemente. Ohne den Fund haette Weg (a) jedes geschuetzte
+      Kind beim Start ausgesperrt.
+
+      REGEL 3: Ein Zeuge, der fuer einen FINGER buergt, tippt mit echten
+      Zeigerereignissen (CDP `Input.dispatchMouseEvent`) und prueft per
+      `elementFromPoint`, ob das Ziel obenauf liegt. Und ein Zeuge fuer einen
+      Wechsel geht BEIDE Richtungen — der Hinweg war hier schon vorher gruen.
+    related: ["gegenprobe-statt-gruen-glauben", "readme-3-9-nachgeprueft"]

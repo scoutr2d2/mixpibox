@@ -443,17 +443,15 @@ So that nobody builds on it — the long version is in
 `dokumentation/mixpibox.md`, section 9. The plan by which this section goes
 away is in `BACKLOG.md`, E143 (re-checked on 25.09.2026):
 
-* **Login only takes effect with the guest switched off.** As long as the
-  guest is on — the default — the box starts silently in the last active
-  profile, even if it has a lock, and the start mode has no effect.
 * **Assigning a new input device is manual work.** The admin page for it is
   missing; since 25.09.2026 all three rollout paths put the device profiles and
   SVG schematics on the box, but no route writes the mapping yet.
-* **The setup wizard does not clean up after itself.** The phone path (own
-  Wi-Fi, QR, page for the phone) is wired up and was played through on the
-  Pi 5, not on the Pi 4. After setup, however, the installation agent stays on
-  the network and the pre-start stays enabled — a finished box that boots
-  without a router opens the setup Wi-Fi again.
+* **That the setup wizard cleans up after itself has not been measured on a
+  device.** The phone path (own Wi-Fi, QR, page for the phone) is wired up and
+  was played through on the Pi 5, not on the Pi 4. Since 29.09.2026 the
+  self-run switches the installation agent off, and the pre-start ends at once
+  on a finished box, even without a router — built and covered by tests, not
+  yet run on any card.
 * **The volume jump when switching sources** is real and not compensated when
   Spotify plays through Soloist: local files run through ReplayGain, Soloist
   has no normalisation. librespot (the default) normalises; that this makes
@@ -474,7 +472,7 @@ counting them in (then the list lies).
 | **ONE box interface.** The trial switch went with E118/1d, the old Angular/Ionic interface was **deleted** with E118/1e on 05.09.2026; the kiosk loads `/neu/` fixed. Only one straggler module plus `LIESMICH.md` remains in `src/frontend-box/`. | `scripts/chromium-autostart.sh`, catch-all in `src/backend-api/src/server.ts` | done |
 | **New admin (Verwaltung)** in Angular, 27 pages + sign-in, under `/admin`, with search across all settings. | `src/frontend-admin/` | replaces the PHP admin (removed 19.08.2026); witnesses for the sign-in path, screen time, search and a few more pages |
 | **Backends in TypeScript** instead of grown JS/PHP. | `src/backend-api/` (142 test files), `src/backend-player/` (15) | in use |
-| **Profiles for several children** — up to twelve, with character, birthday, lock in five input modes and own storage per child. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | done; sign-in only takes effect with guest switched off (3.10) |
+| **Profiles for several children** — up to twelve, with character, birthday, lock in five input modes and own storage per child. | `src/backend-api/src/profile.ts`, `NewDesign/app.js` | done; with the guest on, a protected last profile asks for its lock on cold start (since 29.09.2026, E143/5) |
 | **Kinderzeit** — how long, when and on which days; counted server-side, not in the browser. | `src/backend-api/src/kinderzeit.ts` | done; per-child rules in the admin too since 25.09.2026 |
 | **Reward videos** — parents release individual Mediathek videos, in pieces, with a counter. | `NewDesign/video.js`, admin page „Videos" | done |
 | **Games and learning** — six apps in the drawer, four games in the game corner, each individually switchable off. | `NewDesign/apps.js`, `NewDesign/app.js`, `src/backend-api/src/spiele.ts` | done |
@@ -859,7 +857,7 @@ Without this command the hooks sit in the tree but **never** run —
 **Where the knowledge is.** The dearly bought details — which measurement
 refuted which assumption, which workaround was necessary and why — are
 neither in the code nor in this file but in the knowledge pack
-**`llmwiki/pack.yaml`** (1154 entries, version 658). It is deliberately data,
+**`llmwiki/pack.yaml`** (1165 entries, version 670). It is deliberately data,
 not code, and is never executed. It is not read by hand:
 
 ```bash

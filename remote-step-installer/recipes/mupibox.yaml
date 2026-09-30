@@ -106,8 +106,30 @@ steps:
 
   - id: deps
     name: "System-Abhängigkeiten"
-    run: "DEBIAN_FRONTEND=noninteractive apt-get install -y git zip unzip build-essential python3-dev i2c-tools alsa-utils mplayer pulseaudio python3-rpi-lgpio python3-lgpio python3-alsaaudio python3-flask python3-requests wireless-tools wireguard-tools cifs-utils davfs2 speech-dispatcher espeak-ng jq x11vnc xinput libwidevinecdm0"
-    note: "libasound2 heisst seit Debians time_t-Umstellung libasound2t64 - der alte Name loest auf Trixie ins Leere (apt-cache policy: Candidate (none)). Er wird deshalb unten SEPARAT mit Rueckfall installiert, statt die ganze Zeile scheitern zu lassen. python3-rpi-lgpio statt RPi.GPIO -> läuft auf Pi 4 UND 5. jq braucht das Kiosk-Skript, libwidevinecdm0 das Spotify-Web-SDK, alsa-utils den Master-Regler. python3-requests braucht check_network.py (ohne das Modul stirbt es mit ImportError und active_data.json bleibt leer). wireless-tools liefert iwconfig, ohne das bleiben WLAN-Signal und -Qualitaet in der Oberflaeche leer. wireguard-tools (wg, wg-quick) traegt den VPN-Heimweg der Verwaltung (BACKLOG E30): ohne das Paket zeigt die VPN-Seite NUR die Karte 'Das Werkzeug fehlt' und schickt den Betreiber per SSH auf die Box - auf einer frisch bespielten Karte, die gerade behauptet, fertig zu sein. Das Kernmodul bringt der Pi-Kern selbst mit; resolvconf braucht es NICHT, weil die Verwaltung DNS-Zeilen beim Uebernehmen streicht. NACHGETRAGEN 19.09.2026: autosetup.sh:104 trug es schon, der Update-Weg bekam es am selben Tag (f97fcbce) - dieses Rezept war die DRITTE, uebersehene Liste, und es ist der Weg, ueber den frische Karten heute wirklich entstehen. tools/rezept-deckung.py haelt die drei ab jetzt zusammen. cifs-utils (mount.cifs) und davfs2 (mount.davfs) tragen das Netzlaufwerk der Verwaltung (BACKLOG E28/N6-N9, E29/B4): ohne sie zeigt die Netzlaufwerk-Seite NUR die Karte 'Das Werkzeug fehlt' - am 20.09.2026 an Box .62 genau so gemessen, /api/netzlaufwerk meldete werkzeuge {smb:false,webdav:false}. Beide sind KLIENT-Pakete: sie binden eine fremde Freigabe ein und oeffnen selbst nichts, kein horchender Dienst kommt dazu. davfs2 stellt beim Einrichten eine debconf-Frage (setuid root) - hier harmlos, weil diese Zeile ohnehin DEBIAN_FRONTEND=noninteractive traegt und die Vorgabe (kein setuid) genau die richtige ist: eingehaengt wird ueber eine systemd-Einheit als root. In autosetup.sh und dem Update-Weg mussten dafuer die apt-Aufrufe erst noninteractive werden. speech-dispatcher+espeak-ng braucht die Vorlese-Funktion (langer Druck auf einen Titel): Chromium meldet speechSynthesis als VORHANDEN, auch wenn keine Stimme installiert ist - dann bleibt es einfach still und der Rueckfall auf die Box-Ausgabe greift nie. xinput braucht force-dsi-output.sh, um den Touch auf den DSI-Ausgang zu legen: fehlt es, ueberspringt das Skript die Zuordnung STILL (kein Fehler im Log) - am Geraet belegt. i2c-tools liefert i2cget fuer die Touch-Diagnose."
+    run: "DEBIAN_FRONTEND=noninteractive apt-get install -y git zip unzip build-essential python3-dev i2c-tools alsa-utils mplayer pulseaudio python3-rpi-lgpio python3-lgpio python3-alsaaudio python3-flask python3-requests wireless-tools wireguard-tools cifs-utils davfs2 avahi-daemon speech-dispatcher espeak-ng jq x11vnc xinput libwidevinecdm0"
+    note: "libasound2 heisst seit Debians time_t-Umstellung libasound2t64 - der alte Name loest auf Trixie ins Leere (apt-cache policy: Candidate (none)). Er wird deshalb unten SEPARAT mit Rueckfall installiert, statt die ganze Zeile scheitern zu lassen. python3-rpi-lgpio statt RPi.GPIO -> läuft auf Pi 4 UND 5. jq braucht das Kiosk-Skript, libwidevinecdm0 das Spotify-Web-SDK, alsa-utils den Master-Regler. python3-requests braucht check_network.py (ohne das Modul stirbt es mit ImportError und active_data.json bleibt leer). wireless-tools liefert iwconfig, ohne das bleiben WLAN-Signal und -Qualitaet in der Oberflaeche leer. wireguard-tools (wg, wg-quick) traegt den VPN-Heimweg der Verwaltung (BACKLOG E30): ohne das Paket zeigt die VPN-Seite NUR die Karte 'Das Werkzeug fehlt' und schickt den Betreiber per SSH auf die Box - auf einer frisch bespielten Karte, die gerade behauptet, fertig zu sein. Das Kernmodul bringt der Pi-Kern selbst mit; resolvconf braucht es NICHT, weil die Verwaltung DNS-Zeilen beim Uebernehmen streicht. NACHGETRAGEN 19.09.2026: autosetup.sh:104 trug es schon, der Update-Weg bekam es am selben Tag (f97fcbce) - dieses Rezept war die DRITTE, uebersehene Liste, und es ist der Weg, ueber den frische Karten heute wirklich entstehen. tools/rezept-deckung.py haelt die drei ab jetzt zusammen. cifs-utils (mount.cifs) und davfs2 (mount.davfs) tragen das Netzlaufwerk der Verwaltung (BACKLOG E28/N6-N9, E29/B4): ohne sie zeigt die Netzlaufwerk-Seite NUR die Karte 'Das Werkzeug fehlt' - am 20.09.2026 an Box .62 genau so gemessen, /api/netzlaufwerk meldete werkzeuge {smb:false,webdav:false}. Beide sind KLIENT-Pakete: sie binden eine fremde Freigabe ein und oeffnen selbst nichts, kein horchender Dienst kommt dazu. davfs2 stellt beim Einrichten eine debconf-Frage (setuid root) - hier harmlos, weil diese Zeile ohnehin DEBIAN_FRONTEND=noninteractive traegt und die Vorgabe (kein setuid) genau die richtige ist: eingehaengt wird ueber eine systemd-Einheit als root. In autosetup.sh und dem Update-Weg mussten dafuer die apt-Aufrufe erst noninteractive werden. speech-dispatcher+espeak-ng braucht die Vorlese-Funktion (langer Druck auf einen Titel): Chromium meldet speechSynthesis als VORHANDEN, auch wenn keine Stimme installiert ist - dann bleibt es einfach still und der Rueckfall auf die Box-Ausgabe greift nie. xinput braucht force-dsi-output.sh, um den Touch auf den DSI-Ausgang zu legen: fehlt es, ueberspringt das Skript die Zuordnung STILL (kein Fehler im Log) - am Geraet belegt. i2c-tools liefert i2cget fuer die Touch-Diagnose. avahi-daemon macht die Box unter <name>.local auffindbar (mDNS) - darauf bauen /api/box, tools/box-finden.py und die Handy-App; eingeschaltet wird er im Schritt mdns gleich danach. NACHGETRAGEN 29.09.2026 (AUDIT-2026-09-23 Rang 2): autosetup.sh und der Update-Weg trugen ihn seit dem 20.09., dieses Rezept nicht - zum zweiten Mal nach wireguard-tools war es die DRITTE, uebersehene Liste; tools/rezept-deckung.py kennt das Paket seither."
+
+  - id: mdns
+    name: "Im Netz auffindbar: <name>.local (avahi)"
+    note: >-
+      Betreiber, 20.09.2026: „es gibt immer wieder die frage welche ip, das
+      muessen wir doch besser hinbekommen." Die Antwort ist, dass man sie gar
+      nicht braucht: <name>.local findet die Box, egal welche Adresse der DHCP
+      gerade vergeben hat. autosetup.sh und der Update-Weg schalten avahi
+      ausdruecklich ein; dieser Weg tut dasselbe, statt sich darauf zu
+      verlassen, dass das Paket sich beim Installieren selbst startet -
+      Installieren ist nicht Einschalten.
+
+      KEIN optional: Die Box funktioniert ohne avahi, aber sie ist dann nur
+      noch per Portsuche zu finden, und genau die hat am 20.09. einen fremden
+      Rechner fuer die Box gehalten. Wer avahi bewusst nicht will, schaltet
+      es mit perf-tune.yaml (consider-avahi) ab - dort steht der Preis.
+
+      DER NAME KOMMT SPAETER: avahi liest den Rechnernamen nur beim Start.
+      Der Schritt box-name in mupibox-app.yaml startet ihn deshalb neu,
+      nachdem er den Namen gesetzt hat.
+    run: "systemctl enable --now avahi-daemon"
+    check: "systemctl is-active --quiet avahi-daemon"
 
   - id: libasound
     name: "ALSA-Bibliothek (Name je nach Debian-Fassung)"
@@ -680,6 +702,22 @@ steps:
       landen doch wieder auf der SD - genau das, was zram vermeiden soll. Erst
       zram hochfahren, DANN die Datei abschalten; umgekehrt stuende die Box
       einen Augenblick ganz ohne Auslagerung da.
+
+      DAS DIETPI-WERKZEUG NIMMT MEHR MIT, ALS SEIN NAME SAGT (29.09.2026 im
+      DietPi-Quelltext nachgelesen, Swap_Disable in dietpi-set_swapfile):
+      `dietpi-set_swapfile 0` ruft `swapoff -a` - das trifft JEDE Auslagerung,
+      auch das eben gestartete zram - und loescht DietPis eigene
+      zram-Einrichtung (/etc/udev/rules.d/98-dietpi-zram-swap.rules). Zwei
+      Folgen, beide vorher unbemerkt: (1) auf einer Karte mit Datei-Swap stand
+      das zram direkt nach diesem Schritt still, der check wurde rot, erst der
+      Neustart brachte es zurueck; (2) eine Box mit DietPis EIGENEM zram
+      verlor es fuer immer. Genau das waere seit dem 29.09. jede
+      Assistenten-Karte gewesen: sie bekommt AUTO_SETUP_SWAPFILE_LOCATION=zram
+      aus controller/mixpi-kartenschluessel.txt und hat DietPis zram ab dem
+      Erstlauf. Deshalb ruft der Schritt das Werkzeug nur noch, wenn
+      wirklich eine DATEI auszulagern ist, nie neben DietPis zram, und faehrt
+      zram-tools danach wieder hoch. Nachgestellt in
+      tests/zram_schritt_test.py (Attrappen statt Box).
     optional: true
     run: |
       set -e
@@ -698,7 +736,17 @@ steps:
       # Den Datei-Swap dauerhaft abbestellen - sonst legt ihn der naechste Start
       # wieder an. DietPi hat dafuer sein eigenes Werkzeug (0 = aus, raeumt auch
       # /etc/fstab auf); auf einem reinen Raspberry OS ist es dphys-swapfile.
-      if [ -x "${DIETPI_DIR:-/boot/dietpi}/func/dietpi-set_swapfile" ]; then
+      # NUR WENN ES EINE DATEI GIBT, und NIE neben DietPis eigenem zram: das
+      # Werkzeug schaltet per swapoff -a alles ab und raeumt jenes zram weg
+      # (Herleitung im note: oben).
+      DATEI_SWAP=$(awk 'NR>1 && $1 !~ /^\/dev\/zram/ {print $1}' /proc/swaps)
+      FSTAB_SWAP=$(awk '$1 !~ /^#/ && $1 !~ /^\/dev\/zram/ && $3 == "swap" {print $1}' /etc/fstab 2>/dev/null || true)
+      if [ -z "${DATEI_SWAP}${FSTAB_SWAP}" ]; then
+        echo "kein Datei-Swap - nichts abzubestellen"
+      elif [ -f /etc/udev/rules.d/98-dietpi-zram-swap.rules ]; then
+        echo "DietPis eigenes zram ist eingerichtet - dietpi-set_swapfile bleibt aus,"
+        echo "es raeumte das zram mit weg. Datei-Swap nur jetzt abgehaengt: ${DATEI_SWAP}${FSTAB_SWAP}"
+      elif [ -x "${DIETPI_DIR:-/boot/dietpi}/func/dietpi-set_swapfile" ]; then
         "${DIETPI_DIR:-/boot/dietpi}/func/dietpi-set_swapfile" 0 2>&1 | tail -3 || true
       elif command -v dphys-swapfile >/dev/null 2>&1; then
         systemctl disable --now dphys-swapfile 2>/dev/null || true
@@ -710,6 +758,14 @@ steps:
         echo "  haenge Datei-Swap ab: $S"
         swapoff "$S" 2>/dev/null || true
       done
+      # swapoff -a im DietPi-Werkzeug hat das zram-tools-Geraet mitgenommen.
+      # Ohne diesen Neustart stuende die Box bis zum naechsten Booten ohne
+      # jede Auslagerung da - und der check unten waere rot.
+      if ! grep -q '^/dev/zram' /proc/swaps; then
+        echo "  zram wieder hochfahren"
+        systemctl restart zramswap 2>/dev/null || true
+        sleep 2
+      fi
       echo "--- /proc/swaps jetzt ---"; cat /proc/swaps
       free -m | awk '/Swap/{print "Swap gesamt: "$2" MB"}'
     check: "grep -q '^/dev/zram' /proc/swaps"

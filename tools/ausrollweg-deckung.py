@@ -66,9 +66,11 @@ AUFRUF
 RUECKGABE: 0 = alles gedeckt oder begruendet, 1 = mindestens ein Loch.
 """
 
+import importlib.util
 import os
 import re
 import sys
+from pathlib import Path
 
 WURZEL = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -217,6 +219,45 @@ NUR_HANDWEG_MIT_GRUND = {
 # Quellordner oder wird namentlich kopiert. Eine leere Ausnahmeliste ist die
 # ehrliche Fassung eines Filters, der nichts auszuschliessen hat.
 FREMD_MIT_GRUND: dict = {}
+
+# UNITS, DIE EIN PAKET MITBRINGT — und zwar eines, das DERSELBE Weg installiert.
+#
+# Die Gegenprobe in Abschnitt 4 war seit dem 20.09.2026 dauerrot:
+# `systemctl enable --now avahi-daemon` steht in autosetup.sh UND im
+# Update-Weg, und keine Unit dieses Namens liegt in einem Quellordner. Der
+# Befund war falsch, aber die Frage dahinter richtig: die Unit kommt aus dem
+# Debian-Paket `avahi-daemon` (/usr/lib/systemd/system/avahi-daemon.service),
+# und das installieren beide Wege selbst, ein paar hundert Zeilen weiter oben.
+# Der Wache fehlte dieses HERKUNFTSWISSEN (AUDIT-2026-09-23 Rang 2).
+#
+# NICHT in FREMD_MIT_GRUND, und das ist der Punkt: dort steht „liegt auf
+# jeder frischen Karte, bevor unser Skript laeuft". Fuer avahi ist das
+# FALSCH — auf dem DietPi-Abbild liegt es nicht, erst unser apt-get bringt
+# es. Die Ausnahme gilt deshalb nur, SOLANGE der Weg das Paket wirklich
+# installiert; gelesen wird das mit derselben Funktion, mit der
+# tools/rezept-deckung.py die Merkmals-Pakete prueft (Kommentare und
+# zitierte Befehle zaehlen nicht). Faellt das Paket aus der Liste eines
+# Weges, wird genau dieser Weg wieder rot — mit dem richtigen Grund.
+#
+# Wer hier eintraegt, behauptet: Paket P liefert Unit U. Das steht in der
+# Dateiliste des Pakets (packages.debian.org, „list of files"), nicht hier.
+PAKET_BRINGT_UNIT = {
+    "avahi-daemon.service": "avahi-daemon",
+}
+
+
+def _rezept_deckung():
+    """tools/rezept-deckung.py als Modul — EINE Lesart von „wird installiert"
+    fuer alle Wachen, statt einer zweiten, die anders rechnet."""
+    pfad = os.path.join(os.path.dirname(os.path.abspath(__file__)), "rezept-deckung.py")
+    spec = importlib.util.spec_from_file_location("rezept_deckung", pfad)
+    modul = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(modul)
+    return modul
+
+
+def installiert_auf(weg_pfad: str, paket: str) -> bool:
+    return _rezept_deckung().installiert(Path(WURZEL) / weg_pfad, paket)
 
 # BEKANNTE LOECHER MIT NUMMER — gemeldet, aber nicht rot.
 #
@@ -769,6 +810,16 @@ def main() -> int:
             if deckung(unit, texte)[weg] == "rollt aus":
                 continue
             if unit in FREMD_MIT_GRUND:
+                continue
+            paket = PAKET_BRINGT_UNIT.get(unit)
+            if paket:
+                if installiert_auf(dict(WEGE)[weg], paket):
+                    continue
+                befunde.append(
+                    f"{unit}: {weg} ruft `systemctl enable`, und die Unit kommt aus "
+                    f"dem Paket `{paket}` — das dieser Weg aber NICHT installiert. "
+                    f"Auf einer frischen Karte laeuft der Befehl ins Leere."
+                )
                 continue
             befunde.append(
                 f"{unit}: {weg} ruft `systemctl enable` — aber keine Unit "

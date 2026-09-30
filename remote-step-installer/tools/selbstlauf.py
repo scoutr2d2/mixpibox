@@ -29,6 +29,9 @@ WAS DAS SCHWERE DARAN IST, UND WARUM ES HIER STEHT:
      halb eingerichtet ist und niemandem sagt, wo es klemmte. Ausnahme sind
      die als `optional` gekennzeichneten Schritte — die duerfen scheitern.
 
+  4. AM ENDE GEHT DER AGENT MIT. Einmal, vor dem Schlussneustart, wird
+     `step-agent.service` ab- und ausgeschaltet (Begruendung bei AGENT_UNIT).
+
 WAS ES NICHT TUT
   * Es entscheidet nichts. Workarounds, Ueberspringen, Wiederholen — all das
     kann nur ein Mensch, und wer nur ein Telefon hat, soll dafuer den
@@ -329,6 +332,123 @@ def neustart_ausloesen():
         sagen(f"  Neustart liess sich nicht ausloesen: {e}")
 
 
+# ══ DER AGENT GEHT MIT DER EINRICHTUNG ══════════════════════════════════════
+#
+# BACKLOG E143/8, am Code nachgemessen 29.09.2026: Auf dem Handy-Weg lauscht
+# `step-agent.service` auf 0.0.0.0 (sdprep.custom_script, handy=True) und
+# fuehrt als ROOT aus, was ein gepaartes Geraet ihm schickt. Der Laptop-Weg
+# raeumt ihn am Ende ab (stepctl fragt "Agent beenden + entfernen?"); der
+# Selbstlauf tat nichts dergleichen — die fertige Box lauschte bei jedem Start
+# weiter im Heimnetz. Der Pair-Deckel (8 Versuche) hielt, gewollt war es nie.
+#
+# WER IHN DANACH NOCH BRAUCHT, und warum ABSCHALTEN trotzdem richtig ist:
+#   * Die Handy-Seite nicht. Nach dem Schlussneustart hat der Agent einen neuen
+#     Code und kennt ihren Schluessel nicht mehr; den Code zeigt auf der
+#     fertigen Box kein Schirm mehr.
+#   * Der Selbstlauf selbst nicht. `umgebung_ermitteln` laedt agent.py als
+#     DATEI — die bleibt liegen.
+#   * Der Laptop ja, fuer einen spaeteren Rezeptlauf. Dafuer gibt es den Weg
+#     schon: `./connect <box> --install` schreibt die Unit neu (127.0.0.1,
+#     Zugang nur durch den SSH-Tunnel), schaltet sie ein und startet sie.
+#     `./connect <box>` allein meldet "Agent: installed" und nennt genau
+#     diesen Schalter. Deshalb DISABLE und nicht MASK: eine maskierte Unit
+#     liesse sich dort nicht mehr einschalten.
+#   * Nur an localhost binden statt abschalten: dafuer muesste der Selbstlauf
+#     die Unit umschreiben — genau das, was `connect --install` schon tut, an
+#     einem zweiten Ort. Und ein root-Dienst, den niemand ruft, kostet auch
+#     auf localhost Speicher und bleibt eine Tuer.
+# NUR BEIM ERSTEN MAL (siehe fahren): wer den Agenten danach per
+# `connect --install` zurueckholt, will ihn ueber Neustarts behalten — die
+# Unit hier laeuft bei jedem Start und darf ihn dann nicht wieder abschalten.
+AGENT_UNIT = "step-agent.service"
+
+
+def in_unit_gruppe(unit, cgroup_datei="/proc/self/cgroup"):
+    """Laeuft DIESER Prozess in der Kontrollgruppe von `unit`?
+
+    WOZU: `systemctl stop` beendet die GANZE Kontrollgruppe einer Unit. Wer
+    den Selbstlauf ueber den Agenten startet (`rsi exec "python3 …/
+    selbstlauf.py …"` macht ihn zum Kind des Agenten), steckt in dessen
+    Gruppe — ein Stopp dort beendete den Lauf selbst, vor dem Neustart; schon
+    der abgerissene Ausgabekanal liesse das naechste `print` scheitern. Die
+    gewohnten Wege (Handy-Knopf, Erstboot, Vorstart) gehen ueber `systemctl
+    start mixpibox-selbstlauf` und haben eine eigene Gruppe; gefragt wird
+    trotzdem, statt es anzunehmen.
+
+    cgroup v2 schreibt `0::/system.slice/step-agent.service`, v1 dieselbe
+    Endung hinter `name=systemd:`. Nicht lesbar heisst: nicht darin.
+    """
+    try:
+        with open(cgroup_datei, encoding="utf-8") as f:
+            zeilen = f.read().splitlines()
+    except (OSError, ValueError):
+        return False
+    return any(unit in z.split(":", 2)[-1].split("/") for z in zeilen)
+
+
+def agent_abschalt_befehle(in_agent_gruppe):
+    """Pure: welche Aufrufe, in welcher Reihenfolge.
+
+    ERST DISABLE, DANN STOP. Disable ist das, was zaehlt — es haelt den Agenten
+    ueber den Neustart hinaus fern. Stop ist der Gurt fuer den Fall, dass der
+    Neustart nicht kommt. Endete der Lauf zwischen beiden, soll das Wichtige
+    schon geschehen sein.
+
+    STOP OHNE WARTEN (`--no-block`): dieselbe Lehre wie beim Touch-Schritt im
+    Rezept (09.08.2026, neun Minuten Stillstand) — ein Auftrag, der haengt,
+    darf den Schlussneustart nicht festhalten. mixpibox-selbstlauf.service
+    hat TimeoutStartSec=infinity; niemand wuerde den Lauf dann beenden.
+    """
+    befehle = [["systemctl", "disable", AGENT_UNIT]]
+    if not in_agent_gruppe:
+        befehle.append(["systemctl", "stop", "--no-block", AGENT_UNIT])
+    return befehle
+
+
+def agent_abschalten(auf_box=None, ausfuehren=None, cgroup_datei="/proc/self/cgroup"):
+    """Den Einrichtungs-Agenten ab- und ausschalten. EINE BENANNTE NAHT, wie
+    `neustart_ausloesen` — und mit DEMSELBEN Riegel: auf einem Arbeitsrechner
+    ruft sie nichts. Ein Test, der dort `systemctl disable` absetzt, fragt
+    polkit nach einem Passwort, das niemand eintippt.
+
+    Die drei Parameter sind fuer den Test und nur zusammen zu setzen: wer
+    `auf_box=True` erzwingt, gibt auch `ausfuehren` mit — sonst liefe echtes
+    systemctl. `fahren` ruft ohne Argumente.
+
+    Wirft nie: scheitert das Abschalten, muss der Neustart trotzdem kommen —
+    eine Box, die halb aufgeraeumt im Einrichtungszustand stehen bleibt, ist
+    der schlechtere Ausgang als ein Agent, der noch einen Start lang lauscht.
+    """
+    if auf_box is None:
+        auf_box = os.path.isdir("/boot/dietpi") or os.path.isdir("/etc/mupibox")
+    if not auf_box:
+        sagen("  Kein MixPiBox-System — der Agent wird NICHT abgeschaltet.")
+        return
+    ausfuehren = ausfuehren or subprocess.run
+    eigene = in_unit_gruppe(AGENT_UNIT, cgroup_datei)
+    gelungen = True
+    for befehl in agent_abschalt_befehle(eigene):
+        try:
+            r = ausfuehren(befehl, capture_output=True, text=True, timeout=30)
+        except (OSError, subprocess.SubprocessError) as e:
+            sagen(f"  {' '.join(befehl[1:])}: nicht moeglich ({e})")
+            gelungen = False
+            continue
+        if r.returncode != 0:
+            sagen(f"  {' '.join(befehl[1:])}: Fehlercode {r.returncode} "
+                  f"{(r.stderr or r.stdout or '').strip()[:120]}")
+            gelungen = False
+    if not gelungen:
+        sagen("  Der Agent ist womoeglich noch an — von Hand: "
+              f"systemctl disable --now {AGENT_UNIT}")
+    elif eigene:
+        sagen("  Der Agent ist abgeschaltet; er endet mit dem Neustart "
+              "(dieser Lauf haengt an ihm, ein Stopp jetzt beendete ihn mit).")
+    else:
+        sagen("  Der Agent ist ab- und ausgeschaltet. Zurueck vom Laptop: "
+              "./connect <box> --install")
+
+
 def _dauer_sagen(sekunden):
     """"4 Minuten" oder "12 Sekunden" — nie das sinnlose "0 Minuten"."""
     sekunden = int(sekunden)
@@ -547,6 +667,12 @@ def fahren(lauf, von_vorn=False, stand_datei=STAND_DATEI):
     # OB WIR HIER ZUM ERSTEN MAL STEHEN, MUSS VOR DEM SCHREIBEN FESTSTEHEN.
     # Danach gibt es die Marke immer, und die Antwort waere immer "nein".
     erstes_mal = not os.path.exists(marke)
+    # DER AGENT GEHT, BEVOR DIE MARKE KOMMT — und damit vor dem Neustart.
+    # Vor der Marke, weil die Marke "erstes Mal" beendet: stirbt der Lauf
+    # zwischen beiden (Strom weg), holt der naechste Start das Abschalten
+    # nach. Hinter der Marke gaebe es kein zweites Mal.
+    if erstes_mal:
+        agent_abschalten()
     try:
         os.makedirs(os.path.dirname(STAND_DATEI), exist_ok=True)
         with open(marke, "w", encoding="utf-8") as f:
