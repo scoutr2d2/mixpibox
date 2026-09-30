@@ -1,5 +1,5 @@
 id: mupibox
-version: "670"
+version: "671"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -66987,3 +66987,31 @@ entries:
       `elementFromPoint`, ob das Ziel obenauf liegt. Und ein Zeuge fuer einen
       Wechsel geht BEIDE Richtungen — der Hinweg war hier schon vorher gruen.
     related: ["gegenprobe-statt-gruen-glauben", "readme-3-9-nachgeprueft"]
+  - id: veroeffentlichung-2026-09-30-ohne-heimnetz-und-geraete-macs
+    title: 'Veroeffentlichung 30.09.2026: GitHub 6944304d aus 9497011d - der Baum ist frei von Heimnetz und Geraete-MACs, die Historie nicht'
+    kind: note
+    tags: [github, veroeffentlichen, leck, ssid, mac, historie, 2026]
+    stand: "30.09.2026, 08:38, am veroeffentlichten Baum (Zweig veroeffentlichung = github/main) nachgemessen."
+    source: 'Betreiber 30.09.2026: „push und an github ausliefern". main 9497011d nach origin (fast-forward, 12 Commits), dann `python3 tools/github-veroeffentlichen.py --bauen --push`.'
+    body: |
+      AUSGELIEFERT: main 49131b27..9497011d nach origin; danach GitHub main
+      dd144c88 -> 6944304d („Veroeffentlichung aus 9497011d"), geprueft per
+      `git ls-remote github refs/heads/main`. Trockenlauf und Bau: 1825
+      Dateien, 105,9 MB, Ohne-Aufnahme-Patch 119 Pfade, 116 Installations-
+      quellen dabei, 1825 Blobs gegen 11 Muster ohne Treffer.
+
+      NACHGEMESSEN AM VEROEFFENTLICHTEN BAUM (nicht am Index): jede der 1825
+      Dateien gegen die fuenf lokalen Muster aus tools/github-lokal-muster.txt
+      — aufnahme-an-dienst, dienst-an-aufnahme, heim-ssid, mac-adresse,
+      bssid-heim-router: je 0 Dateien. Der Ordner der Aufnahme-Erweiterung:
+      0 Dateien; die Musterdatei und der Patch selbst: nicht dabei.
+      Siehe [[leck-wache-mac-als-sorte-und-ausnahme-je-paar]].
+
+      WAS BLEIBT: Die HISTORIE auf GitHub — die sechs Veroeffentlichungen vom
+      27. bis 29.09. — traegt die Heim-SSID und echte Geraete-MACs weiter;
+      jeder, der dort einen alten Commit oeffnet, sieht sie. Weg nur durch
+      Umschreiben der Veroeffentlichungs-Kette und einen Force-Push auf
+      github/main (die Kette ist ohnehin elternlos an ihrem Anfang und wird
+      nur von diesem Werkzeug geschrieben). Das ist eine Betreiber-
+      Entscheidung und NICHT getan.
+    related: ["leck-wache-mac-als-sorte-und-ausnahme-je-paar", "github-fassung-ohne-aufnahme-per-patch", "fehlende-schutzdatei-heisst-abbruch-nicht-nichts-zu-tun"]
