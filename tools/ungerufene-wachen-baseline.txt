@@ -179,6 +179,7 @@ laeufer tools/dienste-deckung.mjs
 laeufer tools/dienste-doku-deckung.sh
 bekannt tools/dienstwechsel-am-dienst.mjs
 bekannt tools/dienstwechsel-am-geraet.mjs
+laeufer tools/dietpi-kopplung-inventur.py
 bekannt tools/dietpi-txt-vergleich.sh
 laeufer tools/doku-luecken-probe.sh
 laeufer tools/doku-pfade-pruefen.py

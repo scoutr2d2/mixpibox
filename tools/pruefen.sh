@@ -455,6 +455,14 @@ schritt "Piper kommt auf die Box" python3 tools/piper-installationsweg-abgleich.
 schritt "Piper ab Werk (Selbsttest)" python3 tools/piper-installationsweg-abgleich.py --selbsttest
 schritt "Piper ab Werk (Attrappen)" bash tools/piper-ab-werk.test.sh
 
+# WIE FEST HAENGT DIE BOX AN DIETPI UND AM PI? (30.09.2026,
+# BETRIEBSSYSTEM-ANALYSE.md). Das Werkzeug ist ein Messgeraet und urteilt
+# nicht ueber den Baum — die Zahl SOLL sinken, eine Ratsche waere hier falsch.
+# Geprueft wird nur, dass seine Einteilung (Werkzeug/Erststart/Nutzer/Pi,
+# Code/Kommentar, Bereich) an festen Zeilen noch stimmt; sonst misst die
+# naechste Sitzung mit einem verbogenen Lineal.
+schritt "DietPi-Kopplung (Selbsttest)" python3 tools/dietpi-kopplung-inventur.py --selbsttest
+
 # DIE TEUERSTE RICHTUNG DERSELBEN FRAGE: beide Ausrollwege holten librespot in
 # der Fassung dev_0.6 — die spielt KEINEN Ton (A/B belegt 2026-07-28). Auf den
 # laufenden Boxen liegt laengst 0.8.0; ein Update haette es ueberschrieben und
