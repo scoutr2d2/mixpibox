@@ -325,7 +325,8 @@ Erweiterungen des Grundsystems gibt es `systemd-sysext` (legt Abbilder über
   RAM-Posten; zwei Browser nebeneinander passen auf 2 GB nicht.
 * Native Oberflächen (flutter-pi, Slint, LVGL) laufen direkt auf DRM und
   bräuchten auf 512 MB-Boards kein Chromium — wären aber ein Neubau der
-  Oberfläche. Nur als Möglichkeit notiert.
+  Oberfläche. Ausgearbeitet am selben Tag als Probe mit dem Ziel „Pi 3 mit
+  1 GB": [NATIV-PROBE-PLAN.md](NATIV-PROBE-PLAN.md).
 
 ### Boards (Auszug, Stand 30.09.2026)
 

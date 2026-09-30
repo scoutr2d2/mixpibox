@@ -1,5 +1,5 @@
 id: mupibox
-version: "672"
+version: "673"
 title: MuPiBox — Wissen (Pi/DietPi Kinder-Musikbox)
 description: >
   Projekt-Wissen für die MuPiBox-Installation und -Optimierung auf Raspberry Pi /
@@ -67070,3 +67070,44 @@ entries:
       4 zweites Board. Nicht: Buildroot, Yocto, Container-Plattformen,
       Alpine, NixOS.
     related: ["wiedergabe-leck-ist-wpe-chromium-bleibt-flach", "pi3-1gb-machbarkeit-gemessen-am-pi5", "mupi-andere-zielhardware", "speicher-waechst-erst-im-betrieb", "ramlog-macht-protokoll-zu-arbeitsspeicher", "mupi-dietpi-trixie", "mupibox-ng-die-zweite-linie-des-ursprungs"]
+  - id: kinderschirm-ohne-browser-auf-1-gb-nur-nativ
+    title: 'Kinderschirm ohne Browser: fuer einen Pi 3 mit 1 GB traegt keine leichtere Web-Engine — nur eine native Oberflaeche; Probe mit Flutter geplant, und der App-Kopf x-mixpi-app muss dabei ganz weg'
+    kind: entscheidung
+    tags: [kiosk, nativ, flutter, flutter-pi, pi3, speicher, chromium, wpe, servo, 2026]
+    stand: "30.09.2026, Recherche und Plan; nichts gebaut, nichts am Geraet gemessen."
+    source: 'Betreiber 30.09.2026: „moeglichkeiten … von chromium, cog … wegzukommen mit einer nativen app mit biblioteken", „schnelle test version … ziel ist es auf raspi 3 mit 1gb auch noch lauffaehig zu sein", „mache erst mal einen detailierten plan". Plan: NATIV-PROBE-PLAN.md.'
+    body: |
+      RECHNUNG FUER 1 GB (Pi-5-Zahlen, Obergrenze wegen 16-KB-Seiten, siehe
+      [[pi5-hat-16k-seiten]]): ohne Browser und ohne Piper bleiben ~620-640 MB
+      fuer Server, Abspieldienst, Soloist, Python-Dienste, mpv, PipeWire und
+      ramlog. Chromium (415-460 MB) passt daneben nicht; Chromium selbst warnt
+      unter 1 GB. Budget fuer eine Oberflaeche: <= 150 MB.
+
+      WEB-ENGINES, Stand 30.09.2026: Chromium unter cage spart hoechstens den
+      Xorg-Anteil (nicht belegt); WPE 2.54 (WPEPlatform, DRM, Skia) nur in sid
+      und ohne fertigen Kiosk-Starter, Cog ohne Nachfolger; Servo ohne
+      backdrop-filter/Masken/scroll-snap; Ladybird pre-alpha und Qt >= 6.9;
+      Sciter eigener Dialekt ohne localStorage/EventSource. Fuer den Pi 3 also
+      keine Web-Loesung.
+
+      NATIV: flutter-pi zeichnet direkt auf DRM, README nennt Pi 2/3/4 inkl.
+      512-MB-Modelle als „known working"; Speicher NICHT belegt (Issue #67
+      offen), Renderer auf VC4/GLES2 nicht belegt, eine Person pflegt.
+      Flutter gewinnt trotzdem, weil die Handy-App Flutter ist
+      ([[handy-app-flutter-fernbedienung]]) und derselbe Code als Web-Build die
+      Gestalter-Vorschau traegt. Plan B LVGL (~15 MB, MIT). Slint: kein
+      Hintergrund-Blur, KMS experimentell. Qt: keine Codeteilung, Virtual
+      Keyboard nur GPLv3.
+
+      FALLE BEIM TEILEN DES CLIENTS: handy-app/lib/box_client.dart schickt
+      `x-mixpi-app: fernbedienung` mit jeder Anfrage, und server.ts:1137
+      zaehlt JEDEN Wert dieses Kopfes als Handy (handysZuletzt → Handy-Zeichen
+      in der Leiste). Eine Box-Oberflaeche mit demselben Client muss den Kopf
+      GANZ weglassen, ein anderer Wert genuegt nicht. Anmeldung braucht sie
+      keine: 127.0.0.1 ist nach auth.ts Regel 3 immer frei.
+
+      MESSEN: Leerlauf UND 30 min Wiedergabe (das WPE-Leck zeigte sich nur
+      dort, [[wiedergabe-leck-im-wpe-renderer]]); PSS aus smaps_rollup in kB.
+      Ohne Pi 3: Pi-5-Testbox mit total_mem=1024 — richtig fuer Speicher,
+      falsch fuer Bildrate ([[pi3-1gb-machbarkeit-gemessen-am-pi5]]).
+    related: ["wiedergabe-leck-ist-wpe-chromium-bleibt-flach", "pi3-1gb-machbarkeit-gemessen-am-pi5", "handy-app-flutter-fernbedienung", "weg-von-dietpi-die-kopplung-sitzt-im-einrichtungsweg-nicht-in-der-app", "kiosk-browser-was-er-wirklich-koennen-muss"]
